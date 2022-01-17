@@ -1,31 +1,31 @@
-Compound cleaning
+*Compound cleaning*
 [x] Implement Gypsum-DL
 [x] Implement ChemBL Pipeline Standardisation
 
-Docking
+*Docking*
 [x] Implement PLANTS
 [ ] Implement LeDock
     - WIP: .dok to .sdf translation still giving issues
 [x] Implement SMINA
 [x] Implement GNINA
 
-Clustering
+*Clustering*
 [x] Implement RMSD
 [x] Implement spyRMSD
 [x] Implement ElectroShapeSim
 
-Rescoring
+*Rescoring*
 [x] Implement SMINA
 [x] Implement VINARDO
 [x] Implement GNINA
 [x] Implement CHEMPLP/PLP (PLANTS)
 [x] Implement RF-Score-VS
 
-Ranking
+*Ranking*
 [ ] Implement ECR
 [ ] Implement Z-Score
 
-Performance
+*Performance*
 [ ] Choose targets for performance determination
     - number of targets
     - difficulty
