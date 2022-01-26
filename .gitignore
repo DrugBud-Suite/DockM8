@@ -1,4 +1,8 @@
 # Byte-compiled / optimized / DLL files
+Docking
+Docking/
+Software
+consensus_docking_python _BACKUP
 __pycache__/
 *.py[cod]
 *$py.class
