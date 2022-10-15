@@ -4,6 +4,8 @@ Docking
 Docking/
 pkasolver
 Software
+.vscode
+Literature
 consensus_docking_python _BACKUP
 __pycache__/
 *.py[cod]
