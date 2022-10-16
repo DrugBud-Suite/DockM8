@@ -3,6 +3,12 @@
 Open source workflow for structure-based virtual screening (SBVS).
 WoConDock, a SBVS workflow, is developed to fill the demand between all researchers, regardless of their background. we are doing it with the goal of allowing researchers from all backgrounds to be able to perform SBVS on the wealth of 3D protein structures that are now available.
 
+The code is divied into 4 parts :
+1. Predocking
+2. Docking
+3. Postdocking
+4. Ranking
+
 ## Installation on Linux by Jupyter Notebook(Ubuntu 22.04)
 <!-- markdown-link-check-disable-next-line -->
 
