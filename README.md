@@ -22,18 +22,11 @@ The code is divied into 4 parts :
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook -y`  
 `pip install pymesh espsim`  
 `snap install openbabel`
-
-Option 1
-`pip install torch -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
+`pip install torch==1.9.1`  
 `pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.1+cpu.html #different if CPU or GPU`  
 `pip install torch-sparse`  
 `pip install torch-geometric==2.0.1`  
 `pip install cairosvg svgutils molvs`
-`pip install -q git+https://github.com/mayrf/pkasolver.git` 
-
-Option 2
-`conda install pytorch torchvision torchaudio cpuonly -c pytorch`  
-`conda install -c rusty1s pytorch-geometric pytorch-scatter pytorch-cluster pytorch-sparse pytorch-spline-conv`   
 `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
 
