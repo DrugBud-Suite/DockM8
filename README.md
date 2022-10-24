@@ -24,7 +24,8 @@ The code is divied into 4 parts :
 `snap install openbabel`
 `pip install torch==1.9.1`  
 `pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.1+cpu.html #different if CPU or GPU`  
-`pip install torch-sparse`  
+`pip install torch-sparse==0.6.12`  
+`pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`
 `pip install torch-geometric==2.0.1`  
 `pip install cairosvg svgutils molvs`
 `pip install -q git+https://github.com/mayrf/pkasolver.git`  
