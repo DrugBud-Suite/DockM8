@@ -21,17 +21,13 @@ The code is divied into 4 parts :
 3. Install required packages using the following commands:  
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook -y`  
 `pip install pymesh espsim`  
-`snap install openbabel`
+`snap install openbabel`  
 `pip install torch==1.9.1`  
 `pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.1+cpu.html #different if CPU or GPU`  
 `pip install torch-sparse==0.6.12`  
-`pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`
+`pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install torch-geometric==2.0.1`  
-`pip install cairosvg svgutils molvs`
 `pip install -q git+https://github.com/mayrf/pkasolver.git`  
-
-
-2. After activating conda environment, open [setup.ipynb](https://gitlab.com/hibrahim21/CADD22/-/blob/main/consensus_docking_python/setup.ipynb) and install packages
 
 ## Running WoConDock
 
