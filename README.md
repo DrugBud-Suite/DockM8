@@ -21,17 +21,28 @@ The code is divied into 4 parts :
 3. Install required packages using the following commands:  
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook -y`  
 `pip install pymesh espsim`  
-`snap install openbabel`  
+`snap install openbabel` (alternatively install from Ubuntu Software manager)  
 `pip install torch==1.9.1`  
 `pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.1+cpu.html #different if CPU or GPU`  
 `pip install torch-sparse==0.6.12`  
 `pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install torch-geometric==2.0.1`  
-`pip install -q git+https://github.com/mayrf/pkasolver.git`  
+`pip install -q git+https://github.com/mayrf/pkasolver.git`    
+
+
+4. Clone repository to your machine:  
+`git clone https://gitlab.com/hibrahim21/CADD22.git`  
+
+5. Ensure you have permissions to run the scripts required
+On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
+
+6.
 
 ## Running WoConDock
 
-1. 
+1. Clone repository to your machine:  
+`git clone https://gitlab.com/hibrahim21/CADD22.git`  
+2. Ensure you have permissions to run the scripts required
 
 ## License
 <!-- markdown-link-check-disable-next-line -->
