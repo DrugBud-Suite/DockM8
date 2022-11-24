@@ -28,7 +28,7 @@ The code is divied into 4 parts :
 `pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install torch-geometric==2.0.1`  
 `pip install -q git+https://github.com/mayrf/pkasolver.git`    
-`pip install oddt
+`pip install oddt`
 
 4. Clone repository to your machine:  
 `git clone https://gitlab.com/hibrahim21/CADD22.git`  
