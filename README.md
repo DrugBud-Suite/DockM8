@@ -9,7 +9,7 @@ The code is divied into 4 parts :
 3. Postdocking
 4. Ranking
 
-## Installation on Linux by Jupyter Notebook(Ubuntu 22.04)
+## Installation (Python 3.8 / Ubuntu 22.04)
 <!-- markdown-link-check-disable-next-line -->
 
 1. Anaconda should be installed to be able to create local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
