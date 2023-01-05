@@ -20,15 +20,15 @@ The code is divied into 4 parts :
 
 3. Install required packages using the following commands:  
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn -y`  
-`pip install pymesh espsim`  
+`pip install pymesh espsim oddt biopandas`  
 `snap install openbabel` (alternatively install from Ubuntu Software manager)  
-`pip install torch==1.9.1`  
-`pip install torch-scatter -f https://data.pyg.org/whl/torch-1.9.1+cpu.html #different if CPU or GPU`  
-`pip install torch-sparse==0.6.12`  
-`pip install torch-spline-conv -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
-`pip install torch-geometric==2.0.1`  
+`pip install torch==1.9.1+cpu`  
+`pip install torch-scatter==2.1.0 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html #different if CPU or GPU`  
+`pip install torch-sparse==0.6.12 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
+`pip install torch-spline-conv==1.2.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
+`pip install torch-cluster==1.6.0 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
+`pip install torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install -q git+https://github.com/mayrf/pkasolver.git`    
-`pip install oddt`
 
 4. Clone repository to your machine:  
 `git clone https://gitlab.com/hibrahim21/CADD22.git`  
