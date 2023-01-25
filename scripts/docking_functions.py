@@ -15,7 +15,7 @@ def smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         print('Smina folder already exists')
     results = smina_folder+'docked.sdf'
     log = smina_folder+'log.txt'
-    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none --cpu 128'+' --log '+log
+    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none'+' --log '+log
     subprocess.call(smina_cmd, shell=True)
     smina_poses = PandasTools.LoadSDF(results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
     return results
@@ -30,7 +30,7 @@ def gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         print('Gnina folder already exists')
     results = gnina_folder+'/docked.sdf'
     log = gnina_folder+'log.txt'
-    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore  --cpu 128 --cnn crossdock_default2018 '+' --log '+log
+    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 '+' --log '+log
     subprocess.call(gnina_cmd, shell=True)
     gnina_poses = PandasTools.LoadSDF(results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
     return results
@@ -168,11 +168,15 @@ def fetch_poses(protein_file, n_poses):
     w_dir = os.path.dirname(protein_file)
     smina_docking_results = w_dir+"/temp/smina/docked.sdf"
     gnina_docking_results = w_dir+"/temp/gnina/docked.sdf"
-    plants_docking_results_sdf = w_dir+"/temp/plants/results/docked_ligands.sdf"
-    
+    plants_poses_results_sdf = w_dir+"/temp/plants/results/docked_ligands.sdf"
+    plants_scoring_results_sdf = w_dir+"/temp/plants/results/ranking.csv"
     #Fetch PLANTS poses
     try:
-        plants_df = PandasTools.LoadSDF(plants_docking_results_sdf, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+        plants_poses = PandasTools.LoadSDF(plants_poses_results_sdf, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+        plants_scores = pd.read_csv(plants_scoring_results_sdf)
+        plants_scores = plants_scores.rename(columns={'LIGAND_ENTRY':'ID', 'TOTAL_SCORE':'CHEMPLP'})
+        plants_scores = plants_scores[['ID', 'CHEMPLP']]
+        plants_df = pd.merge(plants_scores, plants_poses, on='ID')
         for i, row in plants_df.iterrows():
             split = row['ID'].split("_")
             conformer_id = str(split[4])
@@ -183,26 +187,27 @@ def fetch_poses(protein_file, n_poses):
     #Fetch SMINA poses
     try:
         smina_df = PandasTools.LoadSDF(smina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
-        smina_df = smina_df[['ID', 'Molecule']]
+        #smina_df = smina_df[['ID', 'Molecule']]
         list_ = [*range(1, int(n_poses)+1, 1)]
         ser = list_ * int(len(smina_df)/len(list_))
         smina_df['number'] = ser + list_[:len(smina_df)-len(ser)]
         for i, row in smina_df.iterrows():
             smina_df.loc[i, ['Pose ID']] = row['ID']+"_SMINA_"+str(row['number'])
         smina_df.drop('number', axis=1, inplace=True)
-        
+        smina_df = smina_df.rename(columns={'minimizedAffinity':'SMINA_Affinity'})
     except:
         print('ERROR: Failed to Load SMINA poses SDF file!')
     #Fetch GNINA poses
     try:
         gnina_df = PandasTools.LoadSDF(gnina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
-        gnina_df = gnina_df[['ID', 'Molecule']]
+        #gnina_df = gnina_df[['ID', 'Molecule']]
         list_ = [*range(1, int(n_poses)+1, 1)]
         ser = list_ * int(len(gnina_df)/len(list_))
         gnina_df['number'] = ser + list_[:len(gnina_df)-len(ser)]
         for i, row in gnina_df.iterrows():
             gnina_df.loc[i, ['Pose ID']] = row['ID']+"_GNINA_"+str(row['number'])
         gnina_df.drop('number', axis=1, inplace=True)
+        gnina_df = gnina_df.rename(columns={'minimizedAffinity':'GNINA_Affinity'})
     except:
         print('ERROR: Failed to Load GNINA poses SDF file!')
 

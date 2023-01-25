@@ -21,3 +21,19 @@ def calculate_EFs(w_dir, docking_library):
         EF_results.loc[x, 'EF10%'] = ef10
         EF_results.loc[x, 'EF1%'] = ef1
     EF_results.to_csv(w_dir+'/temp/ranking/enrichement_factors.csv')
+    
+def calculate_EFs_simplified(w_dir, docking_library):
+    original_df = PandasTools.LoadSDF(docking_library, molColName='Molecule', idName='ID')
+    original_df = original_df[['ID', 'Activity']]
+    ranking_results = pd.read_csv(w_dir+'/temp/ranking/ranking_results.csv')
+    merged_df = ranking_results.merge(original_df, on='ID')
+    merged_df['Activity'] = pd.to_numeric(merged_df['Activity'])
+    method_list = ranking_results.columns.tolist()[1:]
+    EF_results = pd.DataFrame()
+    for method in method_list:
+        sorted_df = merged_df.sort_values(method, ascending = False)
+        ef10 = (sorted_df.head(len(sorted_df)//10)['Activity'].sum())/len(sorted_df.head(len(sorted_df)//10))*100
+        ef1 = (sorted_df.head(len(sorted_df)//100)['Activity'].sum())/len(sorted_df.head(len(sorted_df)//100))*100
+        EF_results.loc[method, 'EF10%'] = ef10
+        EF_results.loc[method, 'EF1%'] = ef1
+    EF_results.to_csv(w_dir+'/temp/ranking/enrichement_factors.csv')
