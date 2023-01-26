@@ -22,7 +22,8 @@ parser.add_argument('--reffile', type=str, help ='Path to reference ligand file'
 parser.add_argument('--dockinglibrary', required=True, type=str, help ='Path to docking library file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Unique identifier column')
 parser.add_argument('--protonation', required=True, type = str, choices = ['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
-parser.add_argument('--clustering', type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore'], help ='Method(s) to use for pose clustering')
+parser.add_argument('--docking', type = str, nargs='+', choices = ['GNINA', 'SMINA', 'PLANTS'], help ='Method(s) to use for docking')
+parser.add_argument('--clustering', type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestscore'], help ='Method(s) to use for pose clustering')
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses')
 parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision of SMINA/GNINA')
 
@@ -41,15 +42,10 @@ def run_command(**kwargs):
         pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('proteinfile'), w_dir, method='volume')
         
     if Path(w_dir+'/temp/final_library.sdf').isfile() == False:
-        if kwargs.get('protonation') == 'pkasolver':
-            cleaned_df = prepare_library_pkasolver_GypsumDL(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('software'))
-        elif kwargs.get('protonation') == 'GypsumDL':
-            cleaned_df = prepare_library_GypsumDL(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('software'))
-        else:
-            cleaned_df = prepare_library_noprotonation(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('software'))
-            
+        cleaned_df = prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('software'), kwargs.get('protonation'))
+
     if Path(w_dir+'/temp/all_poses.sdf').isfile() == False:
-        all_poses = docking(kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), kwargs.get('exhaustiveness'), kwargs.get('nposes'))
+        all_poses = docking(kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), kwargs.get('docking'), kwargs.get('exhaustiveness'), kwargs.get('nposes'))
     
     clustering_methods =kwargs.get('clustering').split(' ')
     for method in clustering_methods:
