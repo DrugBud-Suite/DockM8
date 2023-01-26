@@ -8,15 +8,26 @@ def create_temp_folder(path):
         print(f'The folder: {path} was created')
         
 from rdkit.Chem import PandasTools
+import multiprocessing
         
-def split_sdf(w_dir, sdf_file, n_compounds):
+def split_sdf(w_dir, sdf_file):
+    print(f'Splitting docking library...')
     create_temp_folder(w_dir+'/temp/split_files')
     for file in os.listdir(w_dir+'/temp/split_files'):
         os.unlink(os.path.join(w_dir+'/temp/split_files', file))
     df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
-    chunks = [df[i:i+n_compounds] for i in range(0, len(df), n_compounds)]
-    for i, chunk in enumerate(chunks):
-        PandasTools.WriteSDF(chunk, w_dir+'/temp/split_files/split_' + str(i) + '.sdf', molColName='Molecule', idName='ID')
+    compounds_per_core = round(len(df['ID'])/(multiprocessing.cpu_count()-2))
+    used_ids = set() # keep track of used 'ID' values
+    file_counter = 1
+    for i in range(0, len(df), compounds_per_core):
+        chunk = df[i:i+compounds_per_core]
+        # remove rows with 'ID' values that have already been used
+        chunk = chunk[~chunk['ID'].isin(used_ids)]
+        used_ids.update(set(chunk['ID'])) # add new 'ID' values to used_ids
+        PandasTools.WriteSDF(chunk, w_dir+'/temp/split_files/split_' + str(file_counter) + '.sdf', molColName='Molecule', idName='ID')
+        file_counter+=1
+    print(f'Split docking library into {file_counter-1} files each containing {compounds_per_core} compounds')
+    
 
 import pandas as pd
 

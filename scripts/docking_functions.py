@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from subprocess import DEVNULL, STDOUT
 import shutil
@@ -40,7 +41,6 @@ def smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         print('SMINA docking failed: '+e)
-    smina_poses = PandasTools.LoadSDF(results_path, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
     toc = time.perf_counter()
     print(f'Docking with SMINA complete in {toc-tic:0.4f}!')
     return results_path
@@ -74,7 +74,6 @@ def gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         print('GNINA docking failed: '+e)
-    gnina_poses = PandasTools.LoadSDF(results_path, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
     toc = time.perf_counter()
     print(f'Docking with GNINA complete in {toc-tic:0.4f}!')
     return results_path
@@ -312,7 +311,6 @@ def smina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     smina_folder = w_dir+'/temp/smina/'
     os.makedirs(smina_folder, exist_ok=True)
     results_path = smina_folder+os.path.basename(split_file).split('.')[0]+'_smina.sdf'
-    log = smina_folder+os.path.basename(split_file).split('.')[0]+'_smina.txt'
     smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none'
     try:
         subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
@@ -325,8 +323,7 @@ def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     gnina_folder = w_dir+'/temp/gnina/'
     os.makedirs(gnina_folder, exist_ok=True)
     results_path = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
-    log = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.txt'
-    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 '
+    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018'
     try:
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
@@ -334,7 +331,6 @@ def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     return
 
 def plants_docking_splitted(split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius):
-    plants_docking_dir = w_dir+'/temp/plants'
     plants_docking_results_dir = w_dir+'/temp/plants/results_'+os.path.basename(split_file).replace('.sdf', '')
     #Generate plants config file
     plants_docking_config_path_txt = w_dir+'/temp/plants/config_'+os.path.basename(split_file).replace('.sdf', '.txt')
@@ -394,8 +390,6 @@ def plants_docking_splitted(split_file, w_dir, software, n_poses, binding_site_x
     except Exception as e:
         print('ERROR: PLANTS docking command failed...')
         print(e)
-    plants_docking_results_mol2 = w_dir+'/temp/plants/results/docked_ligands.mol2'
-    plants_docking_results_sdf = plants_docking_results_mol2.replace('.mol2', '.sdf')
     return
 
 def plants_preparation(protein_file, ref_file, software):
@@ -483,10 +477,19 @@ def fetch_poses_splitted(w_dir, n_poses):
             pass
         else:
             Path(os.path.join(w_dir+'/temp/plants', item)).unlink(missing_ok=True)
-    plants_df = pd.concat(plants_dataframes)
+    try:
+        plants_df = pd.concat(plants_dataframes)
+        PandasTools.WriteSDF(plants_df, w_dir+'/temp/plants/plants_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(plants_df.columns))
+    except Exception as e:
+        print('Could not combine PLANTS docking poses')
+        print(e)
+    else:
+        for file in os.listdir(w_dir+'/temp/plants'):
+            if file.startswith('results'):
+                shutil.rmtree(os.path.join(w_dir+'/temp/plants', file))
     #Fetch SMINA poses
     try:
-        smina_dataframes = [PandasTools.LoadSDF(w_dir+'/temp/smina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(w_dir+'/temp/smina/') if file.endswith('.sdf')]
+        smina_dataframes = [PandasTools.LoadSDF(w_dir+'/temp/smina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(w_dir+'/temp/smina/') if file.startswith('split')]
         smina_df = pd.concat(smina_dataframes)
         smina_df['number'] = [*range(1, int(n_poses)+1, 1)] * int(len(smina_df)/int(n_poses)) + [*range(1, len(smina_df)%int(n_poses)+1, 1)]
         smina_df['Pose ID'] = smina_df['ID']+'_SMINA_'+smina_df['number'].apply(str)
@@ -495,9 +498,18 @@ def fetch_poses_splitted(w_dir, n_poses):
     except Exception as e:
         print('ERROR: Failed to Load SMINA poses SDF file!')
         print(e)
+    try:
+        PandasTools.WriteSDF(smina_df, w_dir+'/temp/smina/smina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(smina_df.columns))
+    except Exception as e:
+        print('ERROR: Failed to Load SMINA poses SDF file!')
+        print(e)
+    else:
+        for file in os.listdir(w_dir+'/temp/smina'):
+            if file.startswith('split'):
+                os.remove(os.path.join(w_dir+'/temp/smina', file))
     #Fetch GNINA poses
     try:
-        gnina_dataframes = [PandasTools.LoadSDF(w_dir+'/temp/gnina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(w_dir+'/temp/gnina/') if file.endswith('.sdf')]
+        gnina_dataframes = [PandasTools.LoadSDF(w_dir+'/temp/gnina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(w_dir+'/temp/gnina/') if file.startswith('split')]
         gnina_df = pd.concat(gnina_dataframes)
         gnina_df['number'] = [*range(1, int(n_poses)+1, 1)] * int(len(gnina_df)/int(n_poses)) + [*range(1, len(gnina_df)%int(n_poses)+1, 1)]
         gnina_df['Pose ID'] = gnina_df['ID']+'_GNINA_'+gnina_df['number'].apply(str)
@@ -506,18 +518,32 @@ def fetch_poses_splitted(w_dir, n_poses):
     except Exception as e:
         print('ERROR: Failed to Load GNINA poses SDF file!')
         print(e)
-    all_poses = pd.concat([plants_df, smina_df, gnina_df]) 
-    PandasTools.WriteSDF(all_poses, w_dir+'/temp/allposes_splitted.sdf', molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
+    try:
+        PandasTools.WriteSDF(gnina_df, w_dir+'/temp/gnina/gnina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(gnina_df.columns))
+    except Exception as e:
+        print('Could not combine PLANTS docking poses')
+        print(e)
+    else:
+        for file in os.listdir(w_dir+'/temp/gnina'):
+            if file.startswith('split'):
+                os.remove(os.path.join(w_dir+'/temp/gnina', file))
+    #Combine all poses
+    try:
+        all_poses = pd.concat([plants_df, smina_df, gnina_df]) 
+        PandasTools.WriteSDF(all_poses, w_dir+'/temp/allposes.sdf', molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
+    except Exception as e:
+        print('Could not combine all docking poses')
+        print(e)
+    else:
+        shutil.rmtree(os.path.join(w_dir+'/temp/split_files'))
     toc = time.perf_counter()
     print(f'Combined all docking poses in {toc-tic:0.4f}!')
     return all_poses
 
 def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses):
-    print(f'Splitting docking library into {str(multiprocessing.cpu_count()-2)} files')
-    split_sdf(w_dir, w_dir+'/temp/final_library.sdf', (multiprocessing.cpu_count()-2))
+    split_sdf(w_dir, w_dir+'/temp/final_library.sdf')
     split_files_sdfs = [os.path.join(w_dir+'/temp/split_files', f) for f in os.listdir(w_dir+'/temp/split_files') if f.endswith('.sdf')]
     if 'PLANTS' in docking_programs:
-        print('Docking split files using PLANTS...')
         tic = time.perf_counter()
         binding_site_x, binding_site_y, binding_site_z, binding_site_radius = plants_preparation(protein_file, ref_file, software)
         #Convert prepared ligand file to .mol2 using open babel
@@ -529,22 +555,23 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                 except Exception as e:
                     print(f'ERROR: Failed to convert {file} to .mol2!')
                     print(e)
+        print('Docking split files using PLANTS...')
         with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
-            pool.starmap(plants_docking_splitted, [(split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius) for split_file in tqdm.tqdm(split_files_sdfs, total=len(split_files_sdfs))])
+            pool.starmap(plants_docking_splitted, [(split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius) for split_file in split_files_sdfs])
         toc = time.perf_counter()
         print(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
     if 'SMINA' in docking_programs:
         print('Docking split files using SMINA...')
         tic = time.perf_counter()
         with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
-            pool.starmap(smina_docking_splitted, [(split_file, protein_file, ref_file, software, exhaustiveness, n_poses) for split_file in tqdm.tqdm(split_files_sdfs, total=len(split_files_sdfs))])
+            pool.starmap(smina_docking_splitted, [(split_file, protein_file, ref_file, software, exhaustiveness, n_poses) for split_file in split_files_sdfs])
         toc = time.perf_counter()
         print(f'Docking with SMINA complete in {toc-tic:0.4f}!')
     if 'GNINA' in docking_programs:
         print('Docking split files using GNINA...')
         tic = time.perf_counter()
         with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
-            pool.starmap(gnina_docking_splitted, [(split_file, protein_file, ref_file, software, exhaustiveness, n_poses) for split_file in tqdm.tqdm(split_files_sdfs, total=len(split_files_sdfs))])
+            pool.starmap(gnina_docking_splitted, [(split_file, protein_file, ref_file, software, exhaustiveness, n_poses) for split_file in split_files_sdfs])
         toc = time.perf_counter()
         print(f'Docking with GNINA complete in {toc-tic:0.4f}!')
     all_poses = fetch_poses_splitted(w_dir, n_poses)
