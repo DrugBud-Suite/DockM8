@@ -2,10 +2,21 @@ import os
 
 def create_temp_folder(path):
     if os.path.isdir(path) == True:
-        print('Temporary folder already exists')
+        print(f'The folder: {path} already exists')
     else:
         os.mkdir(path)
-        print('Temporary folder was created')
+        print(f'The folder: {path} was created')
+        
+from rdkit.Chem import PandasTools
+        
+def split_sdf(w_dir, sdf_file, n_compounds):
+    create_temp_folder(w_dir+'/temp/split_files')
+    for file in os.listdir(w_dir+'/temp/split_files'):
+        os.unlink(os.path.join(w_dir+'/temp/split_files', file))
+    df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
+    chunks = [df[i:i+n_compounds] for i in range(0, len(df), n_compounds)]
+    for i, chunk in enumerate(chunks):
+        PandasTools.WriteSDF(chunk, w_dir+'/temp/split_files/split_' + str(i) + '.sdf', molColName='Molecule', idName='ID')
 
 import pandas as pd
 
