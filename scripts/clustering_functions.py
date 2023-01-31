@@ -344,36 +344,3 @@ def cluster_numpy(method, w_dir, protein_file):
     save_path = w_dir + '/temp/clustering/' + method + '_clustered.sdf'
     PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
     return
-
-def cluster_dask(method, w_dir, protein_file):
-    create_clustering_folder(w_dir+'/temp/clustering/')
-    def matrix_calculation_and_clustering(method, df, id_list, protein_file, w_dir): 
-        #print("*Calculating {} metrics and clustering*".format(method))
-        id_list = np.unique(np.array(df['Pose ID']))
-        methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose'}
-        if method == 'bestpose':
-            df[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']] = df[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']].apply(pd.to_numeric, errors='coerce')
-            best_row_CHEMPLP = df.loc[df.groupby(['Pose ID'])['CHEMPLP'].idxmin()]
-            best_row_SMINA = df.loc[df.groupby(['Pose ID'])['SMINA_Affinity'].idxmin()]
-            best_row_GNINA = df.loc[df.groupby(['Pose ID'])['CNNaffinity'].idxmax()]
-            table = pd.concat([best_row_GNINA, best_row_SMINA, best_row_CHEMPLP])
-            table.reset_index(inplace=True)
-            table = pd.DataFrame(table['Pose ID'])
-            table['Pose ID'] = table['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-        return table
-
-    print('Loading all poses SDF file...')
-    all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
-    print('Finished loading all poses SDF file...')
-    id_list = np.unique(np.array(all_poses['ID']))
-    dask_df = dd.from_pandas(all_poses, npartitions=multiprocessing.cpu_count())
-    grouped_df = dask_df.groupby('ID')
-    results = grouped_df.map(matrix_calculation_and_clustering, method, all_poses, id_list, protein_file, w_dir)
-    print(results)
-    #clustered_poses = matrix_calculation_and_clustering(method, all_poses, id_list, protein_file, w_dir)
-    clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-    # keep only the necessary columns
-    clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-    save_path = w_dir + '/temp/clustering/' + method + '_clustered.sdf'
-    PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-    return
