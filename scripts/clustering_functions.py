@@ -24,6 +24,8 @@ import multiprocessing
 import dask.dataframe as dd
 from dask import delayed
 import dask
+import concurrent.futures
+import progressbar
 
 def create_clustering_folder(path):
     if os.path.isdir(path) == True:
@@ -31,12 +33,10 @@ def create_clustering_folder(path):
     else:
         os.mkdir(path)
         print('Clustering folder was created')
-
+        
 def kmedoids_S_clustering(input_dataframe):
     df = input_dataframe.copy()
-    # Get Pose ID and Molecule names for renaming
     molecule_list = input_dataframe.columns.values.tolist()
-    id_list = input_dataframe.index.tolist()
     #preprocessing our data *scaling data* 
     scaler = StandardScaler()
     df[molecule_list] = scaler.fit_transform(df)
@@ -53,16 +53,15 @@ def kmedoids_S_clustering(input_dataframe):
     # # Apply optimised k-medoids clustering
     kmedoids = KMedoids(n_clusters=optimum_no_clusters, method='pam',init='build', max_iter=150)
     clusters = kmedoids.fit_predict(df)
-    df['KMedoids Cluster']=clusters
-    df['Molecule'] = molecule_list
-    df['Pose ID'] = id_list
+    df['KMedoids Cluster'] = clusters
+    df['Pose ID'] = molecule_list
     # Determine centers
     centroids = kmedoids.cluster_centers_
     cluster_centers = pd.DataFrame(centroids,columns = molecule_list)
     #rearranging data
-    merged_df = pd.merge(df, cluster_centers, on=molecule_list)
-    merged_df = merged_df[['Molecule', 'Pose ID']]
-    merged_df['Pose ID'] = merged_df['Pose ID'].astype(str).replace('[()\',]','', regex=False)
+    merged_df = pd.merge(df, cluster_centers, on=molecule_list, how='inner')
+    merged_df = merged_df[['Pose ID']]
+    #.astype(str).replace('[()\',]','', regex=False)
     return merged_df
 
 def simpleRMSD_calc(*args):
@@ -125,80 +124,16 @@ def USRCAT_calc(*args):
     return round(usr_sim, 3)
 
 #NOT WORKING!
-def symmRMSD_calc(mol, jmol):
-    rms = Chem.rdMolAlign.CalcRMS(mol, jmol)
+def symmRMSD_calc(*args):
+    display(args[0], args[1])
+    rms = Chem.rdMolAlign.CalcRMS(args[0], args[1])
     return round(rms, 3)
-
-def cluster_multiprocessing(method, w_dir, protein_file):
-    def matrix_calculation_and_clustering_multiprocessing(method, df, id_list, protein_file, w_dir): 
-        matrix = dict()
-        clustered_dataframes = []
-        print("*Calculating {} metrics and clustering*".format(method))
-        methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc}
-        for id in tqdm(id_list):
-            if method == '3DScore':
-                df_name = df[df['ID']==id]
-                df_name.index = range(len(df_name['Molecule']))
-                table = pd.DataFrame(0.0, index=[df_name['Pose ID']], columns=df_name['Molecule'])
-                with multiprocessing.Pool() as p:
-                        try:
-                            results = p.map(methods['spyRMSD'], itertools.combinations(df_name['Molecule'], 2))
-                        except KeyError:
-                            print('Incorrect clustering method selected')
-                            return
-                        results_list = list(zip(itertools.combinations(df_name['Molecule'], 2), results))
-                        for subset, result in results_list:
-                            table.iloc[df_name[df_name['Molecule']==subset[0]].index.values, df_name[df_name['Molecule']==subset[1]].index.values] = 0 if np.isnan(result) else result
-                            table.iloc[df_name[df_name['Molecule']==subset[1]].index.values, df_name[df_name['Molecule']==subset[0]].index.values] = 0 if np.isnan(result) else result
-                table['3DScore'] = table.sum(axis=1)
-                table.sort_values(by='3DScore', ascending=True)
-                table = table.head(1)
-                table.reset_index(inplace=True)
-                table = pd.DataFrame(table['Pose ID'])
-                table['Pose ID'] = table['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-                clustered_dataframes.append(table)
-            else:
-                try:
-                    df_name = df[df['ID']==id]
-                    df_name.index = range(len(df_name['Molecule']))
-                    table = pd.DataFrame(0.0, index=[df_name['Pose ID']], columns=df_name['Molecule'])
-                    with multiprocessing.Pool() as p:
-                        try:
-                            results = p.map(methods[method], itertools.combinations(df_name['Molecule'], 2))
-                        except KeyError:
-                            print('Incorrect clustering method selected')
-                            return
-                        results_list = list(zip(itertools.combinations(df_name['Molecule'], 2), results))
-                        for subset, result in results_list:
-                            table.iloc[df_name[df_name['Molecule']==subset[0]].index.values, df_name[df_name['Molecule']==subset[1]].index.values] = 0 if np.isnan(result) else result
-                            table.iloc[df_name[df_name['Molecule']==subset[1]].index.values, df_name[df_name['Molecule']==subset[0]].index.values] = 0 if np.isnan(result) else result
-                    matrix[id+'_'+method] = table
-                    clust_df = kmedoids_S_clustering(table)
-                    clust_df=clust_df['Pose ID']
-                    clustered_dataframes.append(clust_df)
-                except:
-                    print(f'Failed to calculate metrics and cluster ID: {id}')
-        full_df = functools.reduce(lambda  left,right: pd.merge(left,right,on=['Pose ID'], how='outer'), clustered_dataframes)
-        return full_df
-    print('Loading all poses SDF file...')
-    all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, embedProps=True, removeHs=True, strictParsing=True)
-    print('Finished loading all poses SDF file...')
-    id_list = np.unique(np.array(all_poses['ID']))
-    create_clustering_folder(w_dir+'/temp/clustering/')
-    clustered_poses = matrix_calculation_and_clustering_multiprocessing(method, all_poses, id_list, protein_file, w_dir)
-    clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-    # keep only the necessary columns
-    clustered_poses = clustered_poses[['Pose ID', 'Molecule']]
-    save_path = w_dir + '/temp/clustering/' + method + '_clustered.sdf'
-    PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-    return
 
 def cluster(method, w_dir, protein_file):
     def matrix_calculation_and_clustering(method, df, id_list, protein_file, w_dir): 
-        matrix = dict()
         clustered_dataframes = []
         print("*Calculating {} metrics and clustering*".format(method))
-        methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose'}
+        methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
         for id in tqdm(id_list):
             if method == 'bestpose':
                 df_name = df[df['ID']==id]
@@ -238,7 +173,6 @@ def cluster(method, w_dir, protein_file):
                         result = methods[method](subset[0], subset[1], protein_file)
                         table.iloc[df_name[df_name['Molecule']==subset[0]].index.values, df_name[df_name['Molecule']==subset[1]].index.values] = 0 if np.isnan(result) else result
                         table.iloc[df_name[df_name['Molecule']==subset[1]].index.values, df_name[df_name['Molecule']==subset[0]].index.values] = 0 if np.isnan(result) else result
-                    matrix[id+'_'+method] = table
                     clust_df = kmedoids_S_clustering(table)
                     clust_df=clust_df['Pose ID']
                     clustered_dataframes.append(clust_df)
@@ -262,76 +196,59 @@ def cluster(method, w_dir, protein_file):
 
 def cluster_numpy(method, w_dir, protein_file):
     def matrix_calculation_and_clustering(method, df, id_list, protein_file): 
-        matrix = dict()
         clustered_dataframes = []
         print("*Calculating {} metrics and clustering*".format(method))
-        methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose'}
+        methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
         for id in tqdm(id_list):
             if method == 'bestpose':
-                df_name = df[df['ID']==id]
-                df_name[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']] = df_name[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']].apply(pd.to_numeric, errors='coerce')
-                best_row_CHEMPLP = df_name.loc[df_name.groupby(['ID'])['CHEMPLP'].idxmin()]
-                best_row_SMINA = df_name.loc[df_name.groupby(['ID'])['SMINA_Affinity'].idxmin()]
-                best_row_GNINA = df_name.loc[df_name.groupby(['ID'])['CNNaffinity'].idxmax()]
+                df_filtered = df[df['ID']==id]
+                df_filtered[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']] = df_filtered[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']].apply(pd.to_numeric, errors='coerce')
+                best_row_CHEMPLP = df_filtered.loc[df_filtered['CHEMPLP'].idxmin()]
+                best_row_SMINA = df_filtered.loc[df_filtered['SMINA_Affinity'].idxmin()]
+                best_row_GNINA = df_filtered.loc[df_filtered['CNNaffinity'].idxmax()]
                 table = pd.concat([best_row_GNINA, best_row_SMINA, best_row_CHEMPLP])
-                table.reset_index(inplace=True)
-                table = pd.DataFrame(table['Pose ID'])
+                table = table[['Pose ID']]
                 table['Pose ID'] = table['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
                 clustered_dataframes.append(table)
             elif method == '3DScore':
-                for subset in itertools.combinations(df_name['Molecule'], 2):
-                    try:
-                        result = methods['spyRMSD'](subset[0], subset[1])
-                    except:
-                        result = methods['RMSD'](subset[0], subset[1])
-                    table.iloc[df_name[df_name['Molecule']==subset[0]].index.values, df_name[df_name['Molecule']==subset[1]].index.values] = 0 if np.isnan(result) else result
-                    table.iloc[df_name[df_name['Molecule']==subset[1]].index.values, df_name[df_name['Molecule']==subset[0]].index.values] = 0 if np.isnan(result) else result
-                
                 df_filtered = df[df['ID']==id]
-                matrix = np.zeros((len(df_filtered), len(df_filtered)))
                 subsets = np.array(list(itertools.combinations(df_filtered['Molecule'], 2)))
-                subset1 = subsets[:,0]
-                subset2 = subsets[:,1]
                 indices = {mol: idx for idx, mol in enumerate(df_filtered['Molecule'].values)}
-                for x, y in subsets:
+                results = np.zeros(len(subsets))
+                for k, (x, y) in enumerate(subsets):
                     try:
-                        results = np.array([methods['spyRMSD'](x, y, protein_file)])
+                        results[k] = (methods['spyRMSD'](x, y, protein_file))
                     except:
-                        results = np.array([methods['RMSD'](x, y, protein_file)])
-                i, j = np.array([indices[x] for x in subset1]), np.array([indices[y] for y in subset2])
+                        results[k] = (methods['RMSD'](x, y, protein_file))
+                i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
+                matrix = np.zeros((len(df_filtered), len(df_filtered)))
                 matrix[i, j] = results
                 matrix[j, i] = results
-                matrix_df = pd.DataFrame(matrix)
+                matrix_df = pd.DataFrame(matrix, index=df_filtered['Pose ID'].values.tolist(), columns=df_filtered['Pose ID'].values.tolist())
                 matrix_df['3DScore'] = matrix_df.sum(axis=1)
-                matrix_df.sort_values(by='3DScore', ascending=True)
+                matrix_df.sort_values(by='3DScore', ascending=True, inplace=True)
                 matrix_df = matrix_df.head(1)
-                matrix_df.reset_index(inplace=True)
-                matrix_df = pd.DataFrame(matrix_df['Pose ID'])
+                matrix_df = pd.DataFrame(matrix_df.index, columns=['Pose ID'])
                 matrix_df['Pose ID'] = matrix_df['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
                 clustered_dataframes.append(matrix_df)
             else:
-                #try:
+                try:
                     df_filtered = df[df['ID']==id]
-                    matrix = np.zeros((len(df_filtered), len(df_filtered)))
                     subsets = np.array(list(itertools.combinations(df_filtered['Molecule'], 2)))
-                    subset1 = subsets[:,0]
-                    subset2 = subsets[:,1]
                     indices = {mol: idx for idx, mol in enumerate(df_filtered['Molecule'].values)}
                     results = np.array([methods[method](x, y, protein_file) for x, y in subsets])
-                    i, j = np.array([indices[x] for x in subset1]), np.array([indices[y] for y in subset2])
+                    i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
+                    matrix = np.zeros((len(df_filtered), len(df_filtered)))
                     matrix[i, j] = results
                     matrix[j, i] = results
-                    matrix_df = pd.DataFrame(matrix)
-                    matrix_df.columns = [df['Pose ID']]
-                    matrix_df.index = [df['Pose ID']]
+                    matrix_df = pd.DataFrame(matrix, index=df_filtered['Pose ID'].values.tolist(), columns=df_filtered['Pose ID'].values.tolist())
                     clust_df = kmedoids_S_clustering(matrix_df)
-                    clust_df = clust_df['Pose ID']
                     clustered_dataframes.append(clust_df)
-                #except:
-                    #print(f'Failed to calculate metrics and cluster ID: {id}')
-        full_df = functools.reduce(lambda  left,right: pd.merge(left,right,on=['Pose ID'], how='outer'), clustered_dataframes)
-        full_df['Pose ID'] = full_df['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-        return full_df
+                except Exception as e:
+                    print(f'Failed to calculate metrics and cluster ID: {id} due to : {e}')
+        clustered_poses = pd.concat(clustered_dataframes)
+        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
+        return clustered_poses
     print('Loading all poses SDF file...')
     all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
     print('Finished loading all poses SDF file...')
@@ -340,6 +257,87 @@ def cluster_numpy(method, w_dir, protein_file):
     clustered_poses = matrix_calculation_and_clustering(method, all_poses, id_list, protein_file)
     clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
     # keep only the necessary columns
+    clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
+    save_path = w_dir + '/temp/clustering/' + method + '_clustered.sdf'
+    PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
+    return
+
+def matrix_calculation_and_clustering_futures(method, df, protein_file):
+    methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
+    if method == 'bestpose':
+        df[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']] = df[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']].apply(pd.to_numeric, errors='coerce')
+        best_row_CHEMPLP = df.loc[df['CHEMPLP'].idxmin()]
+        best_row_SMINA = df.loc[df['SMINA_Affinity'].idxmin()]
+        best_row_GNINA = df.loc[df['CNNaffinity'].idxmax()]
+        best_pose_output = pd.concat([best_row_GNINA, best_row_SMINA, best_row_CHEMPLP])
+        best_pose_output = best_pose_output[['Pose ID']]
+        best_pose_output['Pose ID'] = best_pose_output['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
+        return best_pose_output
+    elif method == '3DScore':
+        subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
+        indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
+        results = np.zeros(len(subsets))
+        for k, (x, y) in enumerate(subsets):
+            try:
+                results[k] = (methods['spyRMSD'](x, y, protein_file))
+            except:
+                results[k] = (methods['RMSD'](x, y, protein_file))
+        i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
+        matrix = np.zeros((len(df), len(df)))
+        matrix[i, j] = results
+        matrix[j, i] = results
+        output_df = pd.DataFrame(matrix, index=df['Pose ID'].values.tolist(), columns=df['Pose ID'].values.tolist())
+        output_df['3DScore'] = output_df.sum(axis=1)
+        output_df.sort_values(by='3DScore', ascending=True, inplace=True)
+        output_df = output_df.head(1)
+        output_df = pd.DataFrame(output_df.index, columns=['Pose ID'])
+        output_df['Pose ID'] = output_df['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
+        return output_df
+    else:
+        try:
+            subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
+            indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
+            results = np.array([methods[method](x, y, protein_file) for x, y in subsets])
+            i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
+            matrix = np.zeros((len(df), len(df)))
+            matrix[i, j] = results
+            matrix[j, i] = results
+            matrix_df = pd.DataFrame(matrix, index=df['Pose ID'].values.tolist(), columns=df['Pose ID'].values.tolist())
+            clust_df = kmedoids_S_clustering(matrix_df)
+            return clust_df
+        except Exception as e:
+            print(f'Failed to calculate metric and cluster : {e}')
+
+def cluster_numpy_futures(method, w_dir, protein_file):
+    print('Loading all poses SDF file...')
+    all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
+    print('Finished loading all poses SDF file...')
+    id_list = np.unique(np.array(all_poses['ID']))
+    create_clustering_folder(w_dir+'/temp/clustering/')
+    clustered_dataframes = []
+    print(f"*Calculating {method} metrics and clustering*")
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        jobs = []
+        numMol=0
+        for current_id in id_list:
+            try:
+                job = executor.submit(matrix_calculation_and_clustering_futures, method, all_poses[all_poses['ID']==current_id], protein_file)
+                jobs.append(job)
+            except Exception as e:
+                print("Error in concurrent futures: ", str(e))
+            #numMol = numMol+1
+        #widgets = [f"Clustering using {method}; ", progressbar.Percentage(), " ", progressbar.ETA(), " ", progressbar.Bar()]
+        #pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(jobs))
+        #for job in pbar(concurrent.futures.as_completed(jobs)):	
+        for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
+            try:
+                res = job.result()
+                clustered_dataframes.append(res)
+            except Exception as e:
+                print("Error in concurrent futures: ", str(e))
+    clustered_poses = pd.concat(clustered_dataframes)
+    clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
+    clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
     clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
     save_path = w_dir + '/temp/clustering/' + method + '_clustered.sdf'
     PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
