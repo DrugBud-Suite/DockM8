@@ -232,7 +232,7 @@ def plants_docking(protein_file, ref_file, software, n_poses):
     print(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
     return plants_docking_results_sdf
 
-def fetch_poses(protein_file, n_poses):
+def fetch_poses(protein_file, n_poses, split_files_folder):
     '''
     This function is used to fetch the poses from different docking results (SMINA, GNINA, PLANTS) and create a new dataframe with the poses and their corresponding scores.
     It takes two input parameters:
