@@ -202,14 +202,10 @@ def cluster_numpy(method, w_dir, protein_file):
         for id in tqdm(id_list):
             if method == 'bestpose':
                 df_filtered = df[df['ID']==id]
-                df_filtered[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']] = df_filtered[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']].apply(pd.to_numeric, errors='coerce')
-                best_row_CHEMPLP = df_filtered.loc[df_filtered['CHEMPLP'].idxmin()]
-                best_row_SMINA = df_filtered.loc[df_filtered['SMINA_Affinity'].idxmin()]
-                best_row_GNINA = df_filtered.loc[df_filtered['CNNaffinity'].idxmax()]
-                table = pd.concat([best_row_GNINA, best_row_SMINA, best_row_CHEMPLP])
-                table = table[['Pose ID']]
-                table['Pose ID'] = table['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-                clustered_dataframes.append(table)
+                best_pose_output = df_filtered[df_filtered['Pose ID'].str.endswith(('_1', '_01'))]
+                best_pose_output = best_pose_output[['Pose ID']]
+                best_pose_output['Pose ID'] = best_pose_output['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
+                clustered_dataframes.append(best_pose_output)
             elif method == '3DScore':
                 df_filtered = df[df['ID']==id]
                 subsets = np.array(list(itertools.combinations(df_filtered['Molecule'], 2)))
@@ -265,11 +261,7 @@ def cluster_numpy(method, w_dir, protein_file):
 def matrix_calculation_and_clustering_futures(method, df, protein_file):
     methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
     if method == 'bestpose':
-        df[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']] = df[['CHEMPLP', 'SMINA_Affinity', 'CNNaffinity']].apply(pd.to_numeric, errors='coerce')
-        best_row_CHEMPLP = df.loc[df['CHEMPLP'].idxmin()]
-        best_row_SMINA = df.loc[df['SMINA_Affinity'].idxmin()]
-        best_row_GNINA = df.loc[df['CNNaffinity'].idxmax()]
-        best_pose_output = pd.concat([best_row_GNINA, best_row_SMINA, best_row_CHEMPLP])
+        best_pose_output = df[df['Pose ID'].str.endswith(('_1', '_01'))]
         best_pose_output = best_pose_output[['Pose ID']]
         best_pose_output['Pose ID'] = best_pose_output['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
         return best_pose_output
@@ -316,7 +308,7 @@ def cluster_numpy_futures(method, w_dir, protein_file):
     create_clustering_folder(w_dir+'/temp/clustering/')
     clustered_dataframes = []
     print(f"*Calculating {method} metrics and clustering*")
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=(multiprocessing.cpu_count()-2)) as executor:
         jobs = []
         numMol=0
         for current_id in id_list:
@@ -324,17 +316,17 @@ def cluster_numpy_futures(method, w_dir, protein_file):
                 job = executor.submit(matrix_calculation_and_clustering_futures, method, all_poses[all_poses['ID']==current_id], protein_file)
                 jobs.append(job)
             except Exception as e:
-                print("Error in concurrent futures: ", str(e))
+                print("Error in concurrent futures job creation: ", str(e))
             #numMol = numMol+1
         #widgets = [f"Clustering using {method}; ", progressbar.Percentage(), " ", progressbar.ETA(), " ", progressbar.Bar()]
         #pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(jobs))
         #for job in pbar(concurrent.futures.as_completed(jobs)):	
         for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
-            try:
+            #try:
                 res = job.result()
                 clustered_dataframes.append(res)
-            except Exception as e:
-                print("Error in concurrent futures: ", str(e))
+            #except Exception as e:
+                #print("Error in concurrent futures job run: ", str(e))
     clustered_poses = pd.concat(clustered_dataframes)
     clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
     clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
