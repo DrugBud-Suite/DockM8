@@ -233,27 +233,31 @@ def generate_conformers_GypsumDL_noprotonation(input_sdf, software_path):
 def cleanup(input_sdf):
     print('Cleaning up files...')
     wdir = os.path.dirname(input_sdf)
-    gypsum_df = PandasTools.LoadSDF(wdir+'/gypsum_dl_success.sdf', idName='ID', molColName='Molecule', strictParsing=True)
+    gypsum_df = PandasTools.LoadSDF(wdir+'/temp/gypsum_dl_success.sdf', idName='ID', molColName='Molecule', strictParsing=True)
     final_df = gypsum_df.iloc[1:, :]
     final_df = final_df[['Molecule', 'ID']]
     PandasTools.WriteSDF(final_df, wdir+'/temp/final_library.sdf', molColName='Molecule', idName='ID')
-    Path(wdir+'/gypsum_dl_success.sdf').unlink(missing_ok=True)
+    Path(wdir+'/temp/gypsum_dl_success.sdf').unlink(missing_ok=True)
     Path(wdir+'/temp/protonated_library.sdf').unlink(missing_ok=True)
     Path(wdir+'/temp/standardized_library.sdf').unlink(missing_ok=True)
-    Path(wdir+'/gypsum_dl_failed.smi').unlink(missing_ok=True)
+    Path(wdir+'/temp/gypsum_dl_failed.smi').unlink(missing_ok=True)
     return final_df
 
 def prepare_library(input_sdf, id_column, software_path, protonation):
     wdir = os.path.dirname(input_sdf)
     standardized_sdf = wdir+'/temp/standardized_library.sdf'
-    standardize_library_multiprocessing(input_sdf, id_column)
-    if protonation == 'pkasolver':
-        protonated_sdf = wdir+'/temp/protonated_library.sdf'
-        protonate_library_pkasolver(standardized_sdf)
-        generate_conformers_GypsumDL_noprotonation(protonated_sdf, software_path)
-    elif protonation == 'GypsumDL':
-        generate_conformers_GypsumDL_withprotonation(standardized_sdf, software_path)
+    if os.path.isfile(standardized_sdf) == False:
+        standardize_library_multiprocessing(input_sdf, id_column)
+    protonated_sdf = wdir+'/temp/protonated_library.sdf'
+    if os.path.isfile(protonated_sdf) == False:
+        if protonation == 'pkasolver':
+            protonate_library_pkasolver(standardized_sdf)
+            generate_conformers_GypsumDL_noprotonation(protonated_sdf, software_path)
+        elif protonation == 'GypsumDL':
+            generate_conformers_GypsumDL_withprotonation(standardized_sdf, software_path)
+        else:
+            generate_conformers_GypsumDL_noprotonation(standardized_sdf, software_path)
     else:
-        generate_conformers_GypsumDL_noprotonation(standardized_sdf, software_path)
+        generate_conformers_GypsumDL_noprotonation(protonated_sdf, software_path)
     cleaned_df = cleanup(input_sdf)
     return cleaned_df
