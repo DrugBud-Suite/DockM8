@@ -37,11 +37,13 @@ def run_command(**kwargs):
     w_dir = os.path.dirname(kwargs.get('proteinfile'))
     print('The working directory has been set to:', w_dir)
     create_temp_folder(w_dir+'/temp')
-    if kwargs.get('pocket') == 'reference':
-        pocket_definition = GetPocket(kwargs.get('reffile'), kwargs.get('proteinfile'), 8)
-    elif kwargs.get('pocket') == 'dogsitescorer':
-        pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('proteinfile'), w_dir, method='volume')
-        
+    
+    if os.path.isfile(kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')) == False:
+        if kwargs.get('pocket') == 'reference':
+            pocket_definition = GetPocket(kwargs.get('reffile'), kwargs.get('proteinfile'), 8)
+        elif kwargs.get('pocket') == 'dogsitescorer':
+            pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('proteinfile'), w_dir, method='volume')
+            
     if os.path.isfile(w_dir+'/temp/final_library.sdf') == False:
         prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('software'), kwargs.get('protonation'))
 
@@ -60,7 +62,7 @@ def run_command(**kwargs):
             docking_func(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'))
 
     if os.path.isfile(w_dir+'/temp/allposes.sdf') == False:
-        fetch_poses_func(kwargs.get('proteinfile'), kwargs.get('nposes'))
+        fetch_poses_func(w_dir, kwargs.get('nposes'), w_dir+'/temp/split_final_library')
 
     for method in kwargs.get('clustering'):
         if os.path.isfile(w_dir+f'/temp/clustering/{method}_clustered.sdf') == False:
