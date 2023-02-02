@@ -24,6 +24,7 @@ import requests  # for communicating with web-service APIs
 import pandas as pd  # for creating dataframes and handling data
 from biopandas.pdb import PandasPdb  # for working with PDB files
 import redo # for retrying API queries if they fail
+import os
 
 
 class APIConsts:
@@ -313,7 +314,7 @@ def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
 
     return result[0]
 
-def save_binding_site_to_file(binding_site_url, output_path):
+def save_binding_site_to_file(pdbpath, binding_site_url, output_path):
     """
     Download and save the PDB and CCP4 files corresponding to the calculated binding sites.
 
@@ -328,7 +329,7 @@ def save_binding_site_to_file(binding_site_url, output_path):
     response.raise_for_status()
     response_file_content = response.content
     file_extension = ".pdb"
-    file_name = 'DogSiteScorer_binding_site' + file_extension
+    file_name = os.path.basename(pdbpath).split(".")[0] + "_pocket.pdb"
     with open(Path(output_path) / file_name, "wb") as f:
         f.write(response_file_content)
     return
@@ -372,6 +373,6 @@ def binding_site_coordinates_dogsitescorer(pdbpath, w_dir, method='volume'):
     binding_site_df = get_dogsitescorer_metadata(job_location)
     best_binding_site = sort_binding_sites(binding_site_df, method)
     pocket = get_selected_pocket_location(job_location, best_binding_site)
-    save_binding_site_to_file(pocket, w_dir)
-    pocket_coordinates=calculate_pocket_coordinates_from_pocket_pdb_file(w_dir+'/DogSiteScorer_binding_site.pdb')
+    save_binding_site_to_file(pdbpath, pocket, w_dir)
+    pocket_coordinates=calculate_pocket_coordinates_from_pocket_pdb_file(os.path.basename(pdbpath).split(".")[0] + "_pocket.pdb")
     return pocket_coordinates
