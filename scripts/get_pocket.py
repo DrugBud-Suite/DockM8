@@ -60,8 +60,8 @@ def load_molecule(molecule_file):
     elif molecule_file.endswith('.pdb'):
         mol = Chem.MolFromPDBFile(molecule_file, sanitize=False, removeHs=False)
     else:
-        return ValueError('Expect the format of the molecule_file to be '
-                          'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {}'.format(molecule_file))
+        return ValueError(f'Expect the format of the molecule_file to be '
+                          'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
     return mol
 
 class GetPocket:
@@ -70,7 +70,7 @@ class GetPocket:
         ligand_file: format mol
         protein_file: format pdb
         """
-        print('Extracting pocket from {} using {} as reference ligand'.format(protein_file, ligand_file))
+        print(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
         self.ligand_file = ligand_file
         self.protein_file = protein_file
         self.ligand_mol = load_molecule(ligand_file)
@@ -78,7 +78,7 @@ class GetPocket:
         self.pocket_path = os.path.basename(protein_file).split(".")[0] + "_pocket.pdb"
         Chem.MolToPDBFile(self.pocket_mol, self.pocket_path)
         os.remove(self.temp_file)
-        print('Finished extracting pocket from {} using {} as reference ligand'.format(protein_file, ligand_file))
+        print(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
         
     def process_pro_and_lig(self, cut):
         ppdb = PandasPdb()
