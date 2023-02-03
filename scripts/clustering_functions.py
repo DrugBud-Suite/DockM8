@@ -300,6 +300,56 @@ def matrix_calculation_and_clustering_futures(method, df, protein_file):
         except Exception as e:
             print(f'Failed to calculate metric and cluster : {e}')
 
+def matrix_calculation_and_clustering_futures_failure_handling(method, df, protein_file):
+    methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
+    if method == 'bestpose':
+        best_pose_output = df[df['Pose ID'].str.endswith(('_1', '_01'))]
+        best_pose_output = best_pose_output[['Pose ID']]
+        best_pose_output['Pose ID'] = best_pose_output['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
+        return best_pose_output
+    elif method == '3DScore':
+        subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
+        indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
+        results = np.zeros(len(subsets))
+        for k, (x, y) in enumerate(subsets):
+            try:
+                results[k] = (methods['spyRMSD'](x, y, protein_file))
+            except:
+                results[k] = (methods['RMSD'](x, y, protein_file))
+        i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
+        matrix = np.zeros((len(df), len(df)))
+        matrix[i, j] = results
+        matrix[j, i] = results
+        output_df = pd.DataFrame(matrix, index=df['Pose ID'].values.tolist(), columns=df['Pose ID'].values.tolist())
+        output_df['3DScore'] = output_df.sum(axis=1)
+        output_df.sort_values(by='3DScore', ascending=True, inplace=True)
+        output_df = output_df.head(1)
+        output_df = pd.DataFrame(output_df.index, columns=['Pose ID'])
+        output_df['Pose ID'] = output_df['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
+        return output_df
+    else:
+        try:
+            subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
+            indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
+            results = np.array([methods[method](x, y, protein_file) for x, y in subsets])
+            for i, result in enumerate(results):
+                if np.isnan(result):  # check if the result is NaN
+                    if method == 'spyRMSD':
+                        print(f"spyRMSD failed for subset {subsets[i]}, using RMSD instead")
+                        results[i] = methods['RMSD'](subsets[i][0], subsets[i][1], protein_file)
+                    else:
+                        print(f"Metric calculation failed for subset {subsets[i]}, replacing NaN with 0")
+                        results[i] = 0
+            i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
+            matrix = np.zeros((len(df), len(df)))
+            matrix[i, j] = results
+            matrix[j, i] = results
+            matrix_df = pd.DataFrame(matrix, index=df['Pose ID'].values.tolist(), columns=df['Pose ID'].values.tolist())
+            clust_df = kmedoids_S_clustering(matrix_df)
+            return clust_df
+        except Exception as e:
+            print(f'Failed to calculate metric and cluster : {e}')
+
 def cluster_numpy_futures(method, w_dir, protein_file):
     print('Loading all poses SDF file...')
     all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
@@ -308,12 +358,12 @@ def cluster_numpy_futures(method, w_dir, protein_file):
     create_clustering_folder(w_dir+'/temp/clustering/')
     clustered_dataframes = []
     print(f"*Calculating {method} metrics and clustering*")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=(multiprocessing.cpu_count()-2)) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
         jobs = []
         numMol=0
         for current_id in id_list:
             try:
-                job = executor.submit(matrix_calculation_and_clustering_futures, method, all_poses[all_poses['ID']==current_id], protein_file)
+                job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, method, all_poses[all_poses['ID']==current_id], protein_file)
                 jobs.append(job)
             except Exception as e:
                 print("Error in concurrent futures job creation: ", str(e))
