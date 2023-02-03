@@ -341,6 +341,7 @@ def matrix_calculation_and_clustering_futures_failure_handling(method, df, prote
         matrix[i, j] = results
         matrix[j, i] = results
         matrix_df = pd.DataFrame(matrix, index=df['Pose ID'].values.tolist(), columns=df['Pose ID'].values.tolist())
+        matrix_df.fillna(0)
         clust_df = kmedoids_S_clustering(matrix_df)
         return clust_df
 
@@ -368,6 +369,7 @@ def cluster_numpy_futures_failure_handling(method, w_dir, protein_file):
                 clustered_dataframes.append(res)
             except Exception as e:
                 print("Error in concurrent futures job run: ", str(e))
+    display(clustered_dataframes[0])
     clustered_poses = pd.concat(clustered_dataframes)
     clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
     clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
