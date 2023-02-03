@@ -9,9 +9,9 @@ from sklearn.preprocessing import StandardScaler
 def rank_simplified(dataframe, clustering_method):
     columns_to_rank = ['GNINA_Affinity', 'GNINA_CNN_Score', 'GNINA_CNN_Affinity', 'Vinardo_Affinity', 'AD4_Affinity', 'RFScoreV1', 'RFScoreV2', 'RFScoreV3', 'PLP', 'CHEMPLP', 'NNScore', 'PLECnn']
     for col in columns_to_rank:
-        dataframe['{}_RANK_{}'.format(col, clustering_method)] = dataframe[col].rank(method='average', ascending=(col not in ['GNINA_Affinity', 'Vinardo_Affinity', 'AD4_Affinity', 'PLP', 'CHEMPLP']))
-    output_dataframe = dataframe.drop(columns_to_rank, axis=1)
-    return output_dataframe
+        dataframe[f'{col}_RANK_{clustering_method}'] = dataframe[col].rank(method='average', ascending=(col not in ['GNINA_Affinity', 'Vinardo_Affinity', 'AD4_Affinity', 'PLP', 'CHEMPLP']))
+    #dataframe = dataframe.drop(columns_to_rank, axis=1)
+    return dataframe
 
 def method1_ECR_best(dataframe, clustering_method):
     df = dataframe.copy()
@@ -21,14 +21,14 @@ def method1_ECR_best(dataframe, clustering_method):
     #Calculate ECR
     sigma = 5
     df = df.apply(lambda x: np.exp(-(x/sigma))/sigma if x.name in calc else x)
-    df['Method1_ECR_{}'.format(clustering_method)] = df.sum(axis=1, numeric_only=True)
+    df[f'Method1_ECR_{clustering_method}'] = df.sum(axis=1, numeric_only=True)
     #Return compound ID from Pose ID
     df[['ID', 'Software', 'Pose Number']] = df['Pose ID'].str.split("_", expand=True)
     #Drop extra columns
     df = df.drop(['Software', 'Pose Number'], axis=1)
     df = df.drop(calc, axis=1)
     #Aggregate rows using best ECR per pose
-    df2 = df.sort_values('Method1_ECR_{}'.format(clustering_method), ascending=False).drop_duplicates(['ID'])
+    df2 = df.sort_values(f'Method1_ECR_{clustering_method}', ascending=False).drop_duplicates(['ID'])
     df2.set_index('ID')
     return df2
 
@@ -39,14 +39,14 @@ def method1_ECR_best_simplified(dataframe, clustering_method):
     #Calculate ECR
     sigma = 5
     df[calc] = df[calc].apply(lambda x: np.exp(-(x/sigma))/sigma)
-    df['Method1_ECR_{}'.format(clustering_method)] = df[calc].sum(axis=1)
+    df[f'Method1_ECR_{clustering_method}'] = df[calc].sum(axis=1)
     #Return compound ID from Pose ID
     df[['ID', 'Software', 'Pose Number']] = df['Pose ID'].str.split("_", expand=True)
     #Drop extra columns
     df.drop(['Software', 'Pose Number'], axis=1, inplace=True)
     df.drop(calc, axis=1, inplace=True)
     #Aggregate rows using best ECR per pose
-    df.sort_values('Method1_ECR_{}'.format(clustering_method), ascending=False, inplace=True)
+    df.sort_values(f'Method1_ECR_{clustering_method}', ascending=False, inplace=True)
     df.drop_duplicates(['ID'], keep='first', inplace=True)
     df.set_index('ID', inplace=True)
     return df
@@ -59,14 +59,14 @@ def method2_ECR_average(dataframe, clustering_method):
     #Calculate ECR
     sigma = 5
     df = df.apply(lambda x: np.exp(-(x/sigma))/sigma if x.name in calc else x)
-    df['Method2_ECR_{}'.format(clustering_method)] = df.sum(axis=1, numeric_only=True)
+    df[f'Method2_ECR_{clustering_method}'] = df.sum(axis=1, numeric_only=True)
     #Return compound ID from Pose ID
     df[['ID', 'Software', 'Pose Number']] = df['Pose ID'].str.split("_", expand=True)
     #Drop extra columns
     df = df.drop(['Software', 'Pose Number'], axis=1)
     df = df.drop(calc, axis=1)
     df2 = df.groupby('ID', as_index=False).mean(numeric_only=True)
-    return df2.sort_values('Method2_ECR_{}'.format(clustering_method), ascending=0)
+    return df2.sort_values(f'Method2_ECR_{clustering_method}', ascending=0)
 
 def method3_avg_ECR(dataframe, clustering_method):
     df = dataframe.copy()
@@ -80,7 +80,7 @@ def method3_avg_ECR(dataframe, clustering_method):
     #Calculate ECR
     sigma = 5
     df[calc] = df[calc].apply(lambda x: np.exp(-(x/sigma))/sigma)
-    df['Method3_ECR_{}'.format(clustering_method)] = df.sum(axis=1, numeric_only=True)
+    df[f'Method3_ECR_{clustering_method}'] = df.sum(axis=1, numeric_only=True)
     df = df[['ID', f'Method3_ECR_{clustering_method}']]
     return df.sort_values(f'Method3_ECR_{clustering_method}', ascending=0)
 
@@ -201,6 +201,10 @@ def apply_ranking_methods_simplified(w_dir):
     for df in rescored_dataframes.values():
         df.drop(columns=df.columns[0], axis=1, inplace=True)
     ranked_dataframes = {name+'_ranked': rank_simplified(rescored_dataframes[name], name) for name in ranking_filenames}
+    combined_all_ranks_df = functools.reduce(lambda left, right: pd.merge(left, right, on=['Pose ID'], how='outer'), ranked_dataframes.values())
+    combined_all_ranks_df = combined_all_ranks_df.reindex(columns=['Pose ID'] + [col for col in combined_all_ranks_df.columns if col != 'Pose ID'])
+    combined_all_ranks_df.to_csv(w_dir+'/temp/ranking/ranking_results.csv', index=False)
+    
     rank_methods = {'method1':method1_ECR_best, 'method2':method2_ECR_average, 'method3':method3_avg_ECR, 'method4':method4_RbR}
     score_methods = {'method5':method5_RbV, 'method6':method6_Zscore_best, 'method7':method7_Zscore_avg, 'method8':method8_Zscore_flipped_best, 'method9':method9_Zscore_flipped_avg}
     
@@ -209,4 +213,4 @@ def apply_ranking_methods_simplified(w_dir):
     analysed_dataframes = {name: df.drop(columns="Pose ID", errors='ignore') for name, df in analysed_dataframes.items()}
     combined_all_methods_df = functools.reduce(lambda left, right: pd.merge(left, right, on=['ID'], how='outer'), analysed_dataframes.values())
     combined_all_methods_df = combined_all_methods_df.reindex(columns=['ID'] + [col for col in combined_all_methods_df.columns if col != 'ID'])
-    combined_all_methods_df.to_csv(w_dir+'/temp/ranking/ranking_results.csv', index=False)
+    combined_all_methods_df.to_csv(w_dir+'/temp/ranking/method_results.csv', index=False)
