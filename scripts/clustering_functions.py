@@ -4,7 +4,7 @@ import math
 import os
 import functools
 from tqdm import tqdm
-from spyrmsd import io, rmsd
+from spyrmsd import rmsd
 from espsim import GetEspSim
 from sklearn_extra.cluster import KMedoids
 from sklearn.metrics import silhouette_score
@@ -15,17 +15,12 @@ from rdkit.Chem import rdFMCS
 from rdkit.Chem import PandasTools
 from IPython.display import display
 from spyrmsd import molecule
-from spyrmsd.optional import rdkit as rdkit_loader
 import oddt
 import oddt.shape
 import oddt.fingerprints
 import oddt.toolkits.rdk
 import multiprocessing
-import dask.dataframe as dd
-from dask import delayed
-import dask
 import concurrent.futures
-import progressbar
 
 def create_clustering_folder(path):
     if os.path.isdir(path) == True:
@@ -302,12 +297,10 @@ def matrix_calculation_and_clustering_futures(method, df, protein_file):
 
 def metric_calculation_failure_handling(x, y, method, protein_file):
     methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
-    fallback_method = 'RMSD' if method == 'spyRMSD' else method
     if method == 'spyRMSD':
         try:
             return methods[method](x, y, protein_file)
         except Exception as e:
-            print(f'Failed to calculate {method} and cluster : {e}')
             return methods['RMSD'](x, y, protein_file)
     else:
         try:
@@ -317,7 +310,6 @@ def metric_calculation_failure_handling(x, y, method, protein_file):
             return 0
 
 def matrix_calculation_and_clustering_futures_failure_handling(method, df, protein_file):
-    methods = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
     if method == 'bestpose':
         best_pose_output = df[df['Pose ID'].str.endswith(('_1', '_01'))]
         best_pose_output = best_pose_output[['Pose ID']]
@@ -369,17 +361,13 @@ def cluster_numpy_futures_failure_handling(method, w_dir, protein_file):
                 job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, method, all_poses[all_poses['ID']==current_id], protein_file)
                 jobs.append(job)
             except Exception as e:
-                print("Error in concurrent futures job creation: ", str(e))
-            #numMol = numMol+1
-        #widgets = [f"Clustering using {method}; ", progressbar.Percentage(), " ", progressbar.ETA(), " ", progressbar.Bar()]
-        #pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(jobs))
-        #for job in pbar(concurrent.futures.as_completed(jobs)):	
+                print("Error in concurrent futures job creation: ", str(e))	
         for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
-            #try:
+            try:
                 res = job.result()
                 clustered_dataframes.append(res)
-            #except Exception as e:
-                #print("Error in concurrent futures job run: ", str(e))
+            except Exception as e:
+                print("Error in concurrent futures job run: ", str(e))
     clustered_poses = pd.concat(clustered_dataframes)
     clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
     clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
@@ -398,23 +386,18 @@ def cluster_numpy_futures(method, w_dir, protein_file):
     print(f"*Calculating {method} metrics and clustering*")
     with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
         jobs = []
-        numMol=0
         for current_id in id_list:
             try:
                 job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, method, all_poses[all_poses['ID']==current_id], protein_file)
                 jobs.append(job)
             except Exception as e:
-                print("Error in concurrent futures job creation: ", str(e))
-            #numMol = numMol+1
-        #widgets = [f"Clustering using {method}; ", progressbar.Percentage(), " ", progressbar.ETA(), " ", progressbar.Bar()]
-        #pbar = progressbar.ProgressBar(widgets=widgets, maxval=len(jobs))
-        #for job in pbar(concurrent.futures.as_completed(jobs)):	
+                print("Error in concurrent futures job creation: ", str(e))	
         for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
-            #try:
+            try:
                 res = job.result()
                 clustered_dataframes.append(res)
-            #except Exception as e:
-                #print("Error in concurrent futures job run: ", str(e))
+            except Exception as e:
+                print("Error in concurrent futures job run: ", str(e))
     clustered_poses = pd.concat(clustered_dataframes)
     clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
     clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
