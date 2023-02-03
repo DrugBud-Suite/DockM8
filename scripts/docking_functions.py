@@ -232,7 +232,7 @@ def plants_docking(protein_file, ref_file, software, n_poses):
     print(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
     return plants_docking_results_sdf
 
-def fetch_poses(protein_file, n_poses, split_files_folder):
+def fetch_poses(w_dir, n_poses, split_files_folder):
     '''
     This function is used to fetch the poses from different docking results (SMINA, GNINA, PLANTS) and create a new dataframe with the poses and their corresponding scores.
     It takes two input parameters:
@@ -242,10 +242,10 @@ def fetch_poses(protein_file, n_poses, split_files_folder):
     The function uses the PandasTools library to load the SDF files and creates a new dataframe with the poses and scores. It also renames the columns and modifies the ID column to include the source of the pose (SMINA, GNINA, PLANTS). In case of an error, the function will print an error message.
     '''
     tic = time.perf_counter()
-    smina_docking_results = os.path.dirname(protein_file)+"/temp/smina/docked.sdf"
-    gnina_docking_results = os.path.dirname(protein_file)+"/temp/gnina/docked.sdf"
-    plants_poses_results_sdf = os.path.dirname(protein_file)+"/temp/plants/results/docked_ligands.sdf"
-    plants_scoring_results_sdf = os.path.dirname(protein_file)+"/temp/plants/results/ranking.csv"
+    smina_docking_results = w_dir+"/temp/smina/docked.sdf"
+    gnina_docking_results = w_dir+"/temp/gnina/docked.sdf"
+    plants_poses_results_sdf = w_dir+"/temp/plants/results/docked_ligands.sdf"
+    plants_scoring_results_sdf = w_dir+"/temp/plants/results/ranking.csv"
     all_poses = pd.DataFrame()
     #Fetch PLANTS poses
     print('Fetching PLANTS poses...')
@@ -286,7 +286,7 @@ def fetch_poses(protein_file, n_poses, split_files_folder):
     except Exception as e:
         print('ERROR: Failed to Load SMINA poses SDF file!')
         print(e)
-    PandasTools.WriteSDF(all_poses, os.path.dirname(protein_file)+"/temp/allposes.sdf", molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
+    PandasTools.WriteSDF(all_poses, w_dir+"/temp/allposes.sdf", molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
     toc = time.perf_counter()
     print(f'Combined all docking poses in {toc-tic:0.4f}!')
     return all_poses

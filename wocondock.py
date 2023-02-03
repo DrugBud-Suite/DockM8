@@ -53,7 +53,7 @@ def run_command(**kwargs):
         cluster_func = cluster_numpy
     else:
         docking_func = docking_splitted
-        fetch_poses_func = fetch_poses_splitted
+        fetch_poses_func = fetch_poses
         cluster_func = cluster_numpy_futures
 
     docking_programs = {'GNINA': w_dir+'/temp/gnina/', 'SMINA': w_dir+'/temp/smina/', 'PLANTS': w_dir+'/temp/plants/'}
