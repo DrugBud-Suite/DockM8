@@ -9,7 +9,7 @@ from IPython.display import display
 import time
 from scripts.utilities import *
 import multiprocessing
-import tqdm
+from tqdm import tqdm
 from pathlib import Path
 
 
@@ -452,7 +452,7 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
     #Fetch PLANTS poses
     plants_dataframes = []
     results_folders = [item for item in os.listdir(w_dir+'/temp/plants')]
-    for item in results_folders:
+    for item in tqdm(results_folders):
         if item.startswith('results'):
             file_path = os.path.join(w_dir+'/temp/plants', item, 'docked_ligands.mol2')
             if os.path.isfile(file_path):

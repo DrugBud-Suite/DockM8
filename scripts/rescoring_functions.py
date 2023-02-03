@@ -10,11 +10,11 @@ import oddt
 from oddt.scoring.functions import NNScore
 from oddt.scoring.functions import RFScore
 from oddt.scoring.functions.PLECscore import PLECscore
-import tqdm
+from tqdm import tqdm
 import multiprocessing
 import time
-from IPython.display import display
 from scripts.utilities import *
+from tqdm import tqdm
 
 def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
     tic = time.perf_counter()
@@ -82,7 +82,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in df['Molecule']:
+        for mol in tqdm(df['Molecule']):
             oddt_mol = oddt.toolkit.Molecule(mol)
             scored_mol = scorer.predict_ligand(oddt_mol)
             re_scores.append(float(scored_mol.data['rfscore_v1']))
@@ -131,15 +131,10 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in df['Molecule']:
+        for mol in tqdm(df['Molecule']):
             oddt_mol = oddt.toolkit.Molecule(mol)
             scored_mol = scorer.predict_ligand(oddt_mol)
             re_scores.append(float(scored_mol.data['rfscore_v2']))
-        #for mol in df['Molecule']:
-        #    Chem.MolToMolFile(mol, rescoring_folder+'/rfscoreV2_rescoring/temp.sdf')
-        #    oddt_lig = next(oddt.toolkit.readfile('sdf', rescoring_folder+'/rfscoreV2_rescoring/temp.sdf'))
-        #   scored_mol = scorer.predict_ligand(oddt_lig)
-        #    re_scores.append(float(scored_mol.data['rfscore_v2']))
         df['RFScoreV2']=re_scores
         df = df[['Pose ID', 'RFScoreV2']]
         toc = time.perf_counter()
@@ -158,15 +153,10 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in df['Molecule']:
+        for mol in tqdm(df['Molecule']):
             oddt_mol = oddt.toolkit.Molecule(mol)
             scored_mol = scorer.predict_ligand(oddt_mol)
             re_scores.append(float(scored_mol.data['rfscore_v3']))
-        #for mol in df['Molecule']:
-        #    Chem.MolToMolFile(mol, rescoring_folder+'/rfscoreV3_rescoring/temp.sdf')
-        #    oddt_lig = next(oddt.toolkit.readfile('sdf', rescoring_folder+'/rfscoreV3_rescoring/temp.sdf'))
-        #    scored_mol = scorer.predict_ligand(oddt_lig)
-        #    re_scores.append(float(scored_mol.data['rfscore_v3']))
         df['RFScoreV3']=re_scores
         df = df[['Pose ID', 'RFScoreV3']]
         toc = time.perf_counter()
@@ -385,7 +375,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in df['Molecule']:
+        for mol in tqdm(df['Molecule']):
             Chem.MolToMolFile(mol, nnscore_rescoring_folder+'/temp.sdf')
             oddt_lig = next(oddt.toolkit.readfile('sdf', nnscore_rescoring_folder+'/temp.sdf'))
             scored_mol = scorer.predict_ligand(oddt_lig)
@@ -408,15 +398,13 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        molecules = df['Molecule']
         global score_mol
         def score_mol(mol):
             oddt_mol = oddt.toolkit.Molecule(mol)
             scored_mol = scorer.predict_ligand(oddt_mol)
             return float(scored_mol.data['nnscore'])
         with multiprocessing.Pool() as p:
-            # Score the molecules in parallel
-            re_scores = p.map(score_mol, molecules)
+            re_scores = tqdm(p.imap(score_mol, df['Molecule']), total=len(df['Molecule']))
         df['NNScore']=re_scores
         df = df[['Pose ID', 'NNScore']]
         toc = time.perf_counter()
@@ -436,7 +424,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in df['Molecule']:
+        for mol in tqdm(df['Molecule']):
             Chem.MolToMolFile(mol, plecscore_rescoring_folder+'/temp.sdf')
             oddt_lig = next(oddt.toolkit.readfile('sdf', plecscore_rescoring_folder+'/temp.sdf'))
             scored_mol = scorer.predict_ligand(oddt_lig)
@@ -459,15 +447,13 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        molecules = df['Molecule']
         global score_mol
         def score_mol(mol):
             oddt_mol = oddt.toolkit.Molecule(mol)
             scored_mol = scorer.predict_ligand(oddt_mol)
             return float(scored_mol.data['PLECnn_p5_l1_s65536'])
         with multiprocessing.Pool() as p:
-            # Score the molecules in parallel
-            re_scores = p.map(score_mol, molecules)
+            re_scores = tqdm(p.imap(score_mol, df['Molecule']), total=len(df['Molecule']))
         df['PLECnn']=re_scores
         df = df[['Pose ID', 'PLECnn']]
         toc = time.perf_counter()
