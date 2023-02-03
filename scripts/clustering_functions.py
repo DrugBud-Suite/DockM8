@@ -308,7 +308,7 @@ def cluster_numpy_futures(method, w_dir, protein_file):
     create_clustering_folder(w_dir+'/temp/clustering/')
     clustered_dataframes = []
     print(f"*Calculating {method} metrics and clustering*")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=(multiprocessing.cpu_count()-2)) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
         jobs = []
         numMol=0
         for current_id in id_list:
