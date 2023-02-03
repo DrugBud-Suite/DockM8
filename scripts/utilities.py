@@ -67,7 +67,7 @@ def show_correlation(input):
     if type(input) == pd.DataFrame:
         dataframe = input
     matrix = dataframe.corr().round(2)
-    print(matrix)
     mask = np.triu(np.ones_like(matrix, dtype=bool))
-    sns.heatmap(matrix, mask = mask, annot=False, vmax=1, vmin=-1, center=0, linewidths=.5, cmap='coolwarm')
+    fig, ax = plt.subplots(figsize=(15,15))  
+    sns.heatmap(matrix, mask = mask, annot=False, vmax=1, vmin=-1, center=0, linewidths=.5, cmap='coolwarm', ax=ax)
     plt.show()
