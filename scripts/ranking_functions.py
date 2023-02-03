@@ -7,10 +7,21 @@ from IPython.display import display
 from sklearn.preprocessing import StandardScaler
 
 def rank_simplified(dataframe, clustering_method):
-    columns_to_rank = ['GNINA_Affinity', 'GNINA_CNN_Score', 'GNINA_CNN_Affinity', 'Vinardo_Affinity', 'AD4_Affinity', 'RFScoreV1', 'RFScoreV2', 'RFScoreV3', 'PLP', 'CHEMPLP', 'NNScore', 'PLECnn']
-    for col in columns_to_rank:
-        dataframe[f'{col}_RANK_{clustering_method}'] = dataframe[col].rank(method='average', ascending=(col not in ['GNINA_Affinity', 'Vinardo_Affinity', 'AD4_Affinity', 'PLP', 'CHEMPLP']))
-    #dataframe = dataframe.drop(columns_to_rank, axis=1)
+    columns_to_rank = {'GNINA_Affinity':True, 
+                       'GNINA_CNN_Score':False, 
+                       'GNINA_CNN_Affinity':False, 
+                       'Vinardo_Affinity':True, 
+                       'AD4_Affinity':True, 
+                       'RFScoreV1':False, 
+                       'RFScoreV2':False, 
+                       'RFScoreV3':False, 
+                       'PLP':True, 
+                       'CHEMPLP':True, 
+                       'NNScore':False, 
+                       'PLECnn':False}
+    for col,asc in columns_to_rank.items():
+        dataframe[f'{col}_RANK_{clustering_method}'] = dataframe[col].rank(method='average', ascending=asc)
+        dataframe = dataframe.drop(col, axis=1)
     return dataframe
 
 def method1_ECR_best(dataframe, clustering_method):
