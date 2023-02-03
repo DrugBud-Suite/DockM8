@@ -2,8 +2,6 @@ import pandas as pd
 import numpy as np
 import functools
 from scripts.utilities import create_temp_folder
-from scipy.stats import zscore
-from IPython.display import display
 from sklearn.preprocessing import StandardScaler
 
 def rank_simplified(dataframe, clustering_method):
