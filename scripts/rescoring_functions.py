@@ -32,8 +32,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         create_temp_folder(rescoring_folder+'/gnina_rescoring/')
         cnn = 'crossdock_default2018'
         results = rescoring_folder+'/gnina_rescoring/'+'rescored_'+cnn+'.sdf'
-        log_file = rescoring_folder+'/gnina_rescoring/'+'log_'+cnn+'.txt'
-        gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --log '+log_file+' --score_only'
+        gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only'
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         gnina_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         gnina_rescoring_results.rename(columns = {'minimizedAffinity':'GNINA_Affinity', 'CNNscore':'GNINA_CNN_Score', 'CNNaffinity':'GNINA_CNN_Affinity'}, inplace = True)
@@ -46,8 +45,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         print('Rescoring with Vinardo')
         create_temp_folder(rescoring_folder+'/vinardo_rescoring/')
         results = rescoring_folder+'/vinardo_rescoring/'+'rescored_vinardo.sdf'
-        log_file = rescoring_folder+'/vinardo_rescoring/'+'log.txt'
-        vinardo_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --log '+log_file+' --score_only --scoring vinardo --cnn_scoring none'
+        vinardo_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring vinardo --cnn_scoring none'
         subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         vinardo_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         vinardo_rescoring_results.rename(columns = {'minimizedAffinity':'Vinardo_Affinity'}, inplace = True)
@@ -60,8 +58,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         print('Rescoring with AD4')
         create_temp_folder(rescoring_folder+'/AD4_rescoring/')
         results = rescoring_folder+'/AD4_rescoring/'+'rescored_AD4.sdf'
-        log_file = rescoring_folder+'/AD4_rescoring/'+'log.txt'
-        AD4_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --log '+log_file+' --score_only --scoring ad4_scoring --cnn_scoring none'
+        AD4_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring ad4_scoring --cnn_scoring none'
         subprocess.call(AD4_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         AD4_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName='None', includeFingerprints=False, removeHs=False)
         AD4_rescoring_results.rename(columns = {'minimizedAffinity':'AD4_Affinity'}, inplace = True)
