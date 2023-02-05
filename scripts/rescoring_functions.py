@@ -486,7 +486,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscoreV1': oddt_rfscoreV1_rescoring, 'rfscoreV2': oddt_rfscoreV2_rescoring,
                         'rfscoreV3': oddt_rfscoreV3_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
-                        'nn_score': oddt_nnscore_rescoring_multiprocessing, 'plecscore': oddt_plecscore_rescoring_multiprocessing}
+                        'nn_score': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring}
     rescored_dfs = []
     for key in rescoring_functions.keys():
         if os.path.isdir(rescoring_folder+f'{key}_rescoring') == False:
