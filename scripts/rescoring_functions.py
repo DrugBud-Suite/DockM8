@@ -401,7 +401,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             scored_mol = scorer.predict_ligand(oddt_mol)
             return float(scored_mol.data['nnscore'])
         with multiprocessing.Pool() as p:
-            re_scores = tqdm(p.imap(score_mol, df['Molecule']), total=len(df['Molecule']))
+            re_scores = p.map(score_mol, df['Molecule'])
         df['NNScore']=re_scores
         df = df[['Pose ID', 'NNScore']]
         toc = time.perf_counter()
@@ -450,7 +450,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             scored_mol = scorer.predict_ligand(oddt_mol)
             return float(scored_mol.data['PLECnn_p5_l1_s65536'])
         with multiprocessing.Pool() as p:
-            re_scores = tqdm(p.imap(score_mol, df['Molecule']), total=len(df['Molecule']))
+            re_scores = p.map(score_mol, df['Molecule'])
         df['PLECnn']=re_scores
         df = df[['Pose ID', 'PLECnn']]
         toc = time.perf_counter()
@@ -483,11 +483,16 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         print(f'Rescoring with SCORCH complete in {toc-tic:0.4f}!')
         return    
     #scorch_df = SCORCH_rescoring(clustered_sdf)
-    rescoring_functions = {'GNINA': gnina_rescoring, 'VINARDO': vinardo_rescoring, 'AD4': AD4_rescoring, 
+    rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscoreV1': oddt_rfscoreV1_rescoring, 'rfscoreV2': oddt_rfscoreV2_rescoring,
                         'rfscoreV3': oddt_rfscoreV3_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
-                        'nn_score': oddt_nnscore_rescoring_multiprocessing, 'plec': oddt_plecscore_rescoring_multiprocessing}
-    rescored_dfs = [rescoring_functions[key](clustered_sdf) for key in rescoring_functions.keys()]
+                        'nn_score': oddt_nnscore_rescoring_multiprocessing, 'plecscore': oddt_plecscore_rescoring_multiprocessing}
+    rescored_dfs = []
+    for key in rescoring_functions.keys():
+        if os.path.isdir(rescoring_folder+f'{key}_rescoring') == False:
+            rescored_dfs.append(rescoring_functions[key](clustered_sdf))
+        else:
+            print(rescoring_folder+f'{key}_rescoring folder already exists, skipping {key} rescoring')
     combined_dfs = functools.reduce(lambda  left,right: pd.merge(left,right,on=['Pose ID'],how='inner'), rescored_dfs)
     first_column = combined_dfs.pop('Pose ID')
     combined_dfs.insert(0, 'Pose ID', first_column)
