@@ -74,7 +74,7 @@ def run_command(**kwargs):
     
     for metric in kwargs.get('metric'):
         if os.path.isdir(w_dir+f'/temp/rescoring_{metric}_clustered') == False:
-            rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{method}_clustered.sdf')
+            rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf')
 
     apply_ranking_methods_simplified(w_dir)
     
