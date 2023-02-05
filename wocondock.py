@@ -23,16 +23,20 @@ parser.add_argument('--dockinglibrary', required=True, type=str, help ='Path to 
 parser.add_argument('--idcolumn', required=True, type=str, help ='Unique identifier column')
 parser.add_argument('--protonation', required=True, type = str, choices = ['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
 parser.add_argument('--docking', required=True, type = str, nargs='+', choices = ['GNINA', 'SMINA', 'PLANTS'], help ='Method(s) to use for docking')
-parser.add_argument('--clustering', required=True, type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose'], help ='Method(s) to use for pose clustering')
+parser.add_argument('--metric', required=True, type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose'], help ='Method(s) to use for pose clustering')
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses')
 parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision of SMINA/GNINA')
 parser.add_argument('--parallel', default=1, type=int, choices = [0,1], help ='Run the workflow in parallel')
+parser.add_argument('--clustering', type = str, choices = ['KMedoids', 'Aff_Prop'] help ='Clustering method to use')
 
 args = parser.parse_args()
 
 if args.pocket == 'reference' and not args.reffile:
     parser.error("--reffile is required when --pocket is set to 'reference'")
-
+    
+if any(metric in args.clustering for metric in ['RMSD', 'spyRMSD', 'espsim', 'USRCAT']) and not args.clustering:
+    parser.error("--clustering is required when --metric is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
+    
 def run_command(**kwargs):
     w_dir = os.path.dirname(kwargs.get('proteinfile'))
     print('The working directory has been set to:', w_dir)
@@ -64,12 +68,12 @@ def run_command(**kwargs):
     if os.path.isfile(w_dir+'/temp/allposes.sdf') == False:
         fetch_poses_func(w_dir, kwargs.get('nposes'), w_dir+'/temp/split_final_library')
 
-    for method in kwargs.get('clustering'):
-        if os.path.isfile(w_dir+f'/temp/clustering/{method}_clustered.sdf') == False:
-            cluster_func(method, w_dir, kwargs.get('proteinfile'))
+    for metric in kwargs.get('metric'):
+        if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
+            cluster_func(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'))
     
-    for method in kwargs.get('clustering'):
-        if os.path.isdir(w_dir+f'/temp/rescoring_{method}_clustered') == False:
+    for metric in kwargs.get('metric'):
+        if os.path.isdir(w_dir+f'/temp/rescoring_{metric}_clustered') == False:
             rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{method}_clustered.sdf')
 
     apply_ranking_methods_simplified(w_dir)
