@@ -316,7 +316,7 @@ def cluster_numpy_futures_failure_handling(metric, method, w_dir, protein_file):
                 print("Error in concurrent futures job creation: ", str(e))	
         for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
             try:
-                res = job.result()
+                res = job.result(timeout=60)
                 clustered_dataframes.append(res)
             except Exception as e:
                 print("Error in concurrent futures job run: ", str(e))
