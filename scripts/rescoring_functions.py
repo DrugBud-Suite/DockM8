@@ -16,27 +16,60 @@ import time
 from scripts.utilities import *
 from tqdm import tqdm
 
-def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
+def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, mp):
     tic = time.perf_counter()
     rescoring_folder_name = os.path.basename(clustered_sdf).split('/')[-1]
     rescoring_folder_name = rescoring_folder_name.replace('.sdf', '')
     rescoring_folder = w_dir+'/temp/rescoring_'+rescoring_folder_name
     create_temp_folder(rescoring_folder)
-    def gnina_rescoring(sdf):
+    def gnina_rescoring(sdf, mp):
         tic = time.perf_counter()
-        print('Rescoring with GNINA')
         create_temp_folder(rescoring_folder+'/gnina_rescoring/')
         cnn = 'crossdock_default2018'
-        results = rescoring_folder+'/gnina_rescoring/'+'rescored_'+cnn+'.sdf'
-        gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only'
-        subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
-        gnina_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
+        if mp == 0:
+            print('Rescoring with GNINA')
+            results = rescoring_folder+'/gnina_rescoring/'+'rescored_'+cnn+'.sdf'
+            gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only'
+            subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            gnina_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
+        else:
+            print(f'Splitting {os.path.basename(sdf)}...')
+            print('Rescoring with GNINA')
+            split_files_folder = split_sdf(rescoring_folder+'/gnina_rescoring/', sdf)
+            split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+            global gnina_rescoring_splitted
+            def gnina_rescoring_splitted(split_file, protein_file, ref_file, software):
+                gnina_folder = rescoring_folder+'/gnina_rescoring/'
+                results = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
+                gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only'
+                try:
+                    subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+                except Exception as e:
+                    print('GNINA docking failed: '+e)
+                return
+            with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
+                pool.starmap(gnina_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
+            try:
+                gnina_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/gnina_rescoring/'+file, idName='Pose ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/gnina_rescoring/') if file.startswith('split')]
+                gnina_rescoring_results = pd.concat(gnina_dataframes)
+            except Exception as e:
+                print('ERROR: Failed to Load GNINA rescoring SDF file!')
+                print(e)
+            try:
+                PandasTools.WriteSDF(gnina_rescoring_results, rescoring_folder+f'/gnina_rescoring/rescored_{cnn}.sdf', molColName='Molecule', idName='Pose ID', properties=list(gnina_rescoring_results.columns))
+            except Exception as e:
+                print('ERROR: Could not combine GNINA rescored poses')
+                print(e)
+            else:
+                for file in os.listdir(split_files_folder):
+                    if file.startswith('split'):
+                        os.remove(os.path.join(split_files_folder, file))
         gnina_rescoring_results.rename(columns = {'minimizedAffinity':'GNINA_Affinity', 'CNNscore':'GNINA_CNN_Score', 'CNNaffinity':'GNINA_CNN_Affinity'}, inplace = True)
         gnina_rescoring_results = gnina_rescoring_results[['Pose ID', 'GNINA_Affinity', 'GNINA_CNN_Score', 'GNINA_CNN_Affinity']]
         toc = time.perf_counter()
         print(f'Rescoring with GNINA complete in {toc-tic:0.4f}!')
         return gnina_rescoring_results
-    def vinardo_rescoring(sdf):
+    def vinardo_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with Vinardo')
         create_temp_folder(rescoring_folder+'/vinardo_rescoring/')
@@ -49,7 +82,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         toc = time.perf_counter()
         print(f'Rescoring with Vinardo complete in {toc-tic:0.4f}!')
         return vinardo_rescoring_results
-    def AD4_rescoring(sdf):
+    def AD4_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with AD4')
         create_temp_folder(rescoring_folder+'/AD4_rescoring/')
@@ -62,7 +95,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         toc = time.perf_counter()
         print(f'Rescoring with AD4 complete in {toc-tic:0.4f}!')
         return AD4_rescoring_results
-    def oddt_rfscoreV1_rescoring(sdf):
+    def oddt_rfscoreV1_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with RFScoreV1')
         rescorers = {'rfscore':RFScore.rfscore()}
@@ -75,45 +108,27 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in tqdm(df['Molecule']):
-            oddt_mol = oddt.toolkit.Molecule(mol)
-            scored_mol = scorer.predict_ligand(oddt_mol)
-            re_scores.append(float(scored_mol.data['rfscore_v1']))
+        if mp == 0:
+            for mol in tqdm(df['Molecule']):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                re_scores.append(float(scored_mol.data['rfscore_v1']))
+        else:
+            global score_mol
+            def score_mol(mol):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                return float(scored_mol.data['rfscore_v3'])
+            with multiprocessing.Pool() as p:
+                # Score the molecules in parallel
+                re_scores = p.map(score_mol, df['Molecules'])
         df['RFScoreV1']=re_scores
         df = df[['Pose ID', 'RFScoreV1']]
         df.to_csv(rescoring_folder+'/rfscoreV1_rescoring/rfscorev1_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RFScoreV1 complete in {toc-tic:0.4f}!')
         return df
-    def oddt_rfscoreV1_rescoring_multiprocessing(sdf):
-        tic = time.perf_counter()
-        print('Rescoring with RFScoreV1')
-        rescorers = {'rfscore':RFScore.rfscore()}
-        create_temp_folder(rescoring_folder+'/rfscoreV1_rescoring/')
-        scorer = rescorers['rfscore']
-        pickle = software+'/RFScore_v1_pdbbind2016.pickle'
-        scorer = scorer.load(pickle)
-        oddt_prot=next(oddt.toolkit.readfile('pdb', protein_file))
-        oddt_prot.protein = True
-        scorer.set_protein(oddt_prot)
-        re_scores = []
-        df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        molecules = df['Molecule']
-        global score_mol
-        def score_mol(mol):
-            oddt_mol = oddt.toolkit.Molecule(mol)
-            scored_mol = scorer.predict_ligand(oddt_mol)
-            return float(scored_mol.data['rfscore_v1'])
-        with multiprocessing.Pool() as p:
-            # Score the molecules in parallel
-            re_scores = p.map(score_mol, molecules)
-        df['RFScoreV1']=re_scores
-        df = df[['Pose ID', 'RFScoreV1']]
-        df.to_csv(rescoring_folder+'/rfscoreV1_rescoring/rfscorev1_scores.csv')
-        toc = time.perf_counter()
-        print(f'Rescoring with RFScoreV1 multiprocessing complete in {toc-tic:0.4f}!')
-        return df
-    def oddt_rfscoreV2_rescoring(sdf):
+    def oddt_rfscoreV2_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with RFScoreV2')
         rescorers = {'rfscore':RFScore.rfscore()}
@@ -126,17 +141,27 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in tqdm(df['Molecule']):
-            oddt_mol = oddt.toolkit.Molecule(mol)
-            scored_mol = scorer.predict_ligand(oddt_mol)
-            re_scores.append(float(scored_mol.data['rfscore_v2']))
+        if mp == 0:
+            for mol in tqdm(df['Molecule']):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                re_scores.append(float(scored_mol.data['rfscore_v2']))
+        else:
+            global score_mol
+            def score_mol(mol):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                return float(scored_mol.data['rfscore_v3'])
+            with multiprocessing.Pool() as p:
+                # Score the molecules in parallel
+                re_scores = p.map(score_mol, df['Molecules'])
         df['RFScoreV2']=re_scores
         df = df[['Pose ID', 'RFScoreV2']]
         df.to_csv(rescoring_folder+'/rfscoreV2_rescoring/rfscorev2_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RFScoreV2 complete in {toc-tic:0.4f}!')
         return df
-    def oddt_rfscoreV3_rescoring(sdf):
+    def oddt_rfscoreV3_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with RFScoreV3')
         rescorers = {'rfscore':RFScore.rfscore()}
@@ -149,17 +174,27 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in tqdm(df['Molecule']):
-            oddt_mol = oddt.toolkit.Molecule(mol)
-            scored_mol = scorer.predict_ligand(oddt_mol)
-            re_scores.append(float(scored_mol.data['rfscore_v3']))
+        if mp == 0:
+            for mol in tqdm(df['Molecule']):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                re_scores.append(float(scored_mol.data['rfscore_v3']))
+        else:
+            global score_mol
+            def score_mol(mol):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                return float(scored_mol.data['rfscore_v3'])
+            with multiprocessing.Pool() as p:
+                # Score the molecules in parallel
+                re_scores = p.map(score_mol, df['Molecules'])
         df['RFScoreV3']=re_scores
         df = df[['Pose ID', 'RFScoreV3']]
         df.to_csv(rescoring_folder+'/rfscoreV3_rescoring/rfscorev3_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RFScoreV3 complete in {toc-tic:0.4f}!')
         return df
-    def plp_rescoring(sdf):
+    def plp_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with PLP')
         plants_search_speed = 'speed1'
@@ -260,7 +295,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         toc = time.perf_counter()
         print(f'Rescoring with PLP complete in {toc-tic:0.4f}!')
         return plp_rescoring_output
-    def chemplp_rescoring(sdf):
+    def chemplp_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with CHEMPLP')
         plants_search_speed = 'speed1'
@@ -360,7 +395,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         toc = time.perf_counter()
         print(f'Rescoring with CHEMPLP complete in {toc-tic:0.4f}!')
         return chemplp_rescoring_output
-    def oddt_nnscore_rescoring(sdf):
+    def oddt_nnscore_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with NNScore')
         rescorers = {'nnscore':NNScore.nnscore()}
@@ -374,44 +409,27 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in tqdm(df['Molecule']):
-            Chem.MolToMolFile(mol, nnscore_rescoring_folder+'/temp.sdf')
-            oddt_lig = next(oddt.toolkit.readfile('sdf', nnscore_rescoring_folder+'/temp.sdf'))
-            scored_mol = scorer.predict_ligand(oddt_lig)
-            re_scores.append(float(scored_mol.data['nnscore']))
+        if mp == 0:
+            for mol in tqdm(df['Molecule']):
+                Chem.MolToMolFile(mol, nnscore_rescoring_folder+'/temp.sdf')
+                oddt_lig = next(oddt.toolkit.readfile('sdf', nnscore_rescoring_folder+'/temp.sdf'))
+                scored_mol = scorer.predict_ligand(oddt_lig)
+                re_scores.append(float(scored_mol.data['nnscore']))
+        else:
+            global score_mol
+            def score_mol(mol):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                return float(scored_mol.data['nnscore'])
+            with multiprocessing.Pool() as p:
+                re_scores = p.map(score_mol, df['Molecule'])
         df['NNScore']=re_scores
         df = df[['Pose ID', 'NNScore']]
         df.to_csv(rescoring_folder+'/nnscore_rescoring/nnscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with NNScore complete in {toc-tic:0.4f}!')
         return df
-    def oddt_nnscore_rescoring_multiprocessing(sdf):
-        tic = time.perf_counter()
-        print('Rescoring with NNScore')
-        rescorers = {'nnscore':NNScore.nnscore()}
-        create_temp_folder(rescoring_folder+'/nnscore_rescoring/')
-        scorer = rescorers['nnscore']
-        pickle = software+'/NNScore_pdbbind2016.pickle'
-        scorer = scorer.load(pickle)
-        oddt_prot=next(oddt.toolkit.readfile('pdb', protein_file))
-        oddt_prot.protein = True
-        scorer.set_protein(oddt_prot)
-        re_scores = []
-        df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        global score_mol
-        def score_mol(mol):
-            oddt_mol = oddt.toolkit.Molecule(mol)
-            scored_mol = scorer.predict_ligand(oddt_mol)
-            return float(scored_mol.data['nnscore'])
-        with multiprocessing.Pool() as p:
-            re_scores = p.map(score_mol, df['Molecule'])
-        df['NNScore']=re_scores
-        df = df[['Pose ID', 'NNScore']]
-        df.to_csv(rescoring_folder+'/nnscore_rescoring/nnscore_scores.csv')
-        toc = time.perf_counter()
-        print(f'Rescoring with NNScore multiprocessing complete in {toc-tic:0.4f}!')
-        return df
-    def oddt_plecscore_rescoring(sdf):
+    def oddt_plecscore_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with PLECscore')
         rescorers = {'PLECnn_p5_l1_s65536':PLECscore(version='nn')}
@@ -425,42 +443,25 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
         scorer.set_protein(oddt_prot)
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        for mol in tqdm(df['Molecule']):
-            Chem.MolToMolFile(mol, plecscore_rescoring_folder+'/temp.sdf')
-            oddt_lig = next(oddt.toolkit.readfile('sdf', plecscore_rescoring_folder+'/temp.sdf'))
-            scored_mol = scorer.predict_ligand(oddt_lig)
-            re_scores.append(float(scored_mol.data['PLECnn_p5_l1_s65536']))
+        if mp == 0:
+            for mol in tqdm(df['Molecule']):
+                Chem.MolToMolFile(mol, plecscore_rescoring_folder+'/temp.sdf')
+                oddt_lig = next(oddt.toolkit.readfile('sdf', plecscore_rescoring_folder+'/temp.sdf'))
+                scored_mol = scorer.predict_ligand(oddt_lig)
+                re_scores.append(float(scored_mol.data['PLECnn_p5_l1_s65536']))
+        else:
+            global score_mol
+            def score_mol(mol):
+                oddt_mol = oddt.toolkit.Molecule(mol)
+                scored_mol = scorer.predict_ligand(oddt_mol)
+                return float(scored_mol.data['PLECnn_p5_l1_s65536'])
+            with multiprocessing.Pool() as p:
+                re_scores = p.map(score_mol, df['Molecule'])
         df['PLECnn']=re_scores
         df = df[['Pose ID', 'PLECnn']]
         df.to_csv(rescoring_folder+'/plecscore_rescoring/plecscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with PLECScore complete in {toc-tic:0.4f}!')
-        return df
-    def oddt_plecscore_rescoring_multiprocessing(sdf):
-        tic = time.perf_counter()
-        print('Rescoring with PLECscore')
-        rescorers = {'PLECnn_p5_l1_s65536':PLECscore(version='nn')}
-        create_temp_folder(rescoring_folder+'/plecscore_rescoring/')
-        scorer = rescorers['PLECnn_p5_l1_s65536']
-        pickle = software+'/PLECnn_p5_l1_2016.pickle'
-        scorer = scorer.load(pickle)
-        oddt_prot=next(oddt.toolkit.readfile('pdb', protein_file.replace('.pdb','_pocket.pdb')))
-        oddt_prot.protein = True
-        scorer.set_protein(oddt_prot)
-        re_scores = []
-        df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
-        global score_mol
-        def score_mol(mol):
-            oddt_mol = oddt.toolkit.Molecule(mol)
-            scored_mol = scorer.predict_ligand(oddt_mol)
-            return float(scored_mol.data['PLECnn_p5_l1_s65536'])
-        with multiprocessing.Pool() as p:
-            re_scores = p.map(score_mol, df['Molecule'])
-        df['PLECnn']=re_scores
-        df = df[['Pose ID', 'PLECnn']]
-        df.to_csv(rescoring_folder+'/plecscore_rescoring/plecscore_scores.csv')
-        toc = time.perf_counter()
-        print(f'Rescoring with PLECScore multiprocessing complete in {toc-tic:0.4f}!')
         return df
     def SCORCH_rescoring(clustered_sdf):
         tic = time.perf_counter()
@@ -496,9 +497,9 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
     rescored_dfs = []
     for key in rescoring_functions.keys():
         if os.path.isdir(rescoring_folder+f'/{key}_rescoring') == False:
-            rescored_dfs.append(rescoring_functions[key](clustered_sdf))
+            rescored_dfs.append(rescoring_functions[key](clustered_sdf, multiprocessing))
         else:
-            print(rescoring_folder+f'{key}_rescoring folder already exists, skipping {key} rescoring')
+            print(rescoring_folder+f'/{key}_rescoring folder already exists, skipping {key} rescoring')
     combined_dfs = functools.reduce(lambda  left,right: pd.merge(left,right,on=['Pose ID'],how='inner'), rescored_dfs)
     first_column = combined_dfs.pop('Pose ID')
     combined_dfs.insert(0, 'Pose ID', first_column)
