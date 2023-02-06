@@ -21,11 +21,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
     rescoring_folder_name = os.path.basename(clustered_sdf).split('/')[-1]
     rescoring_folder_name = rescoring_folder_name.replace('.sdf', '')
     rescoring_folder = w_dir+'/temp/rescoring_'+rescoring_folder_name
-    if os.path.isdir(rescoring_folder) == True:
-        print('Deleting existing rescoring folder')
-        shutil.rmtree(rescoring_folder)
-    else:
-        os.mkdir(rescoring_folder)
+    create_temp_folder(rescoring_folder)
     def gnina_rescoring(sdf):
         tic = time.perf_counter()
         print('Rescoring with GNINA')
@@ -85,6 +81,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores.append(float(scored_mol.data['rfscore_v1']))
         df['RFScoreV1']=re_scores
         df = df[['Pose ID', 'RFScoreV1']]
+        df.to_csv(rescoring_folder+'/rfscoreV1_rescoring/rfscorev1_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RFScoreV1 complete in {toc-tic:0.4f}!')
         return df
@@ -112,6 +109,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores = p.map(score_mol, molecules)
         df['RFScoreV1']=re_scores
         df = df[['Pose ID', 'RFScoreV1']]
+        df.to_csv(rescoring_folder+'/rfscoreV1_rescoring/rfscorev1_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RFScoreV1 multiprocessing complete in {toc-tic:0.4f}!')
         return df
@@ -134,6 +132,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores.append(float(scored_mol.data['rfscore_v2']))
         df['RFScoreV2']=re_scores
         df = df[['Pose ID', 'RFScoreV2']]
+        df.to_csv(rescoring_folder+'/rfscoreV2_rescoring/rfscorev2_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RFScoreV2 complete in {toc-tic:0.4f}!')
         return df
@@ -156,6 +155,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores.append(float(scored_mol.data['rfscore_v3']))
         df['RFScoreV3']=re_scores
         df = df[['Pose ID', 'RFScoreV3']]
+        df.to_csv(rescoring_folder+'/rfscoreV3_rescoring/rfscorev3_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RFScoreV3 complete in {toc-tic:0.4f}!')
         return df
@@ -256,6 +256,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             split = row['LIGAND_ENTRY'].split('_')
             plp_results.loc[i, ['Pose ID']] = split[0]+'_'+split[1]+'_'+split[2]
         plp_rescoring_output = plp_results[['Pose ID', 'PLP']]
+        plp_rescoring_output.to_csv(rescoring_folder+'/plp_rescoring/plp_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with PLP complete in {toc-tic:0.4f}!')
         return plp_rescoring_output
@@ -355,6 +356,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             split = row['LIGAND_ENTRY'].split('_')
             chemplp_results.loc[i, ['Pose ID']] = split[0]+'_'+split[1]+'_'+split[2]
         chemplp_rescoring_output = chemplp_results[['Pose ID', 'CHEMPLP']]
+        chemplp_rescoring_output.to_csv(rescoring_folder+'/chemplp_rescoring/chemplp_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with CHEMPLP complete in {toc-tic:0.4f}!')
         return chemplp_rescoring_output
@@ -379,6 +381,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores.append(float(scored_mol.data['nnscore']))
         df['NNScore']=re_scores
         df = df[['Pose ID', 'NNScore']]
+        df.to_csv(rescoring_folder+'/nnscore_rescoring/nnscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with NNScore complete in {toc-tic:0.4f}!')
         return df
@@ -404,6 +407,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores = p.map(score_mol, df['Molecule'])
         df['NNScore']=re_scores
         df = df[['Pose ID', 'NNScore']]
+        df.to_csv(rescoring_folder+'/nnscore_rescoring/nnscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with NNScore multiprocessing complete in {toc-tic:0.4f}!')
         return df
@@ -428,6 +432,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores.append(float(scored_mol.data['PLECnn_p5_l1_s65536']))
         df['PLECnn']=re_scores
         df = df[['Pose ID', 'PLECnn']]
+        df.to_csv(rescoring_folder+'/plecscore_rescoring/plecscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with PLECScore complete in {toc-tic:0.4f}!')
         return df
@@ -453,6 +458,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
             re_scores = p.map(score_mol, df['Molecule'])
         df['PLECnn']=re_scores
         df = df[['Pose ID', 'PLECnn']]
+        df.to_csv(rescoring_folder+'/plecscore_rescoring/plecscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with PLECScore multiprocessing complete in {toc-tic:0.4f}!')
         return df
@@ -489,7 +495,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf):
                         'nn_score': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring}
     rescored_dfs = []
     for key in rescoring_functions.keys():
-        if os.path.isdir(rescoring_folder+f'{key}_rescoring') == False:
+        if os.path.isdir(rescoring_folder+f'/{key}_rescoring') == False:
             rescored_dfs.append(rescoring_functions[key](clustered_sdf))
         else:
             print(rescoring_folder+f'{key}_rescoring folder already exists, skipping {key} rescoring')
