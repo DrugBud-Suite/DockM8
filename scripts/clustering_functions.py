@@ -292,7 +292,6 @@ def matrix_calculation_and_clustering_futures_failure_handling(metric, method, d
         matrix[i, j] = results
         matrix[j, i] = results
         matrix_df = pd.DataFrame(matrix, index=df['Pose ID'].values.tolist(), columns=df['Pose ID'].values.tolist())
-        display(matrix_df)
         matrix_df.fillna(0)
         clust_df = methods[method](matrix_df)
         return clust_df
