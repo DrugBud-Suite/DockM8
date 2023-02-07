@@ -4,7 +4,7 @@ import pandas as pd
 def calculate_EFs(w_dir, docking_library):
     original_df = PandasTools.LoadSDF(docking_library, molColName='Molecule', idName='ID')
     original_df = original_df[['ID', 'Activity']]
-    ranking_results = pd.read_csv(w_dir+'/temp/ranking/ranking_results.csv')
+    ranking_results = pd.read_csv(w_dir+'/temp/ranking/method_results.csv')
     merged_df = pd.merge(ranking_results, original_df, on='ID')
     merged_df['Activity'] = merged_df['Activity'].apply(pd.to_numeric)
     method_list = ranking_results.columns.values.tolist()
@@ -25,7 +25,7 @@ def calculate_EFs(w_dir, docking_library):
 def calculate_EFs_simplified(w_dir, docking_library):
     original_df = PandasTools.LoadSDF(docking_library, molColName='Molecule', idName='ID')
     original_df = original_df[['ID', 'Activity']]
-    ranking_results = pd.read_csv(w_dir+'/temp/ranking/ranking_results.csv')
+    ranking_results = pd.read_csv(w_dir+'/temp/ranking/method_results.csv')
     merged_df = ranking_results.merge(original_df, on='ID')
     merged_df['Activity'] = pd.to_numeric(merged_df['Activity'])
     method_list = ranking_results.columns.tolist()[1:]
