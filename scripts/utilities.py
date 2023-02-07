@@ -58,16 +58,16 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 
-def show_correlation(input):
+def show_correlation(input, annotation = bool()):
     if input.endswith('.sdf'):
         dataframe = PandasTools.LoadSDF(input)
     if input.endswith('.csv'):
-        dataframe = pd.read_csv(input)
+        dataframe = pd.read_csv(input, index_col=0)
         dataframe
     if type(input) == pd.DataFrame:
         dataframe = input
     matrix = dataframe.corr().round(2)
     mask = np.triu(np.ones_like(matrix, dtype=bool))
-    fig, ax = plt.subplots(figsize=(15,15))  
-    sns.heatmap(matrix, mask = mask, annot=False, vmax=1, vmin=-1, center=0, linewidths=.5, cmap='coolwarm', ax=ax)
+    fig, ax = plt.subplots(figsize=(10,10))  
+    sns.heatmap(matrix, mask = mask, annot=annotation, vmax=1, vmin=-1, center=0, linewidths=.5, cmap='coolwarm', ax=ax)
     plt.show()
