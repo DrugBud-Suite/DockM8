@@ -18,8 +18,9 @@ def rank_simplified(dataframe, clustering_method):
                        'NNScore':False, 
                        'PLECnn':False}
     for col,asc in columns_to_rank.items():
-        dataframe[f'{col}_RANK_{clustering_method}'] = dataframe[col].rank(method='average', ascending=asc)
-        dataframe = dataframe.drop(col, axis=1)
+        if col in dataframe.columns:
+            dataframe[f'{col}_RANK_{clustering_method}'] = dataframe[col].rank(method='average', ascending=asc)
+            dataframe = dataframe.drop(col, axis=1)
     return dataframe
 
 def method1_ECR_best(dataframe, clustering_method):
