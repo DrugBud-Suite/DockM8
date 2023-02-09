@@ -59,13 +59,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def show_correlation(input, annotation = bool()):
-    if input.endswith('.sdf'):
+    if isinstance(input, pd.DataFrame):
+        dataframe = input
+    elif input.endswith('.sdf'):
         dataframe = PandasTools.LoadSDF(input)
-    if input.endswith('.csv'):
+    elif input.endswith('.csv'):
         dataframe = pd.read_csv(input, index_col=0)
         dataframe
-    if type(input) == pd.DataFrame:
-        dataframe = input
     matrix = dataframe.corr().round(2)
     mask = np.triu(np.ones_like(matrix, dtype=bool))
     fig, ax = plt.subplots(figsize=(10,10))  
