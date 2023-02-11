@@ -17,7 +17,7 @@ from scripts.utilities import *
 from tqdm import tqdm
 from IPython.display import display
 
-def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, mp):
+def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, functions, mp):
     tic = time.perf_counter()
     rescoring_folder_name = os.path.basename(clustered_sdf).split('/')[-1]
     rescoring_folder_name = rescoring_folder_name.replace('.sdf', '')
@@ -100,16 +100,20 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, mp):
         print(f'Rescoring with AD4 complete in {toc-tic:0.4f}!')
         return AD4_rescoring_results
     def rfscore_rescoring(sdf, mp):
+        tic = time.perf_counter()
         print('Rescoring with RFScoreVS')
         create_temp_folder(rescoring_folder+'/rfscorevs_rescoring')
-        results_path = rescoring_folder+'/rfscorevs_rescoring/rescored_rfscorevs.csv'
+        results_path = rescoring_folder+'/rfscorevs_rescoring/rfscorevs_scores.csv'
         if mp == 1 :
-            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -o csv --field RFScoreVS -n 8'
+            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n 8'
         else:
-            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -o csv --field RFScoreVS -n 1'
+            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n 1'
         subprocess.call(rfscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         rfscore_results = pd.read_csv(results_path, delimiter=',', header=0)
-        rfscore_results = rfscore_results.rename(columns={'name': 'Pose ID'})
+        rfscore_results = rfscore_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2':'RFScoreVS'})
+        rfscore_results.to_csv(rescoring_folder+'/rfscorevs_rescoring/rfscorevs_scores.csv')
+        toc = time.perf_counter()
+        print(f'Rescoring with RF-Score-VS complete in {toc-tic:0.4f}!')
         return rfscore_results
     def plp_rescoring(sdf, mp):
         tic = time.perf_counter()
@@ -408,21 +412,21 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, mp):
         toc = time.perf_counter()
         print(f'Rescoring with SCORCH complete in {toc-tic:0.4f}!')
         return    
-    #scorch_df = SCORCH_rescoring(clustered_sdf)
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring}
-    for key in rescoring_functions.keys():
-        if os.path.isdir(rescoring_folder+f'/{key}_rescoring') == False:
-            rescoring_functions[key](clustered_sdf, mp)
+    for function in functions:
+        if os.path.isdir(rescoring_folder+f'/{function}_rescoring') == False:
+            rescoring_functions[function](clustered_sdf, mp)
         else:
-            print(f'/{key}_rescoring folder already exists, skipping {key} rescoring')
+            print(f'/{function}_rescoring folder already exists, skipping {function} rescoring')
     if os.path.isfile(rescoring_folder+'/allposes_rescored.csv') == False:
+        score_files = [f'{function}_scores.csv' for function in functions]
         print(f'Combining all score for {rescoring_folder}')
-        csv_files = [os.path.join(subdir, file) for subdir, dirs, files in os.walk(rescoring_folder) for file in files if file.endswith('.csv') and "_scores.csv" in file]
+        csv_files = [os.path.join(subdir, file) for subdir, dirs, files in os.walk(rescoring_folder) for file in files if file in score_files]
         csv_dfs = [pd.read_csv(f, index_col=0) for f in csv_files]
         combined_dfs = csv_dfs[0]
-        for df in csv_dfs[1:]:
+        for df in tqdm(csv_dfs[1:]):
             combined_dfs = pd.merge(combined_dfs, df, left_on='Pose ID', right_on='Pose ID', how='outer')
         first_column = combined_dfs.pop('Pose ID')
         combined_dfs.insert(0, 'Pose ID', first_column)
