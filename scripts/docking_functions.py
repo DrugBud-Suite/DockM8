@@ -293,11 +293,11 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
 
 def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses):
     tic = time.perf_counter()
-    if 'SMINA' in docking_programs and os.path.ispath(w_dir+'/temp/smina') == False:
+    if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == False:
         smina_docking_results_path = smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses)
-    if 'GNINA' in docking_programs and os.path.ispath(w_dir+'/temp/gnina') == False:
+    if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == False:
         gnina_docking_results_path = gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses)
-    if 'PLANTS' in docking_programs and os.path.ispath(w_dir+'/temp/plants') == False:
+    if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == False:
         plants_docking_results_path = plants_docking(protein_file, ref_file, software, n_poses)
     toc = time.perf_counter()
     print(f'Finished docking in {toc-tic:0.4f}!')
@@ -451,7 +451,7 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
     print('Fetching docking poses...')
     all_poses = pd.DataFrame()
     #Fetch PLANTS poses
-    if os.path.ispath(w_dir+'/temp/plants'):
+    if os.path.isdir(w_dir+'/temp/plants'):
         plants_dataframes = []
         results_folders = [item for item in os.listdir(w_dir+'/temp/plants')]
         for item in tqdm(results_folders):
@@ -486,7 +486,7 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
                     shutil.rmtree(os.path.join(w_dir+'/temp/plants', file))
         pd.concat([all_poses, plants_df])
     #Fetch SMINA poses
-    if os.path.ispath(w_dir+'/temp/smina'):
+    if os.path.isdir(w_dir+'/temp/smina'):
         try:
             smina_dataframes = [PandasTools.LoadSDF(w_dir+'/temp/smina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(w_dir+'/temp/smina/') if file.startswith('split')]
             smina_df = pd.concat(smina_dataframes)
@@ -508,7 +508,7 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
                     os.remove(os.path.join(w_dir+'/temp/smina', file))
         pd.concat([all_poses, smina_df])
     #Fetch GNINA poses
-    if os.path.ispath(w_dir+'/temp/gnina'):
+    if os.path.isdir(w_dir+'/temp/gnina'):
         try:
             gnina_dataframes = [PandasTools.LoadSDF(w_dir+'/temp/gnina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(w_dir+'/temp/gnina/') if file.startswith('split')]
             gnina_df = pd.concat(gnina_dataframes)
@@ -549,7 +549,7 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
         print('Split final library folder already exists...')
         split_files_folder = w_dir+'/temp/split_final_library'
     split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
-    if 'PLANTS' in docking_programs and os.path.ispath(w_dir+'/temp/plants') == False:
+    if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == False:
         tic = time.perf_counter()
         binding_site_x, binding_site_y, binding_site_z, binding_site_radius = plants_preparation(protein_file, ref_file, software)
         #Convert prepared ligand file to .mol2 using open babel
@@ -566,14 +566,14 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
             pool.starmap(plants_docking_splitted, [(split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius) for split_file in split_files_sdfs])
         toc = time.perf_counter()
         print(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
-    if 'SMINA' in docking_programs and os.path.ispath(w_dir+'/temp/smina') == False:
+    if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == False:
         print('Docking split files using SMINA...')
         tic = time.perf_counter()
         with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
             pool.starmap(smina_docking_splitted, [(split_file, protein_file, ref_file, software, exhaustiveness, n_poses) for split_file in split_files_sdfs])
         toc = time.perf_counter()
         print(f'Docking with SMINA complete in {toc-tic:0.4f}!')
-    if 'GNINA' in docking_programs and os.path.ispath(w_dir+'/temp/gnina') == False:
+    if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == False:
         print('Docking split files using GNINA...')
         tic = time.perf_counter()
         with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
