@@ -439,7 +439,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 combined_dfs[c] = combined_dfs[c].apply(pd.to_numeric, errors='coerce')
             else:
                 pass
-        combined_dfs.to_csv(rescoring_folder+'/allposes_rescored.csv')
+        combined_dfs.to_csv(rescoring_folder+'/allposes_rescored.csv', index=False)
     toc = time.perf_counter()
     print(f'Rescoring complete in {toc-tic:0.4f}!')
     return
