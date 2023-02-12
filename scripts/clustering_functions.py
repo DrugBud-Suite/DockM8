@@ -72,6 +72,7 @@ def affinity_propagation_clustering(input_dataframe):
     return merged_df
 
 def cluster(metric, method, w_dir, protein_file):
+    create_clustering_folder(w_dir+'/temp/clustering/')
     def matrix_calculation_and_clustering(metric, method, df, id_list, protein_file): 
         clustered_dataframes = []
         print("*Calculating {} metrics and clustering*".format(metric))
@@ -138,17 +139,19 @@ def cluster(metric, method, w_dir, protein_file):
         clustered_poses = pd.concat(clustered_dataframes)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
         return clustered_poses
-    print('Loading all poses SDF file...')
-    all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
-    print('Finished loading all poses SDF file...')
-    id_list = np.unique(np.array(all_poses['ID']))
-    create_clustering_folder(w_dir+'/temp/clustering/')
-    clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
-    clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-    # keep only the necessary columns
-    clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-    save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-    PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
+    if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
+        print('Loading all poses SDF file...')
+        all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
+        print('Finished loading all poses SDF file...')
+        id_list = np.unique(np.array(all_poses['ID']))
+        clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
+        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
+        # keep only the necessary columns
+        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
+        save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
+        PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
+    else:
+        print(f'Clustering using {metric} already done, moing to next metric...')
     return
 
 def metric_calculation_failure_handling(x, y, metric, protein_file):
@@ -218,31 +221,34 @@ def matrix_calculation_and_clustering_futures_failure_handling(metric, method, d
         return clust_df
 
 def cluster_mp(metric, method, w_dir, protein_file):
-    print('Loading all poses SDF file...')
-    all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
-    print('Finished loading all poses SDF file...')
-    id_list = np.unique(np.array(all_poses['ID']))
     create_clustering_folder(w_dir+'/temp/clustering/')
-    clustered_dataframes = []
-    print(f"*Calculating {metric} metrics and clustering*")
-    with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
-        jobs = []
-        for current_id in id_list:
-            try:
-                job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
-                jobs.append(job)
-            except Exception as e:
-                print("Error in concurrent futures job creation: ", str(e))	
-        for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
-            try:
-                res = job.result()
-                clustered_dataframes.append(res)
-            except Exception as e:
-                print("Error in concurrent futures job run: ", str(e))
-    clustered_poses = pd.concat(clustered_dataframes)
-    clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-    clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-    clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-    save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-    PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
+    if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
+        print('Loading all poses SDF file...')
+        all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
+        print('Finished loading all poses SDF file...')
+        id_list = np.unique(np.array(all_poses['ID']))
+        clustered_dataframes = []
+        print(f"*Calculating {metric} metrics and clustering*")
+        with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+            jobs = []
+            for current_id in id_list:
+                try:
+                    job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
+                    jobs.append(job)
+                except Exception as e:
+                    print("Error in concurrent futures job creation: ", str(e))	
+            for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
+                try:
+                    res = job.result()
+                    clustered_dataframes.append(res)
+                except Exception as e:
+                    print("Error in concurrent futures job run: ", str(e))
+        clustered_poses = pd.concat(clustered_dataframes)
+        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
+        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
+        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
+        save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
+        PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
+    else:
+        print(f'Clustering using {metric} already done, moing to next metric...')
     return
