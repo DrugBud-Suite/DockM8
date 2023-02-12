@@ -23,7 +23,7 @@ parser.add_argument('--dockinglibrary', required=True, type=str, help ='Path to 
 parser.add_argument('--idcolumn', required=True, type=str, help ='Unique identifier column')
 parser.add_argument('--protonation', required=True, type = str, choices = ['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
 parser.add_argument('--docking', required=True, type = str, nargs='+', choices = ['GNINA', 'SMINA', 'PLANTS'], help ='Method(s) to use for docking')
-parser.add_argument('--metric', required=True, type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose'], help ='Method(s) to use for pose clustering')
+parser.add_argument('--metric', required=True, type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS'], help ='Method(s) to use for pose clustering')
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses')
 parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision of SMINA/GNINA')
 parser.add_argument('--parallel', default=1, type=int, choices = [0,1], help ='Run the workflow in parallel')
@@ -54,11 +54,11 @@ def run_command(**kwargs):
     if kwargs.get('parallel') == 0:
         docking_func = docking
         fetch_poses_func = fetch_poses
-        cluster_func = cluster_numpy
+        cluster_func = cluster
     else:
         docking_func = docking_splitted
         fetch_poses_func = fetch_poses
-        cluster_func = cluster_numpy_futures_failure_handling
+        cluster_func = cluster_mp
 
     docking_programs = {'GNINA': w_dir+'/temp/gnina/', 'SMINA': w_dir+'/temp/smina/', 'PLANTS': w_dir+'/temp/plants/'}
     for program, file_path in docking_programs.items():
@@ -76,7 +76,7 @@ def run_command(**kwargs):
         if os.path.isdir(w_dir+f'/temp/rescoring_{metric}_clustered') == False:
             rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('reffile'), kwargs.get('parallel'))
 
-    apply_ranking_methods_simplified(w_dir)
+    apply_consensus_methods(w_dir, kwargs.get('clustering'))
     
     calculate_EFs(w_dir, kwargs.get('dockinglibrary'))
     
