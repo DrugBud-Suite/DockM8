@@ -28,6 +28,7 @@ parser.add_argument('--nposes', default=10, type=int, help ='Number of poses')
 parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision of SMINA/GNINA')
 parser.add_argument('--parallel', default=1, type=int, choices = [0,1], help ='Run the workflow in parallel')
 parser.add_argument('--clustering', type = str, choices = ['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
+parser.add_argument('--rescoring', type = str, choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs'], help='Rescoring methods to use')
 
 args = parser.parse_args()
 
@@ -74,7 +75,7 @@ def run_command(**kwargs):
     
     for metric in kwargs.get('metric'):
         if os.path.isdir(w_dir+f'/temp/rescoring_{metric}_clustered') == False:
-            rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('reffile'), kwargs.get('parallel'))
+            rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('parallel'))
 
     apply_consensus_methods(w_dir, kwargs.get('clustering'))
     
