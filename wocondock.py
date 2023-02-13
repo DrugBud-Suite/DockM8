@@ -68,10 +68,16 @@ def run_command(**kwargs):
 
     if os.path.isfile(w_dir+'/temp/allposes.sdf') == False:
         fetch_poses_func(w_dir, kwargs.get('nposes'), w_dir+'/temp/split_final_library')
+        
+    print('Loading all poses SDF file...')
+    tic = time.perf_counter()
+    all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
+    toc = time.perf_counter()
+    print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
 
     for metric in kwargs.get('metric'):
         if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
-            cluster_func(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'))
+            cluster_func(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'), all_poses)
     
     for metric in kwargs.get('metric'):
         if os.path.isdir(w_dir+f'/temp/rescoring_{metric}_clustered') == False:
