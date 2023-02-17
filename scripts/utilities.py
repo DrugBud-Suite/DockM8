@@ -10,13 +10,13 @@ def create_temp_folder(path):
 from rdkit.Chem import PandasTools
 import multiprocessing
         
-def split_sdf(w_dir, sdf_file):
+def split_sdf(dir, sdf_file):
     sdf_file_name = os.path.basename(sdf_file).replace('.sdf', '')
     print(f'Splitting SDF file {sdf_file_name}.sdf ...')
-    split_files_folder = w_dir+f'/temp/split_{sdf_file_name}'
-    create_temp_folder(w_dir+f'/temp/split_{sdf_file_name}')
-    for file in os.listdir(w_dir+f'/temp/split_{sdf_file_name}'):
-        os.unlink(os.path.join(w_dir+f'/temp/split_{sdf_file_name}', file))
+    split_files_folder = dir+f'/split_{sdf_file_name}'
+    create_temp_folder(dir+f'/split_{sdf_file_name}')
+    for file in os.listdir(dir+f'/split_{sdf_file_name}'):
+        os.unlink(os.path.join(dir+f'/split_{sdf_file_name}', file))
     df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
     compounds_per_core = round(len(df['ID'])/(multiprocessing.cpu_count()-2))
     used_ids = set() # keep track of used 'ID' values
@@ -26,7 +26,7 @@ def split_sdf(w_dir, sdf_file):
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
         used_ids.update(set(chunk['ID'])) # add new 'ID' values to used_ids
-        PandasTools.WriteSDF(chunk, w_dir+f'/temp/split_{sdf_file_name}/split_' + str(file_counter) + '.sdf', molColName='Molecule', idName='ID')
+        PandasTools.WriteSDF(chunk, dir+f'/split_{sdf_file_name}/split_' + str(file_counter) + '.sdf', molColName='Molecule', idName='ID')
         file_counter+=1
     print(f'Split docking library into {file_counter-1} files each containing {compounds_per_core} compounds')
     return split_files_folder
