@@ -127,7 +127,6 @@ def cluster(metric, method, w_dir, protein_file, all_poses):
         else:
             clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
         clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-        # keep only the necessary columns
         clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
         save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
         PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
