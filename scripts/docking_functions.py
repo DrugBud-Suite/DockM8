@@ -544,7 +544,7 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
 
 def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses):
     if os.path.isdir(w_dir+'/temp/split_final_library') == False :
-        split_files_folder = split_sdf(w_dir, w_dir+'/temp/final_library.sdf')
+        split_files_folder = split_sdf(w_dir+'/temp', w_dir+'/temp/final_library.sdf')
     else:
         print('Split final library folder already exists...')
         split_files_folder = w_dir+'/temp/split_final_library'

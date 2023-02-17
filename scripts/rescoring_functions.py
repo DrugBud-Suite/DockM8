@@ -17,6 +17,12 @@ from scripts.utilities import *
 from tqdm import tqdm
 from IPython.display import display
 
+#TODO: add new scoring functions:
+# _ECIF
+# _LinF9
+# _SIEVE_Score (no documentation)
+# _
+
 def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, functions, mp):
     tic = time.perf_counter()
     rescoring_folder_name = os.path.basename(clustered_sdf).split('/')[-1]
@@ -36,7 +42,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         else:
             print(f'Splitting {os.path.basename(sdf)}...')
             print('Rescoring with GNINA')
-            split_files_folder = split_sdf(rescoring_folder+'/gnina_rescoring/', sdf)
+            split_files_folder = split_sdf(rescoring_folder+'/gnina_rescoring', sdf)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
             global gnina_rescoring_splitted
             def gnina_rescoring_splitted(split_file, protein_file, ref_file, software):
