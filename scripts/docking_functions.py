@@ -284,7 +284,7 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
         all_poses = pd.concat([all_poses, gnina_df])
         del gnina_df
     except Exception as e:
-        print('ERROR: Failed to Load SMINA poses SDF file!')
+        print('ERROR: Failed to Load GNINA poses SDF file!')
         print(e)
     PandasTools.WriteSDF(all_poses, w_dir+"/temp/allposes.sdf", molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
     toc = time.perf_counter()

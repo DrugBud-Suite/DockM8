@@ -246,8 +246,8 @@ def cluster_mp(metric, method, w_dir, protein_file, all_poses):
                 results = [pool.apply_async(matrix_calculation_and_clustering_futures_failure_handling, (metric, method, all_poses[all_poses['ID']==current_id], protein_file)) for current_id in id_list]
                 toc = time.perf_counter()
                 print(f'Finished running jobs in {toc-tic:0.4f}, now processing results...')
-                print(results)
                 for res in tqdm(results, total=len(id_list)):
+                    print(res, type(res))
                     clustered_dataframes.append(res)
             clustered_poses = pd.concat(clustered_dataframes)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
