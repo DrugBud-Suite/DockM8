@@ -12,6 +12,7 @@ from oddt.scoring.functions import RFScore
 from oddt.scoring.functions.PLECscore import PLECscore
 from tqdm import tqdm
 import multiprocessing
+import concurrent.futures
 import time
 from scripts.utilities import *
 from tqdm import tqdm
@@ -54,8 +55,17 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 except Exception as e:
                     print('GNINA docking failed: '+e)
                 return
-            with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
-                pool.starmap(gnina_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
+            with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()-2)) as executor:
+                jobs = []
+                for split_file in tqdm(split_files_sdfs):
+                    try:
+                        job = executor.submit(gnina_rescoring_splitted, split_file, protein_file, ref_file, software)
+                        jobs.append(job)
+                    except Exception as e:
+                        print("Error in concurrent futures job creation: ", str(e))
+                concurrent.futures.wait(jobs)
+            #with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
+            #    pool.starmap(gnina_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
             try:
                 gnina_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/gnina_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/gnina_rescoring/') if file.startswith('split')]
             except Exception as e:
@@ -111,7 +121,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         create_temp_folder(rescoring_folder+'/rfscorevs_rescoring')
         results_path = rescoring_folder+'/rfscorevs_rescoring/rfscorevs_scores.csv'
         if mp == 1 :
-            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n 8'
+            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n '+str(int(multiprocessing.cpu_count()-2))
         else:
             rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n 1'
         subprocess.call(rfscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
