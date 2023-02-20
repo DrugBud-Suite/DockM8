@@ -72,7 +72,7 @@ def cluster(metric, method, w_dir, protein_file, all_poses):
         clustered_dataframes = []
         print("*Calculating {} metrics and clustering*".format(metric))
         metrics = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
-        methods = {'Kmedoids': kmedoids_S_clustering, 'AffProp': affinity_propagation_clustering}
+        methods = {'KMedoids': kmedoids_S_clustering, 'AffProp': affinity_propagation_clustering}
         for id in tqdm(id_list):
             if metric == '3DScore':
                 df_filtered = df[df['ID']==id]
