@@ -11,6 +11,7 @@ from scripts.utilities import *
 import multiprocessing
 from tqdm import tqdm
 from pathlib import Path
+import concurrent.futures
 
 
 def smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
@@ -308,7 +309,7 @@ def smina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     smina_folder = w_dir+'/temp/smina/'
     os.makedirs(smina_folder, exist_ok=True)
     results_path = smina_folder+os.path.basename(split_file).split('.')[0]+'_smina.sdf'
-    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none'
+    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none --cpu 1'
     try:
         subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
@@ -320,7 +321,7 @@ def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     gnina_folder = w_dir+'/temp/gnina/'
     os.makedirs(gnina_folder, exist_ok=True)
     results_path = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
-    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018'
+    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 --cpu 1'
     try:
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
@@ -578,6 +579,67 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
         tic = time.perf_counter()
         with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
             pool.starmap(gnina_docking_splitted, [(split_file, protein_file, ref_file, software, exhaustiveness, n_poses) for split_file in split_files_sdfs])
+        toc = time.perf_counter()
+        print(f'Docking with GNINA complete in {toc-tic:0.4f}!')
+    return
+
+def docking_splitted_futures(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses):
+    if os.path.isdir(w_dir+'/temp/split_final_library') == False :
+        split_files_folder = split_sdf(w_dir+'/temp', w_dir+'/temp/final_library.sdf')
+    else:
+        print('Split final library folder already exists...')
+        split_files_folder = w_dir+'/temp/split_final_library'
+    split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == False:
+        tic = time.perf_counter()
+        binding_site_x, binding_site_y, binding_site_z, binding_site_radius = plants_preparation(protein_file, ref_file, software)
+        #Convert prepared ligand file to .mol2 using open babel
+        for file in os.listdir(split_files_folder):
+            if file.endswith('.sdf'):
+                try:
+                    obabel_command = 'obabel -isdf '+split_files_folder+'/'+file+' -O '+w_dir+'/temp/plants/'+os.path.basename(file).replace('.sdf', '.mol2')
+                    subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+                except Exception as e:
+                    print(f'ERROR: Failed to convert {file} to .mol2!')
+                    print(e)
+        print('Docking split files using PLANTS...')
+        with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+            jobs = []
+            for split_file in tqdm(split_files_sdfs):
+                try:
+                    job = executor.submit(plants_docking_splitted, split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius)
+                    jobs.append(job)
+                except Exception as e:
+                    print("Error in concurrent futures job creation: ", str(e))
+            concurrent.futures.wait(jobs)
+        toc = time.perf_counter()
+        print(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
+    if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == False:
+        print('Docking split files using SMINA...')
+        tic = time.perf_counter()
+        with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+            jobs = []
+            for split_file in tqdm(split_files_sdfs):
+                try:
+                    job = executor.submit(smina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
+                    jobs.append(job)
+                except Exception as e:
+                    print("Error in concurrent futures job creation: ", str(e))
+            concurrent.futures.wait(jobs)
+        toc = time.perf_counter()
+        print(f'Docking with SMINA complete in {toc-tic:0.4f}!')
+    if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == False:
+        print('Docking split files using GNINA...')
+        tic = time.perf_counter()
+        with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+            jobs = []
+            for split_file in tqdm(split_files_sdfs):
+                try:
+                    job = executor.submit(gnina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
+                    jobs.append(job)
+                except Exception as e:
+                    print("Error in concurrent futures job creation: ", str(e))
+            concurrent.futures.wait(jobs)
         toc = time.perf_counter()
         print(f'Docking with GNINA complete in {toc-tic:0.4f}!')
     return
