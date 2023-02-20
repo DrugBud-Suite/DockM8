@@ -13,6 +13,7 @@ from pathlib import Path
 import dask.dataframe as dd
 from dask import delayed
 import tqdm
+import concurrent.futures
 
 def standardize_molecule(molecule):
         standardized_molecule = standardizer.standardize_mol(molecule)
@@ -70,24 +71,25 @@ def standardize_library_multiprocessing(input_sdf, id_column):
     PandasTools.WriteSDF(df, output_sdf, molColName='Molecule', idName='ID')
     return
 
-def standardize_library_dask(input_sdf, id_column):
-    wdir = os.path.dirname(input_sdf)
-    output_sdf = wdir+'/temp/standardized_library.sdf'
+def standardize_library_futures(input_sdf, id_column):
     print('Standardizing docking library using ChemBL Structure Pipeline...')
     try:
         df = PandasTools.LoadSDF(input_sdf, molColName='Molecule', idName=id_column, removeHs=True, strictParsing=True, smilesName='SMILES')
-        df = df.rename(columns = {id_column:'ID'})
+        df.rename(columns = {id_column:'ID'}, inplace = True)
         df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in df['SMILES']]
+        n_cpds_start = len(df)
     except Exception as e: 
         print('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
         print(e)
-    df = dd.from_pandas(df, npartitions=8)
-    df['Molecule'] = df['Molecule'].map(standardizer.standardize_mol, meta=('Molecule', object))
-    df['Molecule'] = df['Molecule'].map(standardizer.get_parent_mol, meta=('Molecule', object))
-    final_df = df.compute(num_workers=8, scheduler='processes')
-    final_df[['Molecule', 'flag']]=pd.DataFrame(final_df['Molecule'].tolist(), index=final_df.index)
-    final_df=final_df.drop(columns='flag')
-    PandasTools.WriteSDF(final_df, output_sdf, molColName='Molecule', idName='ID')
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule'])))
+    df[['Molecule', 'flag']]=pd.DataFrame(df['Molecule'].tolist(), index=df.index)
+    df=df.drop(columns='flag')
+    n_cpds_end = len(df)
+    print(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
+    wdir = os.path.dirname(input_sdf)
+    output_sdf = wdir+'/temp/standardized_library.sdf'
+    PandasTools.WriteSDF(df, output_sdf, molColName='Molecule', idName='ID')
     return
 
 def protonate_library_pkasolver(input_sdf):
@@ -120,93 +122,7 @@ def protonate_library_pkasolver(input_sdf):
     PandasTools.WriteSDF(protonated_df, output_sdf, molColName='Molecule', idName='ID')
     return
 
-#NOT WORKING
-def protonate_library_pkasolver_dask(input_sdf):
-    print('Calculating protonation states using pkaSolver...')
-    input_df = dd.from_pandas(PandasTools.LoadSDF(input_sdf, idName='ID', removeHs=True, strictParsing=True, smilesName='SMILES'), npartitions=8)
-    print('Reading molecules...')
-    input_df['Rdkit_mol'] = input_df['SMILES'].map(Chem.MolFromSmiles)
-    print('Calculating protonation...')
-    microstate_pkas = [delayed(calculate_microstate_pka_values)(mol) for mol in input_df['Rdkit_mol']]
-    microstate_pkas = delayed(pd.DataFrame)(microstate_pkas)
-    missing_prot_state = delayed(microstate_pkas[microstate_pkas[0].isnull()].index.tolist())
-    microstate_pkas = delayed(microstate_pkas.iloc[:, 0].dropna())
-    microstate_pkas = microstate_pkas.compute()
-    display(microstate_pkas)
-    protonated_df = pd.DataFrame({"Molecule" : [mol.ph7_mol for mol in microstate_pkas]})
-    display(protonated_df)
-    #microstate_pkas = pd.DataFrame(calculate_microstate_pka_values(mol) for mol in input_df['Rdkit_mol'])
-    #missing_prot_state = microstate_pkas[microstate_pkas[0].isnull()].index.tolist()
-    #microstate_pkas = microstate_pkas.iloc[:, 0].dropna()
-    #print(microstate_pkas)
-    #protonated_df = pd.DataFrame({"Molecule" : [mol.ph7_mol for mol in microstate_pkas]})
-    try:
-        for x in missing_prot_state:
-            if x > protonated_df.index.max()+1:
-                print("Invalid insertion")
-            else:
-                protonated_df = Insert_row(x, protonated_df, input_df.loc[x, 'Rdkit_mol'])
-    except Exception as e: 
-        print('ERROR in adding missing protonating state')
-        print(e)
-    protonated_df['ID'] = input_df['ID']
-    output_sdf = os.path.dirname(input_sdf)+'/protonated_library.sdf'
-    PandasTools.WriteSDF(protonated_df, output_sdf, molColName='Molecule', idName='ID')
-    return
 
-def calc_pka(x):
-    new_mol = calculate_microstate_pka_values(x, only_dimorphite=False)
-    return new_mol
-
-#NOT WORKING
-def protonate_library_pkasolver_multiprocessing(input_sdf):
-    print('Calculating protonation states using pkaSolver...')
-    try:
-        input_df = PandasTools.LoadSDF(input_sdf, idName='ID', molColName='Molecule', includeFingerprints=False, embedProps=True, removeHs=True, strictParsing=True, smilesName='SMILES')
-    except Exception as e: 
-        print('ERROR: Failed to Load library SDF file!')
-        print(e)
-    #apply pkasolver package to get protonation states of standardized molecules
-    #try:
-        #create a new column of the calculated microstate pka values of converted rdkit molecules
-    input_df['Rdkit_mol'] = [Chem.MolFromSmiles(mol) for mol in input_df['SMILES']]
-    toprocess = input_df['Rdkit_mol']
-    with multiprocessing.Pool() as p:
-        newmols = p.map(calculate_microstate_pka_values, toprocess)
-        print(newmols)
-    mols_df =pd.DataFrame(newmols)
-    #generate list of indecies of all missing protonating states
-    missing_prot_state = mols_df[mols_df[0].isnull()].index.tolist()
-    #drop all missing values
-    mols_df = mols_df.iloc[:, 0].dropna()
-    #except:
-        #print('ERROR: multiprocess failed')
-    #choosing ph7_mol in our dataframe
-    try:
-        protonated_df= pd.DataFrame({"Molecule" : [mol.ph7_mol for mol in mols_df]})
-    except Exception as e:
-        print('ERROR: protonation state not found')
-        print(e)
-    #adding original molecule for molecules that has no protonation state.
-    try:
-        for x in missing_prot_state:
-            if x > protonated_df.index.max()+1:
-                print("Invalid insertion")
-            else:
-                protonated_df = Insert_row(x, protonated_df, input_df.loc[x, 'Rdkit_mol'])
-    except Exception as e: 
-        print('ERROR in adding missing protonating state')
-        print(e)
-    id_list = input_df['ID']
-    protonated_df['ID'] = id_list
-    # Write protonated SDF file
-    wdir = os.path.dirname(input_sdf)
-    output_sdf = wdir+'/protonated_library.sdf'
-    #try:
-    PandasTools.WriteSDF(protonated_df, output_sdf, molColName='Molecule', idName='ID')
-    #except:
-        #print('\n**\n**\n**ERROR: Failed to write protonated library SDF file!')
-    return
 #NOT WORKING
 def generate_confomers_RDKit(input_sdf, ID, software_path):
     output_sdf = +os.path.dirname(input_sdf)+'/3D_library_RDkit.sdf'
