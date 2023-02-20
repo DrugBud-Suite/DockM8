@@ -149,7 +149,7 @@ def metric_calculation_failure_handling(x, y, metric, protein_file):
             return 0
 
 def matrix_calculation_and_clustering_futures_failure_handling(metric, method, df, protein_file):
-    methods = {'Kmedoids': kmedoids_S_clustering, 'AffProp': affinity_propagation_clustering}
+    methods = {'KMedoids': kmedoids_S_clustering, 'AffProp': affinity_propagation_clustering}
     if metric == '3DScore':
         subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
         indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
@@ -240,7 +240,7 @@ def cluster_mp(metric, method, w_dir, protein_file, all_poses):
             clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
         else:
             clustered_dataframes = []
-            with multiprocessing.Pool(processes=int(multiprocessing.cpu_count()/2)) as pool:
+            with multiprocessing.Pool(processes=int(multiprocessing.cpu_count()-4)) as pool:
                 print('Running parallel jobs...')
                 tic = time.perf_counter()
                 results = [pool.apply_async(matrix_calculation_and_clustering_futures_failure_handling, (metric, method, all_poses[all_poses['ID']==current_id], protein_file)) for current_id in id_list]
