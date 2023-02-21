@@ -116,9 +116,9 @@ def cluster(metric, method, w_dir, protein_file, all_poses):
     if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
         id_list = np.unique(np.array(all_poses['ID']))
         best_pose_filters = {'bestpose': ('_1', '_01'),
-                            'bestpose_GNINA': ('GNINA_1',),
-                            'bestpose_SMINA': ('SMINA_1',),
-                            'bestpose_PLANTS': ('PLANTS_01',)}
+                            'bestpose_GNINA': ('GNINA_1','GNINA_01'),
+                            'bestpose_SMINA': ('SMINA_1','SMINA_01'),
+                            'bestpose_PLANTS': ('PLANTS_1','PLANTS_01')}
         if metric in best_pose_filters:
             filter = best_pose_filters[metric]
             clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
@@ -186,9 +186,9 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses):
         id_list = np.unique(np.array(all_poses['ID']))
         print(f"*Calculating {metric} metrics and clustering*")
         best_pose_filters = {'bestpose': ('_1', '_01'),
-                            'bestpose_GNINA': ('GNINA_1',),
-                            'bestpose_SMINA': ('SMINA_1',),
-                            'bestpose_PLANTS': ('PLANTS_01',)}
+                            'bestpose_GNINA': ('GNINA_1','GNINA_01'),
+                            'bestpose_SMINA': ('SMINA_1','SMINA_01'),
+                            'bestpose_PLANTS': ('PLANTS_1','PLANTS_01')}
         if metric in best_pose_filters:
             filter = best_pose_filters[metric]
             clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
