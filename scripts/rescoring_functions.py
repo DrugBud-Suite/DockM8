@@ -55,7 +55,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 except Exception as e:
                     print('GNINA docking failed: '+e)
                 return
-            with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()-2)) as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
                 jobs = []
                 for split_file in tqdm(split_files_sdfs):
                     try:
@@ -67,7 +67,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             #with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
             #    pool.starmap(gnina_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
             try:
-                gnina_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/gnina_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/gnina_rescoring/') if file.startswith('split')]
+                gnina_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/gnina_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/gnina_rescoring/') if file.startswith('split') and file.endswith('.sdf')]
             except Exception as e:
                 print('ERROR: Failed to Load GNINA rescoring SDF file!')
                 print(e)
