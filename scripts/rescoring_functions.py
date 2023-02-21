@@ -63,7 +63,11 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         jobs.append(job)
                     except Exception as e:
                         print("Error in concurrent futures job creation: ", str(e))
-                concurrent.futures.wait(jobs)
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs)):
+                    try:
+                        res = job.result()
+                    except Exception as e:
+                        print("Error in concurrent futures job run: ", str(e))
             #with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
             #    pool.starmap(gnina_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
             try:
