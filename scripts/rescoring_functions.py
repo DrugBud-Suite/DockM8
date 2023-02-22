@@ -21,7 +21,10 @@ from IPython.display import display
 # _ECIF
 # _LinF9
 # _SIEVE_Score (no documentation)
-# _
+# _AA-Score
+# _AEScore
+# _RTMScore
+
 
 def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, functions, mp, ncpus):
     tic = time.perf_counter()
