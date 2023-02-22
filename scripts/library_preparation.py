@@ -61,7 +61,7 @@ def standardize_library_multiprocessing(input_sdf, id_column):
         print('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
         print(e)
     with multiprocessing.Pool() as p:
-        df['Molecule'] = tqdm.tqdm(p.imap(standardize_molecule, df['Molecule']), total=len(df['Molecule']))
+        df['Molecule'] = tqdm.tqdm(p.imap(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol')
     df[['Molecule', 'flag']]=pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df=df.drop(columns='flag')
     n_cpds_end = len(df)
@@ -82,7 +82,7 @@ def standardize_library_futures(input_sdf, id_column):
         print('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
         print(e)
     with concurrent.futures.ProcessPoolExecutor() as executor:
-        df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule'])))
+        df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
     df[['Molecule', 'flag']]=pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df=df.drop(columns='flag')
     n_cpds_end = len(df)
