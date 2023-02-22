@@ -39,7 +39,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         if mp == 0:
             print('Rescoring with GNINA')
             results = rescoring_folder+'/gnina_rescoring/'+'rescored_'+cnn+'.sdf'
-            gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only'
+            gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only --no_gpu'
             subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
             gnina_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         else:
@@ -51,7 +51,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             def gnina_rescoring_splitted(split_file, protein_file, ref_file, software):
                 gnina_folder = rescoring_folder+'/gnina_rescoring/'
                 results = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
-                gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only'
+                gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only --no_gpu'
                 try:
                     subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
                 except Exception as e:
@@ -98,7 +98,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         print('Rescoring with Vinardo')
         create_temp_folder(rescoring_folder+'/vinardo_rescoring/')
         results = rescoring_folder+'/vinardo_rescoring/'+'rescored_vinardo.sdf'
-        vinardo_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring vinardo --cnn_scoring none'
+        vinardo_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring vinardo --cnn_scoring none --no_gpu'
         subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         vinardo_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         vinardo_rescoring_results.rename(columns = {'minimizedAffinity':'Vinardo_Affinity'}, inplace = True)
@@ -112,7 +112,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         print('Rescoring with AD4')
         create_temp_folder(rescoring_folder+'/AD4_rescoring/')
         results = rescoring_folder+'/AD4_rescoring/'+'rescored_AD4.sdf'
-        AD4_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring ad4_scoring --cnn_scoring none'
+        AD4_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring ad4_scoring --cnn_scoring none --no_gpu'
         subprocess.call(AD4_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         AD4_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName='None', includeFingerprints=False, removeHs=False)
         AD4_rescoring_results.rename(columns = {'minimizedAffinity':'AD4_Affinity'}, inplace = True)

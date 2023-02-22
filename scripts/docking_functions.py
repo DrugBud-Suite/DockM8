@@ -38,7 +38,7 @@ def smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         print('SMINA folder already exists')
     results_path = smina_folder+'docked.sdf'
     log = smina_folder+'log.txt'
-    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none'+' --log '+log
+    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none --no_gpu --log '+log
     try:
         subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
@@ -71,7 +71,7 @@ def gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         print('GNINA folder already exists')
     results_path = gnina_folder+'/docked.sdf'
     log = gnina_folder+'log.txt'
-    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 '+' --log '+log
+    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu --log '+log
     try:
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
@@ -310,7 +310,7 @@ def smina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     smina_folder = w_dir+'/temp/smina/'
     os.makedirs(smina_folder, exist_ok=True)
     results_path = smina_folder+os.path.basename(split_file).split('.')[0]+'_smina.sdf'
-    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none --cpu 1'
+    smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none --cpu 1 --no_gpu'
     try:
         subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
@@ -322,7 +322,7 @@ def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     gnina_folder = w_dir+'/temp/gnina/'
     os.makedirs(gnina_folder, exist_ok=True)
     results_path = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
-    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 --cpu 1'
+    gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 --cpu 1 --no_gpu'
     try:
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
