@@ -41,7 +41,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             gnina_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         else:
             print(f'Splitting {os.path.basename(sdf)}...')
-            split_files_folder = split_sdf(rescoring_folder+'/gnina_rescoring', sdf)
+            split_files_folder = split_sdf(rescoring_folder+'/gnina_rescoring', sdf, ncpus)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
             print('Rescoring with GNINA')
             global gnina_rescoring_splitted
