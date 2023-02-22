@@ -66,7 +66,7 @@ def affinity_propagation_clustering(input_dataframe):
     #.astype(str).replace('[()\',]','', regex=False)
     return merged_df
 
-def cluster(metric, method, w_dir, protein_file, all_poses):
+def cluster(metric, method, w_dir, protein_file, all_poses, ncpus):
     create_temp_folder(w_dir+'/temp/clustering/')
     def matrix_calculation_and_clustering(metric, method, df, id_list, protein_file): 
         clustered_dataframes = []
@@ -180,7 +180,7 @@ def matrix_calculation_and_clustering_futures_failure_handling(metric, method, d
         clust_df = methods[method](matrix_df)
         return clust_df
 
-def cluster_futures(metric, method, w_dir, protein_file, all_poses):
+def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
     create_temp_folder(w_dir+'/temp/clustering/')
     if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
         id_list = np.unique(np.array(all_poses['ID']))
@@ -196,7 +196,7 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses):
             clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
         else:
             clustered_dataframes = []
-            with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
                 print('Submitting parallel jobs...')
                 tic = time.perf_counter()
                 jobs = []
