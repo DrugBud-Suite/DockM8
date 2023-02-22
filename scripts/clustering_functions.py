@@ -73,7 +73,7 @@ def cluster(metric, method, w_dir, protein_file, all_poses):
         print("*Calculating {} metrics and clustering*".format(metric))
         metrics = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
         methods = {'KMedoids': kmedoids_S_clustering, 'AffProp': affinity_propagation_clustering}
-        for id in tqdm(id_list):
+        for id in tqdm(id_list, desc='Metric calculation and clustering', unit='IDs'):
             if metric == '3DScore':
                 df_filtered = df[df['ID']==id]
                 subsets = np.array(list(itertools.combinations(df_filtered['Molecule'], 2)))
@@ -200,7 +200,7 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses):
                 print('Submitting parallel jobs...')
                 tic = time.perf_counter()
                 jobs = []
-                for current_id in tqdm(id_list):
+                for current_id in tqdm(id_list, desc='Submitting parallel jobs...', unit='IDs'):
                     try:
                         job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
                         jobs.append(job)
@@ -208,47 +208,12 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses):
                         print("Error in concurrent futures job creation: ", str(e))	
                 toc = time.perf_counter()
                 print(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
-                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list)):
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
                     try:
                         res = job.result()
                         clustered_dataframes.append(res)
                     except Exception as e:
                         print("Error in concurrent futures job run: ", str(e))
-            clustered_poses = pd.concat(clustered_dataframes)
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-        save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-        PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-    else:
-        print(f'Clustering using {metric} already done, moving to next metric...')
-    return
-
-def cluster_mp(metric, method, w_dir, protein_file, all_poses):
-    create_temp_folder(w_dir+'/temp/clustering/')
-    if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
-        id_list = np.unique(np.array(all_poses['ID']))
-        print(f"*Calculating {metric} metrics and clustering*")
-        best_pose_filters = {'bestpose': ('_1', '_01'),
-                            'bestpose_GNINA': ('GNINA_1',),
-                            'bestpose_SMINA': ('SMINA_1',),
-                            'bestpose_PLANTS': ('PLANTS_01',)}
-        if metric in best_pose_filters:
-            filter = best_pose_filters[metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
-            clustered_poses = clustered_poses[['Pose ID']]
-            clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-        else:
-            clustered_dataframes = []
-            with multiprocessing.Pool(processes=int(multiprocessing.cpu_count()-4)) as pool:
-                print('Running parallel jobs...')
-                tic = time.perf_counter()
-                results = [pool.apply_async(matrix_calculation_and_clustering_futures_failure_handling, (metric, method, all_poses[all_poses['ID']==current_id], protein_file)) for current_id in id_list]
-                toc = time.perf_counter()
-                print(f'Finished running jobs in {toc-tic:0.4f}, now processing results...')
-                for res in tqdm(results, total=len(id_list)):
-                    print(res, type(res))
-                    clustered_dataframes.append(res)
             clustered_poses = pd.concat(clustered_dataframes)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
         clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
