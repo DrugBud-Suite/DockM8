@@ -15,7 +15,6 @@ import multiprocessing
 import concurrent.futures
 import time
 from scripts.utilities import *
-from tqdm import tqdm
 from IPython.display import display
 
 #TODO: add new scoring functions:
@@ -42,9 +41,9 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             gnina_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         else:
             print(f'Splitting {os.path.basename(sdf)}...')
-            print('Rescoring with GNINA')
             split_files_folder = split_sdf(rescoring_folder+'/gnina_rescoring', sdf)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+            print('Rescoring with GNINA')
             global gnina_rescoring_splitted
             def gnina_rescoring_splitted(split_file, protein_file, ref_file, software):
                 gnina_folder = rescoring_folder+'/gnina_rescoring/'
@@ -53,17 +52,17 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 try:
                     subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
                 except Exception as e:
-                    print('GNINA docking failed: '+e)
+                    print('GNINA rescoring failed: '+e)
                 return
             with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
                 jobs = []
-                for split_file in tqdm(split_files_sdfs):
+                for split_file in tqdm(split_files_sdfs, desc='Submitting GNINA rescoring jobs', unit='file'):
                     try:
                         job = executor.submit(gnina_rescoring_splitted, split_file, protein_file, ref_file, software)
                         jobs.append(job)
                     except Exception as e:
                         print("Error in concurrent futures job creation: ", str(e))
-                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs)):
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with GNINA', unit='file'):
                     try:
                         res = job.result()
                     except Exception as e:
@@ -353,7 +352,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
         if mp == 0:
-            for mol in tqdm(df['Molecule']):
+            for mol in tqdm(df['Molecule'], desc='Rescoring with NNScore', unit='mol'):
                 Chem.MolToMolFile(mol, nnscore_rescoring_folder+'/temp.sdf')
                 oddt_lig = next(oddt.toolkit.readfile('sdf', nnscore_rescoring_folder+'/temp.sdf'))
                 scored_mol = scorer.predict_ligand(oddt_lig)
@@ -387,7 +386,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         re_scores = []
         df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName='Molecule', removeHs=False)
         if mp == 0:
-            for mol in tqdm(df['Molecule']):
+            for mol in tqdm(df['Molecule'], desc='Rescoring with PLECScore', unit='mol'):
                 Chem.MolToMolFile(mol, plecscore_rescoring_folder+'/temp.sdf')
                 oddt_lig = next(oddt.toolkit.readfile('sdf', plecscore_rescoring_folder+'/temp.sdf'))
                 scored_mol = scorer.predict_ligand(oddt_lig)
@@ -446,7 +445,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         csv_files = [os.path.join(subdir, file) for subdir, dirs, files in os.walk(rescoring_folder) for file in files if file in score_files]
         csv_dfs = [pd.read_csv(f, index_col=0) for f in csv_files]
         combined_dfs = csv_dfs[0]
-        for df in tqdm(csv_dfs[1:]):
+        for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
             combined_dfs = pd.merge(combined_dfs, df, left_on='Pose ID', right_on='Pose ID', how='outer')
         first_column = combined_dfs.pop('Pose ID')
         combined_dfs.insert(0, 'Pose ID', first_column)
