@@ -9,6 +9,7 @@ def create_temp_folder(path):
         
 from rdkit.Chem import PandasTools
 import multiprocessing
+from tqdm import tqdm
         
 def split_sdf(dir, sdf_file):
     sdf_file_name = os.path.basename(sdf_file).replace('.sdf', '')
@@ -21,7 +22,7 @@ def split_sdf(dir, sdf_file):
     compounds_per_core = round(len(df['ID'])/(multiprocessing.cpu_count()-2))
     used_ids = set() # keep track of used 'ID' values
     file_counter = 1
-    for i in range(0, len(df), compounds_per_core):
+    for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting files'):
         chunk = df[i:i+compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
