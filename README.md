@@ -23,7 +23,7 @@ The code is divied into 4 parts :
 
 4. Install required packages using the following commands:  
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn -y`  
-`pip install pymesh espsim oddt biopandas`  
+`pip install pymesh espsim oddt biopandas redo`  
 `snap install openbabel` (alternatively install from Ubuntu Software manager)  
 Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`    
 
