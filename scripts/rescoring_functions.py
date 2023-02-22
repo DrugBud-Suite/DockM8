@@ -23,7 +23,7 @@ from IPython.display import display
 # _SIEVE_Score (no documentation)
 # _
 
-def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, functions, mp):
+def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, functions, mp, ncpus):
     tic = time.perf_counter()
     rescoring_folder_name = os.path.basename(clustered_sdf).split('/')[-1]
     rescoring_folder_name = rescoring_folder_name.replace('.sdf', '')
@@ -54,7 +54,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 except Exception as e:
                     print('GNINA rescoring failed: '+e)
                 return
-            with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
                 jobs = []
                 for split_file in tqdm(split_files_sdfs, desc='Submitting GNINA rescoring jobs', unit='file'):
                     try:
