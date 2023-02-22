@@ -293,7 +293,7 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
     print(f'Combined all docking poses in {toc-tic:0.4f}!')
     return all_poses
 
-def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses):
+def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses, ncpus):
     tic = time.perf_counter()
     if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == False:
         smina_docking_results_path = smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses)
@@ -555,7 +555,7 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
     print(f'Combined all docking poses in {toc-tic:0.4f}!')
     return all_poses
 
-def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses):
+def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses, ncpus):
     if os.path.isdir(w_dir+'/temp/split_final_library') == False :
         split_files_folder = split_sdf(w_dir+'/temp', w_dir+'/temp/final_library.sdf')
     else:
@@ -575,7 +575,7 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     print(f'ERROR: Failed to convert {file} to .mol2!')
                     print(e)
         print('Docking split files using PLANTS...')
-        with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = []
             for split_file in tqdm(split_files_sdfs, desc = 'Submitting PLANTS jobs', unit='Jobs'):
                 try:
@@ -593,7 +593,7 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
     if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == False:
         print('Docking split files using SMINA...')
         tic = time.perf_counter()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = []
             for split_file in tqdm(split_files_sdfs, desc = 'Submitting SMINA jobs', unit='Jobs'):
                 try:
@@ -611,7 +611,7 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
     if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == False:
         print('Docking split files using GNINA...')
         tic = time.perf_counter()
-        with concurrent.futures.ProcessPoolExecutor(max_workers=int(multiprocessing.cpu_count()/2)) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = []
             for split_file in tqdm(split_files_sdfs, desc = 'Submitting GNINA jobs', unit='Jobs'):
                 try:
