@@ -433,10 +433,69 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             print('ERROR: Failed to run SCORCH!')
         toc = time.perf_counter()
         print(f'Rescoring with SCORCH complete in {toc-tic:0.4f}!')
-        return    
+        return
+    def LinF9_rescoring(sdf, mp):
+        tic = time.perf_counter()
+        create_temp_folder(rescoring_folder+'/LinF9_rescoring/')
+        if mp == 0:
+            print('Rescoring with LinF9')
+            results = rescoring_folder+'/LinF9_rescoring/'+'rescored_LinF9.sdf'
+            LinF9_cmd = 'cd '+software+' && ./smina.static -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --scoring Lin_F9 --score_only'
+            subprocess.call(LinF9_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            LinF9_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
+        else:
+            print(f'Splitting {os.path.basename(sdf)}...')
+            split_files_folder = split_sdf(rescoring_folder+'/LinF9_rescoring', sdf, ncpus)
+            split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+            print('Rescoring with LinF9')
+            global LinF9_rescoring_splitted
+            def LinF9_rescoring_splitted(split_file, protein_file, ref_file, software):
+                LinF9_folder = rescoring_folder+'/LinF9_rescoring/'
+                results = LinF9_folder+os.path.basename(split_file).split('.')[0]+'_LinF9.sdf'
+                LinF9_cmd = 'cd '+software+' && ./smina.static -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --scoring Lin_F9 --score_only'
+                try:
+                    subprocess.call(LinF9_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+                except Exception as e:
+                    print('LinF9 rescoring failed: '+e)
+                return
+            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+                jobs = []
+                for split_file in tqdm(split_files_sdfs, desc='Submitting LinF9 rescoring jobs', unit='file'):
+                    try:
+                        job = executor.submit(LinF9_rescoring_splitted, split_file, protein_file, ref_file, software)
+                        jobs.append(job)
+                    except Exception as e:
+                        print("Error in concurrent futures job creation: ", str(e))
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with LinF9', unit='file'):
+                    try:
+                        res = job.result()
+                    except Exception as e:
+                        print("Error in concurrent futures job run: ", str(e))
+            #with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
+            #    pool.starmap(LinF9_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
+            try:
+                LinF9_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/LinF9_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/LinF9_rescoring/') if file.startswith('split') and file.endswith('.sdf')]
+            except Exception as e:
+                print('ERROR: Failed to Load LinF9 rescoring SDF file!')
+                print(e)
+            try:
+                LinF9_rescoring_results = pd.concat(LinF9_dataframes)
+            except Exception as e:
+                print('ERROR: Could not combine LinF9 rescored poses')
+                print(e)
+            else:
+                for file in os.listdir(split_files_folder):
+                    if file.startswith('split'):
+                        os.remove(os.path.join(split_files_folder, file))
+        LinF9_rescoring_results.rename(columns = {'minimizedAffinity':'LinF9_Affinity'}, inplace = True)
+        LinF9_rescoring_results = LinF9_rescoring_results[['Pose ID', 'LinF9_Affinity']]
+        LinF9_rescoring_results.to_csv(rescoring_folder+'/LinF9_rescoring/LinF9_scores.csv')
+        toc = time.perf_counter()
+        print(f'Rescoring with LinF9 complete in {toc-tic:0.4f}!')
+        return LinF9_rescoring_results
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
-                        'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring}
+                        'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9':LinF9_rescoring}
     for function in functions:
         if os.path.isdir(rescoring_folder+f'/{function}_rescoring') == False:
             rescoring_functions[function](clustered_sdf, mp)
