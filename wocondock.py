@@ -27,9 +27,9 @@ parser.add_argument('--metric', required=True, type = str, nargs='+', choices = 
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses')
 parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision of SMINA/GNINA')
 parser.add_argument('--parallel', default=1, type=int, choices = [0,1], help ='Choose whether to run workflow in parallel')
-parser.add_argument('--ncpus', default=os.cpu_count()/2, type=int, help ='Number of cpus to use')
+parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of cpus to use')
 parser.add_argument('--clustering', type = str, choices = ['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
-parser.add_argument('--rescoring', type = str, nargs='+', choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs'], help='Rescoring methods to use')
+parser.add_argument('--rescoring', type = str, nargs='+', choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp'], help='Rescoring methods to use')
 
 args = parser.parse_args()
 
