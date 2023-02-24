@@ -51,7 +51,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             def gnina_rescoring_splitted(split_file, protein_file, ref_file, software):
                 gnina_folder = rescoring_folder+'/gnina_rescoring/'
                 results = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
-                gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only --no_gpu'
+                gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only --no_gpu --cpu 1'
                 try:
                     subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
                 except Exception as e:
@@ -493,6 +493,8 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         toc = time.perf_counter()
         print(f'Rescoring with LinF9 complete in {toc-tic:0.4f}!')
         return LinF9_rescoring_results
+    def delta_Lin_F9_XGB_rescoring(sdf, mp):
+        return
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9':LinF9_rescoring}
