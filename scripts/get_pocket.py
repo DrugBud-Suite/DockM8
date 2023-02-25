@@ -75,7 +75,7 @@ class GetPocket:
         self.protein_file = protein_file
         self.ligand_mol = load_molecule(ligand_file)
         self.pocket_mol,  self.temp_file = self.process_pro_and_lig(cut)
-        self.pocket_path = os.path.basename(protein_file).split(".")[0] + "_pocket.pdb"
+        self.pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
         Chem.MolToPDBFile(self.pocket_mol, self.pocket_path)
         os.remove(self.temp_file)
         print(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
