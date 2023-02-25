@@ -25,6 +25,15 @@ from IPython.display import display
 # _AEScore
 # _RTMScore
 
+def delete_files(folder_path, save_file):
+    for item in os.listdir(folder_path):
+        item_path = os.path.join(folder_path, item)
+        if os.path.isfile(item_path) and item != save_file:
+            os.remove(item_path)
+        elif os.path.isdir(item_path):
+            delete_files(item_path, save_file)
+            if len(os.listdir(item_path)) == 0 and item != save_file:
+                os.rmdir(item_path)
 
 def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, functions, mp, ncpus):
     tic = time.perf_counter()
@@ -70,8 +79,6 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         res = job.result()
                     except Exception as e:
                         print("Error in concurrent futures job run: ", str(e))
-            #with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
-            #    pool.starmap(gnina_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
             try:
                 gnina_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/gnina_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/gnina_rescoring/') if file.startswith('split') and file.endswith('.sdf')]
             except Exception as e:
@@ -82,13 +89,10 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             except Exception as e:
                 print('ERROR: Could not combine GNINA rescored poses')
                 print(e)
-            else:
-                for file in os.listdir(split_files_folder):
-                    if file.startswith('split'):
-                        os.remove(os.path.join(split_files_folder, file))
         gnina_rescoring_results.rename(columns = {'minimizedAffinity':'GNINA_Affinity', 'CNNscore':'GNINA_CNN_Score', 'CNNaffinity':'GNINA_CNN_Affinity'}, inplace = True)
         gnina_rescoring_results = gnina_rescoring_results[['Pose ID', 'GNINA_Affinity', 'GNINA_CNN_Score', 'GNINA_CNN_Affinity']]
         gnina_rescoring_results.to_csv(rescoring_folder+'/gnina_rescoring/gnina_scores.csv')
+        delete_files(rescoring_folder+'/gnina_rescoring/', 'gnina_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with GNINA complete in {toc-tic:0.4f}!')
         return gnina_rescoring_results
@@ -104,6 +108,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         vinardo_rescoring_results.rename(columns = {'minimizedAffinity':'Vinardo_Affinity'}, inplace = True)
         vinardo_rescoring_results = vinardo_rescoring_results[['Pose ID', 'Vinardo_Affinity']]
         vinardo_rescoring_results.to_csv(rescoring_folder+'/vinardo_rescoring/vinardo_scores.csv')
+        delete_files(rescoring_folder+'/vinardo_rescoring/', 'vinardo_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with Vinardo complete in {toc-tic:0.4f}!')
         return vinardo_rescoring_results
@@ -118,6 +123,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         AD4_rescoring_results.rename(columns = {'minimizedAffinity':'AD4_Affinity'}, inplace = True)
         AD4_rescoring_results = AD4_rescoring_results[['Pose ID', 'AD4_Affinity']]
         AD4_rescoring_results.to_csv(rescoring_folder+f'/AD4_rescoring/AD4_scores.csv')
+        delete_files(rescoring_folder+'/AD4_rescoring/', 'AD4_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with AD4 complete in {toc-tic:0.4f}!')
         return AD4_rescoring_results
@@ -134,6 +140,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         rfscore_results = pd.read_csv(results_path, delimiter=',', header=0)
         rfscore_results = rfscore_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2':'RFScoreVS'})
         rfscore_results.to_csv(rescoring_folder+'/rfscorevs_rescoring/rfscorevs_scores.csv')
+        delete_files(rescoring_folder+'/rfscorevs_rescoring/', 'rfscorevs_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with RF-Score-VS complete in {toc-tic:0.4f}!')
         return rfscore_results
@@ -236,6 +243,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         plp_rescoring_output = plp_results[['Pose ID', 'PLP']]
         plp_rescoring_output.to_csv(rescoring_folder+'/plp_rescoring/plp_scores.csv')
         os.remove(plants_ligands_mol2)
+        delete_files(rescoring_folder+'/plp_rescoring/', 'plp_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with PLP complete in {toc-tic:0.4f}!')
         return plp_rescoring_output
@@ -337,6 +345,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         chemplp_rescoring_output = chemplp_results[['Pose ID', 'CHEMPLP']]
         chemplp_rescoring_output.to_csv(rescoring_folder+'/chemplp_rescoring/chemplp_scores.csv')
         os.remove(plants_ligands_mol2)
+        delete_files(rescoring_folder+'/chemplp_rescoring/', 'chemplp_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with CHEMPLP complete in {toc-tic:0.4f}!')
         return chemplp_rescoring_output
@@ -371,6 +380,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         df['NNScore']=re_scores
         df = df[['Pose ID', 'NNScore']]
         df.to_csv(rescoring_folder+'/nnscore_rescoring/nnscore_scores.csv')
+        delete_files(rescoring_folder+'/nnscore_rescoring/', 'nnscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with NNScore complete in {toc-tic:0.4f}!')
         return df
@@ -407,6 +417,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         df.to_csv(rescoring_folder+'/plecscore_rescoring/plecscore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with PLECScore complete in {toc-tic:0.4f}!')
+        delete_files(rescoring_folder+'/plecscore_rescoring/', 'plecscore_scores.csv')
         return df
     def SCORCH_rescoring(clustered_sdf):
         tic = time.perf_counter()
@@ -471,8 +482,6 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         res = job.result()
                     except Exception as e:
                         print("Error in concurrent futures job run: ", str(e))
-            #with multiprocessing.Pool(processes=(multiprocessing.cpu_count()-2)) as pool:
-            #    pool.starmap(LinF9_rescoring_splitted, [(split_file, protein_file, ref_file, software) for split_file in split_files_sdfs])
             try:
                 LinF9_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/LinF9_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/LinF9_rescoring/') if file.startswith('split') and file.endswith('.sdf')]
             except Exception as e:
@@ -483,13 +492,10 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             except Exception as e:
                 print('ERROR: Could not combine LinF9 rescored poses')
                 print(e)
-            else:
-                for file in os.listdir(split_files_folder):
-                    if file.startswith('split'):
-                        os.remove(os.path.join(split_files_folder, file))
         LinF9_rescoring_results.rename(columns = {'minimizedAffinity':'LinF9_Affinity'}, inplace = True)
         LinF9_rescoring_results = LinF9_rescoring_results[['Pose ID', 'LinF9_Affinity']]
         LinF9_rescoring_results.to_csv(rescoring_folder+'/LinF9_rescoring/LinF9_scores.csv')
+        delete_files(rescoring_folder+'/LinF9_rescoring/', 'LinF9_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with LinF9 complete in {toc-tic:0.4f}!')
         return LinF9_rescoring_results
@@ -544,9 +550,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 print('ERROR: Could not combine AAScore rescored poses')
                 print(e)
             else:
-                for file in os.listdir(split_files_folder):
-                    if file.startswith('split'):
-                        os.remove(os.path.join(split_files_folder, file))
+                delete_files(rescoring_folder+'/AAScore_rescoring/', 'AAScore_scores.csv')
         AAScore_rescoring_results.to_csv(rescoring_folder+f'/AAScore_rescoring/AAScore_scores.csv')
         toc = time.perf_counter()
         print(f'Rescoring with AAScore complete in {toc-tic:0.4f}!')
