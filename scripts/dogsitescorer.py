@@ -374,5 +374,5 @@ def binding_site_coordinates_dogsitescorer(pdbpath, w_dir, method='volume'):
     best_binding_site = sort_binding_sites(binding_site_df, method)
     pocket = get_selected_pocket_location(job_location, best_binding_site)
     save_binding_site_to_file(pdbpath, pocket, w_dir)
-    pocket_coordinates=calculate_pocket_coordinates_from_pocket_pdb_file(os.path.basename(pdbpath).split(".")[0] + "_pocket.pdb")
+    pocket_coordinates=calculate_pocket_coordinates_from_pocket_pdb_file(pdbpath.replace('.pdb', '_pocket.pdb'))
     return pocket_coordinates
