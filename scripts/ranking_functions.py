@@ -23,7 +23,8 @@ def standardize_scores(dataframe, clustering_method):
                                             'PLP':'min', 
                                             'CHEMPLP':'min', 
                                             'NNScore':'max', 
-                                            'PLECnn':'max'}
+                                            'PLECnn':'max',
+                                            'AAScore':'min'}
     for col in dataframe.columns:
         if col != 'Pose ID':
             dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
