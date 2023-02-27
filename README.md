@@ -36,20 +36,42 @@ The code is divied into 4 parts :
 5. (Optional) Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
 
-## Running WoConDock (via wocondock_refactored folder)
+## Running WoConDock (via command-line / wocondock.py script)
 
-1. Ensure required files are in the wocondock_refactored folder
+1. Create a working directory on your machine and ensure the required files are present:
 - protein/receptor file (with hydrogens added) as a .pdb file
-- reference ligand file as a .mol2 file
+- If using a ligand to define the binding pocket : reference ligand file as an .sdf file
 - docking library as a .sdf file
 
-2. Open wocondock.ipynb
+2. Open a terminal and activate the wocondock python environment
 
-3. Make sure to set the variables to point to your protein, reference and docking library files. You also need to specify the location where the software files are located. Finally, if the docking library contains a unique identifier, specify the name of the column (id_column) to keep track of this.
+3. Run the following command:
 
-4. The notebook can then be run in sequence. Further explanations and instructions as present in the notebook.
+´python /path/to/wocondock.py --args´
 
-## License
+--software: The path to the software folder.
+--proteinfile: The path to the protein file (.pdb).
+--pocket: The method to use for pocket determination. Must be one of 'reference' or 'dogsitescorer'.
+--dockinglibrary: The path to the docking library file (.sdf).
+--idcolumn: The unique identifier column used in the docking library.
+--protonation: The method to use for compound protonation. Must be one of 'pkasolver', 'GypsumDL', or 'None'.
+--docking: The method(s) to use for docking. Must be one or more of 'GNINA', 'SMINA', or 'PLANTS'.
+--metric: The method(s) to use for pose clustering. Must be one or more of 'RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', or 'bestpose_PLANTS'.
+--nposes: The number of poses to generate for each docking software. Default=10
+--exhaustiveness: The precision used if docking with SMINA/GNINA. Default=8
+--parallels: Whether or not to run the workflow in parallel. Default=1 (on). Can be set to 1 (on) or 0 (off).
+-- ncpus: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.
+-- clustering: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'.
+--rescoring: Which scoring functions to use for rescoring. Must be one or more of 'gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore'.
+
+## Running WoConDock (via Jupyter Notebook)
+
+1. Open wocondock.ipynb in your favorite IDE
+
+2. Follow the instructions in the Markdown cells
+
+
+## License (NEEDS CHECKING...)
 <!-- markdown-link-check-disable-next-line -->
 This project is licensed under the MIT License - see the [LICENSE.md](https://gitlab.com/hibrahim21/CADD22/-/blob/main/LICENSE) file for details.
 
