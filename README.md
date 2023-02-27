@@ -49,20 +49,20 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 
 ´python /path/to/wocondock.py --args´
 
---software: The path to the software folder.
---proteinfile: The path to the protein file (.pdb).
---pocket: The method to use for pocket determination. Must be one of 'reference' or 'dogsitescorer'.
---dockinglibrary: The path to the docking library file (.sdf).
---idcolumn: The unique identifier column used in the docking library.
---protonation: The method to use for compound protonation. Must be one of 'pkasolver', 'GypsumDL', or 'None'.
---docking: The method(s) to use for docking. Must be one or more of 'GNINA', 'SMINA', or 'PLANTS'.
---metric: The method(s) to use for pose clustering. Must be one or more of 'RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', or 'bestpose_PLANTS'.
---nposes: The number of poses to generate for each docking software. Default=10
---exhaustiveness: The precision used if docking with SMINA/GNINA. Default=8
---parallels: Whether or not to run the workflow in parallel. Default=1 (on). Can be set to 1 (on) or 0 (off).
--- ncpus: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.
--- clustering: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'.
---rescoring: Which scoring functions to use for rescoring. Must be one or more of 'gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore'.
+--software: The path to the software folder.  
+--proteinfile: The path to the protein file (.pdb).  
+--pocket: The method to use for pocket determination. Must be one of 'reference' or 'dogsitescorer'.  
+--dockinglibrary: The path to the docking library file (.sdf).  
+--idcolumn: The unique identifier column used in the docking library.  
+--protonation: The method to use for compound protonation. Must be one of 'pkasolver', 'GypsumDL', or 'None'.  
+--docking: The method(s) to use for docking. Must be one or more of 'GNINA', 'SMINA', or 'PLANTS'.  
+--metric: The method(s) to use for pose clustering. Must be one or more of 'RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', or 'bestpose_PLANTS'.  
+--nposes: The number of poses to generate for each docking software. Default=10  
+--exhaustiveness: The precision used if docking with SMINA/GNINA. Default=8  
+--parallels: Whether or not to run the workflow in parallel. Default=1 (on). Can be set to 1 (on) or 0 (off).  
+-- ncpus: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.  
+-- clustering: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'.  
+--rescoring: Which scoring functions to use for rescoring. Must be one or more of 'gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore'.  
 
 ## Running WoConDock (via Jupyter Notebook)
 
