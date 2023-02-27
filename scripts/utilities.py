@@ -1,11 +1,12 @@
 import os
 
-def create_temp_folder(path):
+def create_temp_folder(path, silent=False):
     if os.path.isdir(path) == True:
         print(f'The folder: {path} already exists')
     else:
         os.mkdir(path)
-        print(f'The folder: {path} was created')
+        if silent == False:
+            print(f'The folder: {path} was created')
         
 from rdkit.Chem import PandasTools
 import multiprocessing
@@ -15,7 +16,7 @@ def split_sdf(dir, sdf_file, ncpus):
     sdf_file_name = os.path.basename(sdf_file).replace('.sdf', '')
     print(f'Splitting SDF file {sdf_file_name}.sdf ...')
     split_files_folder = dir+f'/split_{sdf_file_name}'
-    create_temp_folder(dir+f'/split_{sdf_file_name}')
+    create_temp_folder(dir+f'/split_{sdf_file_name}', silent=True)
     for file in os.listdir(dir+f'/split_{sdf_file_name}'):
         os.unlink(os.path.join(dir+f'/split_{sdf_file_name}', file))
     df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
