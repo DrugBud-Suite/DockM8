@@ -25,15 +25,15 @@ The code is divied into 4 parts :
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn -y`  
 `pip install pymesh espsim oddt biopandas redo`  
 
-If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings and install openbabel using `conda install -c conda-forge openbabel`.  
+    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings and install openbabel using `conda install -c conda-forge openbabel`.  
 
-If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
+    If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
 
-If you want to run the delta_LinF9_XGB scoring function, you should additionally install `pip install mdtraj alphaspace2`
+    If you want to run the delta_LinF9_XGB scoring function, you should additionally install `pip install mdtraj alphaspace2`
 
-Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`    
+    Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`    
 
-5. Ensure you have permissions to run the scripts required
+5. (Optional) Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
 
 ## Running WoConDock (via wocondock_refactored folder)
