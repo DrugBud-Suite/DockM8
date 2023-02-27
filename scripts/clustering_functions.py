@@ -18,6 +18,8 @@ import concurrent.futures
 import time
 
 def kmedoids_S_clustering(input_dataframe):
+    '''This function applies kmedoids clustering to the input dataframe, which is a matrix of clustering metrics. It returns 
+    the list of cluster centers and their Pose ID'''
     df = input_dataframe.copy()
     molecule_list = input_dataframe.columns.values.tolist()
     #preprocessing our data *scaling data* 
@@ -48,6 +50,8 @@ def kmedoids_S_clustering(input_dataframe):
     return merged_df
 
 def affinity_propagation_clustering(input_dataframe):
+    '''This function applies affinity propagation clustering to the input dataframe, which is a matrix of clustering metrics. It returns 
+    the list of cluster centers and their Pose ID'''
     df = input_dataframe.copy()
     molecule_list = input_dataframe.columns.values.tolist()
     #preprocessing our data *scaling data* 
@@ -67,6 +71,7 @@ def affinity_propagation_clustering(input_dataframe):
     return merged_df
 
 def cluster(metric, method, w_dir, protein_file, all_poses, ncpus):
+    '''This function clusters all poses according to the metric selected'''
     create_temp_folder(w_dir+'/temp/clustering/')
     def matrix_calculation_and_clustering(metric, method, df, id_list, protein_file): 
         clustered_dataframes = []
@@ -181,6 +186,7 @@ def matrix_calculation_and_clustering_futures_failure_handling(metric, method, d
         return clust_df
 
 def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
+    '''This function clusters all poses according to the metric selected using multiple CPU cores'''
     create_temp_folder(w_dir+'/temp/clustering/')
     if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
         id_list = np.unique(np.array(all_poses['ID']))
