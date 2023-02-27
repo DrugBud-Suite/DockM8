@@ -31,7 +31,9 @@ The code is divied into 4 parts :
 
     If you want to run the delta_LinF9_XGB scoring function, you should additionally install `pip install mdtraj alphaspace2`
 
-    Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`    
+    Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`  
+
+6. If GNINA does not run, you may need to run the following command to point GNINA to the anaconda installation : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
 
 5. (Optional) Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
