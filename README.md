@@ -1,6 +1,6 @@
 # WoConDock
 <!-- markdown-link-check-disable-next-line -->
-**Workflow for Consensus Docking**
+**Workflow for Consensus Docking**  
 WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
 The code is divied into 4 parts :
