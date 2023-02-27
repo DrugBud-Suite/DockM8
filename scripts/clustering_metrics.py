@@ -11,14 +11,15 @@ import numpy as np
 import math
 
 def simpleRMSD_calc(*args):
-# MCS identification between reference pose and target pose
+    '''Calculates the RMSD metric between two molecules'''
+    # MCS identification between reference pose and target pose
     r=rdFMCS.FindMCS([args[0],args[1]])
-# Atom map for reference and target              
+    # Atom map for reference and target              
     a=args[0].GetSubstructMatch(Chem.MolFromSmarts(r.smartsString))
     b=args[1].GetSubstructMatch(Chem.MolFromSmarts(r.smartsString))
-# Atom map generation     
+    # Atom map generation     
     amap=list(zip(a,b))
-# distance calculation per atom pair
+    # distance calculation per atom pair
     distances=[]
     for atomA, atomB in amap:
         pos_A=args[0].GetConformer().GetAtomPosition (atomA)
@@ -27,11 +28,12 @@ def simpleRMSD_calc(*args):
         coord_B=np.array ((pos_B.x,pos_B.y,pos_B.z))
         dist_numpy = np.linalg.norm(coord_A-coord_B)        
         distances.append(dist_numpy)      
-# This is the RMSD formula from wikipedia
+    # This is the RMSD formula from wikipedia
     rmsd=math.sqrt(1/len(distances)*sum([i*i for i in distances])) 
     return round(rmsd, 3)
 
 def spyRMSD_calc(*args):
+    '''Calculates the symmetry-corrected RMSD metric between two molecules'''
     mol = args[0][0] if type(args[0]) == tuple else args[0]
     jmol = args[0][1] if type(args[0]) == tuple else args[1]
     spyrmsd_mol = molecule.Molecule.from_rdkit(mol)
@@ -48,9 +50,11 @@ def spyRMSD_calc(*args):
     return round(spyRMSD, 3)
 
 def espsim_calc(*args):
+    '''Calculates the electrostatic shape similarity metric between two molecules'''
     return GetEspSim(args[0], args[1])
 
 def SPLIF_calc(*args):
+    '''Calculates the Protein-Ligand Interaction fingerprint similarity metric between two molecules'''
     pocket_file = args[2].replace('.pdb', '_pocket.pdb')
     protein=next(oddt.toolkit.readfile('pdb', pocket_file))
     protein.protein = True
@@ -62,6 +66,7 @@ def SPLIF_calc(*args):
     return round(SPLIF_sim, 3)
 
 def USRCAT_calc(*args):
+    '''Calculates the Shape similarity metric between two molecules'''
     shape_mol = oddt.toolkits.rdk.Molecule(args[0])
     shape_jmol = oddt.toolkits.rdk.Molecule(args[1])
     mol_fp=oddt.shape.usr_cat(shape_mol)
