@@ -43,7 +43,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     create_temp_folder(rescoring_folder)
     def gnina_rescoring(sdf, mp):
         tic = time.perf_counter()
-        create_temp_folder(rescoring_folder+'/gnina_rescoring/')
+        create_temp_folder(rescoring_folder+'/gnina_rescoring/', silent=True)
         cnn = 'crossdock_default2018'
         if mp == 0:
             print('Rescoring with GNINA')
@@ -52,7 +52,6 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
             gnina_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         else:
-            print(f'Splitting {os.path.basename(sdf)}...')
             split_files_folder = split_sdf(rescoring_folder+'/gnina_rescoring', sdf, ncpus)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
             print('Rescoring with GNINA')
@@ -100,7 +99,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         display(sdf)
         tic = time.perf_counter()
         print('Rescoring with Vinardo')
-        create_temp_folder(rescoring_folder+'/vinardo_rescoring/')
+        create_temp_folder(rescoring_folder+'/vinardo_rescoring/', silent=True)
         results = rescoring_folder+'/vinardo_rescoring/'+'rescored_vinardo.sdf'
         vinardo_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring vinardo --cnn_scoring none --no_gpu'
         subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
@@ -115,7 +114,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     def AD4_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with AD4')
-        create_temp_folder(rescoring_folder+'/AD4_rescoring/')
+        create_temp_folder(rescoring_folder+'/AD4_rescoring/', silent=True)
         results = rescoring_folder+'/AD4_rescoring/'+'rescored_AD4.sdf'
         AD4_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --score_only --scoring ad4_scoring --cnn_scoring none --no_gpu'
         subprocess.call(AD4_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
@@ -130,7 +129,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     def rfscore_rescoring(sdf, mp):
         tic = time.perf_counter()
         print('Rescoring with RFScoreVS')
-        create_temp_folder(rescoring_folder+'/rfscorevs_rescoring')
+        create_temp_folder(rescoring_folder+'/rfscorevs_rescoring', silent=True)
         results_path = rescoring_folder+'/rfscorevs_rescoring/rfscorevs_scores.csv'
         if mp == 1 :
             rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n '+str(int(multiprocessing.cpu_count()-2))
@@ -150,7 +149,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         plants_search_speed = 'speed1'
         ants = '20'
         plp_rescoring_folder = rescoring_folder+'/plp_rescoring/'
-        create_temp_folder(plp_rescoring_folder)
+        create_temp_folder(plp_rescoring_folder, silent=True)
         #Read protein and ref files generated during PLANTS docking
         plants_protein_mol2 = w_dir+'/temp/plants/protein.mol2'
         plants_ref_mol2 = w_dir+'/temp/plants/ref.mol2'
@@ -253,7 +252,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         plants_search_speed = 'speed1'
         ants = '20'
         chemplp_rescoring_folder = rescoring_folder+'/chemplp_rescoring/'
-        create_temp_folder(chemplp_rescoring_folder)
+        create_temp_folder(chemplp_rescoring_folder, silent=True)
         #Read protein and ref files generated during PLANTS docking
         plants_protein_mol2 = w_dir+'/temp/plants/protein.mol2'
         plants_ref_mol2 = w_dir+'/temp/plants/ref.mol2'
@@ -354,7 +353,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         print('Rescoring with NNScore')
         rescorers = {'nnscore':NNScore.nnscore()}
         nnscore_rescoring_folder = rescoring_folder+'/nnscore_rescoring/'
-        create_temp_folder(nnscore_rescoring_folder)
+        create_temp_folder(nnscore_rescoring_folder, silent=True)
         scorer = rescorers['nnscore']
         pickle = software+'/NNScore_pdbbind2016.pickle'
         scorer = scorer.load(pickle)
@@ -389,7 +388,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         print('Rescoring with PLECscore')
         rescorers = {'PLECnn_p5_l1_s65536':PLECscore(version='nn')}
         plecscore_rescoring_folder = rescoring_folder+'/plecscore_rescoring/'
-        create_temp_folder(plecscore_rescoring_folder)
+        create_temp_folder(plecscore_rescoring_folder, silent=True)
         scorer = rescorers['PLECnn_p5_l1_s65536']
         pickle = software+'/PLECnn_p5_l1_2016.pickle'
         scorer = scorer.load(pickle)
@@ -447,7 +446,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         return
     def LinF9_rescoring(sdf, mp):
         tic = time.perf_counter()
-        create_temp_folder(rescoring_folder+'/LinF9_rescoring/')
+        create_temp_folder(rescoring_folder+'/LinF9_rescoring/', silent=True)
         if mp == 0:
             print('Rescoring with LinF9')
             results = rescoring_folder+'/LinF9_rescoring/'+'rescored_LinF9.sdf'
@@ -455,10 +454,8 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             subprocess.call(LinF9_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
             LinF9_rescoring_results = PandasTools.LoadSDF(results, idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
         else:
-            print(f'Splitting {os.path.basename(sdf)}...')
             split_files_folder = split_sdf(rescoring_folder+'/LinF9_rescoring', sdf, ncpus)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
-            print('Rescoring with LinF9')
             global LinF9_rescoring_splitted
             def LinF9_rescoring_splitted(split_file, protein_file, ref_file, software):
                 LinF9_folder = rescoring_folder+'/LinF9_rescoring/'
@@ -503,7 +500,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         return
     def AAScore_rescoring(sdf, mp):
         tic = time.perf_counter()
-        create_temp_folder(rescoring_folder+'/AAScore_rescoring/')
+        create_temp_folder(rescoring_folder+'/AAScore_rescoring/', silent=True)
         pocket = protein_file.replace('.pdb', '_pocket.pdb')
         if mp == 0:
             print('Rescoring with AAScore')
@@ -512,10 +509,8 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             subprocess.call(AAscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
             AAScore_rescoring_results=pd.read_csv(results, delimiter='\t', header=None, names=['Pose ID', 'AAScore'])
         else:
-            print(f'Splitting {os.path.basename(sdf)}...')
             split_files_folder = split_sdf(rescoring_folder+'/AAScore_rescoring', sdf, ncpus)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
-            print('Rescoring with AAScore')
             global AAScore_rescoring_splitted
             def AAScore_rescoring_splitted(split_file, software):
                 AAScore_folder = rescoring_folder+'/AAScore_rescoring/'
