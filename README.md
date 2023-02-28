@@ -3,19 +3,13 @@
 **Workflow for Consensus Docking**  
 WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
-The code is divied into 4 parts :
-1. Predocking
-2. Docking
-3. Postdocking
-4. Ranking
-
 ## Installation (Python 3.8 / Ubuntu 22.04)
 <!-- markdown-link-check-disable-next-line -->
 
-1. Anaconda should be installed to be able to create local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
+1. Anaconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
 
 2. Clone repository to your machine:  
-`git clone https://gitlab.com/Tonylac77/WoConDock.git` 
+`git clone https://gitlab.com/Tonylac77/DockM8.git` 
 
 3. Create and activate a WoConDock conda environment:  
 `conda create -n wocondock python=3.8`  
@@ -33,7 +27,7 @@ The code is divied into 4 parts :
 
     Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`  
 
-6. If GNINA does not run, you may need to run the following command to point GNINA to the anaconda installation : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
+6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
 
 5. (Optional) Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
@@ -75,7 +69,7 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 
 ## License (NEEDS CHECKING...)
 <!-- markdown-link-check-disable-next-line -->
-This project is licensed under the MIT License - see the [LICENSE.md](https://gitlab.com/hibrahim21/CADD22/-/blob/main/LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE.md](https://gitlab.com/Tonylac77/DockM8/-/blob/main/LICENSE) file for details.
 
 
 
