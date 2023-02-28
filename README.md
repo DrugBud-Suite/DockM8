@@ -1,7 +1,7 @@
 # WoConDock
 <!-- markdown-link-check-disable-next-line -->
-Open source workflow for structure-based virtual screening (SBVS).
-WoConDock, a SBVS workflow, is developed to fill the demand between all researchers, regardless of their background. we are doing it with the goal of allowing researchers from all backgrounds to be able to perform SBVS on the wealth of 3D protein structures that are now available.
+**Workflow for Consensus Docking**  
+WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
 The code is divied into 4 parts :
 1. Predocking
@@ -31,7 +31,9 @@ The code is divied into 4 parts :
 
     If you want to run the delta_LinF9_XGB scoring function, you should additionally install `pip install mdtraj alphaspace2`
 
-    Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`    
+    Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`  
+
+6. If GNINA does not run, you may need to run the following command to point GNINA to the anaconda installation : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
 
 5. (Optional) Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
