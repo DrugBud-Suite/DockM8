@@ -76,11 +76,9 @@ def show_correlation(input, annotation = bool()):
 
 import datetime
 
-log_filename = "test.txt"
-
 def printlog(message):
     def timestamp_generator():
-        dateTimeObj = datetime.now()
+        dateTimeObj = datetime.datetime.now()
         return "["+dateTimeObj.strftime("%Y-%b-%d %H:%M:%S")+"]"
     timestamp = timestamp_generator()
     msg = "\n" + \
