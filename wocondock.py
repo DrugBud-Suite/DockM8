@@ -43,6 +43,9 @@ def run_command(**kwargs):
     w_dir = os.path.dirname(kwargs.get('proteinfile'))
     print('The working directory has been set to:', w_dir)
     create_temp_folder(w_dir+'/temp')
+
+    global log_filename
+    log_filename = w_dir+'/temp/dockm8_log.txt'
     
     if os.path.isfile(kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')) == False:
         if kwargs.get('pocket') == 'reference':
