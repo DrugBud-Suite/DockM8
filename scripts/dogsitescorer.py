@@ -25,6 +25,7 @@ import pandas as pd  # for creating dataframes and handling data
 from biopandas.pdb import PandasPdb  # for working with PDB files
 import redo # for retrying API queries if they fail
 import os
+from scripts.utilities import *
 
 
 class APIConsts:
@@ -163,7 +164,7 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
         Table with metadata on detected binding sites.
     """
 
-    print(f"Querying for job at URL {job_location}...", end="")
+    printlog(f"Querying for job at URL {job_location}...", end="")
 
     while attempts:
         # Get job results
@@ -175,7 +176,7 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
             result_file = response["result_table"]
             break
         attempts -= 1
-        print(".", end="")
+        printlog(".", end="")
         time.sleep(10)
     # Get result table (as string)
     result_table = requests.get(result_file).text
@@ -233,13 +234,13 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
 
 def sort_binding_sites(dataframe, method):
     if method == 'drugScore':
-        print('Sorting binding sites by drug score')
+        printlog('Sorting binding sites by drug score')
         dataframe=dataframe.sort_values(by=["drugScore"], ascending=False)
     elif method == 'volume':
-        print('Sorting binding sites by volume')
+        printlog('Sorting binding sites by volume')
         dataframe=dataframe.sort_values(by=["volume"], ascending=False)
     else:
-        print('Sorting binding sites by {}'.format(method))
+        printlog('Sorting binding sites by {}'.format(method))
         dataframe=dataframe.sort_values(by=method, ascending=False)
     best_pocket_name = dataframe.iloc[0, :].name
     return best_pocket_name
