@@ -35,16 +35,16 @@ def smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
     try:
         os.mkdir(smina_folder, mode = 0o777)
     except:
-        print('SMINA folder already exists')
+        printlog('SMINA folder already exists')
     results_path = smina_folder+'docked.sdf'
     log = smina_folder+'log.txt'
     smina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring none --no_gpu --log '+log
     try:
         subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('SMINA docking failed: '+e)
+        printlog('SMINA docking failed: '+e)
     toc = time.perf_counter()
-    print(f'Docking with SMINA complete in {toc-tic:0.4f}!')
+    printlog(f'Docking with SMINA complete in {toc-tic:0.4f}!')
     return results_path
 
 def gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
@@ -68,16 +68,16 @@ def gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
     try:
         os.mkdir(gnina_folder, mode = 0o777)
     except:
-        print('GNINA folder already exists')
+        printlog('GNINA folder already exists')
     results_path = gnina_folder+'/docked.sdf'
     log = gnina_folder+'log.txt'
     gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+library+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu --log '+log
     try:
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('GNINA docking failed: '+e)
+        printlog('GNINA docking failed: '+e)
     toc = time.perf_counter()
-    print(f'Docking with GNINA complete in {toc-tic:0.4f}!')
+    printlog(f'Docking with GNINA complete in {toc-tic:0.4f}!')
     return results_path
 
 def plants_docking(protein_file, ref_file, software, n_poses):
@@ -104,18 +104,18 @@ def plants_docking(protein_file, ref_file, software, n_poses):
     plants_docking_results_dir = w_dir+'/temp/plants/results'
     #Create plants docking folder
     if os.path.isdir(plants_docking_dir) == True:
-        print('Plants docking folder already exists')
+        printlog('Plants docking folder already exists')
     else:
         os.mkdir(plants_docking_dir)
     #Convert protein file to .mol2 using open babel
     plants_protein_mol2 = w_dir+'/temp/plants/protein.mol2'
     try:
-        print('Converting protein file to .mol2 format for PLANTS docking...')
+        printlog('Converting protein file to .mol2 format for PLANTS docking...')
         obabel_command = 'obabel -ipdb '+protein_file+' -O '+plants_protein_mol2
         subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('ERROR: Failed to convert protein file to .mol2!')
-        print(e)
+        printlog('ERROR: Failed to convert protein file to .mol2!')
+        printlog(e)
     #Convert protein file to .mol2 using open babel
     plants_ref_mol2 = w_dir+'/temp/plants/ref.mol2'
     try:
@@ -123,12 +123,12 @@ def plants_docking(protein_file, ref_file, software, n_poses):
             shutil.copy(ref_file, plants_docking_dir)
             os.rename(plants_docking_dir+'/'+os.path.basename(ref_file), plants_ref_mol2)
         else:
-            print(f'Converting reference file from .{ref_file.split(".")[-1]} to .mol2 format for PLANTS docking...')
+            printlog(f'Converting reference file from .{ref_file.split(".")[-1]} to .mol2 format for PLANTS docking...')
             obabel_command = f'obabel -i{ref_file.split(".")[-1]} {ref_file} -O {plants_ref_mol2}'
             os.system(obabel_command)
     except Exception as e:
-        print('ERROR: Failed to convert reference file to .mol2 for PLANTS docking!')
-        print(e)
+        printlog('ERROR: Failed to convert reference file to .mol2 for PLANTS docking!')
+        printlog(e)
     #Convert prepared ligand file to .mol2 using open babel
     final_library = w_dir+'/temp/final_library.sdf'
     plants_library_mol2 = w_dir+'/temp/plants/ligands.mol2'
@@ -136,11 +136,11 @@ def plants_docking(protein_file, ref_file, software, n_poses):
         obabel_command = 'obabel -isdf '+final_library+' -O '+plants_library_mol2
         os.system(obabel_command)
     except Exception as e:
-        print('ERROR: Failed to convert docking library file to .mol2!')
-        print(e)
+        printlog('ERROR: Failed to convert docking library file to .mol2!')
+        printlog(e)
     #Determine binding site coordinates
     try:
-        print('Determining binding site coordinates using PLANTS...')
+        printlog('Determining binding site coordinates using PLANTS...')
         plants_binding_site_command = 'cd '+software+' && ./PLANTS --mode bind '+plants_ref_mol2+' 8'
         run_plants_binding_site = os.popen(plants_binding_site_command)
         output_plants_binding_site = run_plants_binding_site.readlines()
@@ -157,8 +157,8 @@ def plants_docking(protein_file, ref_file, software, n_poses):
         binding_site_y = binding_site_center[2]
         binding_site_z = binding_site_center[3].replace('+', '')
     except Exception as e:
-        print('ERROR: Could not determine binding site coordinates using PLANTS')
-        print(e)
+        printlog('ERROR: Could not determine binding site coordinates using PLANTS')
+        printlog(e)
     #Generate plants config file
     plants_docking_config_path_txt = plants_docking_dir+"/config.txt"
     plants_config = ['# search algorithm\n',
@@ -206,31 +206,31 @@ def plants_docking(protein_file, ref_file, software, n_poses):
     'write_merged_protein 0\n',
     '####\n']
     #Write config file
-    print('Writing PLANTS config file...')
+    printlog('Writing PLANTS config file...')
     plants_docking_config_path_config = plants_docking_config_path_txt.replace(".txt", ".config")
     with open(plants_docking_config_path_config, 'w') as configwriter:
         configwriter.writelines(plants_config)
     configwriter.close()
     #Run PLANTS docking
     try:
-        print('Starting PLANTS docking...')
+        printlog('Starting PLANTS docking...')
         plants_docking_command = "cd "+software+" && ./PLANTS --mode screen "+plants_docking_config_path_config
         subprocess.call(plants_docking_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('ERROR: PLANTS docking command failed...')
-        print(e)
+        printlog('ERROR: PLANTS docking command failed...')
+        printlog(e)
     plants_docking_results_mol2 = w_dir+"/temp/plants/results/docked_ligands.mol2"
     plants_docking_results_sdf = plants_docking_results_mol2.replace(".mol2", ".sdf")
     # Convert PLANTS poses to sdf
     try:
-        print('Converting PLANTS poses to .sdf format...')
+        printlog('Converting PLANTS poses to .sdf format...')
         obabel_command = 'obabel -imol2 '+plants_docking_results_mol2+' -O '+plants_docking_results_sdf 
         subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('ERROR: Failed to convert PLANTS poses file to .sdf!')
-        print(e)
+        printlog('ERROR: Failed to convert PLANTS poses file to .sdf!')
+        printlog(e)
     toc = time.perf_counter()
-    print(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
+    printlog(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
     return plants_docking_results_sdf
 
 def fetch_poses(w_dir, n_poses, split_files_folder):
@@ -249,7 +249,7 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
     plants_scoring_results_sdf = w_dir+"/temp/plants/results/ranking.csv"
     all_poses = pd.DataFrame()
     #Fetch PLANTS poses
-    print('Fetching PLANTS poses...')
+    printlog('Fetching PLANTS poses...')
     try:
         plants_poses = PandasTools.LoadSDF(plants_poses_results_sdf, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
         plants_scores = pd.read_csv(plants_scoring_results_sdf, usecols=['LIGAND_ENTRY', 'TOTAL_SCORE'])
@@ -260,10 +260,10 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
         plants_df['ID'] = plants_df['ID'].str.split("_").str[0]
         all_poses = pd.concat([all_poses, plants_df])
     except Exception as e:
-        print('ERROR: Failed to Load PLANTS poses SDF file!')
-        print(e)
+        printlog('ERROR: Failed to Load PLANTS poses SDF file!')
+        printlog(e)
     #Fetch SMINA poses
-    print('Fetching SMINA poses...')
+    printlog('Fetching SMINA poses...')
     try:
         smina_df = PandasTools.LoadSDF(smina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
         list_ = [*range(1, int(n_poses)+1, 1)]
@@ -272,10 +272,10 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
         smina_df.rename(columns={'minimizedAffinity':'SMINA_Affinity'}, inplace=True)
         all_poses = pd.concat([all_poses, smina_df])
     except Exception as e:
-        print('ERROR: Failed to Load SMINA poses SDF file!')
-        print(e)
+        printlog('ERROR: Failed to Load SMINA poses SDF file!')
+        printlog(e)
     #Fetch GNINA poses
-    print('Fetching GNINA poses...')
+    printlog('Fetching GNINA poses...')
     try:
         gnina_df = PandasTools.LoadSDF(gnina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
         list_ = [*range(1, int(n_poses)+1, 1)]
@@ -285,12 +285,12 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
         all_poses = pd.concat([all_poses, gnina_df])
         del gnina_df
     except Exception as e:
-        print('ERROR: Failed to Load GNINA poses SDF file!')
-        print(e)
-    print('Combining all docking poses...')
+        printlog('ERROR: Failed to Load GNINA poses SDF file!')
+        printlog(e)
+    printlog('Combining all docking poses...')
     PandasTools.WriteSDF(all_poses, w_dir+"/temp/allposes.sdf", molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
     toc = time.perf_counter()
-    print(f'Combined all docking poses in {toc-tic:0.4f}!')
+    printlog(f'Combined all docking poses in {toc-tic:0.4f}!')
     return all_poses
 
 def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses, ncpus):
@@ -302,7 +302,7 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
     if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == False:
         plants_docking_results_path = plants_docking(protein_file, ref_file, software, n_poses)
     toc = time.perf_counter()
-    print(f'Finished docking in {toc-tic:0.4f}!')
+    printlog(f'Finished docking in {toc-tic:0.4f}!')
     return
 
 def smina_docking_splitted(split_file, protein_file, ref_file, software, exhaustiveness, n_poses):
@@ -314,7 +314,7 @@ def smina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     try:
         subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('SMINA docking failed: '+e)
+        printlog('SMINA docking failed: '+e)
     return
 
 def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaustiveness, n_poses):
@@ -326,7 +326,7 @@ def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     try:
         subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('GNINA docking failed: '+e)
+        printlog('GNINA docking failed: '+e)
     return
 
 def plants_docking_splitted(split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius):
@@ -387,8 +387,8 @@ def plants_docking_splitted(split_file, w_dir, software, n_poses, binding_site_x
         plants_docking_command = 'cd '+software+' && ./PLANTS --mode screen '+plants_docking_config_path_config
         subprocess.call(plants_docking_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('ERROR: PLANTS docking command failed...')
-        print(e)
+        printlog('ERROR: PLANTS docking command failed...')
+        printlog(e)
     return
 
 def plants_preparation(protein_file, ref_file, software):
@@ -399,27 +399,27 @@ def plants_preparation(protein_file, ref_file, software):
     create_temp_folder(plants_docking_dir)
     plants_protein_mol2 = w_dir+'/temp/plants/protein.mol2'
     try:
-        print('Converting protein file to .mol2 format for PLANTS docking...')
+        printlog('Converting protein file to .mol2 format for PLANTS docking...')
         obabel_command = 'obabel -ipdb '+protein_file+' -O '+plants_protein_mol2
         subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('ERROR: Failed to convert protein file to .mol2!')
-        print(e)
+        printlog('ERROR: Failed to convert protein file to .mol2!')
+        printlog(e)
     plants_ref_mol2 = w_dir+'/temp/plants/ref.mol2'
     try:
         if ref_file.endswith('.mol2'):
             shutil.copy(ref_file, plants_docking_dir)
             os.rename(plants_docking_dir+'/'+os.path.basename(ref_file), plants_ref_mol2)
         else:
-            print(f'Converting reference file from .{ref_file.split(".")[-1]} to .mol2 format for PLANTS docking...')
+            printlog(f'Converting reference file from .{ref_file.split(".")[-1]} to .mol2 format for PLANTS docking...')
             obabel_command = f'obabel -i{ref_file.split(".")[-1]} {ref_file} -O {plants_ref_mol2}'
             subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        print('ERROR: Failed to convert reference file to .mol2!')
-        print(e)
+        printlog('ERROR: Failed to convert reference file to .mol2!')
+        printlog(e)
     #Determine binding site coordinates
     try:
-        print('Determining binding site coordinates using PLANTS...')
+        printlog('Determining binding site coordinates using PLANTS...')
         plants_binding_site_command = 'cd '+software+' && ./PLANTS --mode bind '+plants_ref_mol2+' 8'
         run_plants_binding_site = os.popen(plants_binding_site_command)
         output_plants_binding_site = run_plants_binding_site.readlines()
@@ -436,8 +436,8 @@ def plants_preparation(protein_file, ref_file, software):
         binding_site_y = binding_site_center[2]
         binding_site_z = binding_site_center[3].replace('+', '')
     except Exception as e:
-        print('ERROR: Could not determine binding site coordinates using PLANTS')
-        print(e)
+        printlog('ERROR: Could not determine binding site coordinates using PLANTS')
+        printlog(e)
     return binding_site_x, binding_site_y, binding_site_z, binding_site_radius
 
 def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
@@ -450,7 +450,7 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
     The function uses the PandasTools library to load the SDF files and creates a new dataframe with the poses and scores. It also renames the columns and modifies the ID column to include the source of the pose (SMINA, GNINA, PLANTS). In case of an error, the function will print an error message.
     '''
     tic = time.perf_counter()
-    print('Fetching docking poses...')
+    printlog('Fetching docking poses...')
     all_poses = pd.DataFrame()
     #Fetch PLANTS poses
     if os.path.isdir(w_dir+'/temp/plants'):
@@ -470,8 +470,8 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
                         plants_df['ID'] = plants_df['ID'].str.split("_").str[0]
                         plants_dataframes.append(plants_df)
                     except Exception as e:
-                        print('ERROR: Failed to convert PLANTS docking results file to .sdf!')
-                        print(e)
+                        printlog('ERROR: Failed to convert PLANTS docking results file to .sdf!')
+                        printlog(e)
             elif item in ['protein.mol2', 'ref.mol2']:
                 pass
             else:
@@ -482,8 +482,8 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
             all_poses = pd.concat([all_poses, plants_df])
             del plants_df
         except Exception as e:
-            print('ERROR: Failed to write combined PLANTS docking poses')
-            print(e)
+            printlog('ERROR: Failed to write combined PLANTS docking poses')
+            printlog(e)
         else:
             for file in os.listdir(w_dir+'/temp/plants'):
                 if file.startswith('results'):
@@ -502,15 +502,15 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
             smina_df['Pose ID'] = [f"{row['ID']}_SMINA_{num}" for num, (_, row) in zip(ser + list_[:len(smina_df)-len(ser)], smina_df.iterrows())]
             smina_df.rename(columns={'minimizedAffinity':'SMINA_Affinity'}, inplace=True)
         except Exception as e:
-            print('ERROR: Failed to Load SMINA poses SDF file!')
-            print(e)
+            printlog('ERROR: Failed to Load SMINA poses SDF file!')
+            printlog(e)
         try:
             PandasTools.WriteSDF(smina_df, w_dir+'/temp/smina/smina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(smina_df.columns))
             all_poses = pd.concat([all_poses, smina_df])
             del smina_df
         except Exception as e:
-            print('ERROR: Failed to write combined SMINA poses SDF file!')
-            print(e)
+            printlog('ERROR: Failed to write combined SMINA poses SDF file!')
+            printlog(e)
         else:
             for file in os.listdir(w_dir+'/temp/smina'):
                 if file.startswith('split'):
@@ -529,37 +529,37 @@ def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
             gnina_df['Pose ID'] = [f"{row['ID']}_GNINA_{num}" for num, (_, row) in zip(ser + list_[:len(gnina_df)-len(ser)], gnina_df.iterrows())]
             gnina_df.rename(columns={'minimizedAffinity':'GNINA_Affinity'}, inplace=True)
         except Exception as e:
-            print('ERROR: Failed to Load GNINA poses SDF file!')
-            print(e)
+            printlog('ERROR: Failed to Load GNINA poses SDF file!')
+            printlog(e)
         try:
             PandasTools.WriteSDF(gnina_df, w_dir+'/temp/gnina/gnina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(gnina_df.columns))
             all_poses = pd.concat([all_poses, gnina_df])
             del gnina_df
         except Exception as e:
-            print('ERROR: Failed to write combined GNINA docking poses')
-            print(e)
+            printlog('ERROR: Failed to write combined GNINA docking poses')
+            printlog(e)
         else:
             for file in os.listdir(w_dir+'/temp/gnina'):
                 if file.startswith('split'):
                     os.remove(os.path.join(w_dir+'/temp/gnina', file))
     #Combine all poses
-    print('Combining all poses...')
+    printlog('Combining all poses...')
     try:
         PandasTools.WriteSDF(all_poses, w_dir+'/temp/allposes.sdf', molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
     except Exception as e:
-        print('Could not combine all docking poses')
-        print(e)
+        printlog('Could not combine all docking poses')
+        printlog(e)
     else:
         shutil.rmtree(os.path.join(split_files_folder), ignore_errors=True)
     toc = time.perf_counter()
-    print(f'Combined all docking poses in {toc-tic:0.4f}!')
+    printlog(f'Combined all docking poses in {toc-tic:0.4f}!')
     return all_poses
 
 def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses, ncpus):
     if os.path.isdir(w_dir+'/temp/split_final_library') == False :
         split_files_folder = split_sdf(w_dir+'/temp', w_dir+'/temp/final_library.sdf', ncpus)
     else:
-        print('Split final library folder already exists...')
+        printlog('Split final library folder already exists...')
         split_files_folder = w_dir+'/temp/split_final_library'
     split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == False:
@@ -572,9 +572,9 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     obabel_command = 'obabel -isdf '+split_files_folder+'/'+file+' -O '+w_dir+'/temp/plants/'+os.path.basename(file).replace('.sdf', '.mol2')
                     subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
                 except Exception as e:
-                    print(f'ERROR: Failed to convert {file} to .mol2!')
-                    print(e)
-        print('Docking split files using PLANTS...')
+                    printlog(f'ERROR: Failed to convert {file} to .mol2!')
+                    printlog(e)
+        printlog('Docking split files using PLANTS...')
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = []
             for split_file in tqdm(split_files_sdfs, desc = 'Submitting PLANTS jobs', unit='Jobs'):
@@ -582,16 +582,16 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     job = executor.submit(plants_docking_splitted, split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius)
                     jobs.append(job)
                 except Exception as e:
-                    print("Error in concurrent futures job creation: ", str(e))
+                    printlog("Error in concurrent futures job creation: ", str(e))
             for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with PLANTS", total=len(jobs)):
                 try:
                     _ = job.result()
                 except Exception as e:
-                    print("Error in concurrent futures job execution: ", str(e))
+                    printlog("Error in concurrent futures job execution: ", str(e))
         toc = time.perf_counter()
-        print(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
+        printlog(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
     if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == False:
-        print('Docking split files using SMINA...')
+        printlog('Docking split files using SMINA...')
         tic = time.perf_counter()
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = []
@@ -600,16 +600,16 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     job = executor.submit(smina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
                     jobs.append(job)
                 except Exception as e:
-                    print("Error in concurrent futures job creation: ", str(e))
+                    printlog("Error in concurrent futures job creation: ", str(e))
             for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with SMINA", total=len(jobs)):
                 try:
                     _ = job.result()
                 except Exception as e:
-                    print("Error in concurrent futures job execution: ", str(e))
+                    printlog("Error in concurrent futures job execution: ", str(e))
         toc = time.perf_counter()
-        print(f'Docking with SMINA complete in {toc-tic:0.4f}!')
+        printlog(f'Docking with SMINA complete in {toc-tic:0.4f}!')
     if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == False:
-        print('Docking split files using GNINA...')
+        printlog('Docking split files using GNINA...')
         tic = time.perf_counter()
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = []
@@ -618,12 +618,12 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     job = executor.submit(gnina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
                     jobs.append(job)
                 except Exception as e:
-                    print("Error in concurrent futures job creation: ", str(e))
+                    printlog("Error in concurrent futures job creation: ", str(e))
             for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with GNINA", total=len(jobs)):
                 try:
                     _ = job.result()
                 except Exception as e:
-                    print("Error in concurrent futures job execution: ", str(e))
+                    printlog("Error in concurrent futures job execution: ", str(e))
         toc = time.perf_counter()
-        print(f'Docking with GNINA complete in {toc-tic:0.4f}!')
+        printlog(f'Docking with GNINA complete in {toc-tic:0.4f}!')
     return
