@@ -8,6 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 pd.options.mode.chained_assignment = None
 import warnings
+from scripts.utilities import *
 warnings.simplefilter(action='ignore',category=FutureWarning)
 warnings.simplefilter(action='ignore',category=UserWarning)
 
@@ -70,7 +71,7 @@ class GetPocket:
         ligand_file: format mol
         protein_file: format pdb
         """
-        print(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+        printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
         self.ligand_file = ligand_file
         self.protein_file = protein_file
         self.ligand_mol = load_molecule(ligand_file)
@@ -78,7 +79,7 @@ class GetPocket:
         self.pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
         Chem.MolToPDBFile(self.pocket_mol, self.pocket_path)
         os.remove(self.temp_file)
-        print(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+        printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
         
     def process_pro_and_lig(self, cut):
         ppdb = PandasPdb()

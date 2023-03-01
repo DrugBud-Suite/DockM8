@@ -73,3 +73,32 @@ def show_correlation(input, annotation = bool()):
     fig, ax = plt.subplots(figsize=(10,10))  
     sns.heatmap(matrix, mask = mask, annot=annotation, vmax=1, vmin=-1, center=0, linewidths=.5, cmap='coolwarm', ax=ax)
     plt.show()
+
+import datetime
+
+log_filename = "test.txt"
+
+def printlog(message):
+    def timestamp_generator():
+        dateTimeObj = datetime.now()
+        return "["+dateTimeObj.strftime("%Y-%b-%d %H:%M:%S")+"]"
+    timestamp = timestamp_generator()
+    msg = "\n" + \
+        str(timestamp) + \
+        ": "+str(message)
+    print(msg)
+    with open(log_filename, 'a') as f_out:
+        f_out.write(msg)
+
+"""
+Example usage:
+try:
+    #something
+    text_to_log = "Something done successfully.
+    printlog(timestamp_generator(), text_to_log)
+except Exception as e:
+    text_to_log = f'Something failed due to : {e}'
+    printlog(timestamp_generator(), text_to_log)
+
+
+"""
