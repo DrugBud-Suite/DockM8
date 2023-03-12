@@ -214,9 +214,9 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
                         printlog("Error in concurrent futures job creation: ", str(e))	
                 toc = time.perf_counter()
                 printlog(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
-                for job in tqdm(concurrent.futures.as_completed(jobs, timeout=120), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
                     try:
-                        res = job.result()
+                        res = job.result(timeout=60)
                         clustered_dataframes.append(res)
                     except Exception as e:
                         printlog("Error in concurrent futures job run: ", str(e))
