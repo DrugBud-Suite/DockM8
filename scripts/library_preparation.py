@@ -50,7 +50,7 @@ def standardize_library(input_sdf, id_column):
 def standardize_library_multiprocessing(input_sdf, id_column, ncpus):
     printlog('Standardizing docking library using ChemBL Structure Pipeline...')
     try:
-        df = PandasTools.LoadSDF(input_sdf, molColName='Molecule', idName=id_column, removeHs=True, strictParsing=True, smilesName='SMILES')
+        df = PandasTools.LoadSDF(input_sdf, molColName=None, idName=id_column, removeHs=True, strictParsing=True, smilesName='SMILES')
         df.rename(columns = {id_column:'ID'}, inplace = True)
         df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in df['SMILES']]
         n_cpds_start = len(df)
@@ -92,7 +92,7 @@ def standardize_library_futures(input_sdf, id_column, ncpus):
 def protonate_library_pkasolver(input_sdf):
     printlog('Calculating protonation states using pkaSolver...')
     try:
-        input_df = PandasTools.LoadSDF(input_sdf, molColName=None, idName='ID', removeHs=True, strictParsing=True, smilesName='SMILES')
+        input_df = PandasTools.LoadSDF(input_sdf, molColName='Molecule', idName='ID', removeHs=True, strictParsing=True, smilesName='SMILES')
         input_df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in input_df['SMILES']]
         n_cpds_start = len(input_df)
     except Exception as e: 
