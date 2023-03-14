@@ -85,7 +85,9 @@ def printlog(message):
         str(timestamp) + \
         ": "+str(message)
     print(msg)
-    with open(os.getcwd().replace('/scripts', '/log.txt'), 'a') as f_out:
+    # change the path for the log file as below.
+    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../log.txt")
+    with open(log_file_path, 'a') as f_out:
         f_out.write(msg)
 
 """
