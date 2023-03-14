@@ -211,7 +211,7 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
                         job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
                         jobs.append(job)
                     except Exception as e:
-                        printlog("Error in concurrent futures job creation: ", str(e))	
+                        printlog("Error in concurrent futures job creation: "+ str(e))	
                 toc = time.perf_counter()
                 printlog(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
                 for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
@@ -219,7 +219,7 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
                         res = job.result(timeout=60)
                         clustered_dataframes.append(res)
                     except Exception as e:
-                        printlog("Error in concurrent futures job run: ", str(e))
+                        printlog("Error in concurrent futures job run: "+ str(e))
             clustered_poses = pd.concat(clustered_dataframes)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
         clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
