@@ -33,6 +33,23 @@ def split_sdf(dir, sdf_file, ncpus):
     print(f'Split docking library into {file_counter-1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
+def split_sdf_single(dir, sdf_file):
+    sdf_file_name = os.path.basename(sdf_file).replace('.sdf', '')
+    print(f'Splitting SDF file {sdf_file_name}.sdf ...')
+    split_files_folder = dir+f'/split_{sdf_file_name}'
+    create_temp_folder(dir+f'/split_{sdf_file_name}', silent=True)
+    for file in os.listdir(dir+f'/split_{sdf_file_name}'):
+        os.unlink(os.path.join(dir+f'/split_{sdf_file_name}', file))
+    df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
+    compounds_per_core = 1
+    file_counter = 1
+    for i in tqdm(range(0, len(df)), desc='Splitting files'):
+        chunk = df.iloc[i:i+compounds_per_core]
+        PandasTools.WriteSDF(chunk, dir+f'/split_{sdf_file_name}/split_' + str(file_counter) + '.sdf', molColName='Molecule', idName='ID')
+        file_counter+=1
+    print(f'Split SDF file into {file_counter-1} files each containing 1 compound')
+    return split_files_folder
+
 import pandas as pd
 
 def Insert_row(row_number, df, row_value):
@@ -85,7 +102,8 @@ def printlog(message):
         str(timestamp) + \
         ": "+str(message)
     print(msg)
-    with open(os.getcwd().replace('/scripts', '/log.txt'), 'a') as f_out:
+    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../log.txt')
+    with open(log_file_path, 'a') as f_out:
         f_out.write(msg)
 
 """
