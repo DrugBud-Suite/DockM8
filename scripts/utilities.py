@@ -85,7 +85,7 @@ def printlog(message):
         str(timestamp) + \
         ": "+str(message)
     print(msg)
-    with open('/home/mario/holiday/log.txt', 'a') as f_out:
+    with open(os.getcwd().replace('/scripts', '/log.txt'), 'a') as f_out:
         f_out.write(msg)
 
 """
