@@ -29,7 +29,7 @@ parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision 
 parser.add_argument('--parallel', default=1, type=int, choices = [0,1], help ='Choose whether to run workflow in parallel')
 parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of cpus to use')
 parser.add_argument('--clustering', type = str, choices = ['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
-parser.add_argument('--rescoring', type = str, nargs='+', choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore'], help='Rescoring methods to use')
+parser.add_argument('--rescoring', type = str, nargs='+', choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore', 'ECIF'], help='Rescoring methods to use')
 
 args = parser.parse_args()
 
