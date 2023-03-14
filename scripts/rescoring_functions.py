@@ -15,13 +15,13 @@ import multiprocessing
 import concurrent.futures
 import time
 from scripts.utilities import *
+from software.ECIF.ecif import *
 from IPython.display import display
+import pickle
 
 #TODO: add new scoring functions:
 # _ECIF
-# _LinF9
 # _SIEVE_Score (no documentation)
-# _AA-Score
 # _AEScore
 # _RTMScore
 
@@ -348,6 +348,21 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         toc = time.perf_counter()
         printlog(f'Rescoring with CHEMPLP complete in {toc-tic:0.4f}!')
         return chemplp_rescoring_output
+    def ECIF_rescoring (sdf, mp):
+        printlog('Rescoring with ECIF')
+        ECIF_rescoring_folder = rescoring_folder+'/ECIF_rescoring/'
+        create_temp_folder(ECIF_rescoring_folder, silent=True)
+        split_dir = split_sdf_single(rescoring_folder+'/ECIF_rescoring/', sdf)
+        ligands = [split_dir+'/'+x for x in os.listdir(split_dir) if x[-3:] == "sdf"]
+        ECIF = [GetECIF(protein_file, ligand, distance_cutoff=6.0) for ligand in ligands]
+        ligand_descriptors = [GetRDKitDescriptors(x) for x in ligands]
+        all_descriptors = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
+        model = pickle.load(open(software+'/ECIF6_LD_GBT.pkl', 'rb'))
+        ids = PandasTools.LoadSDF(sdf, molColName=None, idName='Pose ID')
+        ECIF_rescoring_results = pd.DataFrame(ids, columns=["Pose ID"]).join(pd.DataFrame(model.predict(all_descriptors), columns=["ECIF"]))
+        ECIF_rescoring_results.to_csv(rescoring_folder+'/ECIF_rescoring/ECIF_scores.csv')
+        delete_files(rescoring_folder+'/ECIF_rescoring/', 'ECIF_scores.csv')
+        return ECIF_rescoring_results
     def oddt_nnscore_rescoring(sdf, mp):
         tic = time.perf_counter()
         printlog('Rescoring with NNScore')
@@ -553,7 +568,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9':LinF9_rescoring, 
-                        'AAScore':AAScore_rescoring}
+                        'AAScore':AAScore_rescoring, 'ECIF':ECIF_rescoring}
     for function in functions:
         if os.path.isdir(rescoring_folder+f'/{function}_rescoring') == False:
             rescoring_functions[function](clustered_sdf, mp)
