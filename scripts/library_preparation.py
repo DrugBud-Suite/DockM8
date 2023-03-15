@@ -36,6 +36,7 @@ def standardize_library(input_sdf, id_column):
     df['Molecule'] = [standardizer.get_parent_mol(mol) for mol in df['Molecule']]
     df[['Molecule', 'flag']]=pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df=df.drop(columns='flag')
+    df = df.loc[:,~df.columns.duplicated()].copy()
     n_cpds_end = len(df)
     printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
     #Write standardized molecules to standardized SDF file
@@ -61,6 +62,7 @@ def standardize_library_multiprocessing(input_sdf, id_column, ncpus):
         df['Molecule'] = tqdm.tqdm(p.imap(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol')
     df[['Molecule', 'flag']]=pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df=df.drop(columns='flag')
+    df = df.loc[:,~df.columns.duplicated()].copy()
     n_cpds_end = len(df)
     printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
     wdir = os.path.dirname(input_sdf)
@@ -82,6 +84,7 @@ def standardize_library_futures(input_sdf, id_column, ncpus):
         df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
     df[['Molecule', 'flag']]=pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df=df.drop(columns='flag')
+    df = df.loc[:,~df.columns.duplicated()].copy()
     n_cpds_end = len(df)
     printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
     wdir = os.path.dirname(input_sdf)
@@ -113,6 +116,7 @@ def protonate_library_pkasolver(input_sdf):
         printlog('ERROR in adding missing protonating state')
         printlog(e)
     protonated_df['ID'] = input_df['ID']
+    df = df.loc[:,~df.columns.duplicated()].copy()
     n_cpds_end = len(input_df)
     printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
     output_sdf = os.path.dirname(input_sdf)+'/protonated_library.sdf'
