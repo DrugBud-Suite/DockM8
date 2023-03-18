@@ -104,7 +104,6 @@ def protonate_library_pkasolver(input_sdf):
     microstate_pkas = pd.DataFrame(calculate_microstate_pka_values(mol) for mol in input_df['Molecule'])
     missing_prot_state = microstate_pkas[microstate_pkas[0].isnull()].index.tolist()
     microstate_pkas = microstate_pkas.iloc[:, 0].dropna()
-    printlog(microstate_pkas)
     protonated_df = pd.DataFrame({"Molecule" : [mol.ph7_mol for mol in microstate_pkas]})
     try:
         for x in missing_prot_state:
