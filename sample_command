@@ -1,1 +1,0 @@
-python ./wocondock.py --software PATH --proteinfile PATH --pocket reference --reffile PATH --idcolumn 'Molecule Name' --protonation pkasolver --docking SMINA GNINA PLANTS --metric RMSD spyRMSD espsim 3DScore bestpose bestpose_GNINA bestpose_SMINA bestpose_PLANTS --parallel 1 --clustering KMedoids --rescoring rfscorevs chemplp AD4 gnina
