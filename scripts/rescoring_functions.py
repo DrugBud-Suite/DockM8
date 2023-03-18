@@ -18,6 +18,8 @@ from scripts.utilities import *
 from software.ECIF.ecif import *
 from IPython.display import display
 import pickle
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 #TODO: add new scoring functions:
 # _ECIF
@@ -72,12 +74,12 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         job = executor.submit(gnina_rescoring_splitted, split_file, protein_file, ref_file, software)
                         jobs.append(job)
                     except Exception as e:
-                        printlog("Error in concurrent futures job creation: ", str(e))
+                        printlog("Error in concurrent futures job creation: "+ str(e))
                 for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with GNINA', unit='file'):
                     try:
                         res = job.result()
                     except Exception as e:
-                        printlog("Error in concurrent futures job run: ", str(e))
+                        printlog("Error in concurrent futures job run: "+ str(e))
             try:
                 gnina_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/gnina_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/gnina_rescoring/') if file.startswith('split') and file.endswith('.sdf')]
             except Exception as e:
@@ -354,9 +356,32 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         create_temp_folder(ECIF_rescoring_folder, silent=True)
         split_dir = split_sdf_single(rescoring_folder+'/ECIF_rescoring/', sdf)
         ligands = [split_dir+'/'+x for x in os.listdir(split_dir) if x[-3:] == "sdf"]
-        ECIF = [GetECIF(protein_file, ligand, distance_cutoff=6.0) for ligand in ligands]
-        ligand_descriptors = [GetRDKitDescriptors(x) for x in ligands]
-        all_descriptors = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
+        if mp == 0:
+            ECIF = [GetECIF(protein_file, ligand, distance_cutoff=6.0) for ligand in ligands]
+            ligand_descriptors = [GetRDKitDescriptors(x) for x in ligands]
+            all_descriptors = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
+        if mp == 1:
+            global ECIF_rescoring_single
+            def ECIF_rescoring_single(ligand, protein_file):
+                ECIF = GetECIF(protein_file, ligand, distance_cutoff=6.0)
+                ligand_descriptors = GetRDKitDescriptors(ligand)
+                all_descriptors_single = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
+                return all_descriptors_single
+            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+                jobs = []
+                all_descriptors = pd.DataFrame()
+                for ligand in tqdm(ligands, desc='Submitting ECIF rescoring jobs', unit='file'):
+                    try:
+                        job = executor.submit(ECIF_rescoring_single, ligand, protein_file)
+                        jobs.append(job)
+                    except Exception as e:
+                        printlog("Error in concurrent futures job creation: "+ str(e))
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(ligands), desc='Rescoring with ECIF', unit='mol'):
+                    try:
+                        res = job.result()
+                        all_descriptors = pd.concat(all_descriptors, res)
+                    except Exception as e:
+                        printlog("Error in concurrent futures job run: "+ str(e))
         model = pickle.load(open(software+'/ECIF6_LD_GBT.pkl', 'rb'))
         ids = PandasTools.LoadSDF(sdf, molColName=None, idName='Pose ID')
         ECIF_rescoring_results = pd.DataFrame(ids, columns=["Pose ID"]).join(pd.DataFrame(model.predict(all_descriptors), columns=["ECIF"]))
