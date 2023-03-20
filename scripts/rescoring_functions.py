@@ -458,7 +458,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         printlog(f'Rescoring with PLECScore complete in {toc-tic:0.4f}!')
         delete_files(rescoring_folder+'/plecscore_rescoring/', 'plecscore_scores.csv')
         return df
-    def SCORCH_rescoring(clustered_sdf):
+    def SCORCH_rescoring(clustered_sdf, mp):
         tic = time.perf_counter()
         SCORCH_rescoring_folder = rescoring_folder+'/SCORCH_rescoring/'
         create_temp_folder(SCORCH_rescoring_folder)
@@ -593,7 +593,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9':LinF9_rescoring, 
-                        'AAScore':AAScore_rescoring, 'ECIF':ECIF_rescoring}
+                        'AAScore':AAScore_rescoring, 'ECIF':ECIF_rescoring, 'SCORCH':SCORCH_rescoring}
     for function in functions:
         if os.path.isdir(rescoring_folder+f'/{function}_rescoring') == False:
             rescoring_functions[function](clustered_sdf, mp)
