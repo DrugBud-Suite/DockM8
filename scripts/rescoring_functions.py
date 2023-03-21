@@ -16,6 +16,7 @@ import concurrent.futures
 import time
 from scripts.utilities import *
 from software.ECIF.ecif import *
+# from software.SCORCH.scorch import parse_module_args, scoring
 from IPython.display import display
 import pickle
 from concurrent.futures import ThreadPoolExecutor
@@ -458,32 +459,33 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         printlog(f'Rescoring with PLECScore complete in {toc-tic:0.4f}!')
         delete_files(rescoring_folder+'/plecscore_rescoring/', 'plecscore_scores.csv')
         return df
-    def SCORCH_rescoring(clustered_sdf, mp):
+    def SCORCH_rescoring(sdf, mp):
         tic = time.perf_counter()
-        SCORCH_rescoring_folder = rescoring_folder+'/SCORCH_rescoring/'
+        SCORCH_rescoring_folder = rescoring_folder + '/SCORCH_rescoring/'
         create_temp_folder(SCORCH_rescoring_folder)
-        #Convert protein file to .mol2 using open babel
-        SCORCH_protein = SCORCH_rescoring_folder+"protein.pdbqt"
-        try:
-            obabel_command = 'obabel -ipdb '+protein_file+' -O '+SCORCH_protein+' --partialcharges gasteiger'
-            os.system(obabel_command)
-        except:
-            printlog('ERROR: Failed to convert protein file to .pdbqt!')
-        SCORCH_ligands = SCORCH_rescoring_folder+"ligands.pdbqt"
-        try:
-            obabel_command = 'obabel -isdf '+clustered_sdf+' -O '+SCORCH_ligands+' --partialcharges gasteiger'
-            os.system(obabel_command)
-        except:
-            printlog('ERROR: Failed to convert ligands to .pdbqt!')
-        try:
-            SCORCH_command = 'python '+software+'/SCORCH-main/scorch.py --receptor '+SCORCH_protein+' --ligand '+SCORCH_ligands+' --out '+SCORCH_rescoring_folder+'scoring_results.csv --threads 8 --verbose --return_pose_scores'
-            printlog(SCORCH_command)
-            os.system(SCORCH_command)
-        except:
-            printlog('ERROR: Failed to run SCORCH!')
+        SCORCH_protein = SCORCH_rescoring_folder + "protein.pdbqt"
+        printlog('Converting protein file to .pdbqt ...')
+        obabel_command = f'obabel -ipdb {protein_file} -O {SCORCH_protein} --partialcharges gasteiger'
+        subprocess.call(obabel_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+        sdf_file_name = os.path.basename(sdf).replace('.sdf', '')
+        printlog(f'Converting SDF file {sdf_file_name}.sdf to .pdbqt files...')
+        split_files_folder = SCORCH_rescoring_folder + f'/split_{sdf_file_name}'
+        create_temp_folder(split_files_folder, silent=True)
+        num_molecules = parallel_sdf_to_pdbqt(sdf, split_files_folder, ncpus)
+        print(f"Converted {num_molecules} molecules.")
+
+        printlog('Rescoring with SCORCH')
+        SCORCH_command = f'python {software}/SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}scoring_results.csv --threads {ncpus} --return_pose_scores'
+        subprocess.call(SCORCH_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+        SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder + 'scoring_results.csv')
+        SCORCH_scores = SCORCH_scores.rename(columns={'Ligand_ID': 'Pose ID'})
+        SCORCH_scores = SCORCH_scores[['SCORCH_pose_score', 'Pose ID']]
+        SCORCH_scores.to_csv(SCORCH_rescoring_folder + 'SCORCH_scores.csv')
+        delete_files(SCORCH_rescoring_folder, 'SCORCH_scores.csv')
         toc = time.perf_counter()
         printlog(f'Rescoring with SCORCH complete in {toc-tic:0.4f}!')
-        return
     def LinF9_rescoring(sdf, mp):
         tic = time.perf_counter()
         create_temp_folder(rescoring_folder+'/LinF9_rescoring/', silent=True)
