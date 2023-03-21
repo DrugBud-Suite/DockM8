@@ -106,15 +106,41 @@ def printlog(message):
     with open(log_file_path, 'a') as f_out:
         f_out.write(msg)
 
-"""
-Example usage:
-try:
-    #something
-    text_to_log = "Something done successfully.
-    printlog(timestamp_generator(), text_to_log)
-except Exception as e:
-    text_to_log = f'Something failed due to : {e}'
-    printlog(timestamp_generator(), text_to_log)
+import openbabel
+from concurrent.futures import ThreadPoolExecutor
 
+def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
+    def convert_molecule(mol, output_dir):
+        obConversion = openbabel.OBConversion()
+        obConversion.SetInAndOutFormats("sdf", "pdbqt")
+        # Calculate Gasteiger charges
+        charge_model = openbabel.OBChargeModel_FindType("gasteiger")
+        charge_model.ComputeCharges(mol)
+        mol_name = mol.GetTitle()
 
-"""
+        if not mol_name:
+            mol_name = f"molecule_{mol.GetIdx()}"
+
+        valid_filename = "".join(c for c in mol_name if c.isalnum() or c in (' ','.','_')).rstrip()
+        output_file = os.path.join(output_dir, f"{valid_filename}.pdbqt")
+        obConversion.WriteFile(mol, output_file)
+
+    obConversion = openbabel.OBConversion()
+    obConversion.SetInAndOutFormats("sdf", "sdf")
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    mol = openbabel.OBMol()
+    not_at_end = obConversion.ReadFile(mol, input_file)
+    molecules = []
+
+    while not_at_end:
+        molecules.append(openbabel.OBMol(mol))
+        not_at_end = obConversion.Read(mol)
+
+    with ThreadPoolExecutor(max_workers=ncpus) as executor:
+        tasks = [executor.submit(convert_molecule, m, output_dir) for m in molecules]
+        _ = [t.result() for t in tasks]
+
+    return len(molecules)
