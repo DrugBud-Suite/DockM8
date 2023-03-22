@@ -45,7 +45,27 @@ def smina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         printlog('SMINA docking failed: '+e)
     toc = time.perf_counter()
     printlog(f'Docking with SMINA complete in {toc-tic:0.4f}!')
-    return results_path
+    
+    tic = time.perf_counter()
+    smina_docking_results = w_dir+"/temp/smina/docked.sdf"
+    printlog('Fetching SMINA poses...')
+    try:
+        smina_df = PandasTools.LoadSDF(smina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+        list_ = [*range(1, int(n_poses)+1, 1)]
+        ser = list_ * (len(smina_df) // len(list_))
+        smina_df['Pose ID'] = [f"{row['ID']}_SMINA_{num}" for num, (_, row) in zip(ser + list_[:len(smina_df)-len(ser)], smina_df.iterrows())]
+        smina_df.rename(columns={'minimizedAffinity':'SMINA_Affinity'}, inplace=True)
+    except Exception as e:
+        printlog('ERROR: Failed to Load SMINA poses SDF file!')
+        printlog(e)
+    try:
+        PandasTools.WriteSDF(smina_df, w_dir+'/temp/smina/smina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(smina_df.columns))
+        toc = time.perf_counter()
+        printlog(f'Cleaned up SMINA poses in {toc-tic:0.4f}!')
+    except Exception as e:
+        printlog('ERROR: Failed to Write SMINA poses SDF file!')
+        printlog(e)
+    return smina_docking_results
 
 def gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
     '''
@@ -78,7 +98,27 @@ def gnina_docking(protein_file, ref_file, software, exhaustiveness, n_poses):
         printlog('GNINA docking failed: '+e)
     toc = time.perf_counter()
     printlog(f'Docking with GNINA complete in {toc-tic:0.4f}!')
-    return results_path
+    
+    tic = time.perf_counter()
+    gnina_docking_results = w_dir+"/temp/gnina/docked.sdf"
+    printlog('Fetching GNINA poses...')
+    try:
+        gnina_df = PandasTools.LoadSDF(gnina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+        list_ = [*range(1, int(n_poses)+1, 1)]
+        ser = list_ * (len(gnina_df) // len(list_))
+        gnina_df['Pose ID'] = [f"{row['ID']}_GNINA_{num}" for num, (_, row) in zip(ser + list_[:len(gnina_df)-len(ser)], gnina_df.iterrows())]
+        gnina_df.rename(columns={'minimizedAffinity':'GNINA_Affinity'}, inplace=True)
+    except Exception as e:
+        printlog('ERROR: Failed to Load GNINA poses SDF file!')
+        printlog(e)
+    try:
+        PandasTools.WriteSDF(gnina_df, w_dir+'/temp/gnina/gnina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(gnina_df.columns))
+        toc = time.perf_counter()
+        printlog(f'Cleaned up GNINA poses in {toc-tic:0.4f}!')
+    except Exception as e:
+        printlog('ERROR: Failed to Write GNINA poses SDF file!')
+        printlog(e)
+    return gnina_docking_results
 
 def plants_docking(protein_file, ref_file, software, n_poses):
     '''
@@ -231,23 +271,8 @@ def plants_docking(protein_file, ref_file, software, n_poses):
         printlog(e)
     toc = time.perf_counter()
     printlog(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
-    return plants_docking_results_sdf
-
-def fetch_poses(w_dir, n_poses, split_files_folder):
-    '''
-    This function is used to fetch the poses from different docking results (SMINA, GNINA, PLANTS) and create a new dataframe with the poses and their corresponding scores.
-    It takes two input parameters:
-
-    protein_file: the path of the protein file
-    n_poses: number of poses to be fetched
-    The function uses the PandasTools library to load the SDF files and creates a new dataframe with the poses and scores. It also renames the columns and modifies the ID column to include the source of the pose (SMINA, GNINA, PLANTS). In case of an error, the function will print an error message.
-    '''
-    tic = time.perf_counter()
-    smina_docking_results = w_dir+"/temp/smina/docked.sdf"
-    gnina_docking_results = w_dir+"/temp/gnina/docked.sdf"
     plants_poses_results_sdf = w_dir+"/temp/plants/results/docked_ligands.sdf"
     plants_scoring_results_sdf = w_dir+"/temp/plants/results/ranking.csv"
-    all_poses = pd.DataFrame()
     #Fetch PLANTS poses
     printlog('Fetching PLANTS poses...')
     try:
@@ -258,40 +283,17 @@ def fetch_poses(w_dir, n_poses, split_files_folder):
         plants_df = pd.merge(plants_scores, plants_poses, on='ID')
         plants_df['Pose ID'] = plants_df['ID'].str.split("_").str[0] + "_PLANTS_" + plants_df['ID'].str.split("_").str[4]
         plants_df['ID'] = plants_df['ID'].str.split("_").str[0]
-        all_poses = pd.concat([all_poses, plants_df])
     except Exception as e:
         printlog('ERROR: Failed to Load PLANTS poses SDF file!')
         printlog(e)
-    #Fetch SMINA poses
-    printlog('Fetching SMINA poses...')
     try:
-        smina_df = PandasTools.LoadSDF(smina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
-        list_ = [*range(1, int(n_poses)+1, 1)]
-        ser = list_ * (len(smina_df) // len(list_))
-        smina_df['Pose ID'] = [f"{row['ID']}_SMINA_{num}" for num, (_, row) in zip(ser + list_[:len(smina_df)-len(ser)], smina_df.iterrows())]
-        smina_df.rename(columns={'minimizedAffinity':'SMINA_Affinity'}, inplace=True)
-        all_poses = pd.concat([all_poses, smina_df])
+        PandasTools.WriteSDF(plants_df, w_dir+'/temp/plants/plants_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(plants_df.columns))
+        toc = time.perf_counter()
+        printlog(f'Cleaned up PLANTS poses in {toc-tic:0.4f}!')
     except Exception as e:
-        printlog('ERROR: Failed to Load SMINA poses SDF file!')
+        printlog('ERROR: Failed to Write PLANTS poses SDF file!')
         printlog(e)
-    #Fetch GNINA poses
-    printlog('Fetching GNINA poses...')
-    try:
-        gnina_df = PandasTools.LoadSDF(gnina_docking_results, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
-        list_ = [*range(1, int(n_poses)+1, 1)]
-        ser = list_ * (len(gnina_df) // len(list_))
-        gnina_df['Pose ID'] = [f"{row['ID']}_GNINA_{num}" for num, (_, row) in zip(ser + list_[:len(gnina_df)-len(ser)], gnina_df.iterrows())]
-        gnina_df.rename(columns={'minimizedAffinity':'GNINA_Affinity'}, inplace=True)
-        all_poses = pd.concat([all_poses, gnina_df])
-        del gnina_df
-    except Exception as e:
-        printlog('ERROR: Failed to Load GNINA poses SDF file!')
-        printlog(e)
-    printlog('Combining all docking poses...')
-    PandasTools.WriteSDF(all_poses, w_dir+"/temp/allposes.sdf", molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
-    toc = time.perf_counter()
-    printlog(f'Combined all docking poses in {toc-tic:0.4f}!')
-    return all_poses
+    return w_dir+'/temp/plants/plants_poses.sdf'
 
 def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses, ncpus):
     tic = time.perf_counter()
@@ -303,6 +305,16 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
         plants_docking_results_path = plants_docking(protein_file, ref_file, software, n_poses)
     toc = time.perf_counter()
     printlog(f'Finished docking in {toc-tic:0.4f}!')
+    #Load all poses
+    try:
+        gnina_df = PandasTools.LoadSDF(gnina_docking_results_path, idName='Pose ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+        smina_df = PandasTools.LoadSDF(smina_docking_results_path, idName='Pose ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+        plants_df = PandasTools.LoadSDF(plants_docking_results_path, idName='Pose ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+        all_poses = pd.concat([gnina_df, smina_df, plants_df])
+        PandasTools.WriteSDF(all_poses, w_dir+"/temp/allposes.sdf", molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
+    except Exception as e:
+        printlog('ERROR: Failed to combine all poses!')
+        printlog(e)
     return
 
 def smina_docking_splitted(split_file, protein_file, ref_file, software, exhaustiveness, n_poses):
@@ -440,121 +452,6 @@ def plants_preparation(protein_file, ref_file, software):
         printlog(e)
     return binding_site_x, binding_site_y, binding_site_z, binding_site_radius
 
-def fetch_poses_splitted(w_dir, n_poses, split_files_folder):
-    '''
-    This function is used to fetch the poses from different docking results (SMINA, GNINA, PLANTS) and create a new dataframe with the poses and their corresponding scores.
-    It takes two input parameters:
-
-    w_dir: the path of the working_directory
-    n_poses: number of poses to be fetched
-    The function uses the PandasTools library to load the SDF files and creates a new dataframe with the poses and scores. It also renames the columns and modifies the ID column to include the source of the pose (SMINA, GNINA, PLANTS). In case of an error, the function will print an error message.
-    '''
-    tic = time.perf_counter()
-    printlog('Fetching docking poses...')
-    all_poses = pd.DataFrame()
-    #Fetch PLANTS poses
-    if os.path.isdir(w_dir+'/temp/plants'):
-        plants_dataframes = []
-        results_folders = [item for item in os.listdir(w_dir+'/temp/plants')]
-        for item in tqdm(results_folders, desc='Fetching PLANTS docking poses'):
-            if item.startswith('results'):
-                file_path = os.path.join(w_dir+'/temp/plants', item, 'docked_ligands.mol2')
-                if os.path.isfile(file_path):
-                    try:
-                        obabel_command = f'obabel -imol2 {file_path} -O {file_path.replace(".mol2",".sdf")}'
-                        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-                        plants_poses = PandasTools.LoadSDF(file_path.replace('.mol2','.sdf'), idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
-                        plants_scores = pd.read_csv(file_path.replace('docked_ligands.mol2','ranking.csv')).rename(columns={'LIGAND_ENTRY':'ID', 'TOTAL_SCORE':'CHEMPLP'})[['ID', 'CHEMPLP']]
-                        plants_df = pd.merge(plants_scores, plants_poses, on='ID')
-                        plants_df['Pose ID'] = plants_df['ID'].str.split("_").str[0] + "_PLANTS_" + plants_df['ID'].str.split("_").str[4]
-                        plants_df['ID'] = plants_df['ID'].str.split("_").str[0]
-                        plants_dataframes.append(plants_df)
-                    except Exception as e:
-                        printlog('ERROR: Failed to convert PLANTS docking results file to .sdf!')
-                        printlog(e)
-            elif item in ['protein.mol2', 'ref.mol2']:
-                pass
-            else:
-                Path(os.path.join(w_dir+'/temp/plants', item)).unlink(missing_ok=True)
-        try:
-            plants_df = pd.concat(plants_dataframes)
-            PandasTools.WriteSDF(plants_df, w_dir+'/temp/plants/plants_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(plants_df.columns))
-            all_poses = pd.concat([all_poses, plants_df])
-            del plants_df
-        except Exception as e:
-            printlog('ERROR: Failed to write combined PLANTS docking poses')
-            printlog(e)
-        else:
-            for file in os.listdir(w_dir+'/temp/plants'):
-                if file.startswith('results'):
-                    shutil.rmtree(os.path.join(w_dir+'/temp/plants', file))
-    #Fetch SMINA poses
-    if os.path.isdir(w_dir+'/temp/smina'):
-        try:
-            smina_dataframes = []
-            for file in tqdm(os.listdir(w_dir+'/temp/smina/'), desc="Loading SMINA poses"):
-                if file.startswith('split'):
-                    df = PandasTools.LoadSDF(w_dir+'/temp/smina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
-                    smina_dataframes.append(df)
-            smina_df = pd.concat(smina_dataframes)
-            list_ = [*range(1, int(n_poses)+1, 1)]
-            ser = list_ * (len(smina_df) // len(list_))
-            smina_df['Pose ID'] = [f"{row['ID']}_SMINA_{num}" for num, (_, row) in zip(ser + list_[:len(smina_df)-len(ser)], smina_df.iterrows())]
-            smina_df.rename(columns={'minimizedAffinity':'SMINA_Affinity'}, inplace=True)
-        except Exception as e:
-            printlog('ERROR: Failed to Load SMINA poses SDF file!')
-            printlog(e)
-        try:
-            PandasTools.WriteSDF(smina_df, w_dir+'/temp/smina/smina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(smina_df.columns))
-            all_poses = pd.concat([all_poses, smina_df])
-            del smina_df
-        except Exception as e:
-            printlog('ERROR: Failed to write combined SMINA poses SDF file!')
-            printlog(e)
-        else:
-            for file in os.listdir(w_dir+'/temp/smina'):
-                if file.startswith('split'):
-                    os.remove(os.path.join(w_dir+'/temp/smina', file))
-    #Fetch GNINA poses
-    if os.path.isdir(w_dir+'/temp/gnina'):
-        try:
-            gnina_dataframes = []
-            for file in tqdm(os.listdir(w_dir+'/temp/gnina/'), desc="Loading GNINA poses"):
-                if file.startswith('split'):
-                    df = PandasTools.LoadSDF(w_dir+'/temp/gnina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
-                    gnina_dataframes.append(df)
-            gnina_df = pd.concat(gnina_dataframes)
-            list_ = [*range(1, int(n_poses)+1, 1)]
-            ser = list_ * (len(gnina_df) // len(list_))
-            gnina_df['Pose ID'] = [f"{row['ID']}_GNINA_{num}" for num, (_, row) in zip(ser + list_[:len(gnina_df)-len(ser)], gnina_df.iterrows())]
-            gnina_df.rename(columns={'minimizedAffinity':'GNINA_Affinity'}, inplace=True)
-        except Exception as e:
-            printlog('ERROR: Failed to Load GNINA poses SDF file!')
-            printlog(e)
-        try:
-            PandasTools.WriteSDF(gnina_df, w_dir+'/temp/gnina/gnina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(gnina_df.columns))
-            all_poses = pd.concat([all_poses, gnina_df])
-            del gnina_df
-        except Exception as e:
-            printlog('ERROR: Failed to write combined GNINA docking poses')
-            printlog(e)
-        else:
-            for file in os.listdir(w_dir+'/temp/gnina'):
-                if file.startswith('split'):
-                    os.remove(os.path.join(w_dir+'/temp/gnina', file))
-    #Combine all poses
-    printlog('Combining all poses...')
-    try:
-        PandasTools.WriteSDF(all_poses, w_dir+'/temp/allposes.sdf', molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
-    except Exception as e:
-        printlog('Could not combine all docking poses')
-        printlog(e)
-    else:
-        shutil.rmtree(os.path.join(split_files_folder), ignore_errors=True)
-    toc = time.perf_counter()
-    printlog(f'Combined all docking poses in {toc-tic:0.4f}!')
-    return all_poses
-
 def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, exhaustiveness, n_poses, ncpus):
     if os.path.isdir(w_dir+'/temp/split_final_library') == False :
         split_files_folder = split_sdf(w_dir+'/temp', w_dir+'/temp/final_library.sdf', ncpus)
@@ -590,6 +487,40 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     printlog("Error in concurrent futures job execution: ", str(e))
         toc = time.perf_counter()
         printlog(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
+    #Fetch PLANTS poses
+    if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == True and os.path.isfile(w_dir+'/temp/plants/plants_poses.sdf') == False:
+        plants_dataframes = []
+        results_folders = [item for item in os.listdir(w_dir+'/temp/plants')]
+        for item in tqdm(results_folders, desc='Fetching PLANTS docking poses'):
+            if item.startswith('results'):
+                file_path = os.path.join(w_dir+'/temp/plants', item, 'docked_ligands.mol2')
+                if os.path.isfile(file_path):
+                    try:
+                        obabel_command = f'obabel -imol2 {file_path} -O {file_path.replace(".mol2",".sdf")}'
+                        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+                        plants_poses = PandasTools.LoadSDF(file_path.replace('.mol2','.sdf'), idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+                        plants_scores = pd.read_csv(file_path.replace('docked_ligands.mol2','ranking.csv')).rename(columns={'LIGAND_ENTRY':'ID', 'TOTAL_SCORE':'CHEMPLP'})[['ID', 'CHEMPLP']]
+                        plants_df = pd.merge(plants_scores, plants_poses, on='ID')
+                        plants_df['Pose ID'] = plants_df['ID'].str.split("_").str[0] + "_PLANTS_" + plants_df['ID'].str.split("_").str[4]
+                        plants_df['ID'] = plants_df['ID'].str.split("_").str[0]
+                        plants_dataframes.append(plants_df)
+                    except Exception as e:
+                        printlog('ERROR: Failed to convert PLANTS docking results file to .sdf!')
+                        printlog(e)
+            elif item in ['protein.mol2', 'ref.mol2']:
+                pass
+            else:
+                Path(os.path.join(w_dir+'/temp/plants', item)).unlink(missing_ok=True)
+        try:
+            plants_df = pd.concat(plants_dataframes)
+            PandasTools.WriteSDF(plants_df, w_dir+'/temp/plants/plants_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(plants_df.columns))
+        except Exception as e:
+            printlog('ERROR: Failed to write combined PLANTS docking poses')
+            printlog(e)
+        else:
+            for file in os.listdir(w_dir+'/temp/plants'):
+                if file.startswith('results'):
+                    shutil.rmtree(os.path.join(w_dir+'/temp/plants', file))
     if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == False:
         printlog('Docking split files using SMINA...')
         tic = time.perf_counter()
@@ -608,6 +539,31 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     printlog("Error in concurrent futures job execution: ", str(e))
         toc = time.perf_counter()
         printlog(f'Docking with SMINA complete in {toc-tic:0.4f}!')
+    #Fetch SMINA poses
+    if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == True and os.path.isfile(w_dir+'/temp/smina/smina_poses.sdf') == False:
+        try:
+            smina_dataframes = []
+            for file in tqdm(os.listdir(w_dir+'/temp/smina/'), desc="Loading SMINA poses"):
+                if file.startswith('split'):
+                    df = PandasTools.LoadSDF(w_dir+'/temp/smina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+                    smina_dataframes.append(df)
+            smina_df = pd.concat(smina_dataframes)
+            list_ = [*range(1, int(n_poses)+1, 1)]
+            ser = list_ * (len(smina_df) // len(list_))
+            smina_df['Pose ID'] = [f"{row['ID']}_SMINA_{num}" for num, (_, row) in zip(ser + list_[:len(smina_df)-len(ser)], smina_df.iterrows())]
+            smina_df.rename(columns={'minimizedAffinity':'SMINA_Affinity'}, inplace=True)
+        except Exception as e:
+            printlog('ERROR: Failed to Load SMINA poses SDF file!')
+            printlog(e)
+        try:
+            PandasTools.WriteSDF(smina_df, w_dir+'/temp/smina/smina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(smina_df.columns))
+        except Exception as e:
+            printlog('ERROR: Failed to write combined SMINA poses SDF file!')
+            printlog(e)
+        else:
+            for file in os.listdir(w_dir+'/temp/smina'):
+                if file.startswith('split'):
+                    os.remove(os.path.join(w_dir+'/temp/smina', file))
     if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == False:
         printlog('Docking split files using GNINA...')
         tic = time.perf_counter()
@@ -626,4 +582,61 @@ def docking_splitted(w_dir, protein_file, ref_file, software, docking_programs, 
                     printlog("Error in concurrent futures job execution: ", str(e))
         toc = time.perf_counter()
         printlog(f'Docking with GNINA complete in {toc-tic:0.4f}!')
+    #Fetch GNINA poses
+    if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == True and os.path.isfile(w_dir+'/temp/gnina/gnina_poses.sdf') == False:
+        try:
+            gnina_dataframes = []
+            for file in tqdm(os.listdir(w_dir+'/temp/gnina/'), desc="Loading GNINA poses"):
+                if file.startswith('split'):
+                    df = PandasTools.LoadSDF(w_dir+'/temp/gnina/'+file, idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+                    gnina_dataframes.append(df)
+            gnina_df = pd.concat(gnina_dataframes)
+            list_ = [*range(1, int(n_poses)+1, 1)]
+            ser = list_ * (len(gnina_df) // len(list_))
+            gnina_df['Pose ID'] = [f"{row['ID']}_GNINA_{num}" for num, (_, row) in zip(ser + list_[:len(gnina_df)-len(ser)], gnina_df.iterrows())]
+            gnina_df.rename(columns={'minimizedAffinity':'GNINA_Affinity'}, inplace=True)
+        except Exception as e:
+            printlog('ERROR: Failed to Load GNINA poses SDF file!')
+            printlog(e)
+        try:
+            PandasTools.WriteSDF(gnina_df, w_dir+'/temp/gnina/gnina_poses.sdf', molColName='Molecule', idName='Pose ID', properties=list(gnina_df.columns))
+        except Exception as e:
+            printlog('ERROR: Failed to write combined GNINA docking poses')
+            printlog(e)
+        else:
+            for file in os.listdir(w_dir+'/temp/gnina'):
+                if file.startswith('split'):
+                    os.remove(os.path.join(w_dir+'/temp/gnina', file))
+    #Load all poses
+    printlog('Combining all poses...')
+    all_poses = pd.DataFrame()
+    if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == True and os.path.isfile(w_dir+'/temp/gnina/gnina_poses.sdf') == True:
+        try:
+            gnina_df = PandasTools.LoadSDF(w_dir+'/temp/gnina/gnina_poses.sdf', idName='Pose ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+            all_poses = pd.concat([all_poses, gnina_df])
+        except Exception as e:
+            printlog('ERROR: Failed to load GNINA poses for combining!')
+            printlog(e)
+    if 'SMINA' in docking_programs and os.path.isdir(w_dir+'/temp/smina') == True and os.path.isfile(w_dir+'/temp/smina/smina_poses.sdf') == True:
+        try:
+            smina_df = PandasTools.LoadSDF(w_dir+'/temp/smina/smina_poses.sdf', idName='Pose ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+            all_poses = pd.concat([all_poses, smina_df])
+        except Exception as e:
+            printlog('ERROR: Failed to load SMINA poses for combining!')
+            printlog(e)
+    if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == True and os.path.isfile(w_dir+'/temp/plants/plants_poses.sdf') == True:
+        try:
+            plants_df = PandasTools.LoadSDF(w_dir+'/temp/plants/plants_poses.sdf', idName='Pose ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
+            all_poses = pd.concat([all_poses, plants_df])
+        except Exception as e:
+            printlog('ERROR: Failed to load PLANTS poses for combining!')
+            printlog(e)
+    try:
+        PandasTools.WriteSDF(all_poses, w_dir+"/temp/allposes.sdf", molColName='Molecule', idName='Pose ID', properties=list(all_poses.columns))
+        printlog('All poses succesfully combined!')
+    except Exception as e:
+        printlog('ERROR: Failed to write all_poses SDF file!')
+        printlog(e)
+    else:
+        shutil.rmtree(os.path.join(split_files_folder), ignore_errors=True)
     return
