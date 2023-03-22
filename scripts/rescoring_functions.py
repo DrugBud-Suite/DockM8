@@ -467,18 +467,18 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         printlog('Converting protein file to .pdbqt ...')
         obabel_command = f'obabel -ipdb {protein_file} -O {SCORCH_protein} --partialcharges gasteiger'
         subprocess.call(obabel_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-
+        #Convert ligands to pdbqt
         sdf_file_name = os.path.basename(sdf).replace('.sdf', '')
         printlog(f'Converting SDF file {sdf_file_name}.sdf to .pdbqt files...')
         split_files_folder = SCORCH_rescoring_folder + f'/split_{sdf_file_name}'
         create_temp_folder(split_files_folder, silent=True)
         num_molecules = parallel_sdf_to_pdbqt(sdf, split_files_folder, ncpus)
         print(f"Converted {num_molecules} molecules.")
-
+        # Run SCORCH
         printlog('Rescoring with SCORCH')
         SCORCH_command = f'python {software}/SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}scoring_results.csv --threads {ncpus} --return_pose_scores'
         subprocess.call(SCORCH_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-
+        #Clean data
         SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder + 'scoring_results.csv')
         SCORCH_scores = SCORCH_scores.rename(columns={'Ligand_ID': 'Pose ID'})
         SCORCH_scores = SCORCH_scores[['SCORCH_pose_score', 'Pose ID']]
