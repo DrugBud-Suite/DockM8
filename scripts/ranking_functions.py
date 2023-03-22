@@ -39,7 +39,8 @@ def standardize_scores(dataframe, clustering_metric):
                                             'NNScore':'max', 
                                             'PLECnn':'max',
                                             'AAScore':'min',
-                                            'ECIF':'max'}
+                                            'ECIF':'max',
+                                            'SCORCH':'max'}
     for col in dataframe.columns:
         if col != 'Pose ID':
             dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
