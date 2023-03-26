@@ -480,8 +480,8 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         subprocess.call(SCORCH_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         #Clean data
         SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder + 'scoring_results.csv')
-        SCORCH_scores = SCORCH_scores.rename(columns={'Ligand_ID': 'Pose ID'})
-        SCORCH_scores = SCORCH_scores[['SCORCH_pose_score', 'Pose ID']]
+        SCORCH_scores = SCORCH_scores.rename(columns={'Ligand_ID': 'Pose ID', 'SCORCH_pose_score':'SCORCH'})
+        SCORCH_scores = SCORCH_scores[['SCORCH', 'Pose ID']]
         SCORCH_scores.to_csv(SCORCH_rescoring_folder + 'SCORCH_scores.csv')
         delete_files(SCORCH_rescoring_folder, 'SCORCH_scores.csv')
         toc = time.perf_counter()
