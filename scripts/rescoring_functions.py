@@ -21,6 +21,7 @@ from IPython.display import display
 import pickle
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
+from software.RTMScore.rtmscore_modified import *
 
 #TODO: add new scoring functions:
 # _ECIF
@@ -491,16 +492,10 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         RTMScore_rescoring_folder = rescoring_folder + '/RTMScore_rescoring/'
         create_temp_folder(RTMScore_rescoring_folder)
         RTMScore_pocket = protein_file.replace('.pdb', '_pocket.pdb')
-        
         printlog('Rescoring with RTMScore')
-        RTMScore_command = f'python {software}/RTMScore/example/rtmscore.py -p {RTMScore_pocket} -l {sdf} -m {software}/RTMScore/trained_models/rtmscore_model1.pth -pl'
-        subprocess.call(RTMScore_command, shell=True)
-
-        # RTMScore_scores = pd.read_csv(RTMScore_rescoring_folder + 'scoring_results.csv')
-        # RTMScore_scores = RTMScore_scores.rename(columns={'Ligand_ID': 'Pose ID'})
-        # RTMScore_scores = RTMScore_scores[['RTMScore_pose_score', 'Pose ID']]
-        # RTMScore_scores.to_csv(RTMScore_rescoring_folder + 'RTMScore_scores.csv')
-        # delete_files(RTMScore_rescoring_folder, 'RTMScore_scores.csv')
+        results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+        results['Pose ID'] = results['Pose ID'].apply(lambda x: x.split('-')[0])
+        results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
         toc = time.perf_counter()
         printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
     def LinF9_rescoring(sdf, mp):
