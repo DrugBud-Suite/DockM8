@@ -486,6 +486,23 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         delete_files(SCORCH_rescoring_folder, 'SCORCH_scores.csv')
         toc = time.perf_counter()
         printlog(f'Rescoring with SCORCH complete in {toc-tic:0.4f}!')
+    def RTMScore_rescoring(sdf, mp):
+        tic = time.perf_counter()
+        RTMScore_rescoring_folder = rescoring_folder + '/RTMScore_rescoring/'
+        create_temp_folder(RTMScore_rescoring_folder)
+        RTMScore_pocket = protein_file.replace('.pdb', '_pocket.pdb')
+        
+        printlog('Rescoring with RTMScore')
+        RTMScore_command = f'python {software}/RTMScore/example/rtmscore.py -p {RTMScore_pocket} -l {sdf} -m {software}/RTMScore/trained_models/rtmscore_model1.pth -pl'
+        subprocess.call(RTMScore_command, shell=True)
+
+        # RTMScore_scores = pd.read_csv(RTMScore_rescoring_folder + 'scoring_results.csv')
+        # RTMScore_scores = RTMScore_scores.rename(columns={'Ligand_ID': 'Pose ID'})
+        # RTMScore_scores = RTMScore_scores[['RTMScore_pose_score', 'Pose ID']]
+        # RTMScore_scores.to_csv(RTMScore_rescoring_folder + 'RTMScore_scores.csv')
+        # delete_files(RTMScore_rescoring_folder, 'RTMScore_scores.csv')
+        toc = time.perf_counter()
+        printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
     def LinF9_rescoring(sdf, mp):
         tic = time.perf_counter()
         create_temp_folder(rescoring_folder+'/LinF9_rescoring/', silent=True)
@@ -595,7 +612,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9':LinF9_rescoring, 
-                        'AAScore':AAScore_rescoring, 'ECIF':ECIF_rescoring, 'SCORCH':SCORCH_rescoring}
+                        'AAScore':AAScore_rescoring, 'ECIF':ECIF_rescoring, 'SCORCH':SCORCH_rescoring, 'RTMScore':RTMScore_rescoring}
     for function in functions:
         if os.path.isdir(rescoring_folder+f'/{function}_rescoring') == False:
             rescoring_functions[function](clustered_sdf, mp)
