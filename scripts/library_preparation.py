@@ -117,7 +117,7 @@ def protonate_library_pkasolver(input_sdf):
     protonated_df['ID'] = input_df['ID']
     protonated_df = protonated_df.loc[:,~protonated_df.columns.duplicated()].copy()
     n_cpds_end = len(input_df)
-    printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
+    printlog(f'Protonation of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
     output_sdf = os.path.dirname(input_sdf)+'/protonated_library.sdf'
     PandasTools.WriteSDF(protonated_df, output_sdf, molColName='Molecule', idName='ID')
     return

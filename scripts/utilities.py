@@ -107,14 +107,14 @@ def printlog(message):
         f_out.write(msg)
 
 import openbabel
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
     def convert_molecule(mol, output_dir):
         obConversion = openbabel.OBConversion()
         obConversion.SetInAndOutFormats("sdf", "pdbqt")
         # Calculate Gasteiger charges
-        charge_model = openbabel.OBChargeModel_FindType("gasteiger")
+        charge_model = openbabel.OBChargeModel.FindType("gasteiger")
         charge_model.ComputeCharges(mol)
         mol_name = mol.GetTitle()
 
@@ -139,8 +139,12 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
         molecules.append(openbabel.OBMol(mol))
         not_at_end = obConversion.Read(mol)
 
-    with ThreadPoolExecutor(max_workers=ncpus) as executor:
-        tasks = [executor.submit(convert_molecule, m, output_dir) for m in molecules]
-        _ = [t.result() for t in tasks]
+    try:
+        with ThreadPoolExecutor(max_workers=ncpus) as executor:
+            tasks = [executor.submit(convert_molecule, m, output_dir) for m in molecules]
+            _ = [t.result() for t in tasks]
+    except AttributeError as e:
+        print(f"AttributeError occurred: {e}")
+        raise
 
     return len(molecules)
