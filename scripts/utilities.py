@@ -143,8 +143,6 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
         with ThreadPoolExecutor(max_workers=ncpus) as executor:
             tasks = [executor.submit(convert_molecule, m, output_dir) for m in molecules]
             _ = [t.result() for t in tasks]
-    except AttributeError as e:
-        print(f"AttributeError occurred: {e}")
-        raise
-
+    except Exception as e:
+        print(f"ERROR: Could note convert SDF file to .pdbqt: {e}")
     return len(molecules)
