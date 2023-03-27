@@ -17,7 +17,7 @@ WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on 
 
 4. Install required packages using the following commands:  
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn -y`  
-`pip install pymesh espsim oddt biopandas redo`  
+`pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl`  
 
     If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings and install openbabel using `conda install -c conda-forge openbabel`.  
 
