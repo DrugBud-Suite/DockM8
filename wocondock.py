@@ -29,7 +29,7 @@ parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision 
 parser.add_argument('--parallel', default=1, type=int, choices = [0,1], help ='Choose whether to run workflow in parallel')
 parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of cpus to use')
 parser.add_argument('--clustering', type = str, choices = ['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
-parser.add_argument('--rescoring', type = str, nargs='+', choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore', 'ECIF'], help='Rescoring methods to use')
+parser.add_argument('--rescoring', type = str, nargs='+', choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore'], help='Rescoring methods to use')
 
 args = parser.parse_args()
 
@@ -55,11 +55,9 @@ def run_command(**kwargs):
 
     if kwargs.get('parallel') == 0:
         docking_func = docking
-        fetch_poses_func = fetch_poses
         cluster_func = cluster
     else:
         docking_func = docking_splitted
-        fetch_poses_func = fetch_poses_splitted
         cluster_func = cluster_futures
 
     docking_programs = {'GNINA': w_dir+'/temp/gnina/', 'SMINA': w_dir+'/temp/smina/', 'PLANTS': w_dir+'/temp/plants/'}
@@ -67,9 +65,6 @@ def run_command(**kwargs):
         if os.path.isdir(file_path) == False and program in kwargs.get('docking'):
             docking_func(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
 
-    if os.path.isfile(w_dir+'/temp/allposes.sdf') == False:
-        fetch_poses_func(w_dir, kwargs.get('nposes'), w_dir+'/temp/split_final_library')
-        
     for metric in kwargs.get('metric'):
         if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
             print('Loading all poses SDF file...')
