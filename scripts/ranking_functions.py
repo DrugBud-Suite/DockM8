@@ -8,6 +8,7 @@ from scripts.utilities import *
 from IPython.display import display
 from math import comb
 from concurrent.futures import ProcessPoolExecutor
+from joblib import Parallel, delayed
 
 def standardize_scores(dataframe, clustering_metric):
     """
@@ -47,7 +48,8 @@ def standardize_scores(dataframe, clustering_metric):
                                            'AAScore':'min',
                                            'ECIF':'max',
                                            'SCORCH':'max',
-                                           'SCORCH_pose_score':'max'}
+                                           'SCORCH_pose_score':'max',
+                                           'RTMScore':'max'}
     for col in dataframe.columns:
         if col != 'Pose ID':
             dataframe[col] = pd.to_numeric(dataframe[col], errors='coerce')
@@ -175,55 +177,56 @@ def apply_consensus_methods(w_dir, clustering_metrics):
     combined_all_methods_df = combined_all_methods_df.reindex(columns=['ID'] + [col for col in combined_all_methods_df.columns if col != 'ID'])
     combined_all_methods_df.to_csv(w_dir+'/temp/consensus/method_results.csv', index=False)
     
-def process_combination(combination, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods):
+def process_combination(combination, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods, docking_library, original_df):
     selected_columns = list(combination)
     ranked_selected_columns = [column_mapping[col] for col in selected_columns]
     subset_name = '_'.join(selected_columns)
+    replacements_dict = {
+    '_R_': '_',    '_S_': '_',    '_Affinity_': '_',    '_RMSD_': '_',
+    '_spyRMSD_': '_',    '_espsim_': '_',    '_3DScore_': '_',    '_bestpose_': '_',
+    '_bestpose_GNINA_': '_',    '_bestpose_SMINA_': '_',    '_bestpose_PLANTS_': '_',    '_RMSD': '_',
+    '_spyRMSD': '_',    '_espsim': '_',    '_3DScore': '_',    '_bestpose': '_',
+    '_bestpose_GNINA': '_',    '_bestpose_SMINA': '_',    '_bestpose_PLANTS': '_',    'GNINA_CNN': 'GNINA-CNN',    'CNN_Score': 'CNN-Score'}
+
+    for key, value in replacements_dict.items():
+        subset_name = subset_name.replace(key, value)
     standardised_subset = standardised_df[['ID'] + selected_columns]
     ranked_subset = ranked_df[['ID'] + ranked_selected_columns]
     analysed_dataframes = {method: rank_methods[method](ranked_subset, name, ranked_selected_columns) for method in rank_methods}
     analysed_dataframes.update({method: score_methods[method](standardised_subset, name, selected_columns) for method in score_methods})
+    def calculate_EF1(df, w_dir, docking_library, original_df):
+        #Calculate EFs for consensus methods
+        merged_df = df.merge(original_df, on='ID')
+        method_list = df.columns.tolist()[1:]
+        method_ranking = {'ECR':False, 'Zscore':False, 'RbV':False, 'RbR':True}
+        for method in method_list:
+            asc = [method_ranking[key] for key in method_ranking if key in method][0]
+            sorted_df = merged_df.sort_values(method, ascending = asc)
+            N1_percent = round(0.01 * len(sorted_df))
+            N100_percent = len(sorted_df)
+            Hits1_percent = sorted_df.head(N1_percent)['Activity'].sum()
+            Hits100_percent = sorted_df['Activity'].sum()
+            ef1 = round((Hits1_percent/N1_percent)*(N100_percent/Hits100_percent),2)
+        return ef1
     result_dict = {}
     for method, df in analysed_dataframes.items():
         df = df.drop(columns="Pose ID", errors='ignore')
-        df['method_name'] = f"{name}_{method}"
-        df['selected_columns'] = subset_name
-        result_dict[method] = df
+        enrichment_factor = calculate_EF1(df, w_dir, docking_library, original_df)
+        # Create a new dataframe with the method name, selected columns, and enrichment factor
+        ef_df = pd.DataFrame({
+            'clustering_method': [name],
+            'method_name': [method],
+            'selected_columns': [subset_name],
+            'EF1%': [enrichment_factor]
+        })
+
+        result_dict[method] = ef_df
     return result_dict
 
 def process_combination_wrapper(args):
     return process_combination(*args)
 
-
-import glob
-
-def find_common_columns(file_list):
-    common_columns = set()
-    for i, file in enumerate(file_list):
-        df = pd.read_csv(file, nrows=0)
-        columns = set(df.columns)
-        if i == 0:
-            common_columns = columns
-        else:
-            common_columns = common_columns.intersection(columns)
-    return list(common_columns)
-
-def merge_csv_files(input_directory, output_file):
-    all_files = glob.glob(os.path.join(input_directory, "*.csv"))
-
-    common_columns = find_common_columns(all_files)
-    combined_df = None
-
-    for file in all_files:
-        df = pd.read_csv(file)
-        if combined_df is None:
-            combined_df = df
-        else:
-            combined_df = combined_df.merge(df, on=common_columns, how='outer')
-
-    combined_df.to_csv(output_file, index=False)
-
-def apply_consensus_methods_combinations(w_dir, clustering_metrics):
+def apply_consensus_methods_combinations(w_dir, clustering_metrics, docking_library):
     create_temp_folder(w_dir+'/temp/ranking')
     rescoring_folders = {metric: f'rescoring_{metric}_clustered' for metric in clustering_metrics}
     standardised_dataframes = standardise_dataframes(w_dir, rescoring_folders)
@@ -237,28 +240,29 @@ def apply_consensus_methods_combinations(w_dir, clustering_metrics):
     rank_methods = {'method1':method1_ECR_best, 'method2':method2_ECR_average, 'method3':method3_avg_ECR, 'method4':method4_RbR}
     score_methods = {'method5':method5_RbV, 'method6':method6_Zscore_best, 'method7':method7_Zscore_avg}
     
-    consensus_summary = pd.DataFrame()
-    for name in rescoring_folders:
+    original_df = PandasTools.LoadSDF(docking_library, molColName=None, idName='ID')
+    original_df = original_df[['ID', 'Activity']]
+    original_df['Activity'] = pd.to_numeric(original_df['Activity'])
+    df_list = []
+    printlog('Calculating consensus methods for every possible score combination...')
+    for name in tqdm(rescoring_folders):
         standardised_df = standardised_dataframes[name+'_standardised']
         ranked_df = ranked_dataframes[name+'_ranked']
         calc_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
-        
+        total_combinations = sum(comb(len(calc_columns), L) for L in range(2, len(calc_columns)))
         # Create a mapping between the column names in the standardised_df and ranked_df
         column_mapping = {col: f"{col}_RANK" for col in calc_columns}
         ranked_df = ranked_df.rename(columns=column_mapping)
-        
-        with ProcessPoolExecutor() as executor:
-            printlog('Calculating consensus methods for every possible score combination...')
-            for L in range(2, len(calc_columns)):
-                combinations = list(itertools.combinations(calc_columns, L))
-                total_combinations = sum(comb(len(calc_columns), L) for L in range(1, len(calc_columns) + 1))
-                args = [(subset, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods) for subset in combinations]
+        parallel = Parallel(n_jobs=6, backend='multiprocessing')
+        for L in range(2, len(calc_columns)):
+            combinations = list(itertools.combinations(calc_columns, L))
+            args = [(subset, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods, docking_library, original_df) for subset in combinations]
+            results = parallel(delayed(process_combination_wrapper)(arg) for arg in args)
+            for result_dict in results:
+                for method, df in result_dict.items():
+                    df_list.append(df)
+            consensus_summary = pd.concat(df_list, ignore_index=True)
 
-                for result_dict in tqdm(executor.map(process_combination_wrapper, args), total=total_combinations):
-                    for method, df in result_dict.items():
-                        file_path = w_dir + f'/temp/consensus/{method}_L{L}.csv'
-                        if os.path.exists(file_path):
-                            df.to_csv(file_path, mode='a', header=False, index=False)
-                        else:
-                            df.to_csv(file_path, index=False)
-    merge_csv_files(w_dir+'/temp/consensus/', w_dir+'/temp/consensus/merged_csv.csv')
+    # Save the consensus_summary DataFrame to a single CSV file
+    consensus_summary = pd.concat(df_list, ignore_index=True)
+    consensus_summary.to_csv(w_dir + '/temp/consensus/consensus_summary.csv', index=False)
