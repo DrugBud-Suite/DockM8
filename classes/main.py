@@ -4,7 +4,7 @@ from scripts.utilities import *
 from scripts.docking_functions import *
 from scripts.clustering_functions import *
 from scripts.rescoring_functions import *
-from scripts.ranking_functions import *
+from scripts.consensus_methods import *
 from scripts.get_pocket import *
 from scripts.dogsitescorer import *
 from scripts.performance_calculation import *
