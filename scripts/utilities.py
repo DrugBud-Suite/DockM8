@@ -9,7 +9,6 @@ def create_temp_folder(path, silent=False):
             print(f'The folder: {path} was created')
         
 from rdkit.Chem import PandasTools
-import multiprocessing
 from tqdm import tqdm
         
 def split_sdf(dir, sdf_file, ncpus):
