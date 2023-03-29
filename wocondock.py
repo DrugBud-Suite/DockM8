@@ -4,7 +4,7 @@ from scripts.utilities import *
 from scripts.docking_functions import *
 from scripts.clustering_functions import *
 from scripts.rescoring_functions import *
-from scripts.ranking_functions import *
+from scripts.consensus_methods import *
 from scripts.get_pocket import *
 from scripts.dogsitescorer import *
 from scripts.performance_calculation import *
@@ -58,7 +58,7 @@ def run_command(**kwargs):
         cluster_func = cluster
     else:
         docking_func = docking_splitted
-        cluster_func = cluster_futures
+        cluster_func = cluster
 
     docking_programs = {'GNINA': w_dir+'/temp/gnina/', 'SMINA': w_dir+'/temp/smina/', 'PLANTS': w_dir+'/temp/plants/'}
     for program, file_path in docking_programs.items():
