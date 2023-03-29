@@ -70,75 +70,6 @@ def affinity_propagation_clustering(input_dataframe):
     #.astype(str).replace('[()\',]','', regex=False)
     return merged_df
 
-def cluster(metric, method, w_dir, protein_file, all_poses, ncpus):
-    '''This function clusters all poses according to the metric selected'''
-    create_temp_folder(w_dir+'/temp/clustering/')
-    def matrix_calculation_and_clustering(metric, method, df, id_list, protein_file): 
-        clustered_dataframes = []
-        printlog("*Calculating {} metrics and clustering*".format(metric))
-        metrics = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
-        methods = {'KMedoids': kmedoids_S_clustering, 'AffProp': affinity_propagation_clustering}
-        for id in tqdm(id_list, desc='Metric calculation and clustering', unit='IDs'):
-            if metric == '3DScore':
-                df_filtered = df[df['ID']==id]
-                subsets = np.array(list(itertools.combinations(df_filtered['Molecule'], 2)))
-                indices = {mol: idx for idx, mol in enumerate(df_filtered['Molecule'].values)}
-                results = np.zeros(len(subsets))
-                for k, (x, y) in enumerate(subsets):
-                    try:
-                        results[k] = (metrics['spyRMSD'](x, y, protein_file))
-                    except:
-                        results[k] = (metrics['RMSD'](x, y, protein_file))
-                i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
-                matrix = np.zeros((len(df_filtered), len(df_filtered)))
-                matrix[i, j] = results
-                matrix[j, i] = results
-                matrix_df = pd.DataFrame(matrix, index=df_filtered['Pose ID'].values.tolist(), columns=df_filtered['Pose ID'].values.tolist())
-                matrix_df['3DScore'] = matrix_df.sum(axis=1)
-                matrix_df.sort_values(by='3DScore', ascending=True, inplace=True)
-                matrix_df = matrix_df.head(1)
-                matrix_df = pd.DataFrame(matrix_df.index, columns=['Pose ID'])
-                matrix_df['Pose ID'] = matrix_df['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-                clustered_dataframes.append(matrix_df)
-            else:
-                try:
-                    df_filtered = df[df['ID']==id]
-                    subsets = np.array(list(itertools.combinations(df_filtered['Molecule'], 2)))
-                    indices = {mol: idx for idx, mol in enumerate(df_filtered['Molecule'].values)}
-                    results = np.array([metrics[metric](x, y, protein_file) for x, y in subsets])
-                    i, j = np.array([indices[x] for x in subsets[:,0]]), np.array([indices[y] for y in subsets[:,1]])
-                    matrix = np.zeros((len(df_filtered), len(df_filtered)))
-                    matrix[i, j] = results
-                    matrix[j, i] = results
-                    matrix_df = pd.DataFrame(matrix, index=df_filtered['Pose ID'].values.tolist(), columns=df_filtered['Pose ID'].values.tolist())
-                    clust_df = methods[method](matrix_df)
-                    clustered_dataframes.append(clust_df)
-                except Exception as e:
-                    printlog(f'Failed to calculate metrics and cluster ID: {id} due to : {e}')
-        clustered_poses = pd.concat(clustered_dataframes)
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-        return clustered_poses
-    if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
-        id_list = np.unique(np.array(all_poses['ID']))
-        best_pose_filters = {'bestpose': ('_1', '_01'),
-                            'bestpose_GNINA': ('GNINA_1','GNINA_01'),
-                            'bestpose_SMINA': ('SMINA_1','SMINA_01'),
-                            'bestpose_PLANTS': ('PLANTS_1','PLANTS_01')}
-        if metric in best_pose_filters:
-            filter = best_pose_filters[metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
-            clustered_poses = clustered_poses[['Pose ID']]
-            clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-        else:
-            clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
-        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-        save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-        PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-    else:
-        printlog(f'Clustering using {metric} already done, moving to next metric...')
-    return
-
 def metric_calculation_failure_handling(x, y, metric, protein_file):
     metrics = {'RMSD': simpleRMSD_calc, 'spyRMSD': spyRMSD_calc, 'espsim': espsim_calc, 'USRCAT': USRCAT_calc, 'SPLIF': SPLIF_calc, '3DScore': '3DScore', 'bestpose': 'bestpose', 'symmRMSD': symmRMSD_calc}
     if metric == 'spyRMSD':
@@ -153,7 +84,7 @@ def metric_calculation_failure_handling(x, y, metric, protein_file):
             printlog(f'Failed to calculate {metric} and cluster : {e}')
             return 0
 
-def matrix_calculation_and_clustering_futures_failure_handling(metric, method, df, protein_file):
+def matrix_calculation_and_clustering(metric, method, df, protein_file):
     methods = {'KMedoids': kmedoids_S_clustering, 'AffProp': affinity_propagation_clustering}
     if metric == '3DScore':
         subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
@@ -185,7 +116,7 @@ def matrix_calculation_and_clustering_futures_failure_handling(metric, method, d
         clust_df = methods[method](matrix_df)
         return clust_df
 
-def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
+def cluster(metric, method, w_dir, protein_file, all_poses, ncpus):
     '''This function clusters all poses according to the metric selected using multiple CPU cores'''
     create_temp_folder(w_dir+'/temp/clustering/')
     if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
@@ -201,26 +132,29 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
             clustered_poses = clustered_poses[['Pose ID']]
             clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
         else:
-            clustered_dataframes = []
-            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-                printlog('Submitting parallel jobs...')
-                tic = time.perf_counter()
-                jobs = []
-                for current_id in tqdm(id_list, desc='Submitting parallel jobs...', unit='IDs'):
-                    try:
-                        job = executor.submit(matrix_calculation_and_clustering_futures_failure_handling, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
-                        jobs.append(job)
-                    except Exception as e:
-                        printlog("Error in concurrent futures job creation: "+ str(e))	
-                toc = time.perf_counter()
-                printlog(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
-                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
-                    try:
-                        res = job.result(timeout=60)
-                        clustered_dataframes.append(res)
-                    except Exception as e:
-                        printlog("Error in concurrent futures job run: "+ str(e))
-            clustered_poses = pd.concat(clustered_dataframes)
+            if ncpus > 1:
+                clustered_dataframes = []
+                with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+                    printlog('Submitting parallel jobs...')
+                    tic = time.perf_counter()
+                    jobs = []
+                    for current_id in tqdm(id_list, desc='Submitting parallel jobs...', unit='IDs'):
+                        try:
+                            job = executor.submit(matrix_calculation_and_clustering, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
+                            jobs.append(job)
+                        except Exception as e:
+                            printlog("Error in concurrent futures job creation: "+ str(e))	
+                    toc = time.perf_counter()
+                    printlog(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
+                    for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
+                        try:
+                            res = job.result(timeout=60)
+                            clustered_dataframes.append(res)
+                        except Exception as e:
+                            printlog("Error in concurrent futures job run: "+ str(e))
+                clustered_poses = pd.concat(clustered_dataframes)
+            else:
+                clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
         clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
         clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
@@ -229,3 +163,4 @@ def cluster_futures(metric, method, w_dir, protein_file, all_poses, ncpus):
     else:
         printlog(f'Clustering using {metric} already done, moving to next metric...')
     return
+
