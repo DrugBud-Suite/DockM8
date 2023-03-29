@@ -48,28 +48,6 @@ def standardize_library(input_sdf, id_column):
         printlog('ERROR: Failed to write standardized library SDF file!')
     return
 
-def standardize_library_multiprocessing(input_sdf, id_column, ncpus):
-    printlog('Standardizing docking library using ChemBL Structure Pipeline...')
-    try:
-        df = PandasTools.LoadSDF(input_sdf, molColName=None, idName=id_column, removeHs=True, strictParsing=True, smilesName='SMILES')
-        df.rename(columns = {id_column:'ID'}, inplace = True)
-        df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in df['SMILES']]
-        n_cpds_start = len(df)
-    except Exception as e: 
-        printlog('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
-        printlog(e)
-    with multiprocessing.Pool(processes=ncpus) as p:
-        df['Molecule'] = tqdm.tqdm(p.imap(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol')
-    df[['Molecule', 'flag']]=pd.DataFrame(df['Molecule'].tolist(), index=df.index)
-    df=df.drop(columns='flag')
-    df = df.loc[:,~df.columns.duplicated()].copy()
-    n_cpds_end = len(df)
-    printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
-    wdir = os.path.dirname(input_sdf)
-    output_sdf = wdir+'/temp/standardized_library.sdf'
-    PandasTools.WriteSDF(df, output_sdf, molColName='Molecule', idName='ID')
-    return
-
 def standardize_library_futures(input_sdf, id_column, ncpus):
     printlog('Standardizing docking library using ChemBL Structure Pipeline...')
     try:
