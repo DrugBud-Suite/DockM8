@@ -115,7 +115,7 @@ def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metr
         standardised_df = standardised_dataframes[name+'_standardised']
         ranked_df = ranked_dataframes[name+'_ranked']
         calc_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
-        column_mapping = {col: f"{col}_RANK" for col in calc_columns}
+        column_mapping = {col: f"{col}_R" for col in calc_columns}
         ranked_df = ranked_df.rename(columns=column_mapping)
         parallel = Parallel(n_jobs=int(os.cpu_count-2), backend='multiprocessing')
         for L in range(2, len(calc_columns)):
