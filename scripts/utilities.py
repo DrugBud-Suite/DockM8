@@ -2,7 +2,8 @@ import os
 
 def create_temp_folder(path, silent=False):
     if os.path.isdir(path) == True:
-        print(f'The folder: {path} already exists')
+        if silent == False:
+            print(f'The folder: {path} already exists')
     else:
         os.mkdir(path)
         if silent == False:
@@ -83,7 +84,6 @@ def show_correlation(input, annotation = bool()):
         dataframe = PandasTools.LoadSDF(input)
     elif input.endswith('.csv'):
         dataframe = pd.read_csv(input, index_col=0)
-        dataframe
     matrix = dataframe.corr().round(2)
     mask = np.triu(np.ones_like(matrix, dtype=bool))
     fig, ax = plt.subplots(figsize=(10,10))  
