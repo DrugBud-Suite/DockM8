@@ -5,44 +5,16 @@ from scripts.utilities import *
 from scripts.consensus_methods import *
 
 def standardize_scores(dataframe, clustering_metric):
-    """
-    Applies min-max standardisation to each column in the input dataframe using a specific rescoring function 
-    determined by the column name. Returns a new dataframe containing only the standardized columns and 
-    the Pose ID column, sorted alphabetically by column name.
-
-    Args:
-        dataframe: A pandas DataFrame containing numerical data to be standardized.
-        clustering_metric: A string indicating the clustering metric used in the analysis.
-
-    Returns:
-        A pandas DataFrame containing only the standardized columns and the Pose ID column, sorted alphabetically 
-        by column name.
-
-    Example:
-        standardize_scores(df, 'K-means')
-    """
     def min_max_standardisation(score, best_value):
         if best_value == 'max':
             standardized_scores = (score - score.min()) / (score.max() - score.min())
         else:
             standardized_scores = (score.max() - score) / (score.max() - score.min())
         return standardized_scores
-    rescoring_functions_standardization = {'GNINA_Affinity':'min', 
-                                           'GNINA_CNN_Score':'max', 
-                                           'GNINA_CNN_Affinity':'max', 
-                                           'CNN_VS':'max',
-                                           'Vinardo_Affinity':'min', 
-                                           'AD4_Affinity':'min',
-                                           'LinF9_Affinity':'min',  
-                                           'RFScoreVS':'max', 
-                                           'PLP':'min', 
-                                           'CHEMPLP':'min', 
-                                           'NNScore':'max', 
-                                           'PLECnn':'max',
-                                           'AAScore':'min',
-                                           'ECIF':'max',
-                                           'SCORCH':'max',
-                                           'SCORCH_pose_score':'max',
+    rescoring_functions_standardization = {'GNINA_Affinity':'min', 'GNINA_CNN_Score':'max', 'GNINA_CNN_Affinity':'max', 'CNN_VS':'max',
+                                           'Vinardo_Affinity':'min', 'AD4_Affinity':'min', 'LinF9_Affinity':'min', 'Vinardo':'min', 
+                                           'AD4':'min', 'LinF9':'min', 'RFScoreVS':'max', 'PLP':'min', 'CHEMPLP':'min', 'NNScore':'max', 
+                                           'PLECnn':'max', 'AAScore':'min', 'ECIF':'max', 'SCORCH':'max', 'SCORCH_pose_score':'max',
                                            'RTMScore':'max'}
     for col in dataframe.columns:
         if col != 'Pose ID':
@@ -51,26 +23,21 @@ def standardize_scores(dataframe, clustering_metric):
     dataframe = dataframe.drop([col for col in dataframe.columns if col != 'Pose ID' and '_S_' not in col], axis=1)
     return dataframe[sorted(dataframe.columns)]
 
-def rank_scores(dataframe, clustering_metric):
+def rank_scores(dataframe):
     dataframe = dataframe.assign(**{f'{col}_RANK': dataframe[col].rank(method='average', ascending=False) for col in dataframe.columns if col not in ['Pose ID', 'ID']})
-    dataframe = dataframe.drop([col for col in dataframe.columns if col != 'Pose ID' and 'RANK' not in col], axis=1)
-    return dataframe[sorted(dataframe.columns)]
+    return dataframe[[col for col in sorted(dataframe.columns) if 'RANK' in col or col == 'Pose ID']]
 
-def standardise_dataframes(w_dir, rescoring_folders):
+def process_dataframes(w_dir, rescoring_folders):
     rescored_dataframes = {name: pd.read_csv(w_dir + f'/temp/{rescoring_folders[name]}/allposes_rescored.csv') for name in rescoring_folders}
-    standardised_dataframes = {name + '_standardised': standardize_scores(rescored_dataframes[name], name) for name in rescoring_folders}
-    return standardised_dataframes
-
-def rank_dataframes(standardised_dataframes):
-    ranked_dataframes = {name.replace('_standardised', '_ranked'): rank_scores(standardised_dataframes[name], name) for name in standardised_dataframes}
-    return ranked_dataframes
+    standardised_dataframes = {f'{name}_standardised': standardize_scores(rescored_dataframes[name], name) for name in rescoring_folders}
+    ranked_dataframes = {f'{name}_ranked': rank_scores(standardised_dataframes[f'{name}_standardised']) for name in rescoring_folders}
+    return standardised_dataframes, ranked_dataframes
 
 
 def apply_consensus_methods(w_dir, clustering_metrics):
     create_temp_folder(w_dir+'/temp/ranking')
     rescoring_folders = {metric: f'rescoring_{metric}_clustered' for metric in clustering_metrics}
-    standardised_dataframes = standardise_dataframes(w_dir, rescoring_folders)
-    ranked_dataframes = rank_dataframes(standardised_dataframes)
+    standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, rescoring_folders)
     for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
         for df_name, df in df_dict.items():
             df['ID'] = df['Pose ID'].str.split('_').str[0]
@@ -139,8 +106,7 @@ def process_combination_wrapper(args):
 def apply_consensus_methods_combinations(w_dir, clustering_metrics, docking_library):
     create_temp_folder(w_dir+'/temp/ranking')
     rescoring_folders = {metric: f'rescoring_{metric}_clustered' for metric in clustering_metrics}
-    standardised_dataframes = standardise_dataframes(w_dir, rescoring_folders)
-    ranked_dataframes = rank_dataframes(standardised_dataframes)
+    standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, rescoring_folders)
     for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
         for df_name, df in df_dict.items():
             df['ID'] = df['Pose ID'].str.split('_').str[0]
@@ -159,12 +125,10 @@ def apply_consensus_methods_combinations(w_dir, clustering_metrics, docking_libr
         standardised_df = standardised_dataframes[name+'_standardised']
         ranked_df = ranked_dataframes[name+'_ranked']
         calc_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
-        total_combinations = sum(comb(len(calc_columns), L) for L in range(2, len(calc_columns)))
-        # Create a mapping between the column names in the standardised_df and ranked_df
         column_mapping = {col: f"{col}_RANK" for col in calc_columns}
         ranked_df = ranked_df.rename(columns=column_mapping)
-        parallel = Parallel(n_jobs=6, backend='multiprocessing')
-        for L in range(1, len(calc_columns)):
+        parallel = Parallel(n_jobs=int(os.cpu_count-2), backend='multiprocessing')
+        for L in range(2, len(calc_columns)):
             combinations = list(itertools.combinations(calc_columns, L))
             args = [(subset, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods, docking_library, original_df) for subset in combinations]
             results = parallel(delayed(process_combination_wrapper)(arg) for arg in args)
@@ -178,29 +142,11 @@ def apply_consensus_methods_combinations(w_dir, clustering_metrics, docking_libr
     consensus_summary.to_csv(w_dir + '/temp/consensus/consensus_summary.csv', index=False)
 
 
-def calculate_EFs(w_dir, docking_library):
+def calculate_EF_single_functions(w_dir, docking_library):
     original_df = PandasTools.LoadSDF(docking_library, molColName='Molecule', idName='ID')
     original_df = original_df[['ID', 'Activity']]
     original_df['Activity'] = pd.to_numeric(original_df['Activity'])
     EF_results = pd.DataFrame()
-    #Calculate EFs for consensus methods
-    ranking_results = pd.read_csv(w_dir+'/temp/consensus/method_results.csv')
-    merged_df = ranking_results.merge(original_df, on='ID')
-    method_list = ranking_results.columns.tolist()[1:]
-    method_ranking = {'ECR':False, 'Zscore':False, 'RbV':False, 'RbR':True}
-    for method in method_list:
-        asc = [method_ranking[key] for key in method_ranking if key in method][0]
-        sorted_df = merged_df.sort_values(method, ascending = asc)
-        N10_percent = round(0.10 * len(sorted_df))
-        N1_percent = round(0.01 * len(sorted_df))
-        N100_percent = len(sorted_df)
-        Hits10_percent = sorted_df.head(N10_percent)['Activity'].sum()
-        Hits1_percent = sorted_df.head(N1_percent)['Activity'].sum()
-        Hits100_percent = sorted_df['Activity'].sum()
-        ef10 = round((Hits10_percent/N10_percent)*(N100_percent/Hits100_percent),2)
-        ef1 = round((Hits1_percent/N1_percent)*(N100_percent/Hits100_percent),2)
-        EF_results.loc[method, 'EF10%'] = ef10
-        EF_results.loc[method, 'EF1%'] = ef1
     #Calculate EFs for separate scoring functions
     for file in os.listdir(w_dir+'/temp/ranking'):
         if file.endswith('_standardised.csv'):
@@ -220,4 +166,4 @@ def calculate_EFs(w_dir, docking_library):
                     ef1 = round((Hits1_percent/N1_percent)*(N100_percent/Hits100_percent),2)
                     EF_results.loc[col, 'EF10%'] = ef10
                     EF_results.loc[col, 'EF1%'] = ef1
-    EF_results.to_csv(w_dir+'/temp/consensus/enrichement_factors.csv')
+    EF_results.to_csv(w_dir+'/temp/consensus/EF_single_functions.csv')
