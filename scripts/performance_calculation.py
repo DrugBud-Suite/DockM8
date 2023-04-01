@@ -1,8 +1,8 @@
 from rdkit.Chem import PandasTools
 import pandas as pd
 import os
-from utilities import *
-from consensus_methods import *
+from scripts.utilities import *
+from scripts.consensus_methods import *
 
 def standardize_scores(dataframe, clustering_metric):
     """
