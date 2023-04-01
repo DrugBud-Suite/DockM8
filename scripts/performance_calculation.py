@@ -11,7 +11,7 @@ def standardize_scores(df, clustering_metric):
         else:
             standardized_scores = (score.max() - score) / (score.max() - score.min())
         return standardized_scores
-    rescoring_functions_standardization = {'GNINA_Affinity':'min', 'GNINA_CNN_Score':'max', 'GNINA_CNN_Affinity':'max', 'CNN_VS':'max',
+    rescoring_functions_standardization = {'GNINA_Affinity':'min', 'GNINA_CNN_Score':'max', 'GNINA_CNN_Affinity':'max','GNINA':'min', 'CNN-Score':'max', 'CNN-Affinity':'max', 'CNN_VS':'max',
                                            'Vinardo_Affinity':'min', 'AD4_Affinity':'min', 'LinF9_Affinity':'min', 'Vinardo':'min', 
                                            'AD4':'min', 'LinF9':'min', 'RFScoreVS':'max', 'PLP':'min', 'CHEMPLP':'min', 'NNScore':'max', 
                                            'PLECnn':'max', 'AAScore':'min', 'ECIF':'max', 'SCORCH':'max', 'SCORCH_pose_score':'max',
