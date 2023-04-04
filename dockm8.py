@@ -72,8 +72,8 @@ def run_command(**kwargs):
     for metric in kwargs.get('metric'):
         rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
 
-    apply_consensus_methods(w_dir, kwargs.get('metric'))
+    calculate_EF_single_functions(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
     
-    calculate_EFs(w_dir, kwargs.get('dockinglibrary'))
+    apply_consensus_methods_combinations(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
     
 run_command(**vars(args))
