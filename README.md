@@ -1,7 +1,7 @@
-# WoConDock
+# DockM8
 <!-- markdown-link-check-disable-next-line -->
 **Workflow for Consensus Docking**  
-WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
+DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
 ## Installation (Python 3.8 / Ubuntu 22.04)
 <!-- markdown-link-check-disable-next-line -->
@@ -11,9 +11,9 @@ WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on 
 2. Clone repository to your machine:  
 `git clone https://gitlab.com/Tonylac77/DockM8.git` 
 
-3. Create and activate a WoConDock conda environment:  
-`conda create -n wocondock python=3.8`  
-`conda activate wocondock`  
+3. Create and activate a DockM8 conda environment:  
+`conda create -n dockm8 python=3.8`  
+`conda activate dockm8`  
 
 4. Install required packages using the following commands:  
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn -y`  
@@ -23,8 +23,6 @@ WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on 
 
     If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
 
-    If you want to run the delta_LinF9_XGB scoring function, you should additionally install `pip install mdtraj alphaspace2`
-
     Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`  
 
 6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
@@ -32,18 +30,18 @@ WoConDock is and all-in-one Structure-Based Virtual Screening workflow based on 
 5. (Optional) Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
 
-## Running WoConDock (via command-line / wocondock.py script)
+## Running DockM8 (via command-line / dockm8.py script)
 
 1. Create a working directory on your machine and ensure the required files are present:
 - protein/receptor file (with hydrogens added) as a .pdb file
 - If using a ligand to define the binding pocket : reference ligand file as an .sdf file
 - docking library as a .sdf file
 
-2. Open a terminal and activate the wocondock python environment
+2. Open a terminal and activate the dockm8 python environment
 
 3. Run the following command:
 
-´python /path/to/wocondock.py --args´
+´python /path/to/dockm8.py --args´
 
 --software: The path to the software folder.  
 --proteinfile: The path to the protein file (.pdb).  
@@ -60,9 +58,9 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 -- clustering: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'.  
 --rescoring: Which scoring functions to use for rescoring. Must be one or more of 'gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore'.  
 
-## Running WoConDock (via Jupyter Notebook)
+## Running DockM8 (via Jupyter Notebook)
 
-1. Open wocondock.ipynb in your favorite IDE
+1. Open dockm8.ipynb in your favorite IDE
 
 2. Follow the instructions in the Markdown cells
 
