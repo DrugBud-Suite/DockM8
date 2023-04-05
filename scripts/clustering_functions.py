@@ -174,6 +174,7 @@ def cluster(metric, method, w_dir, protein_file, all_poses, ncpus):
     return
 
 import pebble
+import traceback
 
 def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
     '''This function clusters all poses according to the metric selected using multiple CPU cores'''
@@ -199,7 +200,7 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                     jobs = []
                     for current_id in tqdm(id_list, desc='Submitting parallel jobs...', unit='IDs'):
                         try:
-                            job = executor.schedule(matrix_calculation_and_clustering, args=(metric, method, all_poses[all_poses['ID']==current_id], protein_file), timeout=480)
+                            job = executor.schedule(matrix_calculation_and_clustering, args=(metric, method, all_poses[all_poses['ID']==current_id], protein_file), timeout=120)
                             jobs.append(job)
                         except Exception as e:
                             printlog("Error in pebble job creation: "+ str(e))	
@@ -210,186 +211,8 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                             res = job.result()
                             clustered_dataframes.append(res)
                         except Exception as e:
-                            printlog("Error in pebble job run: "+ str(e))
-                print('Concatenating results...')
+                            pass
                 clustered_poses = pd.concat(clustered_dataframes)
-            else:
-                clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-        save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-        PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-    else:
-        printlog(f'Clustering using {metric} already done, moving to next metric...')
-    return
-
-import futureproof
-
-def cluster_futureproof(metric, method, w_dir, protein_file, all_poses, ncpus):
-    '''This function clusters all poses according to the metric selected using multiple CPU cores'''
-    create_temp_folder(w_dir+'/temp/clustering/')
-    if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
-        id_list = np.unique(np.array(all_poses['ID']))
-        printlog(f"*Calculating {metric} metrics and clustering*")
-        best_pose_filters = {'bestpose': ('_1', '_01'),
-                            'bestpose_GNINA': ('GNINA_1','GNINA_01'),
-                            'bestpose_SMINA': ('SMINA_1','SMINA_01'),
-                            'bestpose_PLANTS': ('PLANTS_1','PLANTS_01')}
-        if metric in best_pose_filters:
-            filter = best_pose_filters[metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
-            clustered_poses = clustered_poses[['Pose ID']]
-            clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-        else:
-            if ncpus > 1:
-                clustered_dataframes = []
-                with futureproof.ProcessPoolExecutor(max_workers=ncpus) as executor:
-                    printlog('Submitting parallel jobs...')
-                    tic = time.perf_counter()
-                    jobs = []
-                    for current_id in tqdm(id_list, desc='Submitting parallel jobs...', unit='IDs'):
-                        try:
-                            job = executor.submit(matrix_calculation_and_clustering, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
-                            jobs.append(job)
-                        except Exception as e:
-                            printlog("Error in concurrent futures job creation: "+ str(e))	
-                    toc = time.perf_counter()
-                    printlog(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
-                    for job in tqdm(executor.as_completed(jobs), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
-                        try:
-                            res = job.result(timeout=60)
-                            clustered_dataframes.append(res)
-                        except Exception as e:
-                            printlog("Error in concurrent futures job run: "+ str(e))
-                clustered_poses = pd.concat(clustered_dataframes)
-            else:
-                clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-        save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-        PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-    else:
-        printlog(f'Clustering using {metric} already done, moving to next metric...')
-    return
-
-def cluster_thread(metric, method, w_dir, protein_file, all_poses, ncpus):
-    '''This function clusters all poses according to the metric selected using multiple CPU cores'''
-    create_temp_folder(w_dir+'/temp/clustering/')
-    if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
-        id_list = np.unique(np.array(all_poses['ID']))
-        printlog(f"*Calculating {metric} metrics and clustering*")
-        best_pose_filters = {'bestpose': ('_1', '_01'),
-                            'bestpose_GNINA': ('GNINA_1','GNINA_01'),
-                            'bestpose_SMINA': ('SMINA_1','SMINA_01'),
-                            'bestpose_PLANTS': ('PLANTS_1','PLANTS_01')}
-        if metric in best_pose_filters:
-            filter = best_pose_filters[metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
-            clustered_poses = clustered_poses[['Pose ID']]
-            clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-        else:
-            if ncpus > 1:
-                clustered_dataframes = []
-                with concurrent.futures.ThreadPoolExecutor(max_workers=ncpus) as executor:
-                    printlog('Submitting parallel jobs...')
-                    tic = time.perf_counter()
-                    jobs = []
-                    for current_id in tqdm(id_list, desc='Submitting parallel jobs...', unit='IDs'):
-                        try:
-                            job = executor.submit(matrix_calculation_and_clustering, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
-                            jobs.append(job)
-                        except Exception as e:
-                            printlog("Error in concurrent futures job creation: "+ str(e))	
-                    toc = time.perf_counter()
-                    printlog(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
-                    for job in tqdm(concurrent.futures.as_completed(jobs), total=len(id_list), desc='Running clustering jobs...', unit='jobs'):
-                        try:
-                            res = job.result(timeout=60)
-                            clustered_dataframes.append(res)
-                        except Exception as e:
-                            printlog("Error in concurrent futures job run: "+ str(e))
-                clustered_poses = pd.concat(clustered_dataframes)
-            else:
-                clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-        save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-        PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-    else:
-        printlog(f'Clustering using {metric} already done, moving to next metric...')
-    return
-
-def batch_cluster(metric, method, w_dir, protein_file, all_poses, ncpus, batch_size):
-    '''This function clusters all poses according to the metric selected using multiple CPU cores in batches'''
-    create_temp_folder(w_dir+'/temp/clustering/')
-    id_list = np.unique(np.array(all_poses['ID']))
-    num_batches = int(np.ceil(len(id_list) / batch_size))
-    clustered_dataframes = []
-    for i in tqdm(range(num_batches)):
-        start_idx = i * batch_size
-        end_idx = min((i + 1) * batch_size, len(id_list))
-        batch_ids = id_list[start_idx:end_idx]
-        # printlog(f"*Calculating {metric} metrics and clustering for batch {i+1}/{num_batches}*")
-        if ncpus > 1:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-                # printlog('Submitting parallel jobs...')
-                tic = time.perf_counter()
-                jobs = []
-                for current_id in batch_ids:
-                    try:
-                        job = executor.submit(matrix_calculation_and_clustering, metric, method, all_poses[all_poses['ID']==current_id], protein_file)
-                        jobs.append(job)
-                    except Exception as e:
-                        printlog("Error in futureproof job creation: "+ str(e))	
-                toc = time.perf_counter()
-                # printlog(f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
-                for job in concurrent.futures.as_completed(jobs):
-                        try:
-                            res = job.result(timeout=60)
-                            clustered_dataframes.append(res)
-                        except Exception as e:
-                            printlog("Error in concurrent futures job run: "+ str(e))
-        else:
-            clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, batch_ids, protein_file)
-            clustered_dataframes.append(clustered_poses)
-    clustered_poses = pd.concat(clustered_dataframes)
-    clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
-    clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-    clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-    save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
-    PandasTools.WriteSDF(clustered_poses, save_path, molColName='Molecule', idName='Pose ID')
-
-import pathos
-
-def cluster_pathos(metric, method, w_dir, protein_file, all_poses, ncpus):
-    '''This function clusters all poses according to the metric selected using multiple CPU cores'''
-    create_temp_folder(w_dir+'/temp/clustering/')
-    if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
-        id_list = np.unique(np.array(all_poses['ID']))
-        printlog(f"*Calculating {metric} metrics and clustering*")
-        best_pose_filters = {'bestpose': ('_1', '_01'),
-                            'bestpose_GNINA': ('GNINA_1','GNINA_01'),
-                            'bestpose_SMINA': ('SMINA_1','SMINA_01'),
-                            'bestpose_PLANTS': ('PLANTS_1','PLANTS_01')}
-        if metric in best_pose_filters:
-            filter = best_pose_filters[metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
-            clustered_poses = clustered_poses[['Pose ID']]
-            clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
-        else:
-            if ncpus > 1:
-                printlog('Running parallel jobs...')
-                tic = time.perf_counter()
-                pool = pathos.multiprocessing.ProcessPool(ncpus)
-                results = pool.map(lambda current_id: matrix_calculation_and_clustering(metric, method, all_poses[all_poses['ID']==current_id], protein_file), id_list)
-                pool.close()
-                pool.join()
-                toc = time.perf_counter()
-                printlog(f'Finished running jobs in {toc-tic:0.4f}')
-                clustered_poses = pd.concat(results)
             else:
                 clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
