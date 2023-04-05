@@ -316,7 +316,7 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
         except Exception as e:
             printlog('ERROR: Failed to combine all poses!')
             printlog(e)
-        else:
+    else:
             if os.path.isdir(w_dir+'/temp/split_final_library') == False :
                 split_files_folder = split_sdf(w_dir+'/temp', w_dir+'/temp/final_library.sdf', ncpus)
             else:
