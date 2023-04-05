@@ -49,7 +49,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         tic = time.perf_counter()
         create_temp_folder(rescoring_folder+'/gnina_rescoring/', silent=True)
         cnn = 'crossdock_default2018'
-        if ncpus > 1:
+        if ncpus == 1:
             printlog('Rescoring with GNINA')
             results = rescoring_folder+'/gnina_rescoring/'+'rescored_'+cnn+'.sdf'
             gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+sdf+' --autobox_ligand '+ref_file+' -o '+results+' --cnn '+cnn+' --score_only --no_gpu'
@@ -478,7 +478,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         # Run SCORCH
         printlog('Rescoring with SCORCH')
         SCORCH_command = f'python {software}/SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}scoring_results.csv --threads {ncpus} --return_pose_scores'
-        subprocess.call(SCORCH_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.call(SCORCH_command, shell=True)
         #Clean data
         SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder + 'scoring_results.csv')
         SCORCH_scores = SCORCH_scores.rename(columns={'Ligand_ID': 'Pose ID', 'SCORCH_pose_score':'SCORCH'})
