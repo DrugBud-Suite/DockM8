@@ -19,12 +19,12 @@ def standardize_scores(df, clustering_metric):
     for col in df.columns:
         if col != 'Pose ID':
             df[col] = pd.to_numeric(df[col], errors='coerce')
-            df[f'{col}_S'] = min_max_standardisation(df[col], rescoring_functions_standardization[col])
-    return df[[col for col in sorted(df.columns) if '_S' in col or col == 'Pose ID']]
+            df[col] = min_max_standardisation(df[col], rescoring_functions_standardization[col])
+    return df
 
 def rank_scores(df):
-    df = df.assign(**{f'{col}_R': df[col].rank(method='average', ascending=False) for col in df.columns if col not in ['Pose ID', 'ID']})
-    return df[[col for col in sorted(df.columns) if '_R' in col or col == 'Pose ID']]
+    df = df.assign(**{col: df[col].rank(method='average', ascending=False) for col in df.columns if col not in ['Pose ID', 'ID']})
+    return df
 
 def process_dataframes(w_dir, rescoring_folders):
     rescored_dataframes = {name: pd.read_csv(w_dir + f'/temp/{rescoring_folders[name]}/allposes_rescored.csv') for name in rescoring_folders}
