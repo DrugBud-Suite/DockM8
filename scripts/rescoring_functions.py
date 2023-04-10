@@ -493,7 +493,10 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         create_temp_folder(RTMScore_rescoring_folder)
         RTMScore_pocket = protein_file.replace('.pdb', '_pocket.pdb')
         printlog('Rescoring with RTMScore')
-        results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+        try:
+            results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+        except:
+            results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
         results['Pose ID'] = results['Pose ID'].apply(lambda x: x.split('-')[0])
         results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
         toc = time.perf_counter()
@@ -571,7 +574,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 results = AAScore_folder+os.path.basename(split_file).split('.')[0]+'_AAScore.csv'
                 AAScore_cmd = 'python '+software+'/AA-Score-Tool-main/AA_Score.py --Rec '+pocket+' --Lig '+split_file+' --Out '+results
                 try:
-                    subprocess.call(AAScore_cmd, shell=True)
+                    subprocess.call(AAScore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
                 except Exception as e:
                     printlog('AAScore rescoring failed: '+e)
                 return
@@ -609,7 +612,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9': LinF9_rescoring, 
                         'AAScore': AAScore_rescoring, 'ECIF': ECIF_rescoring, 'SCORCH': SCORCH_rescoring, 'RTMScore': RTMScore_rescoring}
     for function in functions:
-        if os.path.isdir(rescoring_folder+f'/{function}_rescoring') == False:
+        if os.path.isfile(rescoring_folder+f'/{function}_rescoring/{function}_scores.csv') == False:
             rescoring_functions[function](clustered_sdf, ncpus)
         else:
             printlog(f'/{function}_rescoring folder already exists, skipping {function} rescoring')
