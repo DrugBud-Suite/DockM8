@@ -343,12 +343,12 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
                             job = executor.submit(plants_docking_splitted, split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius)
                             jobs.append(job)
                         except Exception as e:
-                            printlog("Error in concurrent futures job creation: ", str(e))
+                            printlog("Error in concurrent futures job creation: "+ str(e))
                     for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with PLANTS", total=len(jobs)):
                         try:
                             _ = job.result()
                         except Exception as e:
-                            printlog("Error in concurrent futures job execution: ", str(e))
+                            printlog("Error in concurrent futures job execution: "+ str(e))
                 toc = time.perf_counter()
                 printlog(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
             #Fetch PLANTS poses
@@ -395,12 +395,12 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
                             job = executor.submit(smina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
                             jobs.append(job)
                         except Exception as e:
-                            printlog("Error in concurrent futures job creation: ", str(e))
+                            printlog("Error in concurrent futures job creation: "+ str(e))
                     for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with SMINA", total=len(jobs)):
                         try:
                             _ = job.result()
                         except Exception as e:
-                            printlog("Error in concurrent futures job execution: ", str(e))
+                            printlog("Error in concurrent futures job execution: "+ str(e))
                 toc = time.perf_counter()
                 printlog(f'Docking with SMINA complete in {toc-tic:0.4f}!')
             #Fetch SMINA poses
@@ -438,12 +438,12 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
                             job = executor.submit(gnina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
                             jobs.append(job)
                         except Exception as e:
-                            printlog("Error in concurrent futures job creation: ", str(e))
+                            printlog("Error in concurrent futures job creation: "+ str(e))
                     for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with GNINA", total=len(jobs)):
                         try:
                             _ = job.result()
                         except Exception as e:
-                            printlog("Error in concurrent futures job execution: ", str(e))
+                            printlog("Error in concurrent futures job execution: "+ str(e))
                 toc = time.perf_counter()
                 printlog(f'Docking with GNINA complete in {toc-tic:0.4f}!')
             #Fetch GNINA poses
@@ -525,7 +525,7 @@ def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     results_path = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
     gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 --cpu 1 --no_gpu'
     try:
-        subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(gnina_cmd, shell=True)
     except Exception as e:
         printlog('GNINA docking failed: '+e)
     return
@@ -667,12 +667,12 @@ def plants_preparation(protein_file, ref_file, software):
                     job = executor.submit(plants_docking_splitted, split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius)
                     jobs.append(job)
                 except Exception as e:
-                    printlog("Error in concurrent futures job creation: ", str(e))
+                    printlog("Error in concurrent futures job creation: "+ str(e))
             for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with PLANTS", total=len(jobs)):
                 try:
                     _ = job.result()
                 except Exception as e:
-                    printlog("Error in concurrent futures job execution: ", str(e))
+                    printlog("Error in concurrent futures job execution: "+ str(e))
         toc = time.perf_counter()
         printlog(f'Docking with PLANTS complete in {toc-tic:0.4f}!')
     #Fetch PLANTS poses
@@ -719,12 +719,12 @@ def plants_preparation(protein_file, ref_file, software):
                     job = executor.submit(smina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
                     jobs.append(job)
                 except Exception as e:
-                    printlog("Error in concurrent futures job creation: ", str(e))
+                    printlog("Error in concurrent futures job creation: "+ str(e))
             for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with SMINA", total=len(jobs)):
                 try:
                     _ = job.result()
                 except Exception as e:
-                    printlog("Error in concurrent futures job execution: ", str(e))
+                    printlog("Error in concurrent futures job execution: "+ str(e))
         toc = time.perf_counter()
         printlog(f'Docking with SMINA complete in {toc-tic:0.4f}!')
     #Fetch SMINA poses
@@ -762,12 +762,12 @@ def plants_preparation(protein_file, ref_file, software):
                     job = executor.submit(gnina_docking_splitted, split_file, protein_file, ref_file, software, exhaustiveness, n_poses)
                     jobs.append(job)
                 except Exception as e:
-                    printlog("Error in concurrent futures job creation: ", str(e))
+                    printlog("Error in concurrent futures job creation: "+ str(e))
             for job in tqdm(concurrent.futures.as_completed(jobs), desc="Docking with GNINA", total=len(jobs)):
                 try:
                     _ = job.result()
                 except Exception as e:
-                    printlog("Error in concurrent futures job execution: ", str(e))
+                    printlog("Error in concurrent futures job execution: "+ str(e))
         toc = time.perf_counter()
         printlog(f'Docking with GNINA complete in {toc-tic:0.4f}!')
     #Fetch GNINA poses
