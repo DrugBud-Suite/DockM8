@@ -4,7 +4,7 @@ import os
 from scripts.utilities import *
 from scripts.consensus_methods import *
 
-def standardize_scores(df, clustering_metric):
+def standardize_scores(df):
     def min_max_standardisation(score, best_value):
         if best_value == 'max':
             standardized_scores = (score - score.min()) / (score.max() - score.min())
@@ -28,29 +28,11 @@ def rank_scores(df):
 
 def process_dataframes(w_dir, rescoring_folders):
     rescored_dataframes = {name: pd.read_csv(w_dir + f'/temp/{rescoring_folders[name]}/allposes_rescored.csv') for name in rescoring_folders}
-    standardised_dataframes = {f'{name}_standardised': standardize_scores(rescored_dataframes[name], name) for name in rescoring_folders}
+    standardised_dataframes = {f'{name}_standardised': standardize_scores(rescored_dataframes[name]) for name in rescoring_folders}
     ranked_dataframes = {f'{name}_ranked': rank_scores(standardised_dataframes[f'{name}_standardised']) for name in rescoring_folders}
     return standardised_dataframes, ranked_dataframes
 
-def apply_consensus_methods(w_dir, clustering_metrics):
-    create_temp_folder(w_dir+'/temp/ranking')
-    rescoring_folders = {metric: f'rescoring_{metric}_clustered' for metric in clustering_metrics}
-    standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, rescoring_folders)
-    for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
-        for df_name, df in df_dict.items():
-            df['ID'] = df['Pose ID'].str.split('_').str[0]
-            df.to_csv(w_dir + f'/temp/ranking/{df_name}.csv', index=False)
 
-    create_temp_folder(w_dir+'/temp/consensus')
-    rank_methods = {'method1':method1_ECR_best, 'method2':method2_ECR_average, 'method3':method3_avg_ECR, 'method4':method4_RbR}
-    score_methods = {'method5':method5_RbV, 'method6':method6_Zscore_best, 'method7':method7_Zscore_avg}
-    analysed_dataframes = {f'{name}_{method}': rank_methods[method](ranked_dataframes[name+'_ranked'], name, [col for col in ranked_dataframes[name+'_ranked'] if col not in ['Pose ID', 'ID']]) for name in rescoring_folders for method in rank_methods}
-    analysed_dataframes.update({f'{name}_{method}': score_methods[method](standardised_dataframes[name+'_standardised'], name, [col for col in standardised_dataframes[name+'_standardised'] if col not in ['Pose ID', 'ID']]) for name in rescoring_folders for method in score_methods})
-    analysed_dataframes = {name: df.drop(columns="Pose ID", errors='ignore') for name, df in analysed_dataframes.items()}
-    combined_all_methods_df = functools.reduce(lambda left, right: pd.merge(left, right, on=['ID'], how='outer'), analysed_dataframes.values())
-    combined_all_methods_df = combined_all_methods_df.reindex(columns=['ID'] + [col for col in combined_all_methods_df.columns if col != 'ID'])
-    combined_all_methods_df.to_csv(w_dir+'/temp/consensus/method_results.csv', index=False)
-    
 def process_combination(combination, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods, docking_library, original_df):
     selected_columns = list(combination)
     ranked_selected_columns = [column_mapping[col] for col in selected_columns]
@@ -171,3 +153,43 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
                     }, ignore_index=True)
     create_temp_folder(w_dir+'/temp/consensus')
     EF_results.to_csv(w_dir+'/temp/consensus/EF_single_functions.csv')
+    
+def apply_consensus_methods(w_dir, clustering_metric, method, rescoring_functions):
+    create_temp_folder(w_dir+'/temp/ranking')
+    rescoring_folder = f'rescoring_{clustering_metric}_clustered'
+    rescored_dataframe = pd.read_csv(w_dir + f'/temp/{rescoring_folder}/allposes_rescored.csv')
+    standardised_dataframe = standardize_scores(rescored_dataframe)
+    col_dict = {'gnina':['GNINA', 'CNN-Score', 'CNN-Affinity'], 'vinardo':'Vinardo', 'AD4':'AD4', 'LinF9':'LinF9', 'rfscorevs':'RFScoreVS', 'plp':'PLP', 'chemplp':'CHEMPLP', 'NNScore':'NNScore', 
+               'PLECnn':'PLECnn', 'AAScore':'AAScore', 'ECIF':'ECIF', 'SCORCH':'SCORCH','RTMScore':'RTMScore'}
+    col_list = ['Pose ID']
+    for function in rescoring_functions:
+        cols = col_dict[function]
+        if isinstance(cols, list):
+            col_list.extend(cols)
+        else:
+            col_list.append(cols)
+    print(col_list)
+    filtered_dataframe = standardised_dataframe[col_list]
+    print(filtered_dataframe)
+    standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, {clustering_metric: rescoring_folder})
+    for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
+        for df_name, df in df_dict.items():
+            df['ID'] = df['Pose ID'].str.split('_').str[0]
+            df.to_csv(w_dir + f'/temp/ranking/{df_name}.csv', index=False)
+
+    create_temp_folder(w_dir+'/temp/consensus')
+    rank_methods = {'method1': method1_ECR_best, 'method2': method2_ECR_average, 'method3': method3_avg_ECR, 'method4': method4_RbR}
+    score_methods = {'method5': method5_RbV, 'method6': method6_Zscore_best, 'method7': method7_Zscore_avg}
+
+    if method in rank_methods:
+        method_function = rank_methods[method]
+        analysed_dataframe = method_function(ranked_dataframes[clustering_metric+'_ranked'], clustering_metric, [col for col in ranked_dataframes[clustering_metric+'_ranked'] if col not in ['Pose ID', 'ID']])
+    elif method in score_methods:
+        method_function = score_methods[method]
+        analysed_dataframe = method_function(standardised_dataframes[clustering_metric+'_standardised'], clustering_metric, [col for col in standardised_dataframes[clustering_metric+'_standardised'] if col not in ['Pose ID', 'ID']])
+    else:
+        raise ValueError(f"Invalid method: {method}")
+
+    print(analysed_dataframe)
+    analysed_dataframe = analysed_dataframe.drop(columns="Pose ID", errors='ignore')
+    analysed_dataframe.to_csv(w_dir+f'/temp/consensus/{clustering_metric}_{method}_results.csv', index=False)
