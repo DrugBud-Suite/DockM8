@@ -26,7 +26,16 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 `pip install torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
-    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings and install openbabel using `conda install -c conda-forge openbabel`.  
+    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
+`git clone https://github.com/openbabel/openbabel.git`  
+`cd openbabel`  
+`git checkout openbabel-3-1-1 `  
+`mkdir build`  
+`cd build`  
+`cmake -DWITH_MAEPARSER=OFF -DWITH_COORDGEN=OFF -DPYTHON_BINDINGS=ON -DRUN_SWIG=ON ..`  
+`make`  
+`make install`  
+`conda install -c conda-forge openbabel`  
 
     If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
 
