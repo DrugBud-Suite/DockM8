@@ -26,7 +26,7 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 `pip install torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
-    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
+If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
 `git clone https://github.com/openbabel/openbabel.git`  
 `cd openbabel`  
 `git checkout openbabel-3-1-1 `  
@@ -37,9 +37,7 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 `make install`  
 `conda install -c conda-forge openbabel`  
 
-    If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
-
-    Navigate to the pkasolver-main folder in the /software directory and run `python setup.py install`  
+If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
 
 6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
 
