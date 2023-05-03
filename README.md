@@ -26,18 +26,18 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 `pip install torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
-If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
-`git clone https://github.com/openbabel/openbabel.git`  
-`cd openbabel`  
-`git checkout openbabel-3-1-1 `  
-`mkdir build`  
-`cd build`  
-`cmake -DWITH_MAEPARSER=OFF -DWITH_COORDGEN=OFF -DPYTHON_BINDINGS=ON -DRUN_SWIG=ON ..`  
-`make`  
-`make install`  
-`conda install -c conda-forge openbabel`  
+    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
+    `git clone https://github.com/openbabel/openbabel.git`  
+    `cd openbabel`  
+    `git checkout openbabel-3-1-1 `  
+    `mkdir build`  
+    `cd build`  
+    `cmake -DWITH_MAEPARSER=OFF -DWITH_COORDGEN=OFF -DPYTHON_BINDINGS=ON -DRUN_SWIG=ON ..`  
+    `make`  
+    `make install`  
+    `conda install -c conda-forge openbabel`  
 
-If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
+    If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
 
 6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
 
@@ -55,22 +55,21 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 
 3. Run the following command:
 
-´python /path/to/dockm8.py --args´
+`python /path/to/dockm8.py --args`  
 
---software: The path to the software folder.  
---proteinfile: The path to the protein file (.pdb).  
---pocket: The method to use for pocket determination. Must be one of 'reference' or 'dogsitescorer'.  
---dockinglibrary: The path to the docking library file (.sdf).  
---idcolumn: The unique identifier column used in the docking library.  
---protonation: The method to use for compound protonation. Must be one of 'pkasolver', 'GypsumDL', or 'None'.  
---docking: The method(s) to use for docking. Must be one or more of 'GNINA', 'SMINA', or 'PLANTS'.  
---metric: The method(s) to use for pose clustering. Must be one or more of 'RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', or 'bestpose_PLANTS'.  
---nposes: The number of poses to generate for each docking software. Default=10  
---exhaustiveness: The precision used if docking with SMINA/GNINA. Default=8  
---parallels: Whether or not to run the workflow in parallel. Default=1 (on). Can be set to 1 (on) or 0 (off).  
--- ncpus: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.  
--- clustering: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'.  
---rescoring: Which scoring functions to use for rescoring. Must be one or more of 'gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore'.  
+`--software`: The path to the software folder.  
+`--proteinfile`: The path to the protein file (.pdb).  
+`--pocket`: The method to use for pocket determination. Must be one of 'reference' or 'dogsitescorer'.  
+`--dockinglibrary`: The path to the docking library file (.sdf).  
+`--idcolumn`: The unique identifier column used in the docking library.  
+`--protonation`: The method to use for compound protonation. Must be one of 'pkasolver', 'GypsumDL', or 'None'.  
+`--docking`: The method(s) to use for docking. Must be one or more of 'GNINA', 'SMINA', or 'PLANTS'.  
+`--metric`: The method(s) to use for pose clustering. Must be one or more of 'RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', or 'bestpose_PLANTS'.  
+`--nposes`: The number of poses to generate for each docking software. Default=10  
+`--exhaustiveness`: The precision used if docking with SMINA/GNINA. Default=8  
+`-- ncpus`: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.  
+`-- clustering`: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'.  
+`--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore', 'RTMScore', 'SCORCH'.  
 
 ## Running DockM8 (via Jupyter Notebook)
 
