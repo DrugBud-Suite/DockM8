@@ -5,7 +5,7 @@ def create_temp_folder(path, silent=False):
         if silent == False:
             print(f'The folder: {path} already exists')
     else:
-        os.mkdir(path, 0755)
+        os.mkdir(path, 0o755)
         if silent == False:
             print(f'The folder: {path} was created')
         
