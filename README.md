@@ -16,8 +16,8 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 `conda activate dockm8`  
 
 4. Install required packages using the following commands:  
-`conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn -y`  
-`pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble`  
+`conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn xgboost -y`  
+`pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow`  
 `pip install torch==1.9.1`
 `pip install torch-scatter==2.1.0 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html` #different if CPU or GPU  
 `pip install torch-sparse==0.6.12 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
