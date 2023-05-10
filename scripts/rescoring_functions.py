@@ -496,6 +496,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         try:
             results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
         except:
+            print('RTMSCore scoring with pocket failed, scoring with whole protein...')
             results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
         results['Pose ID'] = results['Pose ID'].apply(lambda x: x.split('-')[0])
         results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
