@@ -512,6 +512,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             try:
                 results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
             except:
+                printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
                 results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
         else:
             split_files_folder = split_sdf(RTMScore_rescoring_folder, sdf, ncpus)
@@ -520,9 +521,10 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             def RTMScore_rescoring_splitted(split_file, protein_file, software, ncpus):
                 output_file = RTMScore_rescoring_folder + os.path.basename(split_file).split('.')[0] + '_RTMScore.csv'
                 try:
-                    results = rtmscore(prot=protein_file, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+                    results = rtmscore(prot=protein_file, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
                 except:
-                    results = rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+                    printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
+                    results = rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
                 return
 
             with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
