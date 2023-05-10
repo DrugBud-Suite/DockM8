@@ -525,7 +525,7 @@ def gnina_docking_splitted(split_file, protein_file, ref_file, software, exhaust
     results_path = gnina_folder+os.path.basename(split_file).split('.')[0]+'_gnina.sdf'
     gnina_cmd = 'cd '+software+' && ./gnina -r '+protein_file+' -l '+split_file+' --autobox_ligand '+ref_file+' -o '+results_path+' --exhaustiveness ' +str(exhaustiveness)+' --num_modes '+str(n_poses)+' --cnn_scoring rescore --cnn crossdock_default2018 --cpu 1 --no_gpu'
     try:
-        subprocess.call(gnina_cmd, shell=True)
+        subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('GNINA docking failed: '+e)
     return
