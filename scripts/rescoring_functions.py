@@ -487,20 +487,66 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         delete_files(SCORCH_rescoring_folder, 'SCORCH_scores.csv')
         toc = time.perf_counter()
         printlog(f'Rescoring with SCORCH complete in {toc-tic:0.4f}!')
+    # def RTMScore_rescoring(sdf, ncpus):
+    #     tic = time.perf_counter()
+    #     RTMScore_rescoring_folder = rescoring_folder + '/RTMScore_rescoring/'
+    #     create_temp_folder(RTMScore_rescoring_folder)
+    #     RTMScore_pocket = protein_file.replace('.pdb', '_pocket.pdb')
+    #     printlog('Rescoring with RTMScore')
+    #     try:
+    #         results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+    #     except:
+    #         results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+    #     results['Pose ID'] = results['Pose ID'].apply(lambda x: x.split('-')[0])
+    #     results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
+    #     toc = time.perf_counter()
+    #     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
     def RTMScore_rescoring(sdf, ncpus):
         tic = time.perf_counter()
         RTMScore_rescoring_folder = rescoring_folder + '/RTMScore_rescoring/'
         create_temp_folder(RTMScore_rescoring_folder)
         RTMScore_pocket = protein_file.replace('.pdb', '_pocket.pdb')
-        printlog('Rescoring with RTMScore')
-        try:
-            results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
-        except:
-            results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
-        results['Pose ID'] = results['Pose ID'].apply(lambda x: x.split('-')[0])
-        results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
-        toc = time.perf_counter()
-        printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
+
+        if ncpus == 1:
+            printlog('Rescoring with RTMScore')
+            try:
+                results = rtmscore(prot=RTMScore_pocket, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
+            except:
+                results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
+        else:
+            split_files_folder = split_sdf(RTMScore_rescoring_folder, sdf, ncpus)
+            split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+            global RTMScore_rescoring_splitted
+            def RTMScore_rescoring_splitted(split_file, protein_file, software, ncpus):
+                output_file = RTMScore_rescoring_folder + os.path.basename(split_file).split('.')[0] + '_RTMScore.csv'
+                try:
+                    results = rtmscore(prot=protein_file, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+                except:
+                    results = rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=ncpus)
+                return
+
+            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+                jobs = []
+                for split_file in tqdm(split_files_sdfs, desc='Submitting RTMScore rescoring jobs', unit='file'):
+                    try:
+                        job = executor.submit(RTMScore_rescoring_splitted, split_file, protein_file, software, ncpus)
+                        jobs.append(job)
+                    except Exception as e:
+                        printlog("Error in concurrent futures job creation: ", str(e))
+                results_list = []
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with RTMScore', unit='file'):
+                    try:
+                        res = job.result()
+                        results_list.append(res)
+                    except Exception as e:
+                        printlog("Error in concurrent futures job run: ", str(e))
+
+            results_dataframes = [pd.read_csv(RTMScore_rescoring_folder+file) for file in os.listdir(RTMScore_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
+            results = pd.concat(results_dataframes)
+            results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
+            delete_files(rescoring_folder+'/RTMScore_rescoring/', 'RTMScore_scores.csv')
+            toc = time.perf_counter()
+            printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
     def LinF9_rescoring(sdf, ncpus):
         tic = time.perf_counter()
         create_temp_folder(rescoring_folder+'/LinF9_rescoring/', silent=True)
