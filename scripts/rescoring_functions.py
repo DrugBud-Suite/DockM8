@@ -543,6 +543,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
 
             results_dataframes = [pd.read_csv(RTMScore_rescoring_folder+file) for file in os.listdir(RTMScore_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
             results = pd.concat(results_dataframes)
+            results['Pose ID'] = results['Pose ID'].apply(lambda x: x.split('-')[0])
             results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
             delete_files(rescoring_folder+'/RTMScore_rescoring/', 'RTMScore_scores.csv')
             toc = time.perf_counter()
