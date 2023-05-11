@@ -503,7 +503,6 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     #     results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
     #     toc = time.perf_counter()
     #     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
-    @profile
     def RTMScore_rescoring(sdf, ncpus):
         tic = time.perf_counter()
         RTMScore_rescoring_folder = rescoring_folder + '/RTMScore_rescoring/'
@@ -518,10 +517,9 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
                 results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
         else:
-            split_files_folder = split_sdf(RTMScore_rescoring_folder, sdf, ncpus*2)
+            split_files_folder = split_sdf(RTMScore_rescoring_folder, sdf, ncpus*5)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
             global RTMScore_rescoring_splitted
-            @profile
             def RTMScore_rescoring_splitted(split_file, protein_file, software, ncpus):
                 output_file = RTMScore_rescoring_folder + os.path.basename(split_file).split('.')[0] + '_RTMScore.csv'
                 try:
@@ -531,7 +529,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                     rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
                 return
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=int(ncpus-5)) as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=int(ncpus)) as executor:
                 jobs = []
                 for split_file in tqdm(split_files_sdfs, desc='Submitting RTMScore rescoring jobs', unit='file'):
                     try:
