@@ -23,6 +23,8 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from software.RTMScore.rtmscore_modified import *
 
+from memory_profiler import profile
+
 #TODO: add new scoring functions:
 # _ECIF
 # _SIEVE_Score (no documentation)
@@ -136,7 +138,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
         create_temp_folder(rescoring_folder+'/rfscorevs_rescoring', silent=True)
         results_path = rescoring_folder+'/rfscorevs_rescoring/rfscorevs_scores.csv'
         if ncpus > 1 :
-            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n '+str(int(multiprocessing.cpu_count()-2))
+            rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n '+str(ncpus)
         else:
             rfscore_cmd = 'cd '+software+' && ./rf-score-vs --receptor '+protein_file+' '+sdf+' -O '+results_path+' -n 1'
         subprocess.call(rfscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
@@ -501,6 +503,7 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     #     results.to_csv(RTMScore_rescoring_folder+'RTMScore_scores.csv', index=False)
     #     toc = time.perf_counter()
     #     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
+    @profile
     def RTMScore_rescoring(sdf, ncpus):
         tic = time.perf_counter()
         RTMScore_rescoring_folder = rescoring_folder + '/RTMScore_rescoring/'
@@ -515,19 +518,20 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                 printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
                 results = rtmscore(prot=protein_file, lig=sdf, output=RTMScore_rescoring_folder+'/RTMScore_scores.csv', model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
         else:
-            split_files_folder = split_sdf(RTMScore_rescoring_folder, sdf, ncpus)
+            split_files_folder = split_sdf(RTMScore_rescoring_folder, sdf, ncpus*2)
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
             global RTMScore_rescoring_splitted
+            @profile
             def RTMScore_rescoring_splitted(split_file, protein_file, software, ncpus):
                 output_file = RTMScore_rescoring_folder + os.path.basename(split_file).split('.')[0] + '_RTMScore.csv'
                 try:
-                    results = rtmscore(prot=protein_file, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
+                    rtmscore(prot=protein_file, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
                 except:
                     printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
-                    results = rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
+                    rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth', ncpus=1)
                 return
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=int(ncpus-5)) as executor:
                 jobs = []
                 for split_file in tqdm(split_files_sdfs, desc='Submitting RTMScore rescoring jobs', unit='file'):
                     try:
@@ -535,11 +539,9 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         jobs.append(job)
                     except Exception as e:
                         printlog("Error in concurrent futures job creation: ", str(e))
-                results_list = []
                 for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with RTMScore', unit='file'):
                     try:
                         res = job.result()
-                        results_list.append(res)
                     except Exception as e:
                         printlog("Error in concurrent futures job run: ", str(e))
 
