@@ -365,8 +365,10 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
                                 plants_poses = PandasTools.LoadSDF(file_path.replace('.mol2','.sdf'), idName='ID', molColName='Molecule',includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True)
                                 plants_scores = pd.read_csv(file_path.replace('docked_ligands.mol2','ranking.csv')).rename(columns={'LIGAND_ENTRY':'ID', 'TOTAL_SCORE':'CHEMPLP'})[['ID', 'CHEMPLP']]
                                 plants_df = pd.merge(plants_scores, plants_poses, on='ID')
-                                plants_df['Pose ID'] = plants_df['ID'].str.split("_").str[0] + "_PLANTS_" + plants_df['ID'].str.split("_").str[4]
                                 plants_df['ID'] = plants_df['ID'].str.split("_").str[0]
+                                list_ = [*range(1, int(n_poses)+1, 1)]
+                                ser = list_ * (len(plants_df) // len(list_))
+                                plants_df['Pose ID'] = [f"{row['ID']}_PLANTS_{num}" for num, (_, row) in zip(ser + list_[:len(plants_df)-len(ser)], plants_df.iterrows())]
                                 plants_dataframes.append(plants_df)
                             except Exception as e:
                                 printlog('ERROR: Failed to convert PLANTS docking results file to .sdf!')
