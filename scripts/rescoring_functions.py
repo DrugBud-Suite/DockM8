@@ -7,8 +7,8 @@ import functools
 from rdkit import Chem
 from rdkit.Chem import PandasTools
 import oddt
-from oddt.scoring.functions import NNScore
-from oddt.scoring.functions import RFScore
+from oddt.scoring.functions.NNScore import nnscore
+from oddt.scoring.functions.RFScore import rfscore
 from oddt.scoring.functions.PLECscore import PLECscore
 from tqdm import tqdm
 import multiprocessing
@@ -23,13 +23,9 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from software.RTMScore.rtmscore_modified import *
 
-from memory_profiler import profile
-
 #TODO: add new scoring functions:
-# _ECIF
 # _SIEVE_Score (no documentation)
 # _AEScore
-# _RTMScore
 
 def delete_files(folder_path, save_file):
     for item in os.listdir(folder_path):
@@ -395,10 +391,9 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
     def oddt_nnscore_rescoring(sdf, ncpus):
         tic = time.perf_counter()
         printlog('Rescoring with NNScore')
-        rescorers = {'nnscore':NNScore.nnscore()}
         nnscore_rescoring_folder = rescoring_folder+'/nnscore_rescoring/'
         create_temp_folder(nnscore_rescoring_folder, silent=True)
-        scorer = rescorers['nnscore']
+        nnscore = nnscore().load()
         pickle = software+'/NNScore_pdbbind2016.pickle'
         scorer = scorer.load(pickle)
         oddt_prot=next(oddt.toolkit.readfile('pdb', protein_file))
