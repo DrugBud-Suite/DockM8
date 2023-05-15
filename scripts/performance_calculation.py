@@ -132,25 +132,22 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
         if file.endswith('_standardised.csv'):
             clustering_metric = file.replace('_standardised.csv', '')
             std_df = pd.read_csv(w_dir+'/temp/ranking/'+file)
-            std_df_grouped =std_df.groupby('ID').mean()
+            numeric_cols = std_df.select_dtypes(include='number').columns
+            std_df_grouped = std_df.groupby('ID')[numeric_cols].mean().reset_index()
             merged_df = pd.merge(std_df_grouped, original_df, on='ID')
+            EF_results = pd.DataFrame(columns=['Scoring Function', 'Clustering Metric', 'EF10%', 'EF1%'])
             for col in merged_df.columns:
                 if col not in ['ID', 'Activity']:
-                    sorted_df = merged_df.sort_values(col, ascending = False)
+                    sorted_df = merged_df.sort_values(col, ascending=False)
                     N10_percent = round(0.10 * len(sorted_df))
                     N1_percent = round(0.01 * len(sorted_df))
                     N100_percent = len(merged_df)
                     Hits10_percent = sorted_df.head(N10_percent)['Activity'].sum()
                     Hits1_percent = sorted_df.head(N1_percent)['Activity'].sum()
                     Hits100_percent = sorted_df['Activity'].sum()
-                    ef10 = round((Hits10_percent/N10_percent)*(N100_percent/Hits100_percent),2)
-                    ef1 = round((Hits1_percent/N1_percent)*(N100_percent/Hits100_percent),2)
-                    EF_results = EF_results.append({
-                        'Scoring Function': col,
-                        'Clustering Metric': clustering_metric,
-                        'EF10%': ef10,
-                        'EF1%': ef1
-                    }, ignore_index=True)
+                    ef10 = round((Hits10_percent / N10_percent) * (N100_percent / Hits100_percent), 2)
+                    ef1 = round((Hits1_percent / N1_percent) * (N100_percent / Hits100_percent), 2)
+                    EF_results.loc[len(EF_results)] = [col, clustering_metric, ef10, ef1]
     create_temp_folder(w_dir+'/temp/consensus')
     EF_results.to_csv(w_dir+'/temp/consensus/EF_single_functions.csv')
     
