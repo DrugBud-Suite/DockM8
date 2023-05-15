@@ -531,12 +531,12 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         job = executor.submit(RTMScore_rescoring_splitted, split_file, protein_file, software, ncpus)
                         jobs.append(job)
                     except Exception as e:
-                        printlog("Error in concurrent futures job creation: ", str(e))
+                        printlog("Error in concurrent futures job creation: "+ str(e))
                 for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with RTMScore', unit='file'):
                     try:
                         res = job.result()
                     except Exception as e:
-                        printlog("Error in concurrent futures job run: ", str(e))
+                        printlog("Error in concurrent futures job run: "+ str(e))
 
             results_dataframes = [pd.read_csv(RTMScore_rescoring_folder+file) for file in os.listdir(RTMScore_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
             results = pd.concat(results_dataframes)
@@ -574,12 +574,12 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         job = executor.submit(LinF9_rescoring_splitted, split_file, protein_file, ref_file, software)
                         jobs.append(job)
                     except Exception as e:
-                        printlog("Error in concurrent futures job creation: ", str(e))
+                        printlog("Error in concurrent futures job creation: "+ str(e))
                 for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with LinF9', unit='file'):
                     try:
                         res = job.result()
                     except Exception as e:
-                        printlog("Error in concurrent futures job run: ", str(e))
+                        printlog("Error in concurrent futures job run: "+ str(e))
             try:
                 LinF9_dataframes = [PandasTools.LoadSDF(rescoring_folder+'/LinF9_rescoring/'+file, idName='Pose ID', molColName=None,includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder+'/LinF9_rescoring/') if file.startswith('split') and file.endswith('.sdf')]
             except Exception as e:
@@ -629,12 +629,12 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
                         job = executor.submit(AAScore_rescoring_splitted, split_file, software)
                         jobs.append(job)
                     except Exception as e:
-                        printlog("Error in concurrent futures job creation: ", str(e))
+                        printlog("Error in concurrent futures job creation: "+ str(e))
                 for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc='Rescoring with AAScore', unit='file'):
                     try:
                         res = job.result()
                     except Exception as e:
-                        printlog("Error in concurrent futures job run: ", str(e))
+                        printlog("Error in concurrent futures job run: "+ str(e))
             try:
                 AAScore_dataframes = [pd.read_csv(rescoring_folder+'/AAScore_rescoring/'+file, delimiter='\t', header=None, names=['Pose ID', 'AAScore']) for file in os.listdir(rescoring_folder+'/AAScore_rescoring/') if file.startswith('split') and file.endswith('.csv')]
             except Exception as e:
