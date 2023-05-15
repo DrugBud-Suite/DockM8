@@ -182,30 +182,14 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
     if os.path.isfile(w_dir + '/temp/clustering/' + metric + '_clustered.sdf') == False:
         id_list = np.unique(np.array(all_poses['ID']))
         printlog(f"*Calculating {metric} metrics and clustering*")
-        all_poses = all_poses.replace({'nan':np.nan})
-        if metric == 'bestpose_PLANTS':
-            grouped_poses = all_poses.dropna(subset=['CHEMPLP']).groupby('ID')
-            min_chemplp_rows = grouped_poses.apply(lambda x: x.loc[x['CHEMPLP'].astype(float).idxmin()])
-            min_chemplp_rows['ID'] =  min_chemplp_rows.index
-            clustered_poses = min_chemplp_rows.reset_index(drop=True)
-            display(clustered_poses)
-        elif metric == 'bestpose_GNINA':
-            grouped_poses = all_poses.dropna(subset=['CNNscore']).groupby('ID')
-            min_gnina_rows = grouped_poses.apply(lambda x: x.loc[x['CNNscore'].astype(float).idxmax()])
-            min_gnina_rows['ID'] =  min_gnina_rows.index
-            clustered_poses = min_gnina_rows.reset_index(drop=True)
-        elif metric == 'bestpose_SMINA':
-            grouped_poses = all_poses.dropna(subset=['SMINA_Affinity']).groupby('ID')
-            min_smina_rows = grouped_poses.apply(lambda x: x.loc[x['SMINA_Affinity'].astype(float).idxmin()])
-            min_smina_rows['ID'] =  min_smina_rows.index
-            clustered_poses = min_smina_rows.reset_index(drop=True)
-        elif metric == 'bestpose':
-            grouped_poses = all_poses.groupby('ID')
-            min_chemplp_rows = grouped_poses.apply(lambda x: x.dropna(subset=['CHEMPLP']).loc[x['CHEMPLP'].astype(float).idxmin()])
-            min_gnina_rows = grouped_poses.apply(lambda x: x.dropna(subset=['CNNscore']).loc[x['CNNscore'].astype(float).idxmax()])
-            min_smina_rows = grouped_poses.apply(lambda x: x.dropna(subset=['SMINA_Affinity']).loc[x['SMINA_Affinity'].astype(float).idxmin()])
-            clustered_poses = pd.concat([min_smina_rows, min_chemplp_rows, min_gnina_rows])
-            clustered_poses = clustered_poses.reset_index(drop=True)
+        best_pose_filters = {'bestpose': ('_1', '_01'),
+                            'bestpose_GNINA': ('GNINA_1','GNINA_01'),
+                            'bestpose_SMINA': ('SMINA_1','SMINA_01'),
+                            'bestpose_PLANTS': ('PLANTS_1','PLANTS_01')}
+        if metric in best_pose_filters:
+            filter = best_pose_filters[metric]
+            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
+            clustered_poses = clustered_poses[['Pose ID']]
         else:
             if ncpus > 1:
                 clustered_dataframes = []
@@ -230,9 +214,8 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                 clustered_poses = pd.concat(clustered_dataframes)
             else:
                 clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
-        #clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
+        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]','', regex=True)
         filtered_poses = all_poses[all_poses['Pose ID'].isin(clustered_poses['Pose ID'])]
-        display(filtered_poses)
         filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
         save_path = w_dir + '/temp/clustering/' + metric + '_clustered.sdf'
         PandasTools.WriteSDF(filtered_poses, save_path, molColName='Molecule', idName='Pose ID')
