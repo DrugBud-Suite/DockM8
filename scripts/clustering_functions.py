@@ -191,6 +191,24 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
             clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
             clustered_poses = clustered_poses[['Pose ID']]
             clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).str.replace('[()\',]','', regex=False)
+        if metric == 'bestpose_PLANTS':
+            grouped_poses = clustered_poses.groupby('ID')
+            min_chemplp_rows = grouped_poses.apply(lambda x: x.loc[x['CHEMPLP'].idxmin()])
+            clustered_poses = min_chemplp_rows
+        if metric == 'bestpose_GNINA':
+            grouped_poses = clustered_poses.groupby('ID')
+            min_gnina_rows = grouped_poses.apply(lambda x: x.loc[x['CNNscore'].idxmin()])
+            clustered_poses = min_gnina_rows
+        if metric == 'bestpose_SMINA':
+            grouped_poses = clustered_poses.groupby('ID')
+            min_smina_rows = grouped_poses.apply(lambda x: x.loc[x['SMINA_Affinity'].idxmin()])
+            clustered_poses = min_smina_rows
+        if metric == 'bestpose':
+            grouped_poses = clustered_poses.groupby('ID')
+            min_chemplp_rows = grouped_poses.apply(lambda x: x.loc[x['CHEMPLP'].idxmin()])
+            min_gnina_rows = grouped_poses.apply(lambda x: x.loc[x['CNNscore'].idxmin()])
+            min_smina_rows = grouped_poses.apply(lambda x: x.loc[x['SMINA_Affinity'].idxmin()])
+            clustered_poses = pd.concat([min_smina_rows, min_chemplp_rows, min_gnina_rows])
         else:
             if ncpus > 1:
                 clustered_dataframes = []
