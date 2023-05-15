@@ -135,7 +135,6 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
             numeric_cols = std_df.select_dtypes(include='number').columns
             std_df_grouped = std_df.groupby('ID')[numeric_cols].mean().reset_index()
             merged_df = pd.merge(std_df_grouped, original_df, on='ID')
-            EF_results = pd.DataFrame(columns=['Scoring Function', 'Clustering Metric', 'EF10%', 'EF1%'])
             for col in merged_df.columns:
                 if col not in ['ID', 'Activity']:
                     sorted_df = merged_df.sort_values(col, ascending=False)
