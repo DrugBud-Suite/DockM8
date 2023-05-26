@@ -1,4 +1,4 @@
-name: dockm82
+name: dockm8
 channels:
   - conda-forge
   - default
