@@ -1,15 +1,15 @@
 #!/bin/bash --login
 
-echo "Installing relevant packages for DockM8"
+echo "Installing DockM8 environment ...\n"
 
 #Force stop if any link fails
 set -e
 
-#Set this dir to be current dir
+#Set this directory to be current directory
 PROJECT_DIR=$PWD
 
 # creates the conda environment
-mamba env create --file $PROJECT_DIR/environment.yml --force
+conda env create --file $PROJECT_DIR/environment.yml --force
 
 # activate the conda env before installing PyTorch Geometric via pip
 conda init bash
@@ -25,8 +25,6 @@ python -m pip install torch-spline-conv==1.2.1 -f https://data.pyg.org/whl/torch
 python -m pip install torch-cluster==1.6.0 -f https://data.pyg.org/whl/torch-1.9.1+${CUDA}.html
 
 
-
-#python -m pip install torch-scatter==2.1.0 torch-sparse==0.6.12 torch-spline-conv==1.2.1 torch-cluster==1.6.0 torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html
 
 
 
