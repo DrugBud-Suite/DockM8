@@ -1,4 +1,5 @@
 import os
+import math
 
 def create_temp_folder(path, silent=False):
     if os.path.isdir(path) == True:
@@ -20,7 +21,7 @@ def split_sdf(dir, sdf_file, ncpus):
     for file in os.listdir(dir+f'/split_{sdf_file_name}'):
         os.unlink(os.path.join(dir+f'/split_{sdf_file_name}', file))
     df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
-    compounds_per_core = round(len(df['ID'])/(ncpus*2))
+    compounds_per_core = math.ceil(len(df['ID'])/(ncpus*2))
     used_ids = set() # keep track of used 'ID' values
     file_counter = 1
     for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting files'):
