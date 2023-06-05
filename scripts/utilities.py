@@ -1,4 +1,5 @@
 import os
+import math
 
 def create_temp_folder(path, silent=False):
     if os.path.isdir(path) == True:
