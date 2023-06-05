@@ -18,12 +18,8 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 4. Install required packages using the following commands:  
 `conda install -c conda-forge rdkit chembl_structure_pipeline ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn xgboost -y`  
 `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow`  
-`pip install torch==1.9.1`
-`pip install torch-scatter==2.1.0 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html` #different if CPU or GPU  
-`pip install torch-sparse==0.6.12 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
-`pip install torch-spline-conv==1.2.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
-`pip install torch-cluster==1.6.0 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
-`pip install torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
+`pip install torch==1.9.1`  
+`pip install torch-scatter==2.1.0 torch-sparse==0.6.12 torch-spline-conv==1.2.1 torch-cluster==1.6.0 torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
 `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
     If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
