@@ -65,67 +65,68 @@ def load_molecule(molecule_file):
                           'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
     return mol
 
-class GetPocket:
-    def __init__(self, ligand_file, protein_file, cut):
-        """
-        ligand_file: format mol
-        protein_file: format pdb
-        """
-        printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
-        self.ligand_file = ligand_file
-        self.protein_file = protein_file
-        self.ligand_mol = load_molecule(ligand_file)
-        self.pocket_mol,  self.temp_file = self.process_pro_and_lig(cut)
-        self.pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
-        Chem.MolToPDBFile(self.pocket_mol, self.pocket_path)
-        os.remove(self.temp_file)
-        printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
-        
-    def process_pro_and_lig(self, cut):
-        ppdb = PandasPdb()
-        ppdb.read_pdb(self.protein_file)
-        protein_biop = ppdb.df['ATOM']
-        pro_cut, pros_near_lig = self.select_cut_residue(protein_biop, self.ligand_mol, cut)
-        ppdb.df['ATOM'] = pro_cut
-        newmolname = str(randint(1,1000000)).zfill(10)
-        name = 'pocket_{}.pdb'.format(newmolname)
-        ppdb.to_pdb(path=name, records=['ATOM'])
-        pmol = Chem.MolFromPDBFile(name, removeHs=False)
-        return pmol, name
+def get_pocket(ligand_file, protein_file, cut):
+    """
+    ligand_file: format mol
+    protein_file: format pdb
+    """
+    printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+    ligand_mol = load_molecule(ligand_file)
+    pocket_mol,  temp_file = process_pro_and_lig(protein_file, ligand_mol, cut)
+    pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
+    Chem.MolToPDBFile(pocket_mol, pocket_path)
+    os.remove(temp_file)
+    printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
     
-    def select_cut_residue(self, protein_biop, ligand_mol, cut):
-        """
-        pro: biopandas DataFrame
-        lig: rdkit mol
-        """
-        pro = self.cal_pro_min_dist(protein_biop, ligand_mol)
-        pro['chain_rid'] = pro.apply(lambda row: 
-                                     str(row['chain_id'])+str(row['residue_number']), axis=1)
-        pros = pro[pro['min_dist'] < cut]
-        pros_near_lig = copy.deepcopy(pros)
-        use_res = list(set(list(pros['chain_rid'])))
-        pro= pro[pro['chain_rid'].isin(use_res)]
-        pro = pro.drop(['chain_rid'],axis=1)
-        return pro, pros_near_lig
-    
-    def get_ligu(self, ligand_mol):
-        mol_ligand_conf = ligand_mol.GetConformers()[0]
-        pos = mol_ligand_conf.GetPositions()
-        df = pd.DataFrame(pos)
-        df.columns = ["x_coord", "y_coord","z_coord"]
-        return df
-    
-    def cal_pro_min_dist(self, protein_biop, ligand_mol):
-        protein_biop =add_xyz(protein_biop)
-        ligu = self.get_ligu(ligand_mol)
-        ligu = add_xyz(ligu)
-        protein_biop['min_dist']= protein_biop.apply(lambda row: get_min_dist(row['xyz'], ligu), axis=1)
-        return protein_biop
+    ligu = get_ligu(ligand_mol)
+    center_x = ligu['x_coord'].mean().round(2)
+    center_y = ligu['y_coord'].mean().round(2)
+    center_z = ligu['z_coord'].mean().round(2)
+    pocket_coordinates = {
+        "center": [center_x, center_y, center_z],
+        "size": [cut, cut, cut]}
+    return pocket_coordinates
 
+    
 
-if __name__=="__main__":
-    import sys
-    protein_file=sys.argv[1]
-    ligand_file=sys.argv[2]
-    cut=sys.argv[3]
-    get_pocket = GetPocket(ligand_file, protein_file, cut)
+def process_pro_and_lig(protein_file, ligand_mol, cut):
+    ppdb = PandasPdb()
+    ppdb.read_pdb(protein_file)
+    protein_biop = ppdb.df['ATOM']
+    pro_cut, pros_near_lig = select_cut_residue(protein_biop, ligand_mol, cut)
+    ppdb.df['ATOM'] = pro_cut
+    newmolname = str(randint(1,1000000)).zfill(10)
+    name = 'pocket_{}.pdb'.format(newmolname)
+    ppdb.to_pdb(path=name, records=['ATOM'])
+    pmol = Chem.MolFromPDBFile(name, removeHs=False)
+    return pmol, name
+
+def select_cut_residue(protein_biop, ligand_mol, cut):
+    """
+    pro: biopandas DataFrame
+    lig: rdkit mol
+    """
+    pro = cal_pro_min_dist(protein_biop, ligand_mol)
+    pro['chain_rid'] = pro.apply(lambda row: 
+                                 str(row['chain_id'])+str(row['residue_number']), axis=1)
+    pros = pro[pro['min_dist'] < cut]
+    pros_near_lig = copy.deepcopy(pros)
+    use_res = list(set(list(pros['chain_rid'])))
+    pro= pro[pro['chain_rid'].isin(use_res)]
+    pro = pro.drop(['chain_rid'],axis=1)
+    return pro, pros_near_lig
+
+def get_ligu(ligand_mol):
+    mol_ligand_conf = ligand_mol.GetConformers()[0]
+    pos = mol_ligand_conf.GetPositions()
+    df = pd.DataFrame(pos)
+    df.columns = ["x_coord", "y_coord","z_coord"]
+    return df
+
+def cal_pro_min_dist(protein_biop, ligand_mol):
+    protein_biop =add_xyz(protein_biop)
+    ligu = get_ligu(ligand_mol)
+    ligu = add_xyz(ligu)
+    protein_biop['min_dist']= protein_biop.apply(lambda row: get_min_dist(row['xyz'], ligu), axis=1)
+    return protein_biop
+
