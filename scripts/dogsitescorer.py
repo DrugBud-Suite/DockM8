@@ -164,7 +164,7 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
         Table with metadata on detected binding sites.
     """
 
-    printlog(f"Querying for job at URL {job_location}...", end="")
+    printlog(f"Querying for job at URL {job_location}...")
 
     while attempts:
         # Get job results
@@ -176,7 +176,6 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
             result_file = response["result_table"]
             break
         attempts -= 1
-        printlog(".", end="")
         time.sleep(10)
     # Get result table (as string)
     result_table = requests.get(result_file).text
@@ -359,9 +358,11 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
         pdb_file_text_content = f.read()
     pdb_file_df = load_pdb_file_as_dataframe(pdb_file_text_content)
     pocket_coordinates_data = pdb_file_df["OTHERS"].loc[5, "entry"]
+    print(pocket_coordinates_data)
     coordinates_data_as_list = pocket_coordinates_data.split()
     # select strings representing floats from a list of strings
     coordinates = [float(element) for element in coordinates_data_as_list if re.compile(r'\d+(?:\.\d*)').match(element)]
+    print(coordinates)
     pocket_coordinates = {
         "center": coordinates[:3],
         "size": [coordinates[-1] * 2 for dim in range(3)],
