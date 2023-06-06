@@ -12,26 +12,6 @@ from scripts.utilities import *
 warnings.simplefilter(action='ignore',category=FutureWarning)
 warnings.simplefilter(action='ignore',category=UserWarning)
 
-def conc(a,b,c):
-    return [a,b,c]
-
-def add_xyz(ligu):
-    ligu['xyz'] = ligu.apply(lambda row: conc(row['x_coord'],row['y_coord'],row['z_coord']),axis=1)
-    return ligu
-
-def cal_dist(a,b):
-    a1 = np.array(a)
-    b1 = np.array(b)
-    dist = np.linalg.norm(a1-b1)
-    dist =round(dist,2)
-    return dist
-
-def get_min_dist(am, ligu):
-    ligu['pro_xyz']=[am]*ligu.shape[0]
-    ligu['dist']= ligu.apply(lambda row: cal_dist(row['xyz'], row['pro_xyz']), axis =1)
-    md = min(ligu['dist'])
-    return md
-
 def load_molecule(molecule_file):
     """Load a molecule from a file.
     Parameters
@@ -65,68 +45,112 @@ def load_molecule(molecule_file):
                           'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
     return mol
 
-def get_pocket(ligand_file, protein_file, cut):
+def get_pocket(ligand_file, protein_file, radius):
     """
     ligand_file: format mol
     protein_file: format pdb
     """
     printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
     ligand_mol = load_molecule(ligand_file)
-    pocket_mol,  temp_file = process_pro_and_lig(protein_file, ligand_mol, cut)
+    pocket_mol,  temp_file = process_protein_and_ligand(protein_file, ligand_mol, radius)
     pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
     Chem.MolToPDBFile(pocket_mol, pocket_path)
     os.remove(temp_file)
     printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
     
-    ligu = get_ligu(ligand_mol)
+    ligu = get_ligand_coordinates(ligand_mol)
     center_x = ligu['x_coord'].mean().round(2)
     center_y = ligu['y_coord'].mean().round(2)
     center_z = ligu['z_coord'].mean().round(2)
     pocket_coordinates = {
         "center": [center_x, center_y, center_z],
-        "size": [cut, cut, cut]}
+        "size": [float(radius)*2, float(radius)*2, float(radius)*2]}
     return pocket_coordinates
 
-    
+from rdkit.Chem import Descriptors3D
 
-def process_pro_and_lig(protein_file, ligand_mol, cut):
+def get_pocket_RoG(ligand_file, protein_file):
+    """
+    ligand_file: format mol
+    protein_file: format pdb
+    """
+    printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+    ligand_mol = load_molecule(ligand_file)
+    radius_of_gyration = Descriptors3D.RadiusOfGyration(ligand_mol)
+    printlog(f'Radius of Gyration of reference ligand is: {radius_of_gyration}')
+    pocket_mol,  temp_file = process_protein_and_ligand(protein_file, ligand_mol, round(0.5*2.857*float(radius_of_gyration), 2))
+    pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
+    Chem.MolToPDBFile(pocket_mol, pocket_path)
+    os.remove(temp_file)
+    printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+    
+    ligu = get_ligand_coordinates(ligand_mol)
+    center_x = ligu['x_coord'].mean().round(2)
+    center_y = ligu['y_coord'].mean().round(2)
+    center_z = ligu['z_coord'].mean().round(2)
+    pocket_coordinates = {
+        "center": [center_x, center_y, center_z],
+        "size": [round(2.857*float(radius_of_gyration),2), round(2.857*float(radius_of_gyration),2), round(2.857*float(radius_of_gyration),2)]}
+    return pocket_coordinates
+
+def process_protein_and_ligand(protein_file, ligand_molecule, cutoff):
     ppdb = PandasPdb()
     ppdb.read_pdb(protein_file)
-    protein_biop = ppdb.df['ATOM']
-    pro_cut, pros_near_lig = select_cut_residue(protein_biop, ligand_mol, cut)
-    ppdb.df['ATOM'] = pro_cut
-    newmolname = str(randint(1,1000000)).zfill(10)
-    name = 'pocket_{}.pdb'.format(newmolname)
-    ppdb.to_pdb(path=name, records=['ATOM'])
-    pmol = Chem.MolFromPDBFile(name, removeHs=False)
-    return pmol, name
+    protein_dataframe = ppdb.df['ATOM']
+    protein_cut, residues_near_ligand = select_cutoff_residues(protein_dataframe, ligand_molecule, cutoff)
+    ppdb.df['ATOM'] = protein_cut
+    random_mol_name = str(randint(1, 1000000)).zfill(10)
+    pocket_file_name = 'pocket_{}.pdb'.format(random_mol_name)
+    ppdb.to_pdb(path=pocket_file_name, records=['ATOM'])
+    protein_molecule = Chem.MolFromPDBFile(pocket_file_name, removeHs=False)
+    return protein_molecule, pocket_file_name
 
-def select_cut_residue(protein_biop, ligand_mol, cut):
-    """
-    pro: biopandas DataFrame
-    lig: rdkit mol
-    """
-    pro = cal_pro_min_dist(protein_biop, ligand_mol)
-    pro['chain_rid'] = pro.apply(lambda row: 
-                                 str(row['chain_id'])+str(row['residue_number']), axis=1)
-    pros = pro[pro['min_dist'] < cut]
-    pros_near_lig = copy.deepcopy(pros)
-    use_res = list(set(list(pros['chain_rid'])))
-    pro= pro[pro['chain_rid'].isin(use_res)]
-    pro = pro.drop(['chain_rid'],axis=1)
-    return pro, pros_near_lig
+# Function to add coordinates column in the DataFrame
+def add_coordinates(dataframe):
+    dataframe['coordinates'] = dataframe.apply(
+        lambda row: [row['x_coord'], row['y_coord'], row['z_coord']],
+        axis=1)
+    return dataframe
 
-def get_ligu(ligand_mol):
-    mol_ligand_conf = ligand_mol.GetConformers()[0]
-    pos = mol_ligand_conf.GetPositions()
-    df = pd.DataFrame(pos)
-    df.columns = ["x_coord", "y_coord","z_coord"]
-    return df
+# Function to calculate distance between two points
+def calculate_distance(point1, point2):
+    point1 = np.array(point1)
+    point2 = np.array(point2)
+    return round(np.linalg.norm(point1 - point2), 2)
 
-def cal_pro_min_dist(protein_biop, ligand_mol):
-    protein_biop =add_xyz(protein_biop)
-    ligu = get_ligu(ligand_mol)
-    ligu = add_xyz(ligu)
-    protein_biop['min_dist']= protein_biop.apply(lambda row: get_min_dist(row['xyz'], ligu), axis=1)
-    return protein_biop
+# Function to calculate the minimum distance
+def calculate_min_distance(aminoacid, dataframe):
+    dataframe['protein_coordinates'] = [aminoacid] * dataframe.shape[0]
+    dataframe['distance'] = dataframe.apply(
+        lambda row: calculate_distance(row['coordinates'], row['protein_coordinates']), 
+        axis=1)
+    return min(dataframe['distance'])
+
+# Get coordinates of a ligand molecule
+def get_ligand_coordinates(ligand_molecule):
+    ligand_conformer = ligand_molecule.GetConformers()[0]
+    coordinates = ligand_conformer.GetPositions()
+    dataframe = pd.DataFrame(coordinates, columns=["x_coord", "y_coord","z_coord"])
+    return add_coordinates(dataframe)
+
+# Calculate minimum distance for protein
+def calculate_min_distance_protein(protein_dataframe, ligand_molecule):
+    protein_dataframe = add_coordinates(protein_dataframe)
+    ligand_coordinates = add_coordinates(get_ligand_coordinates(ligand_molecule))
+    protein_dataframe['min_dist'] = protein_dataframe.apply(
+        lambda row: calculate_min_distance(row['coordinates'], ligand_coordinates), 
+        axis=1)
+    return protein_dataframe
+
+# Select cutoff residues
+def select_cutoff_residues(protein_dataframe, ligand_molecule, cutoff):
+    protein_dataframe = calculate_min_distance_protein(protein_dataframe, ligand_molecule)
+    protein_dataframe['chain_residue_id'] = protein_dataframe.apply(
+        lambda row: str(row['chain_id']) + str(row['residue_number']), 
+        axis=1)
+    residues_within_cutoff = protein_dataframe[protein_dataframe['min_dist'] < cutoff]
+    selected_residues = list(set(list(residues_within_cutoff['chain_residue_id'])))
+    protein_dataframe = protein_dataframe[protein_dataframe['chain_residue_id'].isin(selected_residues)]
+    protein_dataframe = protein_dataframe.drop(['chain_residue_id'], axis=1)
+    return protein_dataframe, residues_within_cutoff
 
