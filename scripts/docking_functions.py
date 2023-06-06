@@ -54,9 +54,9 @@ def qvinaw_docking(protein_file, pocket_definition, software, exhaustiveness, n_
             ' --center_x ' + str(pocket_definition["center"][0]) +
             ' --center_y ' + str(pocket_definition["center"][1]) +
             ' --center_z ' + str(pocket_definition["center"][2]) +
-            ' --size_x ' + str(pocket_definition["size"][0]*2) +
-            ' --size_y ' + str(pocket_definition["size"][1]*2) +
-            ' --size_z ' + str(pocket_definition["size"][2]*2) +
+            ' --size_x ' + str(pocket_definition["size"][0]) +
+            ' --size_y ' + str(pocket_definition["size"][1]) +
+            ' --size_z ' + str(pocket_definition["size"][2]) +
             ' --exhaustiveness ' + str(exhaustiveness) +
             ' --cpu 1' +
             ' --num_modes ' + str(n_poses)
@@ -141,9 +141,9 @@ def qvina2_docking(protein_file, pocket_definition, software, exhaustiveness, n_
             ' --center_x ' + str(pocket_definition["center"][0]) +
             ' --center_y ' + str(pocket_definition["center"][1]) +
             ' --center_z ' + str(pocket_definition["center"][2]) +
-            ' --size_x ' + str(pocket_definition["size"][0]*2) +
-            ' --size_y ' + str(pocket_definition["size"][1]*2) +
-            ' --size_z ' + str(pocket_definition["size"][2]*2) +
+            ' --size_x ' + str(pocket_definition["size"][0]) +
+            ' --size_y ' + str(pocket_definition["size"][1]) +
+            ' --size_z ' + str(pocket_definition["size"][2]) +
             ' --exhaustiveness ' + str(exhaustiveness) +
             ' --cpu 1' +
             ' --num_modes ' + str(n_poses)
@@ -222,9 +222,9 @@ def smina_docking(protein_file, pocket_definition, software, exhaustiveness, n_p
             ' --center_x ' + str(pocket_definition["center"][0]) +
             ' --center_y ' + str(pocket_definition["center"][1]) +
             ' --center_z ' + str(pocket_definition["center"][2]) +
-            ' --size_x ' + str(pocket_definition["size"][0]*2) +
-            ' --size_y ' + str(pocket_definition["size"][1]*2) +
-            ' --size_z ' + str(pocket_definition["size"][2]*2) +
+            ' --size_x ' + str(pocket_definition["size"][0]) +
+            ' --size_y ' + str(pocket_definition["size"][1]) +
+            ' --size_z ' + str(pocket_definition["size"][2]) +
             ' --exhaustiveness ' + str(exhaustiveness) +
             ' --cpu 1' +
             ' --num_modes ' + str(n_poses) +
@@ -293,9 +293,9 @@ def gnina_docking(protein_file, pocket_definition, software, exhaustiveness, n_p
             ' --center_x ' + str(pocket_definition["center"][0]) +
             ' --center_y ' + str(pocket_definition["center"][1]) +
             ' --center_z ' + str(pocket_definition["center"][2]) +
-            ' --size_x ' + str(pocket_definition["size"][0]*2) +
-            ' --size_y ' + str(pocket_definition["size"][1]*2) +
-            ' --size_z ' + str(pocket_definition["size"][2]*2) +
+            ' --size_x ' + str(pocket_definition["size"][0]) +
+            ' --size_y ' + str(pocket_definition["size"][1]) +
+            ' --size_z ' + str(pocket_definition["size"][2]) +
             ' --exhaustiveness ' + str(exhaustiveness) +
             ' --cpu 1' +
             ' --num_modes ' + str(n_poses) +
@@ -330,7 +330,7 @@ def gnina_docking(protein_file, pocket_definition, software, exhaustiveness, n_p
         printlog(e)
     return w_dir+'/temp/gnina/gnina_poses.sdf'
 
-def plants_docking(protein_file, ref_file, software, n_poses):
+def plants_docking(protein_file, pocket_definition, software, n_poses):
     '''
     Perform docking using the PLANTS software on a protein and a reference ligand, and return the path to the results.
 
@@ -367,19 +367,6 @@ def plants_docking(protein_file, ref_file, software, n_poses):
     except Exception as e:
         printlog('ERROR: Failed to convert protein file to .mol2!')
         printlog(e)
-    #Convert protein file to .mol2 using open babel
-    plants_ref_mol2 = w_dir+'/temp/plants/ref.mol2'
-    try:
-        if ref_file.endswith('.mol2'):
-            shutil.copy(ref_file, plants_docking_dir)
-            os.rename(plants_docking_dir+'/'+os.path.basename(ref_file), plants_ref_mol2)
-        else:
-            printlog(f'Converting reference file from .{ref_file.split(".")[-1]} to .mol2 format for PLANTS docking...')
-            obabel_command = f'obabel -i{ref_file.split(".")[-1]} {ref_file} -O {plants_ref_mol2}'
-            os.system(obabel_command)
-    except Exception as e:
-        printlog('ERROR: Failed to convert reference file to .mol2 for PLANTS docking!')
-        printlog(e)
     #Convert prepared ligand file to .mol2 using open babel
     final_library = w_dir+'/temp/final_library.sdf'
     plants_library_mol2 = w_dir+'/temp/plants/ligands.mol2'
@@ -388,28 +375,6 @@ def plants_docking(protein_file, ref_file, software, n_poses):
         os.system(obabel_command)
     except Exception as e:
         printlog('ERROR: Failed to convert docking library file to .mol2!')
-        printlog(e)
-    #Determine binding site coordinates
-    try:
-        printlog('Determining binding site coordinates using PLANTS...')
-        plants_binding_site_command = 'cd '+software+' && ./PLANTS --mode bind '+plants_ref_mol2+' 8'
-        run_plants_binding_site = os.popen(plants_binding_site_command)
-        output_plants_binding_site = run_plants_binding_site.readlines()
-        keep = []
-        for l in output_plants_binding_site:
-            if l.startswith('binding'):
-                keep.append(l)
-            else:
-                pass
-        binding_site_center = keep[0].split()
-        binding_site_radius = keep[1].split()
-        binding_site_radius = binding_site_radius[1]
-        binding_site_x = binding_site_center[1]
-        binding_site_y = binding_site_center[2]
-        binding_site_z = binding_site_center[3].replace('+', '')
-        print(binding_site_x, binding_site_y, binding_site_z)
-    except Exception as e:
-        printlog('ERROR: Could not determine binding site coordinates using PLANTS')
         printlog(e)
     #Generate plants config file
     plants_docking_config_path_txt = plants_docking_dir+"/config.txt"
@@ -443,8 +408,8 @@ def plants_docking(protein_file, ref_file, software, n_poses):
     'write_multi_mol2 1\n',
 
     '# binding site definition\n',
-    'bindingsite_center '+binding_site_x+' '+binding_site_y+' '+binding_site_z+'+\n',
-    'bindingsite_radius '+binding_site_radius+'\n',
+    'bindingsite_center '+str(pocket_definition["center"][0])+' '+str(pocket_definition["center"][1])+' '+(pocket_definition["center"][2])+'+\n',
+    'bindingsite_radius '+str(pocket_definition["size"][0]/2)+'\n',
 
     '# cluster algorithm\n',
     'cluster_structures '+str(n_poses)+'\n',
@@ -515,7 +480,7 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
         if 'GNINA' in docking_programs and os.path.isdir(w_dir+'/temp/gnina') == False:
             gnina_docking_results_path = gnina_docking(protein_file, pocket_definition, software, exhaustiveness, n_poses)
         if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == False:
-            plants_docking_results_path = plants_docking(protein_file, ref_file, software, n_poses)
+            plants_docking_results_path = plants_docking(protein_file, pocket_definition, software, n_poses)
         if 'QVINAW' in docking_programs and os.path.isdir(w_dir+'/temp/qvinaw') == False:
             qvinaw_docking_results_path = qvinaw_docking(protein_file, pocket_definition, software, exhaustiveness, n_poses)
         if 'QVINA2' in docking_programs and os.path.isdir(w_dir+'/temp/qvina2') == False:
@@ -557,7 +522,6 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
             split_files_sdfs = [os.path.join(split_files_folder, f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
             if 'PLANTS' in docking_programs and os.path.isdir(w_dir+'/temp/plants') == False:
                 tic = time.perf_counter()
-                binding_site_x, binding_site_y, binding_site_z, binding_site_radius = plants_preparation(protein_file, ref_file, software)
                 #Convert prepared ligand file to .mol2 using open babel
                 for file in os.listdir(split_files_folder):
                     if file.endswith('.sdf'):
@@ -572,7 +536,7 @@ def docking(w_dir, protein_file, ref_file, software, docking_programs, exhaustiv
                     jobs = []
                     for split_file in tqdm(split_files_sdfs, desc = 'Submitting PLANTS jobs', unit='Jobs'):
                         try:
-                            job = executor.submit(plants_docking_splitted, split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius)
+                            job = executor.submit(plants_docking_splitted, split_file, w_dir, software, n_poses, pocket_definition)
                             jobs.append(job)
                         except Exception as e:
                             printlog("Error in concurrent futures job creation: "+ str(e))
@@ -847,9 +811,9 @@ def smina_docking_splitted(split_file, protein_file, pocket_definition, software
             ' --center_x ' + str(pocket_definition["center"][0]) +
             ' --center_y ' + str(pocket_definition["center"][1]) +
             ' --center_z ' + str(pocket_definition["center"][2]) +
-            ' --size_x ' + str(pocket_definition["size"][0]*2) +
-            ' --size_y ' + str(pocket_definition["size"][1]*2) +
-            ' --size_z ' + str(pocket_definition["size"][2]*2) +
+            ' --size_x ' + str(pocket_definition["size"][0]) +
+            ' --size_y ' + str(pocket_definition["size"][1]) +
+            ' --size_z ' + str(pocket_definition["size"][2]) +
             ' --exhaustiveness ' + str(exhaustiveness) +
             ' --cpu 1' +
             ' --num_modes ' + str(n_poses) +
@@ -875,9 +839,9 @@ def gnina_docking_splitted(split_file, protein_file, pocket_definition, software
             ' --center_x ' + str(pocket_definition["center"][0]) +
             ' --center_y ' + str(pocket_definition["center"][1]) +
             ' --center_z ' + str(pocket_definition["center"][2]) +
-            ' --size_x ' + str(pocket_definition["size"][0]*2) +
-            ' --size_y ' + str(pocket_definition["size"][1]*2) +
-            ' --size_z ' + str(pocket_definition["size"][2]*2) +
+            ' --size_x ' + str(pocket_definition["size"][0]) +
+            ' --size_y ' + str(pocket_definition["size"][1]) +
+            ' --size_z ' + str(pocket_definition["size"][2]) +
             ' --exhaustiveness ' + str(exhaustiveness) +
             ' --cpu 1' +
             ' --num_modes ' + str(n_poses) +
@@ -889,7 +853,7 @@ def gnina_docking_splitted(split_file, protein_file, pocket_definition, software
         printlog('GNINA docking failed: '+e)
     return
 
-def plants_docking_splitted(split_file, w_dir, software, n_poses, binding_site_x, binding_site_y, binding_site_z, binding_site_radius):
+def plants_docking_splitted(split_file, w_dir, software, n_poses, pocket_definition):
     plants_docking_results_dir = w_dir+'/temp/plants/results_'+os.path.basename(split_file).replace('.sdf', '')
     #Generate plants config file
     plants_docking_config_path_txt = w_dir+'/temp/plants/config_'+os.path.basename(split_file).replace('.sdf', '.txt')
@@ -923,8 +887,8 @@ def plants_docking_splitted(split_file, w_dir, software, n_poses, binding_site_x
     'write_multi_mol2 1\n',
 
     '# binding site definition\n',
-    'bindingsite_center '+binding_site_x+' '+binding_site_y+' '+binding_site_z+'\n',
-    'bindingsite_radius '+binding_site_radius+'\n',
+    'bindingsite_center '+str(pocket_definition["center"][0])+' '+str(pocket_definition["center"][1])+' '+(pocket_definition["center"][2])+'+\n',
+    'bindingsite_radius '+str(pocket_definition["size"][0]/2)+'\n',
 
     '# cluster algorithm\n',
     'cluster_structures '+str(n_poses)+'\n',
@@ -950,55 +914,6 @@ def plants_docking_splitted(split_file, w_dir, software, n_poses, binding_site_x
         printlog('ERROR: PLANTS docking command failed...')
         printlog(e)
     return
-
-def plants_preparation(protein_file, ref_file, software):
-    w_dir = os.path.dirname(protein_file)
-    # Define initial variables
-    plants_docking_dir = w_dir+'/temp/plants'
-    #Create plants docking folder
-    create_temp_folder(plants_docking_dir)
-    plants_protein_mol2 = w_dir+'/temp/plants/protein.mol2'
-    try:
-        printlog('Converting protein file to .mol2 format for PLANTS docking...')
-        obabel_command = 'obabel -ipdb '+protein_file+' -O '+plants_protein_mol2
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to convert protein file to .mol2!')
-        printlog(e)
-    plants_ref_mol2 = w_dir+'/temp/plants/ref.mol2'
-    try:
-        if ref_file.endswith('.mol2'):
-            shutil.copy(ref_file, plants_docking_dir)
-            os.rename(plants_docking_dir+'/'+os.path.basename(ref_file), plants_ref_mol2)
-        else:
-            printlog(f'Converting reference file from .{ref_file.split(".")[-1]} to .mol2 format for PLANTS docking...')
-            obabel_command = f'obabel -i{ref_file.split(".")[-1]} {ref_file} -O {plants_ref_mol2}'
-            subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to convert reference file to .mol2!')
-        printlog(e)
-    #Determine binding site coordinates
-    try:
-        printlog('Determining binding site coordinates using PLANTS...')
-        plants_binding_site_command = 'cd '+software+' && ./PLANTS --mode bind '+plants_ref_mol2+' 8'
-        run_plants_binding_site = os.popen(plants_binding_site_command)
-        output_plants_binding_site = run_plants_binding_site.readlines()
-        keep = []
-        for l in output_plants_binding_site:
-            if l.startswith('binding'):
-                keep.append(l)
-            else:
-                pass
-        binding_site_center = keep[0].split()
-        binding_site_radius = keep[1].split()
-        binding_site_radius = binding_site_radius[1]
-        binding_site_x = binding_site_center[1]
-        binding_site_y = binding_site_center[2]
-        binding_site_z = binding_site_center[3].replace('+', '')
-    except Exception as e:
-        printlog('ERROR: Could not determine binding site coordinates using PLANTS')
-        printlog(e)
-    return binding_site_x, binding_site_y, binding_site_z, binding_site_radius
 
 def qvinaw_docking_splitted(split_file, protein_file_pdbqt, pocket_definition, software, exhaustiveness, n_poses):
     w_dir = os.path.dirname(protein_file_pdbqt)
@@ -1033,7 +948,7 @@ def qvinaw_docking_splitted(split_file, protein_file_pdbqt, pocket_definition, s
             ' --center_x ' + str(pocket_definition["center"][0]) +
             ' --center_y ' + str(pocket_definition["center"][1]) +
             ' --center_z ' + str(pocket_definition["center"][2]) +
-            ' --size_x ' + str(pocket_definition["size"][0]*2) +
+            ' --size_x ' + str(pocket_definition["size"][0]) +
             ' --size_y ' + str(pocket_definition["size"][1]*2) +
             ' --size_z ' + str(pocket_definition["size"][2]*2) +
             ' --exhaustiveness ' + str(exhaustiveness) +
