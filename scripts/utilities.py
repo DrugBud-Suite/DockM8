@@ -1,7 +1,7 @@
 import os
 import math
 
-def create_temp_folder(path, silent=False):
+def create_temp_folder(path, silent=True):
     if os.path.isdir(path) == True:
         if silent == False:
             print(f'The folder: {path} already exists')
