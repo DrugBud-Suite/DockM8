@@ -362,7 +362,6 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     coordinates_data_as_list = pocket_coordinates_data.split()
     # select strings representing floats from a list of strings
     coordinates = [float(element) for element in coordinates_data_as_list if re.compile(r'\d+(?:\.\d*)').match(element)]
-    print(coordinates)
     pocket_coordinates = {
         "center": coordinates[:3],
         "size": [coordinates[-1] * 2 for dim in range(3)],
