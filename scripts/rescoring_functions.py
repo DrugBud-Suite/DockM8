@@ -90,8 +90,8 @@ def rescore_all(w_dir, protein_file, ref_file, software, clustered_sdf, function
             except Exception as e:
                 printlog('ERROR: Could not combine GNINA rescored poses')
                 printlog(e)
-        gnina_rescoring_results.rename(columns = {'minimizedAffinity':'GNINA_Affinity', 'CNNscore':'GNINA_CNN_Score', 'CNNaffinity':'GNINA_CNN_Affinity'}, inplace = True)
-        gnina_rescoring_results = gnina_rescoring_results[['Pose ID', 'GNINA_Affinity', 'GNINA_CNN_Score', 'GNINA_CNN_Affinity']]
+        gnina_rescoring_results.rename(columns = {'minimizedAffinity':'GNINA_Affinity', 'CNNscore':'CNN-Score', 'CNNaffinity':'CNN-Affinity'}, inplace = True)
+        gnina_rescoring_results = gnina_rescoring_results[['Pose ID', 'GNINA_Affinity', 'CNN-Score', 'CNN-Affinity']]
         gnina_rescoring_results.to_csv(rescoring_folder+'/gnina_rescoring/gnina_scores.csv')
         delete_files(rescoring_folder+'/gnina_rescoring/', 'gnina_scores.csv')
         toc = time.perf_counter()
