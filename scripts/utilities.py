@@ -87,6 +87,7 @@ def show_correlation(input, annotation = bool()):
         dataframe = PandasTools.LoadSDF(input)
     elif input.endswith('.csv'):
         dataframe = pd.read_csv(input, index_col=0)
+    dataframe = dataframe.drop('Pose ID')
     matrix = dataframe.corr().round(2)
     mask = np.triu(np.ones_like(matrix, dtype=bool))
     fig, ax = plt.subplots(figsize=(10,10))  
