@@ -155,16 +155,14 @@ def apply_consensus_methods(w_dir, clustering_metric, method, rescoring_function
     rescoring_folder = f'rescoring_{clustering_metric}_clustered'
     rescored_dataframe = pd.read_csv(w_dir + f'/temp/{rescoring_folder}/allposes_rescored.csv')
     standardised_dataframe = standardize_scores(rescored_dataframe)
-    col_dict = {'gnina':['GNINA', 'CNN-Score', 'CNN-Affinity'], 'vinardo':'Vinardo', 'AD4':'AD4', 'LinF9':'LinF9', 'rfscorevs':'RFScoreVS', 'plp':'PLP', 'chemplp':'CHEMPLP', 'NNScore':'NNScore', 
-               'PLECnn':'PLECnn', 'AAScore':'AAScore', 'ECIF':'ECIF', 'SCORCH':'SCORCH','RTMScore':'RTMScore'}
-    col_list = ['Pose ID']
-    for function in rescoring_functions:
-        cols = col_dict[function]
-        if isinstance(cols, list):
-            col_list.extend(cols)
-        else:
-            col_list.append(cols)
-    print(col_list)
+    col_dict = {
+    'gnina': 'GNINA_Affinity', 'cnn-score': 'CNN-Score', 'cnn-affinity': 'CNN-Affinity', 
+    'vinardo': 'Vinardo', 'AD4': 'AD4', 'LinF9': 'LinF9', 'rfscorevs': 'RFScoreVS', 
+    'plp': 'PLP', 'chemplp': 'CHEMPLP', 'NNScore': 'NNScore', 'PLECnn': 'PLECnn', 
+    'AAScore': 'AAScore', 'ECIF': 'ECIF', 'SCORCH': 'SCORCH', 'RTMScore': 'RTMScore'
+    }
+    col_list = ['Pose ID'] + [col_dict[function] for function in rescoring_functions if function in col_dict]
+
     filtered_dataframe = standardised_dataframe[col_list]
     print(filtered_dataframe)
     standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, {clustering_metric: rescoring_folder})
