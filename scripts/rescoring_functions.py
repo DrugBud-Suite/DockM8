@@ -598,7 +598,7 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         LinF9_rescoring_results.rename(columns = {'minimizedAffinity':'LinF9'}, inplace = True)
         LinF9_rescoring_results = LinF9_rescoring_results[['Pose ID', 'LinF9']]
         LinF9_rescoring_results.to_csv(rescoring_folder+'/LinF9_rescoring/LinF9_scores.csv', index=False)
-        #delete_files(rescoring_folder+'/LinF9_rescoring/', 'LinF9_scores.csv')
+        delete_files(rescoring_folder+'/LinF9_rescoring/', 'LinF9_scores.csv')
         toc = time.perf_counter()
         printlog(f'Rescoring with LinF9 complete in {toc-tic:0.4f}!')
         return LinF9_rescoring_results
