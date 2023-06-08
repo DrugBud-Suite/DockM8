@@ -656,10 +656,63 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         toc = time.perf_counter()
         printlog(f'Rescoring with AAScore complete in {toc-tic:0.4f}!')
         return
+    def KORPL_rescoring(sdf, ncpus):
+        tic = time.perf_counter()
+        create_temp_folder(rescoring_folder+'/KORPL_rescoring/', silent=True)
+        df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName=None, )
+        df = df[['Pose ID']]
+        korpl_command = (
+                software +
+                '/KORP-PL' +
+                ' --receptor ' + protein_file + 
+                ' --ligand ' + sdf + 
+                ' --sdf')
+        process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout, stderr = process.communicate()
+        energies = []
+        output = stdout.decode().splitlines()
+        for line in output:
+            if line.startswith('model'):
+                parts = line.split(',')
+                model = int(parts[0].split()[1])
+                energy = round(float(parts[1].split('=')[1]), 2)
+                energies.append(energy)
+        df['KORPL'] = energies
+        df.to_csv(rescoring_folder+'/KORPL_rescoring/KORPL_scores.csv', index=False)
+        toc = time.perf_counter()
+        printlog(f'Rescoring with KORPL complete in {toc-tic:0.4f}!')
+        return
+    def ConvexPLR_rescoring(sdf, ncpus):
+        tic = time.perf_counter()
+        create_temp_folder(rescoring_folder+'/ConvexPLR_rescoring/', silent=True)
+        df = PandasTools.LoadSDF(sdf, idName='Pose ID', molColName=None, )
+        df = df[['Pose ID']]
+        ConvexPLR_command = (
+                software +
+                '/Convex-PL' +
+                ' --receptor ' + protein_file + 
+                ' --ligand ' + sdf + 
+                ' --sdf --regscore')
+        process = subprocess.Popen(ConvexPLR_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout, stderr = process.communicate()
+        energies = []
+        output = stdout.decode().splitlines()
+        for line in output:
+            if line.startswith('model'):
+                parts = line.split(',')
+                model = int(parts[0].split()[1])
+                energy = round(float(parts[1].split('=')[1]), 2)
+                energies.append(energy)
+        df['ConvexPLR'] = energies
+        df.to_csv(rescoring_folder+'/ConvexPLR_rescoring/ConvexPLR_scores.csv', index=False)
+        toc = time.perf_counter()
+        printlog(f'Rescoring with KORPL complete in {toc-tic:0.4f}!')
+        return
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9': LinF9_rescoring, 
-                        'AAScore': AAScore_rescoring, 'ECIF': ECIF_rescoring, 'SCORCH': SCORCH_rescoring, 'RTMScore': RTMScore_rescoring}
+                        'AAScore': AAScore_rescoring, 'ECIF': ECIF_rescoring, 'SCORCH': SCORCH_rescoring, 'RTMScore': RTMScore_rescoring,
+                        'KORPL': KORPL_rescoring, 'ConvexPL': ConvexPLR_rescoring}
     for function in functions:
         if os.path.isfile(rescoring_folder+f'/{function}_rescoring/{function}_scores.csv') == False:
             rescoring_functions[function](clustered_sdf, ncpus)
