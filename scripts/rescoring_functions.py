@@ -706,7 +706,7 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         df['ConvexPLR'] = energies
         df.to_csv(rescoring_folder+'/ConvexPLR_rescoring/ConvexPLR_scores.csv', index=False)
         toc = time.perf_counter()
-        printlog(f'Rescoring with KORPL complete in {toc-tic:0.4f}!')
+        printlog(f'Rescoring with ConvexPL complete in {toc-tic:0.4f}!')
         return
     rescoring_functions = {'gnina': gnina_rescoring, 'vinardo': vinardo_rescoring, 'AD4': AD4_rescoring, 
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
@@ -724,13 +724,10 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         csv_files = [os.path.join(subdir, file) for subdir, dirs, files in os.walk(rescoring_folder) for file in files if file in score_files]
         csv_dfs = [pd.read_csv(file) for file in csv_files]
         combined_dfs = csv_dfs[0]
-        print(combined_dfs.head())
         for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
             combined_dfs = pd.merge(combined_dfs, df, on='Pose ID', how='inner')
-        print(combined_dfs.head())
         first_column = combined_dfs.pop('Pose ID')
         combined_dfs.insert(0, 'Pose ID', first_column)
-        print(combined_dfs.head())
         columns=combined_dfs.columns
         col=columns[1:]
         for c in col.tolist():
@@ -740,7 +737,6 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
                 combined_dfs[c] = combined_dfs[c].apply(pd.to_numeric, errors='coerce')
             else:
                 pass
-        print(combined_dfs.head())
         combined_dfs.to_csv(rescoring_folder+'/allposes_rescored.csv', index=False)
     toc = time.perf_counter()
     printlog(f'Rescoring complete in {toc-tic:0.4f}!')
