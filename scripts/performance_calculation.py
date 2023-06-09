@@ -13,9 +13,9 @@ def standardize_scores(df):
         return standardized_scores
     rescoring_functions_standardization = {'GNINA_Affinity':'min', 'GNINA_CNN_Score':'max', 'GNINA_CNN_Affinity':'max','GNINA':'min', 'CNN-Score':'max', 'CNN-Affinity':'max', 'CNN_VS':'max',
                                            'Vinardo_Affinity':'min', 'AD4_Affinity':'min', 'LinF9_Affinity':'min', 'Vinardo':'min', 
-                                           'AD4':'min', 'LinF9':'min', 'RFScoreVS':'max', 'PLP':'min', 'CHEMPLP':'min', 'NNScore':'max', 
+                                           'AD4':'min', 'LinF9':'min', 'RFScoreVS':'max', 'PLP':'min', 'CHEMPLP':'min', 'NNscore':'max', 
                                            'PLECnn':'max', 'AAScore':'min', 'ECIF':'max', 'SCORCH':'max', 'SCORCH_pose_score':'max',
-                                           'RTMScore':'max'}
+                                           'RTMScore':'max', 'KORPL':'min', 'ConvexPLR':'max'}
     for col in df.columns:
         if col != 'Pose ID':
             df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -87,7 +87,7 @@ def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metr
     create_temp_folder(w_dir+'/temp/consensus')
     rank_methods = {'method1':method1_ECR_best, 'method2':method2_ECR_average, 'method3':method3_avg_ECR, 'method4':method4_RbR}
     score_methods = {'method5':method5_RbV, 'method6':method6_Zscore_best, 'method7':method7_Zscore_avg}
-    
+    print('Loading library')
     original_df = PandasTools.LoadSDF(docking_library, molColName=None, idName='ID')
     original_df = original_df[['ID', 'Activity']]
     original_df['Activity'] = pd.to_numeric(original_df['Activity'])
@@ -123,7 +123,7 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
             df['ID'] = df['Pose ID'].str.split('_').str[0]
             df.to_csv(w_dir + f'/temp/ranking/{df_name}.csv', index=False)
     
-    original_df = PandasTools.LoadSDF(docking_library, molColName='Molecule', idName='ID')
+    original_df = PandasTools.LoadSDF(docking_library, molColName=None, idName='ID')
     original_df = original_df[['ID', 'Activity']]
     original_df['Activity'] = pd.to_numeric(original_df['Activity'])
     EF_results = pd.DataFrame(columns=['Scoring Function', 'Clustering Metric', 'EF10%', 'EF1%'])
