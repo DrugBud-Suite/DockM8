@@ -674,7 +674,6 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         for line in output:
             if line.startswith('model'):
                 parts = line.split(',')
-                model = int(parts[0].split()[1])
                 energy = round(float(parts[1].split('=')[1]), 2)
                 energies.append(energy)
         df['KORPL'] = energies
@@ -700,7 +699,6 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         for line in output:
             if line.startswith('model'):
                 parts = line.split(',')
-                model = int(parts[0].split()[1])
                 energy = round(float(parts[1].split('=')[1]), 2)
                 energies.append(energy)
         df['ConvexPLR'] = energies
@@ -712,7 +710,7 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
                         'rfscorevs': rfscore_rescoring, 'plp': plp_rescoring, 'chemplp': chemplp_rescoring,
                         'nnscore': oddt_nnscore_rescoring, 'plecscore': oddt_plecscore_rescoring, 'LinF9': LinF9_rescoring, 
                         'AAScore': AAScore_rescoring, 'ECIF': ECIF_rescoring, 'SCORCH': SCORCH_rescoring, 'RTMScore': RTMScore_rescoring,
-                        'KORPL': KORPL_rescoring, 'ConvexPL': ConvexPLR_rescoring}
+                        'KORPL': KORPL_rescoring, 'ConvexPLR': ConvexPLR_rescoring}
     for function in functions:
         if os.path.isfile(rescoring_folder+f'/{function}_rescoring/{function}_scores.csv') == False:
             rescoring_functions[function](clustered_sdf, ncpus)
