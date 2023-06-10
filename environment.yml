@@ -1,4 +1,4 @@
-name: dockm8
+name: dockm82
 channels:
   - conda-forge
   - default
@@ -30,9 +30,11 @@ dependencies:
   - openssl
   - openbabel
   - certifi
+  - pip
   - pip:
+    - pathlib
+    - meeko
     - git+https://github.com/mayrf/pkasolver.git
     - dgl
     - espsim
-    - torch-geometric
-
+    - torch-geometric==2.0.1
