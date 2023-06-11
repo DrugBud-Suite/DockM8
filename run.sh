@@ -1,6 +1,6 @@
 #!/bin/bash --login
 
-echo "Installing DockM8 environment ...\n"
+echo "Installing DockM82 environment ... "
 
 #Force stop if any link fails
 set -e
@@ -9,11 +9,11 @@ set -e
 PROJECT_DIR=$PWD
 
 # creates the conda environment
-conda env create --file $PROJECT_DIR/environment.yml --force
+mamba env create --file $PROJECT_DIR/environment.yml --force
 
 # activate the conda env before installing PyTorch Geometric via pip
 conda init bash
-source activate dockm8
+source activate dockm82
 
 #Specify your CUDA toolkit
 CUDA=cpu
