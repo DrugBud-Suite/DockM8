@@ -720,7 +720,12 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         score_files = [f'{function}_scores.csv' for function in functions]
         printlog(f'Combining all score for {rescoring_folder}')
         csv_files = [os.path.join(subdir, file) for subdir, dirs, files in os.walk(rescoring_folder) for file in files if file in score_files]
-        csv_dfs = [pd.read_csv(file) for file in csv_files]
+        csv_dfs = []
+        for file in csv_files:
+            df = pd.read_csv(file)
+            if 'Unnamed: 0' in df.columns:
+                df = df.drop(columns=['Unnamed: 0'])
+            csv_dfs.append(df)
         combined_dfs = csv_dfs[0]
         for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
             combined_dfs = pd.merge(combined_dfs, df, on='Pose ID', how='inner')
