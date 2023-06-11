@@ -164,7 +164,6 @@ def apply_consensus_methods(w_dir, clustering_metric, method, rescoring_function
     col_list = ['Pose ID'] + [col_dict[function] for function in rescoring_functions if function in col_dict]
 
     filtered_dataframe = standardised_dataframe[col_list]
-    print(filtered_dataframe)
     standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, {clustering_metric: rescoring_folder})
     for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
         for df_name, df in df_dict.items():
@@ -183,7 +182,5 @@ def apply_consensus_methods(w_dir, clustering_metric, method, rescoring_function
         analysed_dataframe = method_function(standardised_dataframes[clustering_metric+'_standardised'], clustering_metric, [col for col in standardised_dataframes[clustering_metric+'_standardised'] if col not in ['Pose ID', 'ID']])
     else:
         raise ValueError(f"Invalid method: {method}")
-
-    print(analysed_dataframe)
     analysed_dataframe = analysed_dataframe.drop(columns="Pose ID", errors='ignore')
     analysed_dataframe.to_csv(w_dir+f'/temp/consensus/{clustering_metric}_{method}_results.csv', index=False)
