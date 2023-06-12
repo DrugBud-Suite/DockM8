@@ -1,0 +1,41 @@
+name: base
+channels:
+  - conda-forge
+  - default
+  - pytorch
+dependencies:
+  - pytorch==1.9.1
+  - python=3.8
+  - tqdm
+  - biopandas
+  - redo
+  - oddt
+  - pebble
+  - MDAnalysis
+  - rdkit
+  - chembl_structure_pipeline
+  - ipykernel
+  - scipy
+  - spyrmsd
+  - kneed
+  - scikit-learn-extra
+  - cairosvg
+
+  - svgutils
+  - molvs
+  - jupyter
+  - notebook
+  - seaborn
+  - xgboost
+  - ca-certificates
+  - openssl
+  - openbabel
+  - certifi
+  - pip
+  - pip:
+    - pathlib
+    - meeko
+    - git+https://github.com/mayrf/pkasolver.git
+    - dgl
+    - espsim
+    - torch-geometric==2.0.1
