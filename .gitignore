@@ -10,7 +10,7 @@ consensus_docking_python _BACKUP
 __pycache__/
 *.py[cod]
 *$py.class
-
+data/
 # C extensions
 *.so
 
