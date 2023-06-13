@@ -26,6 +26,7 @@ from biopandas.pdb import PandasPdb  # for working with PDB files
 import redo # for retrying API queries if they fail
 import os
 from scripts.utilities import *
+from pathlib import Path
 
 
 class APIConsts:
@@ -369,11 +370,11 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     return pocket_coordinates
 
 def binding_site_coordinates_dogsitescorer(pdbpath, w_dir, method='volume'):
-    pdb_upload=upload_pdb_file(pdbpath)
+    pdb_upload=upload_pdb_file(str(pdbpath))
     job_location = submit_dogsitescorer_job_with_pdbid(pdb_upload, 'A', '')
     binding_site_df = get_dogsitescorer_metadata(job_location)
     best_binding_site = sort_binding_sites(binding_site_df, method)
     pocket = get_selected_pocket_location(job_location, best_binding_site)
-    save_binding_site_to_file(pdbpath, pocket, w_dir)
-    pocket_coordinates=calculate_pocket_coordinates_from_pocket_pdb_file(pdbpath.replace('.pdb', '_pocket.pdb'))
+    save_binding_site_to_file(str(pdbpath), pocket, w_dir)
+    pocket_coordinates=calculate_pocket_coordinates_from_pocket_pdb_file(str(pdbpath).replace('.pdb', '_pocket.pdb'))
     return pocket_coordinates
