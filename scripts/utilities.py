@@ -1,57 +1,57 @@
 import os
 import math
+from pathlib import Path
 
-def create_temp_folder(path, silent=True):
-    if os.path.isdir(path) == True:
-        if silent == False:
-            print(f'The folder: {path} already exists')
-    else:
-        os.mkdir(path)
-        if silent == False:
-            print(f'The folder: {path} was created')
-        
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
 import math
         
+from pathlib import Path
+import math
+from tqdm import tqdm
+from rdkit.Chem import PandasTools
+
 def split_sdf(dir, sdf_file, ncpus):
-    sdf_file_name = os.path.basename(sdf_file).replace('.sdf', '')
+    sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
     print(f'Splitting SDF file {sdf_file_name}.sdf ...')
-    split_files_folder = dir+f'/split_{sdf_file_name}'
-    create_temp_folder(dir+f'/split_{sdf_file_name}', silent=True)
-    for file in os.listdir(dir+f'/split_{sdf_file_name}'):
-        os.unlink(os.path.join(dir+f'/split_{sdf_file_name}', file))
-    df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
-    compounds_per_core = math.ceil(len(df['ID'])/(ncpus*2))
-    used_ids = set() # keep track of used 'ID' values
+    split_files_folder = Path(dir) / f'split_{sdf_file_name}'
+    split_files_folder.mkdir(parents=True, exist_ok=True)
+    for file in split_files_folder.iterdir():
+        file.unlink()
+    df = PandasTools.LoadSDF(str(sdf_file), molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
+    compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
+    used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
     for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting files'):
-        chunk = df[i:i+compounds_per_core]
+        chunk = df[i:i + compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
-        used_ids.update(set(chunk['ID'])) # add new 'ID' values to used_ids
-        PandasTools.WriteSDF(chunk, dir+f'/split_{sdf_file_name}/split_' + str(file_counter) + '.sdf', molColName='Molecule', idName='ID')
-        file_counter+=1
-    print(f'Split docking library into {file_counter-1} files each containing {compounds_per_core} compounds')
+        used_ids.update(set(chunk['ID']))  # add new 'ID' values to used_ids
+        output_file = split_files_folder / f'split_{file_counter}.sdf'
+        PandasTools.WriteSDF(chunk, str(output_file), molColName='Molecule', idName='ID')
+        file_counter += 1
+    print(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
 
 def split_sdf_single(dir, sdf_file):
-    sdf_file_name = os.path.basename(sdf_file).replace('.sdf', '')
+    sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
     print(f'Splitting SDF file {sdf_file_name}.sdf ...')
-    split_files_folder = dir+f'/split_{sdf_file_name}'
-    create_temp_folder(dir+f'/split_{sdf_file_name}', silent=True)
-    for file in os.listdir(dir+f'/split_{sdf_file_name}'):
-        os.unlink(os.path.join(dir+f'/split_{sdf_file_name}', file))
-    df = PandasTools.LoadSDF(sdf_file, molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
+    split_files_folder = Path(dir) / f'split_{sdf_file_name}'
+    split_files_folder.mkdir(exist_ok=True)
+    for file in split_files_folder.iterdir():
+        file.unlink()
+    df = PandasTools.LoadSDF(str(sdf_file), molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
     compounds_per_core = 1
     file_counter = 1
     for i in tqdm(range(0, len(df)), desc='Splitting files'):
-        chunk = df.iloc[i:i+compounds_per_core]
-        PandasTools.WriteSDF(chunk, dir+f'/split_{sdf_file_name}/split_' + str(file_counter) + '.sdf', molColName='Molecule', idName='ID')
-        file_counter+=1
-    print(f'Split SDF file into {file_counter-1} files each containing 1 compound')
+        chunk = df.iloc[i:i + compounds_per_core]
+        output_file = split_files_folder / f'split_{file_counter}.sdf'
+        PandasTools.WriteSDF(chunk, str(output_file), molColName='Molecule', idName='ID')
+        file_counter += 1
+    print(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
     return split_files_folder
+
 
 import pandas as pd
 
@@ -135,7 +135,7 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
         os.makedirs(output_dir)
 
     mol = openbabel.OBMol()
-    not_at_end = obConversion.ReadFile(mol, input_file)
+    not_at_end = obConversion.ReadFile(mol, str(input_file))
     molecules = []
 
     while not_at_end:
@@ -210,7 +210,7 @@ from subprocess import DEVNULL, STDOUT
 
 def convert_pdb_to_pdbqt(protein_file):
     # Define output file name
-    pdbqt_file = protein_file.replace('.pdb', '.pdbqt')
+    pdbqt_file = protein_file.with_suffix('.pdbqt')
 
     # Open Babel command
     obabel_command = f'obabel {protein_file} -O {pdbqt_file} -partialcharges Gasteiger -xr'
