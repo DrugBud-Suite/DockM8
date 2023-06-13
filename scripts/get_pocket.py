@@ -6,6 +6,7 @@ import copy
 from biopandas.pdb import PandasPdb
 from rdkit import Chem
 from rdkit.Chem import AllChem
+from pathlib import Path
 pd.options.mode.chained_assignment = None
 import warnings
 from scripts.utilities import *
@@ -51,13 +52,12 @@ def get_pocket(ligand_file, protein_file, radius):
     protein_file: format pdb
     """
     printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
-    ligand_mol = load_molecule(ligand_file)
-    pocket_mol,  temp_file = process_protein_and_ligand(protein_file, ligand_mol, radius)
-    pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
+    ligand_mol = load_molecule(str(ligand_file))
+    pocket_mol,  temp_file = process_protein_and_ligand(str(protein_file), ligand_mol, radius)
+    pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
     Chem.MolToPDBFile(pocket_mol, pocket_path)
     os.remove(temp_file)
     printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
-    
     ligu = get_ligand_coordinates(ligand_mol)
     center_x = ligu['x_coord'].mean().round(2)
     center_y = ligu['y_coord'].mean().round(2)
@@ -75,11 +75,11 @@ def get_pocket_RoG(ligand_file, protein_file):
     protein_file: format pdb
     """
     printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
-    ligand_mol = load_molecule(ligand_file)
+    ligand_mol = load_molecule(str(ligand_file))
     radius_of_gyration = Descriptors3D.RadiusOfGyration(ligand_mol)
     printlog(f'Radius of Gyration of reference ligand is: {radius_of_gyration}')
-    pocket_mol,  temp_file = process_protein_and_ligand(protein_file, ligand_mol, round(0.5*2.857*float(radius_of_gyration), 2))
-    pocket_path = protein_file.replace('.pdb', '_pocket.pdb')
+    pocket_mol,  temp_file = process_protein_and_ligand(str(protein_file), ligand_mol, round(0.5*2.857*float(radius_of_gyration), 2))
+    pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
     Chem.MolToPDBFile(pocket_mol, pocket_path)
     os.remove(temp_file)
     printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
