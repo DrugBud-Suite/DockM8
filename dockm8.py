@@ -45,7 +45,9 @@ def run_command(**kwargs):
     
     if os.path.isfile(kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')) == False:
         if kwargs.get('pocket') == 'reference':
-            pocket_definition = GetPocket(kwargs.get('reffile'), kwargs.get('proteinfile'), 8)
+            pocket_definition = get_pocket(kwargs.get('reffile'), kwargs.get('proteinfile'), 10)
+        if kwargs.get('pocket') == 'RoG':
+            pocket_definition = get_pocket_RoG(kwargs.get('reffile'), kwargs.get('proteinfile'))
         elif kwargs.get('pocket') == 'dogsitescorer':
             pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('proteinfile'), w_dir, method='volume')
             
@@ -55,7 +57,7 @@ def run_command(**kwargs):
     docking_programs = {'GNINA': w_dir+'/temp/gnina/', 'SMINA': w_dir+'/temp/smina/', 'PLANTS': w_dir+'/temp/plants/'}
     for program, file_path in docking_programs.items():
         if os.path.isdir(file_path) == False and program in kwargs.get('docking'):
-            docking(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
+            docking(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'), pocket_definition)
 
     for metric in kwargs.get('metric'):
         if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
@@ -70,7 +72,7 @@ def run_command(**kwargs):
             cluster(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'), all_poses, kwargs.get('ncpus'))
     
     for metric in kwargs.get('metric'):
-        rescore_all(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
+        rescore_all(w_dir, kwargs.get('proteinfile'), pocket_definition, kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
 
     calculate_EF_single_functions(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
     
