@@ -12,7 +12,7 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 `git clone https://gitlab.com/Tonylac77/DockM8.git` 
 
 3. Create and activate a DockM8 conda environment:  
-`conda create -n dockm8 python=3.8` OR `conda create -n dockm8 python=3.9`
+`conda create -n dockm8 python=3.8` OR `conda create -n dockm8 python=3.9`  
 `conda activate dockm8`  
 
 4. Install required packages using the following commands:  
