@@ -3,7 +3,7 @@
 **Workflow for Consensus Docking**  
 DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
-## Installation (Python 3.8 / Ubuntu 22.04)
+## Installation (tested on Python 3.8 and 3.9 / Ubuntu 22.04)
 <!-- markdown-link-check-disable-next-line -->
 
 1. Anaconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
@@ -12,11 +12,11 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 `git clone https://gitlab.com/Tonylac77/DockM8.git` 
 
 3. Create and activate a DockM8 conda environment:  
-`conda create -n dockm8 python=3.8`  
+`conda create -n dockm8 python=3.8` OR `conda create -n dockm8 python=3.9`
 `conda activate dockm8`  
 
 4. Install required packages using the following commands:  
-`conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs jupyter notebook seaborn xgboost -y`  
+`conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs seaborn xgboost -y`  
 `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline`  
 `pip install torch==1.9.1`  
 `pip install torch-scatter==2.1.0 torch-sparse==0.6.12 torch-spline-conv==1.2.1 torch-cluster==1.6.0 torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
