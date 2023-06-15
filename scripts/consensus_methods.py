@@ -9,41 +9,52 @@ from math import comb
 from concurrent.futures import ProcessPoolExecutor
 from joblib import Parallel, delayed
 
+
 def method1_ECR_best(df, clustering_metric, selected_columns):
     '''
     A method that calculates the ECR (Exponential Consensus Ranking) score for each ID in the rescored dataframe and returns the ID for the pose with the best ECR rank.
     '''
     sigma = 0.05 * len(df)
-    df = df.apply(lambda x: (np.exp(-(x/sigma))/sigma)*1000 if x.name in selected_columns else x)
+    df = df.apply(lambda x: (np.exp(-(x / sigma)) / sigma) *
+                  1000 if x.name in selected_columns else x)
     df[f'Method1_ECR_{clustering_metric}'] = df.sum(axis=1, numeric_only=True)
     df = df.drop(selected_columns, axis=1)
-    #Aggregate rows using best ECR per ID
-    df2 = df.sort_values(f'Method1_ECR_{clustering_metric}', ascending=False).drop_duplicates(['ID'])
+    # Aggregate rows using best ECR per ID
+    df2 = df.sort_values(
+        f'Method1_ECR_{clustering_metric}',
+        ascending=False).drop_duplicates(
+        ['ID'])
     return df2[['ID', f'Method1_ECR_{clustering_metric}']]
+
 
 def method2_ECR_average(df, clustering_metric, selected_columns):
     '''
     A method that calculates the ECR (Exponential Consensus Ranking) score for each ID in the rescored dataframe and returns the ID along with the average ECR rank accross the clustered poses.
     '''
     sigma = 0.05 * len(df)
-    df = df.apply(lambda x: (np.exp(-(x/sigma))/sigma)*1000 if x.name in selected_columns else x)
+    df = df.apply(lambda x: (np.exp(-(x / sigma)) / sigma) *
+                  1000 if x.name in selected_columns else x)
     df[f'Method2_ECR_{clustering_metric}'] = df.sum(axis=1, numeric_only=True)
     df = df.drop(selected_columns, axis=1)
-    #Aggregate rows using mean ECR per ID
+    # Aggregate rows using mean ECR per ID
     df2 = df.groupby('ID', as_index=False).mean(numeric_only=True)
     return df2[['ID', f'Method2_ECR_{clustering_metric}']]
+
 
 def method3_avg_ECR(df, clustering_metric, selected_columns):
     '''
     A method that first calculates the average ranks for each pose in filtered dataframe (by ID) then calculates the ECR (Exponential Consensus Ranking) for the averaged ranks.
     '''
-    #Aggregate rows using mean rank per ID
+    # Aggregate rows using mean rank per ID
     df = df.groupby('ID', as_index=False).mean(numeric_only=True).round(2)
-    df[selected_columns] = df[selected_columns].rank(method='average',ascending=1)
+    df[selected_columns] = df[selected_columns].rank(
+        method='average', ascending=1)
     sigma = 0.05 * len(df)
-    df[selected_columns] = df[selected_columns].apply(lambda x: (np.exp(-(x/sigma))/sigma)*1000)
+    df[selected_columns] = df[selected_columns].apply(
+        lambda x: (np.exp(-(x / sigma)) / sigma) * 1000)
     df[f'Method3_ECR_{clustering_metric}'] = df.sum(axis=1, numeric_only=True)
     return df[['ID', f'Method3_ECR_{clustering_metric}']]
+
 
 def method4_RbR(df, clustering_metric, selected_columns):
     '''
@@ -52,8 +63,9 @@ def method4_RbR(df, clustering_metric, selected_columns):
     df = df[['ID'] + selected_columns]
     df = df.groupby('ID', as_index=False).mean(numeric_only=True).round(2)
     df[f'Method4_RbR_{clustering_metric}'] = df[selected_columns].mean(axis=1)
-    
+
     return df[['ID', f'Method4_RbR_{clustering_metric}']]
+
 
 def method5_RbV(df, clustering_metric, selected_columns):
     '''
@@ -66,31 +78,38 @@ def method5_RbV(df, clustering_metric, selected_columns):
     df[f'Method5_RbV_{clustering_metric}'] = df.mean(axis=1, numeric_only=True)
     return df[['ID', f'Method5_RbV_{clustering_metric}']]
 
+
 def method6_Zscore_best(df, clustering_metric, selected_columns):
     '''
     Calculates the Z-score consensus scores for each row in the given DataFrame,
     and aggregates rows by selecting the pose with the best Z-score for each ID.
     '''
-    df[selected_columns] = df[selected_columns].apply(pd.to_numeric, errors='coerce')
-    z_scores = (df[selected_columns] - df[selected_columns].mean())/df[selected_columns].std()
+    df[selected_columns] = df[selected_columns].apply(
+        pd.to_numeric, errors='coerce')
+    z_scores = (df[selected_columns] - df[selected_columns].mean()
+                ) / df[selected_columns].std()
     consensus_scores = z_scores.mean(axis=1)
     df[f'Method6_Zscore_{clustering_metric}'] = consensus_scores
-    #Aggregate rows using best Z-score per ID
-    df = df.sort_values(f'Method6_Zscore_{clustering_metric}', ascending=False).drop_duplicates(['ID'])
+    # Aggregate rows using best Z-score per ID
+    df = df.sort_values(
+        f'Method6_Zscore_{clustering_metric}',
+        ascending=False).drop_duplicates(
+        ['ID'])
     df.set_index('ID')
     return df[['ID', f'Method6_Zscore_{clustering_metric}']]
+
 
 def method7_Zscore_avg(df, clustering_metric, selected_columns):
     '''
     Calculates the Z-score consensus scores for each row in the given DataFrame,
     and aggregates rows by averaging the Z-score for each ID.
     '''
-    df[selected_columns] = df[selected_columns].apply(pd.to_numeric, errors='coerce')
-    z_scores = (df[selected_columns] - df[selected_columns].mean())/df[selected_columns].std()
+    df[selected_columns] = df[selected_columns].apply(
+        pd.to_numeric, errors='coerce')
+    z_scores = (df[selected_columns] - df[selected_columns].mean()
+                ) / df[selected_columns].std()
     consensus_scores = z_scores.mean(axis=1)
     df[f'Method7_Zscore_{clustering_metric}'] = consensus_scores
-    #Aggregate rows using avg Z-score per ID
+    # Aggregate rows using avg Z-score per ID
     df = df.groupby('ID', as_index=False).mean(numeric_only=True)
     return df[['ID', f'Method7_Zscore_{clustering_metric}']]
-
-
