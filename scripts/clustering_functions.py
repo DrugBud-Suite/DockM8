@@ -94,7 +94,8 @@ def metric_calculation_failure_handling(x, y, metric, protein_file):
         'SPLIF': SPLIF_calc,
         '3DScore': '3DScore',
         'bestpose': 'bestpose',
-        'symmRMSD': symmRMSD_calc}
+        'symmRMSD': symmRMSD_calc
+    }
     if metric == 'spyRMSD':
         try:
             return metrics[metric](x, y, protein_file)
@@ -109,8 +110,10 @@ def metric_calculation_failure_handling(x, y, metric, protein_file):
 
 
 def matrix_calculation_and_clustering(metric, method, df, protein_file):
-    methods = {'KMedoids': kmedoids_S_clustering,
-               'AffProp': affinity_propagation_clustering}
+    methods = {
+        'KMedoids': kmedoids_S_clustering,
+        'AffProp': affinity_propagation_clustering
+        }
 
     subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
     indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
@@ -120,8 +123,8 @@ def matrix_calculation_and_clustering(metric, method, df, protein_file):
     results = vectorized_calc_vec(
         subsets[:, 0], subsets[:, 1], metric if metric != '3DScore' else 'spyRMSD', protein_file)
 
-    i, j = np.array([indices[x] for x in subsets[:, 0]]), np.array(
-        [indices[y] for y in subsets[:, 1]])
+    i = np.array([indices[x] for x in subsets[:, 0]])
+    j = np.array([indices[y] for y in subsets[:, 1]])
 
     matrix = np.zeros((len(df), len(df)))
     matrix[i, j] = results
@@ -201,11 +204,13 @@ def cluster(metric, method, w_dir, protein_file, all_poses, ncpus):
                 clustered_poses = pd.concat(clustered_dataframes)
             else:
                 clustered_poses = matrix_calculation_and_clustering(
-                    metric, method, all_poses, id_list, protein_file)
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(
-            str).replace('[()\',]', '', regex=True)
+                    metric, method, all_poses, id_list, protein_file
+                    )
+
+        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]', '', regex=True)
         clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
         clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
+
         PandasTools.WriteSDF(
             clustered_poses,
             str(cluster_file),
