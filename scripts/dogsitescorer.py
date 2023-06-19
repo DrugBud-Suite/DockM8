@@ -14,16 +14,20 @@ The function `select_best_pocket` is also defined which provides
 several methods for selecting the most suitable binding site.
 """
 
-import io  # for creating file-like objects from strings (needed as input for some functions)
+# for creating file-like objects from strings (needed as input for some
+# functions)
+import io
 import gzip  # for decompressing .gz files downloaded from DoGSiteScorer
-import time  # for creating pauses during runtime (e.g. to wait for the response of API requests)
-from pathlib import Path # for handling local paths
-import re # for filtering floats from a list of strings
+# for creating pauses during runtime (e.g. to wait for the response of API
+# requests)
+import time
+from pathlib import Path  # for handling local paths
+import re  # for filtering floats from a list of strings
 
 import requests  # for communicating with web-service APIs
 import pandas as pd  # for creating dataframes and handling data
 from biopandas.pdb import PandasPdb  # for working with PDB files
-import redo # for retrying API queries if they fail
+import redo  # for retrying API queries if they fail
 import os
 from scripts.utilities import *
 from pathlib import Path
@@ -66,17 +70,18 @@ class APIConsts:
             "pockets_ccp4_files": "pockets",
         }
 
+
 @redo.retriable(attempts=30, sleeptime=1, sleepscale=1.1, max_sleeptime=20)
 def _send_request_get_results(
-    request_type, 
-    keys_list, 
-    url, 
-    task="Fetching results from DoGSiteScorer API", 
+    request_type,
+    keys_list,
+    url,
+    task="Fetching results from DoGSiteScorer API",
     **kwargs
 ):
     '''
     Send a request and get the keyword values from json response.
-    
+
     Parameters
     ----------
     request_type : str
@@ -91,29 +96,30 @@ def _send_request_get_results(
         Optional; default : "Fetching results from DoGSiteScorer API"
     **kwargs
         Additional arguments to send with the request.
-    
+
     Returns
     -------
     list
-        List of values in the json response corresponding to the input list of keys. 
+        List of values in the json response corresponding to the input list of keys.
     '''
-    
+
     request_function = getattr(requests, request_type)
     response = request_function(url, **kwargs)
     response.raise_for_status()
     response_values = response.json()
-    results=[]
+    results = []
     for key in keys_list:
         try:
             results.append(response_values[key])
         except KeyError:
             raise ValueError(
                 f"{task} failed.\n"
-                +f"Expected key {key} not found in the response.\n"
-                +f"The response message is as follows: {response_values}"
+                + f"Expected key {key} not found in the response.\n"
+                + f"The response message is as follows: {response_values}"
             )
     return results
-    
+
+
 def upload_pdb_file(filepath):
     """
     Upload a PDB file to the DoGSiteScorer webserver using their API
@@ -136,16 +142,17 @@ def upload_pdb_file(filepath):
         url_of_id = _send_request_get_results(
             "post",
             [APIConsts.FileUpload.RESPONSE_MSG["url_of_id"]],
-            APIConsts.FileUpload.URL, 
+            APIConsts.FileUpload.URL,
             files={APIConsts.FileUpload.REQUEST_MSG: f}
         )[0]
-    
+
     protein_id = _send_request_get_results(
         "get",
         [APIConsts.FileUpload.RESPONSE_MSG_FETCH_ID["id"]],
         url_of_id
     )[0]
     return protein_id
+
 
 def get_dogsitescorer_metadata(job_location, attempts=30):
     """
@@ -184,9 +191,26 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
     # We cannot load the table from a string directly but from a file
     # Use io.StringIO to wrap this string as file-like object as needed for read_csv method
     # See more: https://docs.python.org/3/library/io.html#io.StringIO
-    result_table_df = pd.read_csv(io.StringIO(result_table), sep="\t").set_index("name")
-    result_table_df = result_table_df[["lig_cov","poc_cov","lig_name","volume","enclosure","surface","depth","surf/vol","accept","donor","hydrophobic_interactions","hydrophobicity","metal","simpleScore","drugScore"]]
+    result_table_df = pd.read_csv(
+        io.StringIO(result_table),
+        sep="\t").set_index("name")
+    result_table_df = result_table_df[["lig_cov",
+                                       "poc_cov",
+                                       "lig_name",
+                                       "volume",
+                                       "enclosure",
+                                       "surface",
+                                       "depth",
+                                       "surf/vol",
+                                       "accept",
+                                       "donor",
+                                       "hydrophobic_interactions",
+                                       "hydrophobicity",
+                                       "metal",
+                                       "simpleScore",
+                                       "drugScore"]]
     return result_table_df
+
 
 def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
     """
@@ -225,25 +249,29 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
                 "chain": chain_id,  # if chain is specified, calculation is only performed on this chain
             }
         },
-        headers={"Content-type": "application/json", "Accept": "application/json"},
+        headers={
+            "Content-type": "application/json",
+            "Accept": "application/json"},
     )
 
     r.raise_for_status()
 
     return r.json()["location"]
 
+
 def sort_binding_sites(dataframe, method):
     if method == 'drugScore':
         printlog('Sorting binding sites by drug score')
-        dataframe=dataframe.sort_values(by=["drugScore"], ascending=False)
+        dataframe = dataframe.sort_values(by=["drugScore"], ascending=False)
     elif method == 'volume':
         printlog('Sorting binding sites by volume')
-        dataframe=dataframe.sort_values(by=["volume"], ascending=False)
+        dataframe = dataframe.sort_values(by=["volume"], ascending=False)
     else:
         printlog('Sorting binding sites by {}'.format(method))
-        dataframe=dataframe.sort_values(by=method, ascending=False)
+        dataframe = dataframe.sort_values(by=method, ascending=False)
     best_pocket_name = dataframe.iloc[0, :].name
     return best_pocket_name
+
 
 def get_url_for_pockets(job_location, file_type="pdb"):
     """
@@ -274,7 +302,8 @@ def get_url_for_pockets(job_location, file_type="pdb"):
         return result.json()["pockets"]
     else:
         raise ValueError(f"File type {file_type} not available.")
-    
+
+
 def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
     """
     Get the selected binding site file location.
@@ -315,6 +344,7 @@ def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
 
     return result[0]
 
+
 def save_binding_site_to_file(pdbpath, binding_site_url, output_path):
     """
     Download and save the PDB and CCP4 files corresponding to the calculated binding sites.
@@ -334,6 +364,7 @@ def save_binding_site_to_file(pdbpath, binding_site_url, output_path):
     with open(Path(output_path) / file_name, "wb") as f:
         f.write(response_file_content)
     return
+
 
 def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     """
@@ -362,19 +393,22 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     print(pocket_coordinates_data)
     coordinates_data_as_list = pocket_coordinates_data.split()
     # select strings representing floats from a list of strings
-    coordinates = [float(element) for element in coordinates_data_as_list if re.compile(r'\d+(?:\.\d*)').match(element)]
+    coordinates = [float(element) for element in coordinates_data_as_list if re.compile(
+        r'\d+(?:\.\d*)').match(element)]
     pocket_coordinates = {
         "center": coordinates[:3],
         "size": [coordinates[-1] * 2 for dim in range(3)],
     }
     return pocket_coordinates
 
+
 def binding_site_coordinates_dogsitescorer(pdbpath, w_dir, method='volume'):
-    pdb_upload=upload_pdb_file(str(pdbpath))
+    pdb_upload = upload_pdb_file(str(pdbpath))
     job_location = submit_dogsitescorer_job_with_pdbid(pdb_upload, 'A', '')
     binding_site_df = get_dogsitescorer_metadata(job_location)
     best_binding_site = sort_binding_sites(binding_site_df, method)
     pocket = get_selected_pocket_location(job_location, best_binding_site)
     save_binding_site_to_file(str(pdbpath), pocket, w_dir)
-    pocket_coordinates=calculate_pocket_coordinates_from_pocket_pdb_file(str(pdbpath).replace('.pdb', '_pocket.pdb'))
+    pocket_coordinates = calculate_pocket_coordinates_from_pocket_pdb_file(
+        str(pdbpath).replace('.pdb', '_pocket.pdb'))
     return pocket_coordinates

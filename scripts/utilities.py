@@ -1,3 +1,15 @@
+import subprocess
+from rdkit import Chem
+from meeko import MoleculePreparation
+import openbabel
+import datetime
+from subprocess import DEVNULL, STDOUT
+from rdkit.Chem import AllChem
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 import os
 import math
 from pathlib import Path
@@ -5,11 +17,12 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
 import math
-        
+
 from pathlib import Path
 import math
 from tqdm import tqdm
 from rdkit.Chem import PandasTools
+
 
 def split_sdf(dir, sdf_file, ncpus):
     sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
@@ -18,19 +31,34 @@ def split_sdf(dir, sdf_file, ncpus):
     split_files_folder.mkdir(parents=True, exist_ok=True)
     for file in split_files_folder.iterdir():
         file.unlink()
-    df = PandasTools.LoadSDF(str(sdf_file), molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
+    df = PandasTools.LoadSDF(
+        str(sdf_file),
+        molColName='Molecule',
+        idName='ID',
+        includeFingerprints=False,
+        strictParsing=True)
     compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
-    for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting files'):
+    for i in tqdm(
+            range(
+                0,
+                len(df),
+                compounds_per_core),
+            desc='Splitting files'):
         chunk = df[i:i + compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
         used_ids.update(set(chunk['ID']))  # add new 'ID' values to used_ids
         output_file = split_files_folder / f'split_{file_counter}.sdf'
-        PandasTools.WriteSDF(chunk, str(output_file), molColName='Molecule', idName='ID')
+        PandasTools.WriteSDF(
+            chunk,
+            str(output_file),
+            molColName='Molecule',
+            idName='ID')
         file_counter += 1
-    print(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
+    print(
+        f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
 
@@ -41,19 +69,27 @@ def split_sdf_single(dir, sdf_file):
     split_files_folder.mkdir(exist_ok=True)
     for file in split_files_folder.iterdir():
         file.unlink()
-    df = PandasTools.LoadSDF(str(sdf_file), molColName='Molecule', idName='ID', includeFingerprints=False, strictParsing=True)
+    df = PandasTools.LoadSDF(
+        str(sdf_file),
+        molColName='Molecule',
+        idName='ID',
+        includeFingerprints=False,
+        strictParsing=True)
     compounds_per_core = 1
     file_counter = 1
     for i in tqdm(range(0, len(df)), desc='Splitting files'):
         chunk = df.iloc[i:i + compounds_per_core]
         output_file = split_files_folder / f'split_{file_counter}.sdf'
-        PandasTools.WriteSDF(chunk, str(output_file), molColName='Molecule', idName='ID')
+        PandasTools.WriteSDF(
+            chunk,
+            str(output_file),
+            molColName='Molecule',
+            idName='ID')
         file_counter += 1
-    print(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
+    print(
+        f'Split SDF file into {file_counter - 1} files each containing 1 compound')
     return split_files_folder
 
-
-import pandas as pd
 
 def Insert_row(row_number, df, row_value):
     start_index = 0
@@ -64,23 +100,19 @@ def Insert_row(row_number, df, row_value):
     upper_half = [*range(start_index, last_index, 1)]
     lower_half = [*range(start_lower, last_lower, 1)]
     # Increment the value of lower half by 1
-    lower_half = [x.__add__(1) for x in lower_half]  
+    lower_half = [x.__add__(1) for x in lower_half]
     # Combine the two lists
     index_ = upper_half + lower_half
     # Update the index of the dataframe
     df.index = index_
     # Insert a row at the end
-    df.loc[row_number] = row_value      
+    df.loc[row_number] = row_value
     # Sort the index labels
     df = df.sort_index()
     return df
 
-import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
 
-def show_correlation(input, annotation = bool()):
+def show_correlation(input, annotation=bool()):
     if isinstance(input, pd.DataFrame):
         dataframe = input
     elif input.endswith('.sdf'):
@@ -90,27 +122,36 @@ def show_correlation(input, annotation = bool()):
     dataframe = dataframe.drop('Pose ID')
     matrix = dataframe.corr().round(2)
     mask = np.triu(np.ones_like(matrix, dtype=bool))
-    fig, ax = plt.subplots(figsize=(10,10))  
-    sns.heatmap(matrix, mask = mask, annot=annotation, vmax=1, vmin=-1, center=0, linewidths=.5, cmap='coolwarm', ax=ax)
+    fig, ax = plt.subplots(figsize=(10, 10))
+    sns.heatmap(
+        matrix,
+        mask=mask,
+        annot=annotation,
+        vmax=1,
+        vmin=-1,
+        center=0,
+        linewidths=.5,
+        cmap='coolwarm',
+        ax=ax)
     plt.show()
 
-import datetime
 
 def printlog(message):
     def timestamp_generator():
         dateTimeObj = datetime.datetime.now()
-        return "["+dateTimeObj.strftime("%Y-%b-%d %H:%M:%S")+"]"
+        return "[" + dateTimeObj.strftime("%Y-%b-%d %H:%M:%S") + "]"
     timestamp = timestamp_generator()
     msg = "\n" + \
         str(timestamp) + \
-        ": "+str(message)
+        ": " + str(message)
     print(msg)
-    log_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../log.txt')
+    log_file_path = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)),
+        '../log.txt')
     with open(log_file_path, 'a') as f_out:
         f_out.write(msg)
 
-import openbabel
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
     def convert_molecule(mol, output_dir):
@@ -124,7 +165,9 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
         if not mol_name:
             mol_name = f"molecule_{mol.GetIdx()}"
 
-        valid_filename = "".join(c for c in mol_name if c.isalnum() or c in (' ','.','_')).rstrip()
+        valid_filename = "".join(
+            c for c in mol_name if c.isalnum() or c in (
+                ' ', '.', '_')).rstrip()
         output_file = os.path.join(output_dir, f"{valid_filename}.pdbqt")
         obConversion.WriteFile(mol, output_file)
 
@@ -144,13 +187,16 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
 
     try:
         with ThreadPoolExecutor(max_workers=ncpus) as executor:
-            tasks = [executor.submit(convert_molecule, m, output_dir) for m in molecules]
+            tasks = [
+                executor.submit(
+                    convert_molecule,
+                    m,
+                    output_dir) for m in molecules]
             _ = [t.result() for t in tasks]
     except Exception as e:
         print(f"ERROR: Could note convert SDF file to .pdbqt: {e}")
     return len(molecules)
 
-from meeko import MoleculePreparation
 
 def meeko_to_pdbqt(sdf_path, output_dir):
     for mol in Chem.SDMolSupplier(sdf_path, removeHs=False):
@@ -158,7 +204,7 @@ def meeko_to_pdbqt(sdf_path, output_dir):
         mol = Chem.AddHs(mol)
         preparator.prepare(mol)
         pdbqt_string = preparator.write_pdbqt_string()
-        
+
         # Extract the molecule name from the SDF file
         mol_name = mol.GetProp('_Name')
 
@@ -168,10 +214,8 @@ def meeko_to_pdbqt(sdf_path, output_dir):
         # Write the pdbqt string to the file
         with open(output_path, 'w') as f:
             f.write(pdbqt_string)
-    
-from rdkit import Chem
-from rdkit.Chem import AllChem
-    
+
+
 def load_molecule(molecule_file):
     """Load a molecule from a file.
     Parameters
@@ -185,11 +229,16 @@ def load_molecule(molecule_file):
         RDKit molecule instance for the loaded molecule.
     """
     if molecule_file.endswith('.mol2'):
-        mol = Chem.MolFromMol2File(molecule_file, sanitize=False, removeHs=False)
+        mol = Chem.MolFromMol2File(
+            molecule_file, sanitize=False, removeHs=False)
     if molecule_file.endswith('.mol'):
-        mol = Chem.MolFromMolFile(molecule_file, sanitize=False, removeHs=False)
+        mol = Chem.MolFromMolFile(
+            molecule_file,
+            sanitize=False,
+            removeHs=False)
     elif molecule_file.endswith('.sdf'):
-        supplier = Chem.SDMolSupplier(molecule_file, sanitize=False, removeHs=False)
+        supplier = Chem.SDMolSupplier(
+            molecule_file, sanitize=False, removeHs=False)
         mol = supplier[0]
     elif molecule_file.endswith('.pdbqt'):
         with open(molecule_file) as f:
@@ -199,14 +248,16 @@ def load_molecule(molecule_file):
             pdb_block += '{}\n'.format(line[:66])
         mol = Chem.MolFromPDBBlock(pdb_block, sanitize=False, removeHs=False)
     elif molecule_file.endswith('.pdb'):
-        mol = Chem.MolFromPDBFile(molecule_file, sanitize=False, removeHs=False)
+        mol = Chem.MolFromPDBFile(
+            molecule_file,
+            sanitize=False,
+            removeHs=False)
     else:
-        return ValueError(f'Expect the format of the molecule_file to be '
-                          'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
+        return ValueError(
+            f'Expect the format of the molecule_file to be '
+            'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
     return mol
 
-import subprocess
-from subprocess import DEVNULL, STDOUT
 
 def convert_pdb_to_pdbqt(protein_file):
     # Define output file name
@@ -217,7 +268,11 @@ def convert_pdb_to_pdbqt(protein_file):
 
     # Execute command
     try:
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(
+            obabel_command,
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT)
     except Exception as e:
         print(f'Conversion from PDB to PDBQT failed: {e}')
 
