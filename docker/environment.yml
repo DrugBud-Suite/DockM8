@@ -1,11 +1,9 @@
-name: base
+name: dockm8
 channels:
   - conda-forge
-  - default
-  - pytorch
+  - defaults
 dependencies:
-  - pytorch==1.9.1
-  - python=3.8
+  - python=3.9.16
   - tqdm
   - biopandas
   - redo
@@ -20,7 +18,6 @@ dependencies:
   - kneed
   - scikit-learn-extra
   - cairosvg
-
   - svgutils
   - molvs
   - jupyter
@@ -35,7 +32,16 @@ dependencies:
   - pip:
     - pathlib
     - meeko
+    - chembl_webresource_client 
+    - molvs
     - git+https://github.com/mayrf/pkasolver.git
     - dgl
     - espsim
-    - torch-geometric==2.0.1
+
+
+
+     
+     
+
+     
+     
