@@ -41,8 +41,8 @@ if any(metric in args.clustering for metric in ['RMSD', 'spyRMSD', 'espsim', 'US
 def run_command(**kwargs):
     w_dir = os.path.dirname(kwargs.get('proteinfile'))
     print('The working directory has been set to:', w_dir)
-    create_temp_folder(w_dir+'/temp')
-    
+    (Path(w_dir)/'temp').mkdir(exist_ok=True)
+
     if os.path.isfile(kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')) == False:
         if kwargs.get('pocket') == 'reference':
             pocket_definition = get_pocket(kwargs.get('reffile'), kwargs.get('proteinfile'), 10)
@@ -50,15 +50,20 @@ def run_command(**kwargs):
             pocket_definition = get_pocket_RoG(kwargs.get('reffile'), kwargs.get('proteinfile'))
         elif kwargs.get('pocket') == 'dogsitescorer':
             pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('proteinfile'), w_dir, method='volume')
-            
+            print(pocket_definition)
+    else:
+        pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')))
+
     if os.path.isfile(w_dir+'/temp/final_library.sdf') == False:
         prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('software'), kwargs.get('protonation'), kwargs.get('ncpus'))
 
     docking_programs = {'GNINA': w_dir+'/temp/gnina/', 'SMINA': w_dir+'/temp/smina/', 'PLANTS': w_dir+'/temp/plants/'}
     for program, file_path in docking_programs.items():
-        if os.path.isdir(file_path) == False and program in kwargs.get('docking'):
-            docking(w_dir, kwargs.get('proteinfile'), kwargs.get('reffile'), kwargs.get('software'), [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'), pocket_definition)
+        if program in kwargs.get('docking'):
+            docking(Path(w_dir), kwargs.get('proteinfile'), pocket_definition, kwargs.get('software'), [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
 
+    concat_all_poses(w_dir, docking_programs)
+    
     for metric in kwargs.get('metric'):
         if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
             print('Loading all poses SDF file...')
