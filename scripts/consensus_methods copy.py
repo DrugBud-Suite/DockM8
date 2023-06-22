@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import functools
-from scripts.utilities import create_temp_folder
 import itertools
 from tqdm import tqdm
 from scripts.utilities import *

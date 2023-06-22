@@ -49,8 +49,7 @@ def qvinaw_docking(
             desc='Docking with QVINAW',
             total=len(pdbqt_files)):
         qvinaw_cmd = (
-            f"cd {software}" +
-            " && ./qvina-w" +
+            f"./{software}qvina-w" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
@@ -168,8 +167,7 @@ def qvina2_docking(
             desc='Docking with QVINA2',
             total=len(pdbqt_files)):
         qvina2_cmd = (
-            f"cd {software}" +
-            " && ./qvina2.1" +
+            f"./{software}qvina2.1" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
@@ -281,8 +279,7 @@ def smina_docking(
     results_path = smina_folder / 'docked.sdf'
     log = smina_folder / 'log.txt'
     smina_cmd = (
-        f"cd {software}" +
-        " && ./gnina" +
+         " ./{software}gnina" +
         f" --receptor {protein_file}" +
         f" --ligand {library}" +
         f" --out {results_path}" +
@@ -376,8 +373,7 @@ def gnina_docking(
     results_path = gnina_folder / 'docked.sdf'
     log = gnina_folder / 'log.txt'
     gnina_cmd = (
-        f"cd {software}" +
-        " && ./gnina" +
+        f"./{software}gnina" +
         f" --receptor {protein_file}" +
         f" --ligand {library}" +
         f" --out {results_path}" +
@@ -443,7 +439,11 @@ def gnina_docking(
     return str(gnina_folder / 'gnina_poses.sdf')
 
 
-def plants_docking(protein_file, pocket_definition, software, n_poses):
+def plants_docking(
+        protein_file, 
+        pocket_definition, 
+        software, 
+        n_poses):
     '''
     Perform docking using the PLANTS software on a protein and a reference ligand, and return the path to the results.
 
@@ -540,8 +540,7 @@ def plants_docking(protein_file, pocket_definition, software, n_poses):
     # Run PLANTS docking
     try:
         printlog('Starting PLANTS docking...')
-        plants_docking_command = 'cd ' + \
-            str(software) + ' && ./PLANTS --mode screen ' + str(plants_docking_config_path)
+        plants_docking_command = f' ./{software}PLANTS --mode screen ' + str(plants_docking_config_path)
         subprocess.call(
             plants_docking_command,
             shell=True,
@@ -659,97 +658,9 @@ def docking(
                 n_poses)
         toc = time.perf_counter()
         printlog(f'Finished docking in {toc-tic:0.4f}!')
-        # Load all poses
-        if (w_dir / 'temp' / 'allposes.sdf').is_file() == False:
-            try:
-                all_poses_list = []
-                if 'GNINA' in docking_programs and (
-                        w_dir / 'temp' / 'gnina').is_dir():
-                    gnina_df = PandasTools.LoadSDF(
-                        str(
-                            w_dir /
-                            'temp' /
-                            'gnina' /
-                            'gnina_poses.sdf'),
-                        idName='Pose ID',
-                        molColName='Molecule',
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
-                        strictParsing=True)
-                    all_poses_list.append(gnina_df)
-                if 'SMINA' in docking_programs and (
-                        w_dir / 'temp' / 'smina').is_dir():
-                    smina_df = PandasTools.LoadSDF(
-                        str(
-                            w_dir /
-                            'temp' /
-                            'smina' /
-                            'smina_poses.sdf'),
-                        idName='Pose ID',
-                        molColName='Molecule',
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
-                        strictParsing=True)
-                    all_poses_list.append(smina_df)
-                if 'PLANTS' in docking_programs and (
-                        w_dir / 'temp' / 'plants').is_dir():
-                    plants_df = PandasTools.LoadSDF(
-                        str(
-                            w_dir /
-                            'temp' /
-                            'plants' /
-                            'plants_poses.sdf'),
-                        idName='Pose ID',
-                        molColName='Molecule',
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
-                        strictParsing=True)
-                    all_poses_list.append(plants_df)
-                if 'QVINAW' in docking_programs and (
-                        w_dir / 'temp' / 'qvinaw').is_dir():
-                    qvinaw_df = PandasTools.LoadSDF(
-                        str(
-                            w_dir /
-                            'temp' /
-                            'qvinaw' /
-                            'qvinaw_poses.sdf'),
-                        idName='Pose ID',
-                        molColName='Molecule',
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
-                        strictParsing=True)
-                    all_poses_list.append(qvinaw_df)
-                if 'QVINA2' in docking_programs and (
-                        w_dir / 'temp' / 'qvina2').is_dir():
-                    qvina2_df = PandasTools.LoadSDF(
-                        str(
-                            w_dir /
-                            'temp' /
-                            'qvina2' /
-                            'qvina2_poses.sdf'),
-                        idName='Pose ID',
-                        molColName='Molecule',
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
-                        strictParsing=True)
-                    all_poses_list.append(qvina2_df)
-                all_poses = pd.concat(all_poses_list)
-                PandasTools.WriteSDF(all_poses,
-                                     str(w_dir / 'temp' / 'allposes.sdf'),
-                                     molColName='Molecule',
-                                     idName='Pose ID',
-                                     properties=list(all_poses.columns))
-            except Exception as e:
-                printlog('ERROR: Failed to combine all poses!')
-                printlog(e)
-        else:
-            pass
+        
     else:
+
         split_final_library_path = w_dir / 'temp' / 'split_final_library'
         if not split_final_library_path.is_dir():
             split_files_folder = split_sdf(
@@ -786,9 +697,7 @@ def docking(
                         obabel_command = f'obabel -isdf {split_files_folder}/{file} -O {w_dir / "temp" / "plants"}/{Path(file).stem}.mol2'
                         subprocess.call(
                             obabel_command,
-                            shell=True,
-                            stdout=DEVNULL,
-                            stderr=STDOUT)
+                            shell=True)
                     except Exception as e:
                         printlog(f'ERROR: Failed to convert {file} to .mol2!')
                         printlog(e)
@@ -1241,121 +1150,9 @@ def docking(
                         os.remove(w_dir / 'temp' / 'qvina2' / file)
         # Load all poses
         printlog('Combining all poses...')
-        all_poses = pd.DataFrame()
 
-        if 'GNINA' in docking_programs and (
-                w_dir / 'temp' / 'gnina' / 'gnina_poses.sdf').is_file():
-            try:
-                gnina_df = PandasTools.LoadSDF(
-                    str(
-                        w_dir /
-                        'temp' /
-                        'gnina' /
-                        'gnina_poses.sdf'),
-                    idName='Pose ID',
-                    molColName='Molecule',
-                    includeFingerprints=False,
-                    embedProps=False,
-                    removeHs=False,
-                    strictParsing=True)
-                all_poses = pd.concat([all_poses, gnina_df])
-            except Exception as e:
-                printlog('ERROR: Failed to load GNINA poses for combining!')
-                printlog(e)
-
-        if 'SMINA' in docking_programs and (
-                w_dir / 'temp' / 'smina' / 'smina_poses.sdf').is_file():
-            try:
-                smina_df = PandasTools.LoadSDF(
-                    str(
-                        w_dir /
-                        'temp' /
-                        'smina' /
-                        'smina_poses.sdf'),
-                    idName='Pose ID',
-                    molColName='Molecule',
-                    includeFingerprints=False,
-                    embedProps=False,
-                    removeHs=False,
-                    strictParsing=True)
-                all_poses = pd.concat([all_poses, smina_df])
-            except Exception as e:
-                printlog('ERROR: Failed to load SMINA poses for combining!')
-                printlog(e)
-
-        if 'PLANTS' in docking_programs and (
-                w_dir / 'temp' / 'plants' / 'plants_poses.sdf').is_file():
-            try:
-                plants_df = PandasTools.LoadSDF(
-                    str(
-                        w_dir /
-                        'temp' /
-                        'plants' /
-                        'plants_poses.sdf'),
-                    idName='Pose ID',
-                    molColName='Molecule',
-                    includeFingerprints=False,
-                    embedProps=False,
-                    removeHs=False,
-                    strictParsing=True)
-                all_poses = pd.concat([all_poses, plants_df])
-            except Exception as e:
-                printlog('ERROR: Failed to load PLANTS poses for combining!')
-                printlog(e)
-
-        if 'QVINAW' in docking_programs and (
-                w_dir / 'temp' / 'qvinaw' / 'qvinaw_poses.sdf').is_file():
-            try:
-                qvinaw_df = PandasTools.LoadSDF(
-                    str(
-                        w_dir /
-                        'temp' /
-                        'qvinaw' /
-                        'qvinaw_poses.sdf'),
-                    idName='Pose ID',
-                    molColName='Molecule',
-                    includeFingerprints=False,
-                    embedProps=False,
-                    removeHs=False,
-                    strictParsing=True)
-                all_poses = pd.concat([all_poses, qvinaw_df])
-            except Exception as e:
-                printlog('ERROR: Failed to load QVINAW poses for combining!')
-                printlog(e)
-
-        if 'QVINA2' in docking_programs and (
-                w_dir / 'temp' / 'qvina2' / 'qvina2_poses.sdf').is_file():
-            try:
-                qvina2_df = PandasTools.LoadSDF(
-                    str(
-                        w_dir /
-                        'temp' /
-                        'qvina2' /
-                        'qvina2_poses.sdf'),
-                    idName='Pose ID',
-                    molColName='Molecule',
-                    includeFingerprints=False,
-                    embedProps=False,
-                    removeHs=False,
-                    strictParsing=True)
-                all_poses = pd.concat([all_poses, qvina2_df])
-            except Exception as e:
-                printlog('ERROR: Failed to load QVINA2 poses for combining!')
-                printlog(e)
-        try:
-            PandasTools.WriteSDF(all_poses,
-                                 str(w_dir / 'temp' / 'allposes.sdf'),
-                                 molColName='Molecule',
-                                 idName='Pose ID',
-                                 properties=list(all_poses.columns))
-            printlog('All poses succesfully combined!')
-        except Exception as e:
-            printlog('ERROR: Failed to write all_poses SDF file!')
-            printlog(e)
-        else:
-            shutil.rmtree(os.path.join(split_files_folder), ignore_errors=True)
     return
-
+    
 
 def smina_docking_splitted(
         split_file,
@@ -1370,8 +1167,7 @@ def smina_docking_splitted(
     results_path = smina_folder / \
         f"{os.path.basename(split_file).split('.')[0]}_smina.sdf"
     smina_cmd = (
-        f'cd {software}' +
-        ' && ./gnina' +
+        ' ./{software}gnina' +
         f' --receptor {protein_file}' +
         f' --ligand {split_file}' +
         f' --out {results_path}' +
@@ -1406,8 +1202,7 @@ def gnina_docking_splitted(
     results_path = gnina_folder / \
         f"{os.path.basename(split_file).split('.')[0]}_gnina.sdf"
     gnina_cmd = (
-        f"cd {software}" +
-        " && ./gnina" +
+        " ./{software}gnina" +
         f" --receptor {protein_file}" +
         f" --ligand {split_file}" +
         f" --out {results_path}" +
@@ -1422,8 +1217,12 @@ def gnina_docking_splitted(
         f" --num_modes {n_poses}" +
         " --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu"
     )
+
     try:
-        subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(gnina_cmd, 
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT)
     except Exception as e:
         printlog(f"GNINA docking failed: {e}")
     return
@@ -1489,13 +1288,10 @@ def plants_docking_splitted(
         configwriter.writelines(plants_config)
     # Run PLANTS docking
     try:
-        plants_docking_command = 'cd ' + \
-            str(software) + ' && ./PLANTS --mode screen ' + str(plants_docking_config_path)
+        plants_docking_command = ' ./{software}PLANTS --mode screen ' + str(plants_docking_config_path)
         subprocess.call(
             plants_docking_command,
-            shell=True,
-            stdout=DEVNULL,
-            stderr=STDOUT)
+            shell=True)
     except Exception as e:
         printlog('ERROR: PLANTS docking command failed...')
         printlog(e)
@@ -1526,8 +1322,7 @@ def qvinaw_docking_splitted(
 
     for pdbqt_file in pdbqt_files:
         qvina_cmd = (
-            f"cd {software}" +
-            " && ./qvina-w" +
+            f" ./{software}qvina-w" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
@@ -1638,8 +1433,7 @@ def qvina2_docking_splitted(
 
     for pdbqt_file in pdbqt_files:
         qvina_cmd = (
-            f"cd {software}" +
-            " && ./qvina2.1" +
+            f" ./{software}qvina2.1" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
