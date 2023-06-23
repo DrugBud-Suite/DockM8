@@ -105,7 +105,7 @@ def rescore_all(
                 gnina_folder = rescoring_folder / 'gnina_rescoring'
                 results = gnina_folder / f'{Path(split_file).stem}_gnina.sdf'
                 gnina_cmd = (
-                    ' ./{software}gnina'
+                    f'./{software}gnina'
                     f' --receptor {protein_file}'
                     f' --ligand {split_file}'
                     f' --out {results}'
@@ -199,7 +199,7 @@ def rescore_all(
         (rescoring_folder / 'vinardo_rescoring').mkdir(parents=True, exist_ok=True)
         results = rescoring_folder / 'vinardo_rescoring' / 'rescored_vinardo.sdf'
         vinardo_cmd = (
-            " ./{software}gnina" +
+            f"./{software}gnina" +
             f" --receptor {protein_file}" +
             f" --ligand {sdf}" +
             f" --out {results}" +
@@ -242,7 +242,7 @@ def rescore_all(
         ad4_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results = ad4_rescoring_folder / 'rescored_AD4.sdf'
         AD4_cmd = (
-            f" ./{software}gnina" +
+            f"./{software}gnina" +
             f" --receptor {protein_file}" +
             f" --ligand {sdf}" +
             f" --out {results}" +
