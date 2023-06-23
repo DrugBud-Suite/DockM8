@@ -277,33 +277,3 @@ def convert_pdb_to_pdbqt(protein_file):
         print(f'Conversion from PDB to PDBQT failed: {e}')
 
     return pdbqt_file
-
-
-def concat_all_poses(w_dir, docking_programs):
-        all_poses = pd.DataFrame()
-        for program in docking_programs:
-            try:
-
-                print(f"{w_dir}/temp/{program.lower()}/{program.lower()}_poses.sdf")
-                df = PandasTools.LoadSDF(
-                    f"{w_dir}/temp/{program.lower()}/{program.lower()}_poses.sdf",
-                    idName='Pose ID',
-                    molColName='Molecule',
-                    includeFingerprints=False,
-                    embedProps=False,
-                    removeHs=False,
-                    strictParsing=True)
-                all_poses = pd.concat([all_poses, df])
-            except Exception as e:
-                printlog(f'ERROR: Failed to write {program} SDF file!')
-                printlog(e)
-        try:
-            PandasTools.WriteSDF(all_poses,
-                                    f"{w_dir}/temp/allposes.sdf",
-                                    molColName='Molecule',
-                                    idName='Pose ID',
-                                    properties=list(all_poses.columns))
-            printlog('All poses succesfully combined!')
-        except Exception as e:
-            printlog('ERROR: Failed to write all_poses SDF file!')
-            printlog(e)
