@@ -1,4 +1,5 @@
-FROM python:3.8.10-slim
+
+FROM ubuntu:jammy
 ARG username
 ARG CUDA=cpu
 
@@ -7,7 +8,6 @@ ARG CUDA=cpu
 RUN rm -f /etc/apt/sources.list.d/*.list
 
 # Install some basic utilities
-
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
@@ -20,48 +20,36 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
     
 
-# Create a working directory
-RUN mkdir /main
-RUN mkdir /main/home
-WORKDIR /main
-
-
 # Create a non-root user and switch to it
 RUN adduser --disabled-password --gecos '' --shell /bin/bash $username \
-    && chown -R $username:$username /main
+    && chown -R $username:$username /home
 RUN echo "user ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-user
 USER $username
 
 
 # All users can use /home/user as their home directory
-ENV HOME=/main/home
+ENV HOME=/home
 RUN mkdir $HOME/.cache $HOME/.config \
     && chmod -R 777 $HOME
 
-# Set up the Conda environment (using Miniforge)
+# Set up the Conda environment 
 ENV PATH=$HOME/mambaforge/bin:$PATH
-COPY environment.yml /main/environment.yml
-#COPY run.sh /main/home/run.sh
-#RUN curl -sLo ~/mambaforge.sh https://github.com/conda-forge/miniforge/releases/download/23.1.0-1/Mambaforge-23.1.0-1-Linux-x86_64.sh 
+COPY environment.yml /home/environment.yml
 
 RUN curl -sLo ~/mambaforge.sh https://github.com/conda-forge/miniforge/releases/download/23.1.0-1/Mambaforge-23.1.0-1-Linux-x86_64.sh \
     && chmod +x ~/mambaforge.sh  \
-    && ~/mambaforge.sh -b -p ~/mambaforge 
+    && ~/mambaforge.sh -b -p /home/mambaforge 
     
-RUN mamba env update -n base -f /main/environment.yml 
-RUN python -m pip install torch==1.9.1 -f  https://data.pyg.org/whl/torch-1.9.0.html \
-    && python -m pip install torch-sparse==0.6.12 -f https://data.pyg.org/whl/torch-1.9.1+${CUDA}.html \
-    && python -m pip install --upgrade setuptools \
-    && python -m pip install torch-spline-conv==1.2.1 -f https://data.pyg.org/whl/torch-1.9.1+${CUDA}.html \
-    && python -m pip install torch-scatter==2.1.0  -f https://data.pyg.org/whl/torch-1.9.1+${CUDA}.html\
-    && python -m pip install torch-cluster==1.6.0 -f https://data.pyg.org/whl/torch-1.9.1+${CUDA}.html 
-    
+RUN mamba env update -n base -f /home/environment.yml 
+RUN pip install torch -f https://data.pyg.org/whl/torch-2.0.0+${CUDA}.html \
+    && pip install torch-geometric -f https://data.pyg.org/whl/torch-2.0.0+${CUDA}.html \
+    && pip install torch-sparse -f https://data.pyg.org/whl/torch-2.0.0+${CUDA}.html \
+    && pip install torch-scatter -f https://data.pyg.org/whl/torch-2.0.0+${CUDA}.html 
 
-    #&& rm /main/environment.yml \
+WORKDIR /home/$username
 
-
-#RUN rm ~/mambaforge.sh 
-RUN ~/run.sh -b -p ~/run.sh
-
-RUN mamba clean -ya
+RUN git clone https://gitlab.com/Tonylac77/DockM8 \
+    && rm /home/environment.yml \ 
+    && rm ~/mambaforge.sh \ 
+    && mamba clean -ya
 
