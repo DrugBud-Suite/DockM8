@@ -63,7 +63,7 @@ def rescore_all(
             results = rescoring_folder / \
                 'gnina_rescoring' / f'rescored_{cnn}.sdf'
             gnina_cmd = (
-                f'cd {software} && ./gnina'
+                './{software}gnina'
                 f' --receptor {protein_file}'
                 f' --ligand {sdf}'
                 f' --out {results}'
@@ -105,7 +105,7 @@ def rescore_all(
                 gnina_folder = rescoring_folder / 'gnina_rescoring'
                 results = gnina_folder / f'{Path(split_file).stem}_gnina.sdf'
                 gnina_cmd = (
-                    f'cd {software} && ./gnina'
+                    f'./{software}gnina'
                     f' --receptor {protein_file}'
                     f' --ligand {split_file}'
                     f' --out {results}'
@@ -199,8 +199,7 @@ def rescore_all(
         (rescoring_folder / 'vinardo_rescoring').mkdir(parents=True, exist_ok=True)
         results = rescoring_folder / 'vinardo_rescoring' / 'rescored_vinardo.sdf'
         vinardo_cmd = (
-            f"cd {software}" +
-            " && ./gnina" +
+            f"./{software}gnina" +
             f" --receptor {protein_file}" +
             f" --ligand {sdf}" +
             f" --out {results}" +
@@ -243,8 +242,7 @@ def rescore_all(
         ad4_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results = ad4_rescoring_folder / 'rescored_AD4.sdf'
         AD4_cmd = (
-            f"cd {software}" +
-            " && ./gnina" +
+            f"./{software}gnina" +
             f" --receptor {protein_file}" +
             f" --ligand {sdf}" +
             f" --out {results}" +
@@ -285,9 +283,9 @@ def rescore_all(
         rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results_path = rfscorevs_rescoring_folder / 'rfscorevs_scores.csv'
         if ncpus > 1:
-            rfscore_cmd = f'cd {software} && ./rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n {ncpus}'
+            rfscore_cmd = f'./{software}rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n {ncpus}'
         else:
-            rfscore_cmd = f'cd {software} && ./rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n 1'
+            rfscore_cmd = f'./{software}rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n 1'
         subprocess.call(rfscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         rfscore_results = pd.read_csv(results_path, delimiter=',', header=0)
         rfscore_results = rfscore_results.rename(
@@ -383,7 +381,7 @@ def rescore_all(
             configwriter.writelines(plp_config)
 
         # Run PLANTS docking
-        plp_rescoring_command = f'cd {software} && ./PLANTS --mode rescore {plp_rescoring_config_path_config}'
+        plp_rescoring_command = f'./f{software}PLANTS --mode rescore {plp_rescoring_config_path_config}'
         subprocess.call(
             plp_rescoring_command,
             shell=True,
@@ -495,7 +493,7 @@ def rescore_all(
             configwriter.writelines(chemplp_config)
 
         # Run PLANTS docking
-        chemplp_rescoring_command = f'cd {software} && ./PLANTS --mode rescore {chemplp_rescoring_config_path_config}'
+        chemplp_rescoring_command = f'./{software}PLANTS --mode rescore {chemplp_rescoring_config_path_config}'
         subprocess.call(
             chemplp_rescoring_command,
             shell=True,
@@ -579,7 +577,7 @@ def rescore_all(
                         printlog(
                             "Error in concurrent futures job run: " + str(e))
 
-        model = pickle.load(open(software / 'ECIF6_LD_GBT.pkl', 'rb'))
+        model = pickle.load(open('software/ECIF6_LD_GBT.pkl', 'rb'))
         ids = PandasTools.LoadSDF(str(sdf), molColName=None, idName='Pose ID')
         ECIF_rescoring_results = pd.DataFrame(ids, columns=["Pose ID"]).join(
             pd.DataFrame(model.predict(all_descriptors), columns=["ECIF"]))
@@ -794,7 +792,7 @@ def rescore_all(
             printlog('Rescoring with LinF9')
             results = LinF9_rescoring_folder / 'rescored_LinF9.sdf'
             LinF9_cmd = (
-                f'cd {software} && ./smina.static' +
+                f'./{software}smina.static' +
                 f' --receptor {protein_file}' +
                 f' --ligand {sdf}' +
                 f' --out {results}' +
@@ -832,7 +830,7 @@ def rescore_all(
                 LinF9_folder = LinF9_rescoring_folder
                 results = LinF9_folder / f'{split_file.stem}_LinF9.sdf'
                 LinF9_cmd = (
-                    f'cd {software} && ./smina.static' +
+                    f'./{software}smina.static' +
                     f' --receptor {protein_file}' +
                     f' --ligand {split_file}' +
                     f' --out {results}' +
