@@ -50,7 +50,6 @@ def run_command(**kwargs):
             pocket_definition = get_pocket_RoG(kwargs.get('reffile'), kwargs.get('proteinfile'))
         elif kwargs.get('pocket') == 'dogsitescorer':
             pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('proteinfile'), w_dir, method='volume')
-            print(pocket_definition)
     else:
         pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')))
 
