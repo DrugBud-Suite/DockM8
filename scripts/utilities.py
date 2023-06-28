@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from rdkit import Chem
 from meeko import MoleculePreparation
 import openbabel
