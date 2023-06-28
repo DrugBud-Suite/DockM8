@@ -165,10 +165,10 @@ def protonate_library_pkasolver(input_sdf):
 # NOT WORKING
 
 
-def generate_confomers_RDKit(input_sdf, ID, software_path):
+def generate_confomers_RDKit(input_sdf, ID):
     output_sdf = Path(input_sdf).parent / '3D_library_RDkit.sdf'
     try:
-        genConf_command = f'python {software_path}/genConf.py -isdf {input_sdf} -osdf {output_sdf} -n 1'
+        genConf_command = f'python software/genConf.py -isdf {input_sdf} -osdf {output_sdf} -n 1'
         os.system(genConf_command)
     except Exception as e:
         printlog('ERROR: Failed to generate conformers!')
@@ -177,11 +177,11 @@ def generate_confomers_RDKit(input_sdf, ID, software_path):
 
 
 def generate_conformers_GypsumDL_withprotonation(
-        input_sdf, software_path, ncpus):
+        input_sdf, ncpus):
     printlog(
         'Calculating protonation states and generating 3D conformers using GypsumDL...')
     try:
-        gypsum_dl_command = f'python {software_path}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {Path(input_sdf).parent} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+        gypsum_dl_command = f'python software/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {Path(input_sdf).parent} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
         subprocess.call(
             gypsum_dl_command,
             shell=True,
@@ -193,10 +193,10 @@ def generate_conformers_GypsumDL_withprotonation(
 
 
 def generate_conformers_GypsumDL_noprotonation(
-        input_sdf, software_path, ncpus):
+        input_sdf, ncpus):
     printlog('Generating 3D conformers using GypsumDL...')
     try:
-        gypsum_dl_command = f'python {software_path}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {Path(input_sdf).parent} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+        gypsum_dl_command = f'python software/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {Path(input_sdf).parent} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
         subprocess.call(
             gypsum_dl_command,
             shell=True,
@@ -234,7 +234,7 @@ def cleanup(input_sdf):
     return final_df
 
 
-def prepare_library(input_sdf, id_column, software_path, protonation, ncpus):
+def prepare_library(input_sdf, id_column, protonation, ncpus):
     wdir = Path(input_sdf).parent
     standardized_sdf = wdir / 'temp' / 'standardized_library.sdf'
     if not standardized_sdf.is_file():
@@ -244,15 +244,15 @@ def prepare_library(input_sdf, id_column, software_path, protonation, ncpus):
         if protonation == 'pkasolver':
             protonate_library_pkasolver(standardized_sdf)
             generate_conformers_GypsumDL_noprotonation(
-                protonated_sdf, software_path, ncpus)
+                protonated_sdf,  ncpus)
         elif protonation == 'GypsumDL':
             generate_conformers_GypsumDL_withprotonation(
-                standardized_sdf, software_path, ncpus)
+                standardized_sdf,  ncpus)
         else:
             generate_conformers_GypsumDL_noprotonation(
-                standardized_sdf, software_path, ncpus)
+                standardized_sdf,  ncpus)
     else:
         generate_conformers_GypsumDL_noprotonation(
-            protonated_sdf, software_path, ncpus)
+            protonated_sdf, ncpus)
     cleaned_df = cleanup(input_sdf)
     return cleaned_df
