@@ -49,7 +49,7 @@ def qvinaw_docking(
             desc='Docking with QVINAW',
             total=len(pdbqt_files)):
         qvinaw_cmd = (
-            f"./{software}qvina-w" +
+            f"{software / 'qvina-w'}" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
@@ -166,7 +166,7 @@ def qvina2_docking(
             desc='Docking with QVINA2',
             total=len(pdbqt_files)):
         qvina2_cmd = (
-            f"./{software}qvina2.1" +
+            f"{software / 'qvina2.1'}" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
@@ -277,7 +277,7 @@ def smina_docking(
     results_path = smina_folder / 'docked.sdf'
     log = smina_folder / 'log.txt'
     smina_cmd = (
-        f"./{software}gnina" +
+        f"{software / 'gnina'}" +
         f" --receptor {protein_file}" +
         f" --ligand {library}" +
         f" --out {results_path}" +
@@ -370,7 +370,7 @@ def gnina_docking(
     results_path = gnina_folder / 'docked.sdf'
     log = gnina_folder / 'log.txt'
     gnina_cmd = (
-        f"./{software}gnina" +
+        f"{software / 'gnina'}" +
         f" --receptor {protein_file}" +
         f" --ligand {library}" +
         f" --out {results_path}" +
@@ -536,7 +536,7 @@ def plants_docking(
     # Run PLANTS docking
     try:
         printlog('Starting PLANTS docking...')
-        plants_docking_command = f'./{software}PLANTS --mode screen ' + str(plants_docking_config_path)
+        plants_docking_command = f'{software / "PLANTS"} --mode screen ' + str(plants_docking_config_path)
         subprocess.call(
             plants_docking_command,
             shell=True,
@@ -618,7 +618,7 @@ def smina_docking_splitted(
     results_path = smina_folder / \
         f"{os.path.basename(split_file).split('.')[0]}_smina.sdf"
     smina_cmd = (
-        f'./{software}gnina' +
+        f'{software / "gnina"}' +
         f' --receptor {protein_file}' +
         f' --ligand {split_file}' +
         f' --out {results_path}' +
@@ -652,7 +652,7 @@ def gnina_docking_splitted(
     results_path = gnina_folder / \
         f"{os.path.basename(split_file).split('.')[0]}_gnina.sdf"
     gnina_cmd = (
-        f"./{software}gnina" +
+        f"{software / 'gnina'}" +
         f" --receptor {protein_file}" +
         f" --ligand {split_file}" +
         f" --out {results_path}" +
@@ -689,7 +689,7 @@ def plants_docking_splitted(
     plants_docking_config_path = w_dir / 'temp' / \
         'plants' / ('config_' + split_file.stem + '.config')
     plants_config = ['# search algorithm\n',
-                     'search_speed 1\n',
+                     'search_speed speed1\n',
                      'aco_ants 20\n',
                      'flip_amide_bonds 0\n',
                      'flip_planar_n 1\n',
@@ -737,10 +737,11 @@ def plants_docking_splitted(
         configwriter.writelines(plants_config)
     # Run PLANTS docking
     try:
-        plants_docking_command = f'./{software}PLANTS --mode screen ' + str(plants_docking_config_path)
+        plants_docking_command = f'{software / "PLANTS"} --mode screen ' + str(plants_docking_config_path)
         subprocess.call(
             plants_docking_command,
-            shell=True)
+            stdout=DEVNULL,
+            stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: PLANTS docking command failed...')
         printlog(e)
@@ -770,7 +771,7 @@ def qvinaw_docking_splitted(
 
     for pdbqt_file in pdbqt_files:
         qvina_cmd = (
-            f"./{software}qvina-w" +
+            f"{software / 'qvina-w'}" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
@@ -880,7 +881,7 @@ def qvina2_docking_splitted(
 
     for pdbqt_file in pdbqt_files:
         qvina_cmd = (
-            f"./{software}qvina2.1" +
+            f"{software / 'qvina2.1'}" +
             f" --receptor {protein_file_pdbqt}" +
             f" --ligand {pdbqt_file}" +
             f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}" +
