@@ -20,7 +20,6 @@ from pathlib import Path
 def qvinaw_docking(
         protein_file,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     printlog('Docking library using QVINAW...')
@@ -137,7 +136,6 @@ def qvinaw_docking(
 def qvina2_docking(
         protein_file,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     printlog('Docking library using QVINA2...')
@@ -252,7 +250,6 @@ def qvina2_docking(
 def smina_docking(
         protein_file,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     '''
@@ -345,7 +342,6 @@ def smina_docking(
 def gnina_docking(
         protein_file,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     '''
@@ -438,7 +434,6 @@ def gnina_docking(
 def plants_docking(
         protein_file, 
         pocket_definition, 
-        software, 
         n_poses):
     '''
     Perform docking using the PLANTS software on a protein and a reference ligand, and return the path to the results.
@@ -595,7 +590,7 @@ def plants_docking(
                              idName='Pose ID',
                              properties=list(plants_df.columns))
         shutil.rmtree(plants_folder / 'results', ignore_errors=True)
-        files = software.glob('*.pid')
+        files = 'software/'.glob('*.pid')
         for file in files:
             file.unlink()
         toc = time.perf_counter()
@@ -609,7 +604,6 @@ def smina_docking_splitted(
         split_file,
         protein_file,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     w_dir = Path(protein_file).parent
@@ -643,7 +637,6 @@ def gnina_docking_splitted(
         split_file,
         protein_file,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     w_dir = Path(protein_file).parent
@@ -680,7 +673,6 @@ def gnina_docking_splitted(
 def plants_docking_splitted(
         split_file,
         w_dir,
-        software,
         n_poses,
         pocket_definition):
     plants_docking_results_dir = w_dir / 'temp' / \
@@ -751,7 +743,6 @@ def qvinaw_docking_splitted(
         split_file,
         protein_file_pdbqt,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     w_dir = Path(protein_file_pdbqt).parent
@@ -861,7 +852,6 @@ def qvina2_docking_splitted(
         split_file,
         protein_file_pdbqt,
         pocket_definition,
-        software,
         exhaustiveness,
         n_poses):
     w_dir = Path(protein_file_pdbqt).parent
@@ -972,7 +962,7 @@ def docking(
         w_dir,
         protein_file,
         pocket_definition,
-        software,
+
         docking_programs,
         exhaustiveness,
         n_poses,
@@ -984,7 +974,7 @@ def docking(
             smina_docking(
                 protein_file,
                 pocket_definition,
-                software,
+
                 exhaustiveness,
                 n_poses)
         if 'GNINA' in docking_programs and (
@@ -992,18 +982,18 @@ def docking(
             gnina_docking(
                 protein_file,
                 pocket_definition,
-                software,
+
                 exhaustiveness,
                 n_poses)
         if 'PLANTS' in docking_programs and (
                 w_dir / 'temp' / 'plants').is_dir() == False:
-            plants_docking(protein_file, pocket_definition, software, n_poses)
+            plants_docking(protein_file, pocket_definition, n_poses)
         if 'QVINAW' in docking_programs and (
                 w_dir / 'temp' / 'qvinaw').is_dir() == False:
             qvinaw_docking(
                 protein_file,
                 pocket_definition,
-                software,
+
                 exhaustiveness,
                 n_poses)
         if 'QVINA2' in docking_programs and (
@@ -1011,7 +1001,7 @@ def docking(
             qvina2_docking(
                 protein_file,
                 pocket_definition,
-                software,
+
                 exhaustiveness,
                 n_poses)
         toc = time.perf_counter()
@@ -1071,7 +1061,7 @@ def docking(
                             plants_docking_splitted,
                             split_file,
                             w_dir,
-                            software,
+
                             n_poses,
                             pocket_definition)
                         jobs.append(job)
@@ -1152,7 +1142,7 @@ def docking(
                                      molColName='Molecule',
                                      idName='Pose ID',
                                      properties=list(plants_df.columns))
-                files = software.glob('*.pid')
+                files = 'software/'.glob('*.pid')
                 for file in files:
                     file.unlink()
             except Exception as e:
@@ -1179,7 +1169,6 @@ def docking(
                             split_file,
                             protein_file,
                             pocket_definition,
-                            software,
                             exhaustiveness,
                             n_poses)
                         jobs.append(job)
@@ -1272,7 +1261,6 @@ def docking(
                             split_file,
                             protein_file,
                             pocket_definition,
-                            software,
                             exhaustiveness,
                             n_poses)
                         jobs.append(job)
@@ -1366,7 +1354,6 @@ def docking(
                             split_file,
                             protein_file_pdbqt,
                             pocket_definition,
-                            software,
                             exhaustiveness,
                             n_poses)
                         jobs.append(job)
@@ -1445,7 +1432,6 @@ def docking(
                             split_file,
                             protein_file_pdbqt,
                             pocket_definition,
-                            software,
                             exhaustiveness,
                             n_poses)
                         jobs.append(job)
@@ -1512,7 +1498,6 @@ def concat_all_poses(w_dir, docking_programs):
         all_poses = pd.DataFrame()
         for program in docking_programs:
             try:
-                print(f"{w_dir}/temp/{program.lower()}/{program.lower()}_poses.sdf")
                 df = PandasTools.LoadSDF(
                     f"{w_dir}/temp/{program.lower()}/{program.lower()}_poses.sdf",
                     idName='Pose ID',
