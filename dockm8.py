@@ -15,7 +15,7 @@ import os
 import argparse
 
 parser = argparse.ArgumentParser(description='Parse required arguments')
-parser.add_argument('--software', required=True, type=str, help ='Path to software folder')
+#parser.add_argument('--software', required=True, type=str, help ='Path to software folder')
 parser.add_argument('--proteinfile', required=True, type=str, help ='Path to protein file')
 parser.add_argument('--pocket', required=True, type = str, choices = ['reference', 'dogsitescorer'], help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, help ='Path to reference ligand file')
@@ -39,9 +39,9 @@ if any(metric in args.clustering for metric in ['RMSD', 'spyRMSD', 'espsim', 'US
     parser.error("Must specify a clustering method when --metric is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
     
 def run_command(**kwargs):
-    w_dir = os.path.dirname(kwargs.get('proteinfile'))
+    w_dir = Path(kwargs.get('proteinfile')).parent
     print('The working directory has been set to:', w_dir)
-    (Path(w_dir)/'temp').mkdir(exist_ok=True)
+    (w_dir/'temp').mkdir(exist_ok=True)
 
     if os.path.isfile(kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')) == False:
         if kwargs.get('pocket') == 'reference':
@@ -54,12 +54,12 @@ def run_command(**kwargs):
         pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')))
 
     if os.path.isfile(w_dir+'/temp/final_library.sdf') == False:
-        prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('software'), kwargs.get('protonation'), kwargs.get('ncpus'))
+        prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('protonation'), kwargs.get('ncpus'))
 
-    docking_programs = {'GNINA': w_dir+'/temp/gnina/', 'SMINA': w_dir+'/temp/smina/', 'PLANTS': w_dir+'/temp/plants/'}
-    for program, file_path in docking_programs.items():
+    docking_programs = ['GNINA', 'SMINA', 'PLANTS']
+    for program in docking_programs:
         if program in kwargs.get('docking'):
-            docking(Path(w_dir), kwargs.get('proteinfile'), pocket_definition, kwargs.get('software'), [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
+            docking(w_dir, kwargs.get('proteinfile'), pocket_definition, [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
 
     concat_all_poses(w_dir, docking_programs)
     
@@ -76,7 +76,7 @@ def run_command(**kwargs):
             cluster(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'), all_poses, kwargs.get('ncpus'))
     
     for metric in kwargs.get('metric'):
-        rescore_all(w_dir, kwargs.get('proteinfile'), pocket_definition, kwargs.get('software'), w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
+        rescore_all(w_dir, kwargs.get('proteinfile'), pocket_definition, w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
 
     calculate_EF_single_functions(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
     
