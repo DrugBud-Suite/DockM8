@@ -1016,68 +1016,230 @@ def rescore_all(
     def KORPL_rescoring(sdf, ncpus):
         tic = time.perf_counter()
         (rescoring_folder / 'KORPL_rescoring').mkdir(parents=True, exist_ok=True)
-        df = PandasTools.LoadSDF(str(sdf), idName='Pose ID', molColName=None)
-        df = df[['Pose ID']]
-        korpl_command = (
-            'software/KORP-PL' +
-            ' --receptor ' + str(protein_file) +
-            ' --ligand ' + str(sdf) +
-            ' --sdf')
-        process = subprocess.Popen(
-            korpl_command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True)
-        stdout, stderr = process.communicate()
-        energies = []
-        output = stdout.decode().splitlines()
-        for line in output:
-            if line.startswith('model'):
-                parts = line.split(',')
-                energy = round(float(parts[1].split('=')[1]), 2)
-                energies.append(energy)
-        df['KORPL'] = energies
-        df.to_csv(
-            rescoring_folder /
-            'KORPL_rescoring' /
-            'KORPL_scores.csv',
-            index=False)
+        
+        if ncpus == 1:
+            printlog('Rescoring with KORPL')
+            df = PandasTools.LoadSDF(str(sdf), idName='Pose ID', molColName=None)
+            df = df[['Pose ID']]
+            korpl_command = (
+                'software/KORP-PL' +
+                ' --receptor ' + str(protein_file) +
+                ' --ligand ' + str(sdf) +
+                ' --sdf')
+            process = subprocess.Popen(
+                korpl_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True)
+            stdout, stderr = process.communicate()
+            energies = []
+            output = stdout.decode().splitlines()
+            for line in output:
+                if line.startswith('model'):
+                    parts = line.split(',')
+                    energy = round(float(parts[1].split('=')[1]), 2)
+                    energies.append(energy)
+            df['KORPL'] = energies
+            df.to_csv(
+                rescoring_folder /
+                'KORPL_rescoring' /
+                'KORPL_scores.csv',
+                index=False)
+        
+        else:
+            split_files_folder = split_sdf((rescoring_folder / 'KORPL_rescoring'), sdf, ncpus)
+            split_files_sdfs = [
+                Path(split_files_folder) /
+                f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+            global KORPL_rescoring_splitted
+
+            def KORPL_rescoring_splitted(
+                    split_file,
+                    protein_file,
+                    pocket_definition):
+                df = PandasTools.LoadSDF(str(split_file), idName='Pose ID', molColName=None)
+                df = df[['Pose ID']]
+                korpl_command = (
+                'software/KORP-PL' +
+                ' --receptor ' + str(protein_file) +
+                ' --ligand ' + str(split_file) +
+                ' --sdf')
+                process = subprocess.Popen(
+                    korpl_command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    shell=True)
+                stdout, stderr = process.communicate()
+                energies = []
+                output = stdout.decode().splitlines()
+                for line in output:
+                    if line.startswith('model'):
+                        parts = line.split(',')
+                        energy = round(float(parts[1].split('=')[1]), 2)
+                        energies.append(energy)
+                df['KORPL'] = energies
+                output_csv = str(rescoring_folder / 'KORPL_rescoring' / (str(split_file.stem) + '_scores.csv'))
+                df.to_csv(output_csv, index=False)
+                return
+            
+            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+                jobs = []
+                for split_file in tqdm(
+                        split_files_sdfs,
+                        desc='Submitting KORPL rescoring jobs',
+                        unit='file'):
+                    try:
+                        job = executor.submit(
+                            KORPL_rescoring_splitted,
+                            split_file,
+                            protein_file,
+                            pocket_definition)
+                        jobs.append(job)
+                    except Exception as e:
+                        printlog(
+                            "Error in concurrent futures job creation: " + str(e))
+                for job in tqdm(
+                        concurrent.futures.as_completed(jobs),
+                        total=len(split_files_sdfs),
+                        desc='Rescoring with KORPL',
+                        unit='file'):
+                    try:
+                        res = job.result()
+                    except Exception as e:
+                        printlog("Error in concurrent futures job run: " + str(e))
+        print('Combining KORPL scores')
+        scores_folder = rescoring_folder / 'KORPL_rescoring'
+
+        # Get a list of all files with names ending in "_scores.csv"
+        score_files = list(scores_folder.glob('*_scores.csv'))
+
+        if not score_files:
+            print("No CSV files found with names ending in '_scores.csv' in the specified folder.")
+        else:
+            # Read and concatenate the CSV files into a single DataFrame
+            combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)
+
+            # Save the combined scores to a single CSV file
+            combined_scores_csv = scores_folder / 'KORPL_scores.csv'
+            combined_scores_df.to_csv(combined_scores_csv, index=False)
+        delete_files(rescoring_folder / 'KORPL_rescoring', 'KORPL_scores.csv')
         toc = time.perf_counter()
         printlog(f'Rescoring with KORPL complete in {toc-tic:0.4f}!')
-        return df
+        return 
 
     def ConvexPLR_rescoring(sdf, ncpus):
         tic = time.perf_counter()
         (rescoring_folder / 'ConvexPLR_rescoring').mkdir(parents=True, exist_ok=True)
-        df = PandasTools.LoadSDF(str(sdf), idName='Pose ID', molColName=None)
-        df = df[['Pose ID']]
-        ConvexPLR_command = (
+        
+        if ncpus == 1:
+            printlog('Rescoring with ConvexPLR')
+            df = PandasTools.LoadSDF(str(sdf), idName='Pose ID', molColName=None)
+            df = df[['Pose ID']]
+            ConvexPLR_command = (
             'software/Convex-PL' +
             ' --receptor ' + str(protein_file) +
             ' --ligand ' + str(sdf) +
             ' --sdf --regscore')
-        process = subprocess.Popen(
-            ConvexPLR_command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True)
-        stdout, stderr = process.communicate()
-        energies = []
-        output = stdout.decode().splitlines()
-        for line in output:
-            if line.startswith('model'):
-                parts = line.split(',')
-                energy = round(float(parts[1].split('=')[1]), 2)
-                energies.append(energy)
-        df['ConvexPLR'] = energies
-        df.to_csv(
-            rescoring_folder /
-            'ConvexPLR_rescoring' /
-            'ConvexPLR_scores.csv',
-            index=False)
+            process = subprocess.Popen(
+                ConvexPLR_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True)
+            stdout, stderr = process.communicate()
+            energies = []
+            output = stdout.decode().splitlines()
+            for line in output:
+                if line.startswith('model'):
+                    parts = line.split(',')
+                    energy = round(float(parts[1].split('=')[1]), 2)
+                    energies.append(energy)
+            df['ConvexPLR'] = energies
+            df.to_csv(
+                rescoring_folder /
+                'ConvexPLR_rescoring' /
+                'ConvexPLR_scores.csv',
+                index=False)
+        
+        else:
+            split_files_folder = split_sdf((rescoring_folder / 'ConvexPLR_rescoring'), sdf, ncpus)
+            split_files_sdfs = [
+                Path(split_files_folder) /
+                f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+            global ConvexPLR_rescoring_splitted
+
+            def ConvexPLR_rescoring_splitted(
+                    split_file,
+                    protein_file,
+                    pocket_definition):
+                df = PandasTools.LoadSDF(str(split_file), idName='Pose ID', molColName=None)
+                df = df[['Pose ID']]
+                ConvexPLR_command = (
+                'software/Convex-PL' +
+                ' --receptor ' + str(protein_file) +
+                ' --ligand ' + str(split_file) +
+                ' --sdf --regscore')
+                process = subprocess.Popen(
+                    ConvexPLR_command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    shell=True)
+                stdout, stderr = process.communicate()
+                energies = []
+                output = stdout.decode().splitlines()
+                for line in output:
+                    if line.startswith('model'):
+                        parts = line.split(',')
+                        energy = round(float(parts[1].split('=')[1]), 2)
+                        energies.append(energy)
+                df['ConvexPLR'] = energies
+                output_csv = str(rescoring_folder / 'ConvexPLR_rescoring' / (str(split_file.stem) + '_scores.csv'))
+                df.to_csv(output_csv, index=False)
+                return
+            
+            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+                jobs = []
+                for split_file in tqdm(
+                        split_files_sdfs,
+                        desc='Submitting ConvexPLR rescoring jobs',
+                        unit='file'):
+                    try:
+                        job = executor.submit(
+                            ConvexPLR_rescoring_splitted,
+                            split_file,
+                            protein_file,
+                            pocket_definition)
+                        jobs.append(job)
+                    except Exception as e:
+                        printlog(
+                            "Error in concurrent futures job creation: " + str(e))
+                for job in tqdm(
+                        concurrent.futures.as_completed(jobs),
+                        total=len(split_files_sdfs),
+                        desc='Rescoring with ConvexPLR',
+                        unit='file'):
+                    try:
+                        res = job.result()
+                    except Exception as e:
+                        printlog("Error in concurrent futures job run: " + str(e))
+        print('Combining ConvexPLR scores')
+        scores_folder = rescoring_folder / 'ConvexPLR_rescoring'
+
+        # Get a list of all files with names ending in "_scores.csv"
+        score_files = list(scores_folder.glob('*_scores.csv'))
+
+        if not score_files:
+            print("No CSV files found with names ending in '_scores.csv' in the specified folder.")
+        else:
+            # Read and concatenate the CSV files into a single DataFrame
+            combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)
+
+            # Save the combined scores to a single CSV file
+            combined_scores_csv = scores_folder / 'ConvexPLR_scores.csv'
+            combined_scores_df.to_csv(combined_scores_csv, index=False)
+        delete_files(rescoring_folder / 'ConvexPLR_rescoring', 'ConvexPLR_scores.csv')
         toc = time.perf_counter()
-        printlog(f'Rescoring with ConvexPL complete in {toc-tic:0.4f}!')
-        return df
+        printlog(f'Rescoring with ConvexPLR complete in {toc-tic:0.4f}!')
+        return 
 
     rescoring_functions = {
         'gnina': gnina_rescoring,
