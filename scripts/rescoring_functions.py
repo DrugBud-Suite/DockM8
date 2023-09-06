@@ -1259,47 +1259,47 @@ def rescore_all(
         'ConvexPLR': ConvexPLR_rescoring
     }
 
+    skipped_functions = []
     for function in functions:
-        if not (
-            rescoring_folder /
-            f'{function}_rescoring' /
-                f'{function}_scores.csv').is_file():
+        if not (rescoring_folder / f'{function}_rescoring' / f'{function}_scores.csv').is_file():
             rescoring_functions[function](clustered_sdf, ncpus)
         else:
-            printlog(f'Skipping {function} rescoring...')
+            skipped_functions.append(function)
+    if skipped_functions:
+        printlog(f'Skipping functions: {", ".join(skipped_functions)}')
 
-    if not (rescoring_folder / 'allposes_rescored.csv').is_file():
-        score_files = [f'{function}_scores.csv' for function in functions]
-        printlog(f'Combining all scores for {rescoring_folder}')
-        csv_files = [
-            file for file in (
-                rescoring_folder.rglob('*.csv')) if file.name in score_files]
-        csv_dfs = []
-        for file in csv_files:
-            df = pd.read_csv(file)
-            if 'Unnamed: 0' in df.columns:
-                df = df.drop(columns=['Unnamed: 0'])
-            csv_dfs.append(df)
-        combined_dfs = csv_dfs[0]
-        for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
-            combined_dfs = pd.merge(
-                combined_dfs, df, on='Pose ID', how='inner')
-        first_column = combined_dfs.pop('Pose ID')
-        combined_dfs.insert(0, 'Pose ID', first_column)
-        columns = combined_dfs.columns
-        col = columns[1:]
-        for c in col.tolist():
-            if c == 'Pose ID':
-                pass
-            if combined_dfs[c].dtypes is not float:
-                combined_dfs[c] = combined_dfs[c].apply(
-                    pd.to_numeric, errors='coerce')
-            else:
-                pass
-        combined_dfs.to_csv(
-            rescoring_folder /
-            'allposes_rescored.csv',
-            index=False)
+
+    score_files = [f'{function}_scores.csv' for function in functions]
+    printlog(f'Combining all scores for {rescoring_folder}')
+    csv_files = [
+        file for file in (
+            rescoring_folder.rglob('*.csv')) if file.name in score_files]
+    csv_dfs = []
+    for file in csv_files:
+        df = pd.read_csv(file)
+        if 'Unnamed: 0' in df.columns:
+            df = df.drop(columns=['Unnamed: 0'])
+        csv_dfs.append(df)
+    combined_dfs = csv_dfs[0]
+    for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
+        combined_dfs = pd.merge(
+            combined_dfs, df, on='Pose ID', how='inner')
+    first_column = combined_dfs.pop('Pose ID')
+    combined_dfs.insert(0, 'Pose ID', first_column)
+    columns = combined_dfs.columns
+    col = columns[1:]
+    for c in col.tolist():
+        if c == 'Pose ID':
+            pass
+        if combined_dfs[c].dtypes is not float:
+            combined_dfs[c] = combined_dfs[c].apply(
+                pd.to_numeric, errors='coerce')
+        else:
+            pass
+    combined_dfs.to_csv(
+        rescoring_folder /
+        'allposes_rescored.csv',
+        index=False)
 
     toc = time.perf_counter()
     printlog(f'Rescoring complete in {toc - tic:0.4f}!')
