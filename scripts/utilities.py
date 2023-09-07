@@ -1,3 +1,10 @@
+from pathlib import Path
+from tqdm import tqdm
+from rdkit.Chem import PandasTools
+import math
+from pathlib import Path
+from tqdm import tqdm
+from rdkit.Chem import PandasTools
 import subprocess
 from pathlib import Path
 from rdkit import Chem
@@ -78,15 +85,13 @@ def split_sdf_single(dir, sdf_file):
         strictParsing=True)
     compounds_per_core = 1
     file_counter = 1
-    for i in tqdm(range(0, len(df)), desc='Splitting files'):
-        chunk = df.iloc[i:i + compounds_per_core]
-        output_file = split_files_folder / f'split_{file_counter}.sdf'
+    for i, chunk in enumerate(tqdm(df, desc='Splitting files')):
+        output_file = split_files_folder / f'split_{i+1}.sdf'
         PandasTools.WriteSDF(
             chunk,
             str(output_file),
             molColName='Molecule',
             idName='ID')
-        file_counter += 1
     print(
         f'Split SDF file into {file_counter - 1} files each containing 1 compound')
     return split_files_folder
@@ -146,10 +151,7 @@ def printlog(message):
         str(timestamp) + \
         ": " + str(message)
     print(msg)
-    log_file_path = os.path.join(
-        os.path.dirname(
-            os.path.abspath(__file__)),
-        '../log.txt')
+    log_file_path = Path(__file__).resolve().parent / '../log.txt'
     with open(log_file_path, 'a') as f_out:
         f_out.write(msg)
 
@@ -169,14 +171,14 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
         valid_filename = "".join(
             c for c in mol_name if c.isalnum() or c in (
                 ' ', '.', '_')).rstrip()
-        output_file = os.path.join(output_dir, f"{valid_filename}.pdbqt")
-        obConversion.WriteFile(mol, output_file)
+        output_file = Path(output_dir) / f"{valid_filename}.pdbqt"
+        obConversion.WriteFile(mol, str(output_file))
 
     obConversion = openbabel.OBConversion()
     obConversion.SetInAndOutFormats("sdf", "sdf")
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if not Path(output_dir).exists():
+        Path(output_dir).mkdir(parents=True)
 
     mol = openbabel.OBMol()
     not_at_end = obConversion.ReadFile(mol, str(input_file))
@@ -210,7 +212,7 @@ def meeko_to_pdbqt(sdf_path, output_dir):
         mol_name = mol.GetProp('_Name')
 
         # Create the output file path
-        output_path = os.path.join(output_dir, f"{mol_name}.pdbqt")
+        output_path = Path(output_dir) / f"{mol_name}.pdbqt"
 
         # Write the pdbqt string to the file
         with open(output_path, 'w') as f:
@@ -276,5 +278,3 @@ def convert_pdb_to_pdbqt(protein_file):
             stderr=STDOUT)
     except Exception as e:
         print(f'Conversion from PDB to PDBQT failed: {e}')
-
-    return pdbqt_file
