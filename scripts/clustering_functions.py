@@ -80,29 +80,51 @@ def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
     return merged_df
 
 
-def affinity_propagation_clustering(input_dataframe):
-    '''This function applies affinity propagation clustering to the input dataframe, which is a matrix of clustering metrics. It returns
-    the list of cluster centers and their Pose ID'''
+def affinity_propagation_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
+    """
+    Applies affinity propagation clustering to the input dataframe, which is a matrix of clustering metrics.
+    Returns a dataframe containing the Pose IDs of the cluster centers.
+    """
     df = input_dataframe.copy()
-    molecule_list = input_dataframe.columns.values.tolist()
-    # preprocessing our data *scaling data*
+    molecule_list = df.columns.tolist()
+    
+    # Scale the clustering metrics
     scaler = StandardScaler()
-    df[molecule_list] = scaler.fit_transform(df)
+    df[molecule_list] = scaler.fit_transform(df[molecule_list])
+    
+    # Apply affinity propagation clustering
     affinity_propagation = AffinityPropagation(max_iter=150)
     clusters = affinity_propagation.fit_predict(df)
+    
+    # Assign cluster labels and Pose IDs to the dataframe
     df['Affinity Cluster'] = clusters
     df['Pose ID'] = molecule_list
-    # Determine centers
-    centroids = affinity_propagation.cluster_centers_
-    cluster_centers = pd.DataFrame(centroids, columns=molecule_list)
-    # rearranging data
+    
+    # Determine cluster centers
+    cluster_centers = pd.DataFrame(affinity_propagation.cluster_centers_, columns=molecule_list)
+    
+    # Merge dataframe with cluster centers based on the molecule list
     merged_df = pd.merge(df, cluster_centers, on=molecule_list, how='inner')
+    
+    # Select only the Pose ID column from the merged dataframe
     merged_df = merged_df[['Pose ID']]
-    # .astype(str).replace('[()\',]','', regex=False)
+    
     return merged_df
 
 
-def metric_calculation_failure_handling(x, y, metric, protein_file):
+def metric_calculation_failure_handling(x: str, y: str, metric: str, protein_file: str) -> float:
+    """
+    Handles the calculation of various clustering metrics.
+
+    Args:
+        x (str): The first molecule for the metric calculation.
+        y (str): The second molecule for the metric calculation.
+        metric (str): The name of the clustering metric to calculate.
+        protein_file (str): The file containing the reference protein structure.
+
+    Returns:
+        float: The calculated value of the clustering metric. If the calculation fails, it returns 0.
+    """
     metrics = {
         'RMSD': simpleRMSD_calc,
         'spyRMSD': spyRMSD_calc,
@@ -111,26 +133,35 @@ def metric_calculation_failure_handling(x, y, metric, protein_file):
         'SPLIF': SPLIF_calc,
         '3DScore': '3DScore',
         'bestpose': 'bestpose',
-        'symmRMSD': symmRMSD_calc
     }
-    if metric == 'spyRMSD':
-        try:
+
+    try:
+        if metric == 'spyRMSD':
             return metrics[metric](x, y, protein_file)
-        except Exception as e:
-            return metrics['RMSD'](x, y, protein_file)
-    else:
-        try:
+        else:
             return metrics[metric](x, y, protein_file)
-        except Exception as e:
-            printlog(f'Failed to calculate {metric} and cluster : {e}')
-            return 0
+    except Exception as e:
+        printlog(f'Failed to calculate {metric} and cluster : {e}')
+        return 0
 
 
-def matrix_calculation_and_clustering(metric, method, df, protein_file):
+def matrix_calculation_and_clustering(metric: str, method: str, df: pd.DataFrame, protein_file: str) -> pd.DataFrame:
+    """
+    Perform matrix calculation and clustering on a given dataframe.
+
+    Args:
+        metric: A string representing the clustering metric to be used for calculation.
+        method: A string representing the clustering method to be used for clustering.
+        df: A pandas DataFrame containing the input data for clustering.
+        protein_file: A string representing the file path of the reference protein structure.
+
+    Returns:
+        clustered_df: A pandas DataFrame containing the Pose IDs of the cluster centers.
+    """
     methods = {
         'KMedoids': kmedoids_S_clustering,
         'AffProp': affinity_propagation_clustering
-        }
+    }
 
     subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
     indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
@@ -167,80 +198,20 @@ def matrix_calculation_and_clustering(metric, method, df, protein_file):
         return clustered_df
 
 
-def cluster(metric, method, w_dir, protein_file, all_poses, ncpus):
-    '''This function clusters all poses according to the metric selected using multiple CPU cores'''
-    w_dir_path = Path(w_dir)
-    temp_cluster_dir = w_dir_path / 'temp' / 'clustering'
-    temp_cluster_dir.mkdir(exist_ok=True)
-    cluster_file = temp_cluster_dir / f'{metric}_clustered.sdf'
-    if not cluster_file.exists():
-        id_list = np.unique(np.array(all_poses['ID']))
-        printlog(f"*Calculating {metric} metrics and clustering*")
-        best_pose_filters = {'bestpose': ('_1', '_01'),
-                             'bestpose_GNINA': ('GNINA_1', 'GNINA_01'),
-                             'bestpose_SMINA': ('SMINA_1', 'SMINA_01'),
-                             'bestpose_PLANTS': ('PLANTS_1', 'PLANTS_01')}
-        if metric in best_pose_filters:
-            filter = best_pose_filters[metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(
-                filter)]
-            clustered_poses = clustered_poses[['Pose ID']]
-            clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(
-                str).str.replace('[()\',]', '', regex=False)
-        else:
-            if ncpus > 1:
-                clustered_dataframes = []
-                with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-                    printlog('Submitting parallel jobs...')
-                    tic = time.perf_counter()
-                    jobs = []
-                    for current_id in tqdm(
-                            id_list,
-                            desc=f'Submitting {metric} jobs...',
-                            unit='IDs'):
-                        try:
-                            job = executor.submit(matrix_calculation_and_clustering, metric,
-                                                  method, all_poses[all_poses['ID'] == current_id], protein_file)
-                            jobs.append(job)
-                        except Exception as e:
-                            printlog(
-                                "Error in concurrent futures job creation: " + str(e))
-                    toc = time.perf_counter()
-                    printlog(
-                        f'Finished submitting jobs in {toc-tic:0.4f}, now running jobs...')
-                    for job in tqdm(
-                            concurrent.futures.as_completed(jobs),
-                            desc='Running {metric} clustering...',
-                            unit='jobs'):
-                        try:
-                            res = job.result(timeout=60)
-                            clustered_dataframes.append(res)
-                        except Exception as e:
-                            printlog(
-                                "Error in concurrent futures job run: " + str(e))
-                clustered_poses = pd.concat(clustered_dataframes)
-            else:
-                clustered_poses = matrix_calculation_and_clustering(
-                    metric, method, all_poses, id_list, protein_file
-                    )
-
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]', '', regex=True)
-        clustered_poses = pd.merge(all_poses, clustered_poses, on='Pose ID')
-        clustered_poses = clustered_poses[['Pose ID', 'Molecule', 'ID']]
-
-        PandasTools.WriteSDF(
-            clustered_poses,
-            str(cluster_file),
-            molColName='Molecule',
-            idName='Pose ID')
-    else:
-        printlog(
-            f'Clustering using {metric} already done, moving to next metric...')
-    return
-
-
 def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
-    '''This function clusters all poses according to the metric selected using multiple CPU cores'''
+    '''This function clusters all poses according to the metric selected using multiple CPU cores.
+
+    Args:
+        metric (str): A string representing the clustering metric to be used.
+        method (str): A string representing the clustering method to be used.
+        w_dir (str): A string representing the working directory.
+        protein_file (str): A string representing the file path of the reference protein structure.
+        all_poses (pandas.DataFrame): A pandas DataFrame containing the input data for clustering.
+        ncpus (int): An integer representing the number of CPU cores to be used for clustering.
+
+    Returns:
+        None. The function writes the clustered poses to a SDF file.
+    '''
     w_dir_path = Path(w_dir)
     temp_cluster_dir = w_dir_path / 'temp' / 'clustering'
     temp_cluster_dir.mkdir(exist_ok=True)
