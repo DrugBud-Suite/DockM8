@@ -1,0 +1,223 @@
+{
+    "GNINA_Affinity": {
+        "function_name": "gnina_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 100
+            },
+            "max": {
+                "type": "float",
+                "value": -100
+            }
+        }
+    },
+    "CNN-Score": {
+        "function_name": "gnina_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 0
+            },
+            "max": {
+                "type": "float",
+                "value": 1
+            }
+        }
+    },
+    "CNN-Affinity": {
+        "function_name": "gnina_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 0
+            },
+            "max": {
+                "type": "float",
+                "value": 20
+            }
+        }
+    },
+    "vinardo": {
+        "function_name": "vinardo_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 200
+            },
+            "max": {
+                "type": "float",
+                "value": -20
+            }
+        }
+    },
+    "AD4": {
+        "function_name": "AD4_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 100
+            },
+            "max": {
+                "type": "float",
+                "value": -100
+            }
+        }
+    },
+    "rfscorevs": {
+        "function_name": "rfscore_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 5
+            },
+            "max": {
+                "type": "float",
+                "value": 10
+            }
+        }
+    },
+    "plp": {
+        "function_name": "plp_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 200
+            },
+            "max": {
+                "type": "float",
+                "value": -200
+            }
+        }
+    },
+    "chemplp": {
+        "function_name": "chemplp_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 200
+            },
+            "max": {
+                "type": "float",
+                "value": -200
+            }
+        }
+    },
+    "nnscore": {
+        "function_name": "oddt_nnscore_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 0
+            },
+            "max": {
+                "type": "float",
+                "value": 20
+            }
+        }
+    },
+    "plecscore": {
+        "function_name": "oddt_plecscore_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 0
+            },
+            "max": {
+                "type": "float",
+                "value": 20
+            }
+        }
+    },
+    "LinF9": {
+        "function_name": "LinF9_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 100
+            },
+            "max": {
+                "type": "float",
+                "value": -100
+            }
+        }
+    },
+    "AAScore": {
+        "function_name": "AAScore_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 100
+            },
+            "max": {
+                "type": "float",
+                "value": -100
+            }
+        }
+    },
+    "ECIF": {
+        "function_name": "ECIF_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 0.0
+            },
+            "max": {
+                "type": "float",
+                "value": 1
+            }
+        }
+    },
+    "SCORCH": {
+        "function_name": "SCORCH_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 0
+            },
+            "max": {
+                "type": "float",
+                "value": 1
+            }
+        }
+    },
+    "RTMScore": {
+        "function_name": "RTMScore_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 0
+            },
+            "max": {
+                "type": "float",
+                "value": 100
+            }
+        }
+    },
+    "KORPL": {
+        "function_name": "KORPL_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": 200
+            },
+            "max": {
+                "type": "float",
+                "value": -1000
+            }
+        }
+    },
+    "ConvexPLR": {
+        "function_name": "ConvexPLR_rescoring",
+        "parameters": {
+            "min": {
+                "type": "float",
+                "value": -10
+            },
+            "max": {
+                "type": "float",
+                "value": 10
+            }
+        }
+    }
+}

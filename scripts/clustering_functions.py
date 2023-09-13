@@ -220,8 +220,14 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                             job = executor.schedule(calculate_and_cluster, args=(
                                 metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
                             jobs.append(job)
+                        except pebble.TimeoutError as e:
+                            printlog("Timeout error in pebble job creation: " + str(e))
+                        except pebble.JobCancellationError as e:
+                            printlog("Job cancellation error in pebble job creation: " + str(e))
+                        except pebble.JobSubmissionError as e:
+                            printlog("Job submission error in pebble job creation: " + str(e))
                         except Exception as e:
-                            printlog("Error in pebble job creation: " + str(e))
+                            printlog("Other error in pebble job creation: " + str(e))
                     toc = time.perf_counter()
                     for job in tqdm(jobs, total=len(id_list), desc=f'Running {metric} clustering...', unit='jobs'):
                         try:
@@ -231,7 +237,7 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                             pass
                 clustered_poses = pd.concat(clustered_dataframes)
             else:
-                clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
+                clustered_poses = calculate_and_cluster(metric, method, all_poses, id_list, protein_file)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]', '', regex=True)
         filtered_poses = all_poses[all_poses['Pose ID'].isin(
             clustered_poses['Pose ID'])]
@@ -239,5 +245,4 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
         PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
     else:
         printlog(f'Clustering using {metric} already done, moving to next metric...')
-    return
     return
