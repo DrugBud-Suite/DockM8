@@ -23,6 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from software.RTMScore.rtmscore_modified import *
 from pathlib import Path
+import glob
 
 # TODO: add new scoring functions:
 # _SIEVE_Score (no documentation)
@@ -44,7 +45,7 @@ def rescore_all(
         w_dir,
         protein_file,
         pocket_definition,
-
+        software, 
         clustered_sdf,
         functions,
         ncpus):
@@ -62,7 +63,7 @@ def rescore_all(
             results = rescoring_folder / \
                 'gnina_rescoring' / f'rescored_{cnn}.sdf'
             gnina_cmd = (
-                './software/gnina'
+                f'{software}/gnina'
                 f' --receptor {protein_file}'
                 f' --ligand {sdf}'
                 f' --out {results}'
@@ -103,7 +104,7 @@ def rescore_all(
                 gnina_folder = rescoring_folder / 'gnina_rescoring'
                 results = gnina_folder / f'{Path(split_file).stem}_gnina.sdf'
                 gnina_cmd = (
-                    './software/gnina'
+                    f'{software}/gnina'
                     f' --receptor {protein_file}'
                     f' --ligand {split_file}'
                     f' --out {results}'
@@ -196,7 +197,7 @@ def rescore_all(
         (rescoring_folder / 'vinardo_rescoring').mkdir(parents=True, exist_ok=True)
         results = rescoring_folder / 'vinardo_rescoring' / 'rescored_vinardo.sdf'
         vinardo_cmd = (
-            "./software/gnina" +
+            f"{software}/gnina" +
             f" --receptor {protein_file}" +
             f" --ligand {sdf}" +
             f" --out {results}" +
@@ -239,7 +240,7 @@ def rescore_all(
         ad4_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results = ad4_rescoring_folder / 'rescored_AD4.sdf'
         AD4_cmd = (
-            "./software/gnina" +
+            f"{software}/gnina" +
             f" --receptor {protein_file}" +
             f" --ligand {sdf}" +
             f" --out {results}" +
@@ -280,9 +281,9 @@ def rescore_all(
         rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results_path = rfscorevs_rescoring_folder / 'rfscorevs_scores.csv'
         if ncpus > 1:
-            rfscore_cmd = f'./software/rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n {ncpus}'
+            rfscore_cmd = f'{software}/rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n {ncpus}'
         else:
-            rfscore_cmd = f'./software/rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n 1'
+            rfscore_cmd = f'{software}/rf-score-vs --receptor {protein_file} {str(sdf)} -O {results_path} -n 1'
         subprocess.call(rfscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         rfscore_results = pd.read_csv(results_path, delimiter=',', header=0)
         rfscore_results = rfscore_results.rename(
@@ -378,7 +379,7 @@ def rescore_all(
             configwriter.writelines(plp_config)
 
         # Run PLANTS docking
-        plp_rescoring_command = f'./fsoftware/PLANTS --mode rescore {plp_rescoring_config_path_config}'
+        plp_rescoring_command = f'{software}/PLANTS --mode rescore {plp_rescoring_config_path_config}'
         subprocess.call(
             plp_rescoring_command,
             shell=True,
@@ -490,7 +491,7 @@ def rescore_all(
             configwriter.writelines(chemplp_config)
 
         # Run PLANTS docking
-        chemplp_rescoring_command = f'./software/PLANTS --mode rescore {chemplp_rescoring_config_path_config}'
+        chemplp_rescoring_command = f'{software}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}'
         subprocess.call(
             chemplp_rescoring_command,
             shell=True,
@@ -590,7 +591,7 @@ def rescore_all(
         printlog('Rescoring with NNscore')
         nnscore_rescoring_folder = rescoring_folder / 'nnscore_rescoring'
         nnscore_rescoring_folder.mkdir(parents=True, exist_ok=True)
-        pickle_path = 'software/models/NNScore_pdbbind2016.pickle'
+        pickle_path = f'{software}/models/NNScore_pdbbind2016.pickle'
         results = nnscore_rescoring_folder / 'rescored_NNscore.sdf'
         nnscore_rescoring_command = ('oddt_cli ' + str(sdf) +
                                      ' --receptor ' + str(protein_file) +
@@ -621,7 +622,7 @@ def rescore_all(
         printlog('Rescoring with PLECscore')
         plecscore_rescoring_folder = rescoring_folder / 'plecscore_rescoring'
         plecscore_rescoring_folder.mkdir(parents=True, exist_ok=True)
-        pickle_path = 'software/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle'
+        pickle_path = f'{software}/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle'
         results = plecscore_rescoring_folder / 'rescored_PLECnn.sdf'
         plecscore_rescoring_command = (
             'oddt_cli ' + str(sdf) +
@@ -669,7 +670,7 @@ def rescore_all(
         print(f"Converted {num_molecules} molecules.")
         # Run SCORCH
         printlog('Rescoring with SCORCH')
-        SCORCH_command = f'python software//SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
+        SCORCH_command = f'python {software}/SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
         subprocess.call(
             SCORCH_command,
             shell=True,
@@ -698,7 +699,6 @@ def rescore_all(
         RTMScore_rescoring_folder = rescoring_folder / 'RTMScore_rescoring'
         RTMScore_rescoring_folder.mkdir(parents=True, exist_ok=True)
         RTMScore_pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
-        print(RTMScore_pocket)
         if ncpus == 1:
             printlog('Rescoring with RTMScore')
             try:
@@ -707,7 +707,7 @@ def rescore_all(
                     lig=sdf,
                     output=RTMScore_rescoring_folder /
                     'RTMScore_scores.csv',
-                    model='software/RTMScore/trained_models/rtmscore_model1.pth',
+                    model=f'{software}/RTMScore/trained_models/rtmscore_model1.pth',
                     ncpus=1)
             except BaseException:
                 printlog(
@@ -717,27 +717,25 @@ def rescore_all(
                     lig=sdf,
                     output=RTMScore_rescoring_folder /
                     'RTMScore_scores.csv',
-                    model= 'software/RTMScore/trained_models/rtmscore_model1.pth',
+                    model= f'{software}/RTMScore/trained_models/rtmscore_model1.pth',
                     ncpus=1)
         else:
+            printlog('Rescoring with RTMScore')
             split_files_folder = split_sdf(
                 RTMScore_rescoring_folder, sdf, ncpus * 5)
             split_files_sdfs = [
                 Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
             global RTMScore_rescoring_splitted
-
-        def RTMScore_rescoring_splitted(
-                split_file, protein_file, ncpus):
-            output_file = str(RTMScore_rescoring_folder / f'{split_file.stem}_RTMScore.csv')
-            try:
-                rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=str(
-                    'software/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
-            except BaseException:
-                print(RTMScore_pocket)
-                printlog(
-                    'RTMScore scoring with pocket failed, scoring with whole protein...')
-                rtmscore(prot=protein_file, lig=split_file, output=output_file, model=str(
-                    'software/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
+            
+            def RTMScore_rescoring_splitted(
+                    split_file, protein_file, ncpus):
+                output_file = str(RTMScore_rescoring_folder / f'{split_file.stem}_RTMScore.csv')
+                try:
+                    rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=str(
+                        f'{software}/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
+                except BaseException:
+                    printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
+                    rtmscore(prot=protein_file, lig=split_file, output=output_file, model=str(f'{software}/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
             with concurrent.futures.ProcessPoolExecutor(max_workers=int(ncpus)) as executor:
                 jobs = []
                 for split_file in tqdm(
@@ -764,8 +762,7 @@ def rescore_all(
                     except Exception as e:
                         printlog(
                             "Error in concurrent futures job run: " + str(e))
-            results_dataframes = [pd.read_csv(RTMScore_rescoring_folder / file) for file in os.listdir(
-                RTMScore_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
+            results_dataframes = [pd.read_csv(file) for file in glob.glob(str(RTMScore_rescoring_folder / 'split*.csv'))]
             results = pd.concat(results_dataframes)
             results['Pose ID'] = results['Pose ID'].apply(
                 lambda x: x.split('-')[0])
@@ -784,7 +781,7 @@ def rescore_all(
             printlog('Rescoring with LinF9')
             results = LinF9_rescoring_folder / 'rescored_LinF9.sdf'
             LinF9_cmd = (
-                f'./software/smina.static' +
+                f'{software}/smina.static' +
                 f' --receptor {protein_file}' +
                 f' --ligand {sdf}' +
                 f' --out {results}' +
@@ -821,7 +818,7 @@ def rescore_all(
                 LinF9_folder = LinF9_rescoring_folder
                 results = LinF9_folder / f'{split_file.stem}_LinF9.sdf'
                 LinF9_cmd = (
-                    f'./software/smina.static' +
+                    f'{software}/smina.static' +
                     f' --receptor {protein_file}' +
                     f' --ligand {split_file}' +
                     f' --out {results}' +
