@@ -1,3 +1,4 @@
+from typing import Dict, Any, Callable, Union
 import pebble
 import traceback
 from scripts.clustering_metrics import *
@@ -79,7 +80,6 @@ def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
 
     return merged_df
 
-
 def affinity_propagation_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Applies affinity propagation clustering to the input dataframe, which is a matrix of clustering metrics.
@@ -111,43 +111,9 @@ def affinity_propagation_clustering(input_dataframe: pd.DataFrame) -> pd.DataFra
     
     return merged_df
 
-
-def metric_calculation_failure_handling(x: str, y: str, metric: str, protein_file: str) -> float:
+def calculate_and_cluster(metric: str, method: str, df: pd.DataFrame, protein_file: str) -> pd.DataFrame:
     """
-    Handles the calculation of various clustering metrics.
-
-    Args:
-        x (str): The first molecule for the metric calculation.
-        y (str): The second molecule for the metric calculation.
-        metric (str): The name of the clustering metric to calculate.
-        protein_file (str): The file containing the reference protein structure.
-
-    Returns:
-        float: The calculated value of the clustering metric. If the calculation fails, it returns 0.
-    """
-    metrics = {
-        'RMSD': simpleRMSD_calc,
-        'spyRMSD': spyRMSD_calc,
-        'espsim': espsim_calc,
-        'USRCAT': USRCAT_calc,
-        'SPLIF': SPLIF_calc,
-        '3DScore': '3DScore',
-        'bestpose': 'bestpose',
-    }
-
-    try:
-        if metric == 'spyRMSD':
-            return metrics[metric](x, y, protein_file)
-        else:
-            return metrics[metric](x, y, protein_file)
-    except Exception as e:
-        printlog(f'Failed to calculate {metric} and cluster : {e}')
-        return 0
-
-
-def matrix_calculation_and_clustering(metric: str, method: str, df: pd.DataFrame, protein_file: str) -> pd.DataFrame:
-    """
-    Perform matrix calculation and clustering on a given dataframe.
+    Calculates a clustering metric and performs clustering on a given dataframe.
 
     Args:
         metric: A string representing the clustering metric to be used for calculation.
@@ -158,7 +124,16 @@ def matrix_calculation_and_clustering(metric: str, method: str, df: pd.DataFrame
     Returns:
         clustered_df: A pandas DataFrame containing the Pose IDs of the cluster centers.
     """
-    methods = {
+    metrics: Dict[str, Union[str, Callable]] = {
+        'RMSD': simpleRMSD_calc,
+        'spyRMSD': spyRMSD_calc,
+        'espsim': espsim_calc,
+        'USRCAT': USRCAT_calc,
+        'SPLIF': SPLIF_calc,
+        '3DScore': '3DScore',
+    }
+
+    methods: Dict[str, Callable] = {
         'KMedoids': kmedoids_S_clustering,
         'AffProp': affinity_propagation_clustering
     }
@@ -166,10 +141,16 @@ def matrix_calculation_and_clustering(metric: str, method: str, df: pd.DataFrame
     subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
     indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
 
-    vectorized_calc_vec = np.vectorize(metric_calculation_failure_handling)
+    if metric == '3DScore':
+        metric_func = metrics['spyRMSD']
+    elif metric in metrics:
+        metric_func = metrics[metric]
+    else:
+        raise ValueError(f"Invalid metric '{metric}'")
 
-    results = vectorized_calc_vec(
-        subsets[:, 0], subsets[:, 1], metric if metric != '3DScore' else 'spyRMSD', protein_file)
+    vectorized_calc_vec = np.vectorize(lambda x, y: metric_func(x, y, protein_file))
+
+    results = vectorized_calc_vec(subsets[:, 0], subsets[:, 1])
 
     i = np.array([indices[x] for x in subsets[:, 0]])
     j = np.array([indices[y] for y in subsets[:, 1]])
@@ -186,8 +167,7 @@ def matrix_calculation_and_clustering(metric: str, method: str, df: pd.DataFrame
         clustered_df.sort_values(by='3DScore', ascending=True, inplace=True)
         clustered_df = clustered_df.head(1)
         clustered_df = pd.DataFrame(clustered_df.index, columns=['Pose ID'])
-        clustered_df['Pose ID'] = clustered_df['Pose ID'].astype(
-            str).str.replace('[()\',]', '', regex=False)
+        clustered_df['Pose ID'] = clustered_df['Pose ID'].astype(str).str.replace('[()\',]', '', regex=False)
         return clustered_df
     else:
         matrix_df = pd.DataFrame(matrix,
@@ -212,8 +192,7 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
     Returns:
         None. The function writes the clustered poses to a SDF file.
     '''
-    w_dir_path = Path(w_dir)
-    temp_cluster_dir = w_dir_path / 'temp' / 'clustering'
+    temp_cluster_dir = Path(w_dir) / 'temp' / 'clustering'
     temp_cluster_dir.mkdir(exist_ok=True)
     cluster_file = temp_cluster_dir / f'{metric}_clustered.sdf'
     if not cluster_file.exists():
@@ -237,11 +216,19 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                     tic = time.perf_counter()
                     jobs = []
                     for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
+                    for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
                         try:
-                            job = executor.schedule(matrix_calculation_and_clustering, args=(metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
+                            job = executor.schedule(calculate_and_cluster, args=(
+                                metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
                             jobs.append(job)
+                        except pebble.TimeoutError as e:
+                            printlog("Timeout error in pebble job creation: " + str(e))
+                        except pebble.JobCancellationError as e:
+                            printlog("Job cancellation error in pebble job creation: " + str(e))
+                        except pebble.JobSubmissionError as e:
+                            printlog("Job submission error in pebble job creation: " + str(e))
                         except Exception as e:
-                            printlog("Error in pebble job creation: " + str(e))
+                            printlog("Other error in pebble job creation: " + str(e))
                     toc = time.perf_counter()
                     for job in tqdm(jobs, total=len(id_list), desc=f'Running {metric} clustering...', unit='jobs'):
                         try:
@@ -256,12 +243,7 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
             str).replace('[()\',]', '', regex=True)
         filtered_poses = all_poses[all_poses['Pose ID'].isin(clustered_poses['Pose ID'])]
         filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
-        PandasTools.WriteSDF(
-            filtered_poses,
-            str(cluster_file),
-            molColName='Molecule',
-            idName='Pose ID')
+        PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
     else:
-        printlog(
-            f'Clustering using {metric} already done, moving to next metric...')
+        printlog(f'Clustering using {metric} already done, moving to next metric...')
     return
