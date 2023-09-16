@@ -236,22 +236,14 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                 with pebble.ProcessPool(max_workers=ncpus) as executor:
                     tic = time.perf_counter()
                     jobs = []
-                    for current_id in tqdm(
-                            id_list,
-                            desc=f'Submitting {metric} jobs...',
-                            unit='IDs'):
+                    for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
                         try:
-                            job = executor.schedule(matrix_calculation_and_clustering, args=(
-                                metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
+                            job = executor.schedule(matrix_calculation_and_clustering, args=(metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
                             jobs.append(job)
                         except Exception as e:
                             printlog("Error in pebble job creation: " + str(e))
                     toc = time.perf_counter()
-                    for job in tqdm(
-                            jobs,
-                            total=len(id_list),
-                            desc=f'Running {metric} clustering...',
-                            unit='jobs'):
+                    for job in tqdm(jobs, total=len(id_list), desc=f'Running {metric} clustering...', unit='jobs'):
                         try:
                             res = job.result()
                             clustered_dataframes.append(res)
@@ -259,12 +251,10 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                             pass
                 clustered_poses = pd.concat(clustered_dataframes)
             else:
-                clustered_poses = matrix_calculation_and_clustering(
-                    metric, method, all_poses, id_list, protein_file)
+                clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(
             str).replace('[()\',]', '', regex=True)
-        filtered_poses = all_poses[all_poses['Pose ID'].isin(
-            clustered_poses['Pose ID'])]
+        filtered_poses = all_poses[all_poses['Pose ID'].isin(clustered_poses['Pose ID'])]
         filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
         PandasTools.WriteSDF(
             filtered_poses,
