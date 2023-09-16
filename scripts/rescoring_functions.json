@@ -1,0 +1,138 @@
+{
+    "GNINA_Affinity": {
+        "function_name": "gnina_rescoring",
+        "parameters": {
+            "column_name": "GNINA_Affinity",
+            "min": 100,
+            "max": -100
+            }
+        },
+    "CNN-Score": {
+        "function_name": "gnina_rescoring",
+        "parameters": {
+            "column_name": "CNN-Score",
+            "min": 0,
+            "max": 1
+            }
+        },
+    "CNN-Affinity": {
+        "function_name": "gnina_rescoring",
+        "parameters": {
+            "column_name": "DNN-Affinity",
+            "min": 0,
+            "max": 20
+            }
+        },
+    "vinardo": {
+        "function_name": "vinardo_rescoring",
+        "parameters": {
+            "column_name": "Vinardo",
+            "min": 200,
+            "max": -20
+            }
+        },
+    "AD4": {
+        "function_name": "AD4_rescoring",
+        "parameters": {
+            "column_name": "AD4",
+            "min": 100,
+            "max": -100
+            }
+        },
+    "rfscorevs": {
+        "function_name": "rfscore_rescoring",
+        "parameters": {
+            "column_name": "RFScoreVS",
+            "min": 5,
+            "max": 10
+            }
+        },
+    "plp": {
+        "function_name": "plp_rescoring",
+        "parameters": {
+            "column_name": "PLP",
+            "min": 200,
+            "max": -200
+            }
+        },
+    "chemplp": {
+        "function_name": "chemplp_rescoring",
+        "parameters": {
+            "column_name": "CHEMPLP",
+            "min": 200,
+            "max": -200
+            }
+        },
+    "nnscore": {
+        "function_name": "oddt_nnscore_rescoring",
+        "parameters": {
+            "column_name": "NNScore",
+            "min": 0,
+            "max": 20
+            }
+        },
+    "plecscore": {
+        "function_name": "oddt_plecscore_rescoring",
+        "parameters": {
+            "column_name": "PLECnn",
+            "min": 0,
+            "max": 20
+            }
+        },
+    "LinF9": {
+        "function_name": "LinF9_rescoring",
+        "parameters": {
+            "column_name": "LinF9",
+            "min": 100,
+            "max": -100
+            }
+        },
+    "AAScore": {
+        "function_name": "AAScore_rescoring",
+        "parameters": {
+            "column_name": "AAScore",
+            "min": 100,
+            "max": -100
+            }
+        },
+    "ECIF": {
+        "function_name": "ECIF_rescoring",
+        "parameters": {
+            "column_name": "ECIF",
+            "min": 0.0,
+            "max": 1
+            }
+        },
+    "SCORCH": {
+        "function_name": "SCORCH_rescoring",
+        "parameters": {
+            "column_name": "SCORCH",
+            "min": 0,
+            "max": 1
+            }
+        },
+    "RTMScore": {
+        "function_name": "RTMScore_rescoring",
+        "parameters": {
+            "column_name": "RTMScore",
+            "min": 0,
+            "max": 100
+            }
+        },
+    "KORPL": {
+        "function_name": "KORPL_rescoring",
+        "parameters": {
+            "column_name": "KORPL",
+            "min": 200,
+            "max": -1000
+            }
+        },
+    "ConvexPLR": {
+        "function_name": "ConvexPLR_rescoring",
+        "parameters": {
+            "column_name": "ConvexPLR",
+            "min": -10,
+            "max": 10
+            }
+        }
+}
