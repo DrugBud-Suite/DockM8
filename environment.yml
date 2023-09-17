@@ -1,4 +1,3 @@
-name: dockm8
 channels:
   - conda-forge
   - defaults
@@ -44,11 +43,4 @@ dependencies:
     - git+https://github.com/mayrf/pkasolver.git
     - dgl
     - espsim
-    - torch-geometric==2.0.1
-
-
-     
-     
-
-     
-     
+    - torch-geometric
