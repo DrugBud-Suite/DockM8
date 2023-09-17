@@ -216,7 +216,6 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                     tic = time.perf_counter()
                     jobs = []
                     for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
-                    for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
                         try:
                             job = executor.schedule(calculate_and_cluster, args=(
                                 metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
