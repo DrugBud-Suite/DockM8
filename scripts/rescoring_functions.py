@@ -399,23 +399,9 @@ def rescore_all( w_dir, protein_file, pocket_definition, software, clustered_sdf
                 all_descriptors_single = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
                 return all_descriptors_single
 
-            with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-                jobs = []
-                all_descriptors = pd.DataFrame()
-                for ligand in tqdm(ligands, desc='Submitting ECIF rescoring jobs', unit='file'):
-                    try:
-                        job = executor.submit(ECIF_rescoring_single, ligand, protein_file)
-                        jobs.append(job)
-                    except Exception as e:
-                        printlog("Error in concurrent futures job creation: " + str(e))
-
-                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(ligands), desc='Rescoring with ECIF', unit='mol'):
-                    try:
-                        res = job.result()
-                        all_descriptors = pd.concat([all_descriptors, res])
-                    except Exception as e:
-                        printlog( "Error in concurrent futures job run: " + str(e))
-
+        all_descriptors = pd.DataFrame()
+        results = parallel_executor(gnina_rescoring_splitted, ligands, ncpus, protein_file=protein_file, ligand=ligand)
+        all_descriptors = pd.concat([all_descriptors, results])
         model = pickle.load(open('software/ECIF6_LD_GBT.pkl', 'rb'))
         ids = PandasTools.LoadSDF(str(sdf), molColName=None, idName='Pose ID')
         ECIF_rescoring_results = pd.DataFrame(ids, columns=["Pose ID"]).join(pd.DataFrame(model.predict(all_descriptors), columns=[kwargs.get(column_name)]))
