@@ -245,7 +245,7 @@ def cleanup(input_sdf: str) -> pd.DataFrame:
     wdir = Path(input_sdf).parent
 
     # Load the successfully generated conformers from the GypsumDL process into a pandas DataFrame
-    gypsum_df = pd.read_sdf(wdir / 'temp' / 'gypsum_dl_success.sdf')
+    gypsum_df = PandasTools.LoadSDF(str(wdir / 'temp' / 'gypsum_dl_success.sdf'), molColName='Molecule',idName='ID', removeHs=False, strictParsing=True)
 
     # Remove the first row of the DataFrame, which contains the original input molecule
     final_df = gypsum_df.iloc[1:, :]
@@ -257,7 +257,7 @@ def cleanup(input_sdf: str) -> pd.DataFrame:
     n_cpds_end = len(final_df)
 
     # Write the final DataFrame to a new SDF file
-    final_df.to_sdf(wdir / 'temp' / 'final_library.sdf')
+    PandasTools.WriteSDF(final_df, str(wdir / 'temp' / 'final_library.sdf'), molColName='Molecule', idName='ID')
 
     # Delete the temporary files generated during the library preparation process
     (wdir / 'temp' / 'gypsum_dl_success.sdf').unlink(missing_ok=True)
@@ -267,7 +267,7 @@ def cleanup(input_sdf: str) -> pd.DataFrame:
 
     printlog(f'Preparation of compound library finished: ended with {n_cpds_end}')
 
-    return final_df
+    return
 
 
 def prepare_library(input_sdf: str, id_column: str, protonation: str, ncpus: int) -> pd.DataFrame:
@@ -302,6 +302,6 @@ def prepare_library(input_sdf: str, id_column: str, protonation: str, ncpus: int
     else:
         generate_conformers_GypsumDL_noprotonation(protonated_sdf, ncpus)
     
-    cleaned_df = cleanup(input_sdf)
-    return cleaned_df
+    cleanup(input_sdf)
+    return
 

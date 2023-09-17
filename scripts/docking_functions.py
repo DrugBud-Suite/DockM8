@@ -691,11 +691,9 @@ def plants_docking_splitted(
         n_poses,
         pocket_definition, 
         software):
-    plants_docking_results_dir = w_dir / 'temp' / \
-        'plants' / ('results_' + split_file.stem)
+    plants_docking_results_dir = w_dir / 'temp' / 'plants' / ('results_' + split_file.stem)
     # Generate plants config file
-    plants_docking_config_path = w_dir / 'temp' / \
-        'plants' / ('config_' + split_file.stem + '.config')
+    plants_docking_config_path = w_dir / 'temp' / 'plants' / ('config_' + split_file.stem + '.config')
     plants_config = ['# search algorithm\n',
                      'search_speed speed1\n',
                      'aco_ants 20\n',
@@ -741,15 +739,15 @@ def plants_docking_splitted(
                      'write_merged_protein 0\n',
                      '####\n']
     # Write config file
-    with open(plants_docking_config_path, 'w') as configwriter:
-        configwriter.writelines(plants_config)
+    try:
+        with open(plants_docking_config_path, 'w') as configwriter:
+                configwriter.writelines(plants_config)
+    except Exception as e:
+        printlog(f'ERROR: Could not write PLANTS config file : {e}')
     # Run PLANTS docking
     try:
         plants_docking_command = f'{software / "PLANTS"} --mode screen ' + str(plants_docking_config_path)
-        subprocess.call(
-            plants_docking_command,
-            stdout=DEVNULL,
-            stderr=STDOUT)
+        subprocess.call(plants_docking_command,shell=True, stdout=DEVNULL,stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: PLANTS docking command failed...')
         printlog(e)
@@ -1159,7 +1157,7 @@ def docking(
                                      molColName='Molecule',
                                      idName='Pose ID',
                                      properties=list(plants_df.columns))
-                files = 'software/'.glob('*.pid')
+                files = Path(software).glob('*.pid')
                 for file in files:
                     file.unlink()
             except Exception as e:
