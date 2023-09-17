@@ -6,6 +6,7 @@ from scripts.consensus_methods import *
 from pathlib import Path
 import itertools
 from joblib import Parallel, delayed
+import json
 
 def standardize_scores(df):
     def min_max_standardisation(score, best_value):
@@ -49,6 +50,24 @@ def standardize_scores(df):
                 df[col], rescoring_functions_standardization[col])
     return df
 
+def standardize_scores_scaled(df):
+    with open('rescoring_functions.json', 'r') as json_file:
+        rescoring_functions = json.load(json_file)
+
+    def min_max_standardization(score, min_value, max_value):
+        standardized_scores = (score - min_value) / (max_value - min_value)
+        return standardized_scores
+
+    for col in df.columns:
+        if col != 'Pose ID':
+            # Get the min and max values from the JSON file
+            column_info = rescoring_functions.get(col)
+            if column_info:
+                col_min = column_info['parameters']['min']
+                col_max = column_info['parameters']['max']
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+                df[col] = min_max_standardization(df[col], col_min, col_max)
+    return df
 
 def rank_scores(df):
     df = df.assign(**{col: df[col].rank(method='average', ascending=False)
