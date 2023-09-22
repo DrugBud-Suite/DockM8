@@ -849,7 +849,7 @@ def rescore_all( w_dir, protein_file, pocket_definition, software, clustered_sdf
         return 
 
     # Read the JSON file into a dictionary
-    with open('rescoring_functions.json', 'r') as json_file:
+    with open('scripts/rescoring_functions.json', 'r') as json_file:
         rescoring_functions = json.load(json_file)
 
     skipped_functions = []

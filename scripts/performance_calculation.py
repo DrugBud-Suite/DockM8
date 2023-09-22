@@ -69,6 +69,28 @@ def standardize_scores_scaled(df):
                 df[col] = min_max_standardization(df[col], col_min, col_max)
     return df
 
+def standardize_scores_percentiles(df):
+    with open('rescoring_functions.json', 'r') as json_file:
+        rescoring_functions = json.load(json_file)
+
+    def min_max_standardization(score, min_value, max_value):
+        standardized_scores = (score - min_value) / (max_value - min_value)
+        return standardized_scores
+
+    for col in df.columns:
+        if col != 'Pose ID':
+            # Get the min and max values from the JSON file
+            column_info = rescoring_functions.get(col)
+            if column_info:
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+                column_data = df[col].dropna().values  # Drop NaN values and convert to numpy array
+                # Calculate the 99th percentile as max_value
+                col_max = np.percentile(column_data, 99)
+                # Calculate the min_value as 0 (based on your standardization)
+                col_min = np.percentile(column_data, 1)
+                df[col] = min_max_standardization(df[col], col_min, col_max)
+    return df
+
 def rank_scores(df):
     df = df.assign(**{col: df[col].rank(method='average', ascending=False)
                    for col in df.columns if col not in ['Pose ID', 'ID']})

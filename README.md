@@ -40,6 +40,43 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 5. (Optional) Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
 
+
+## Installation (Python 3.10 / Ubuntu 22.04)
+<!-- markdown-link-check-disable-next-line -->
+
+1. Anaconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
+
+2. Clone repository to your machine:  
+`git clone https://gitlab.com/Tonylac77/DockM8.git` 
+
+3. Create and activate a DockM8 conda environment:  
+`conda create -n dockm8 python=3.10` 
+`conda activate dockm8`  
+
+4. Install required packages using the following commands:  
+`conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel -y`  
+`pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline`  
+`pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
+`pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
+`pip install -q git+https://github.com/mayrf/pkasolver.git`  
+
+    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
+    `git clone https://github.com/openbabel/openbabel.git`  
+    `cd openbabel`  
+    `git checkout openbabel-3-1-1 `  
+    `mkdir build`  
+    `cd build`  
+    `cmake -DWITH_MAEPARSER=OFF -DWITH_COORDGEN=OFF -DPYTHON_BINDINGS=ON -DRUN_SWIG=ON ..`  
+    `make`  
+    `make install`  
+
+    If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
+
+6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
+
+5. (Optional) Ensure you have permissions to run the scripts required
+On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
+
 ## Running DockM8 (via command-line / dockm8.py script)
 
 1. Create a working directory on your machine and ensure the required files are present:
