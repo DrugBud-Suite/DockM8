@@ -18,12 +18,12 @@
     "CNN-Affinity": {
         "function_name": "gnina_rescoring",
         "parameters": {
-            "column_name": "DNN-Affinity",
+            "column_name": "CNN-Affinity",
             "min": 0,
             "max": 20
             }
         },
-    "vinardo": {
+    "Vinardo": {
         "function_name": "vinardo_rescoring",
         "parameters": {
             "column_name": "Vinardo",
@@ -39,7 +39,7 @@
             "max": -100
             }
         },
-    "rfscorevs": {
+    "RFScoreVS": {
         "function_name": "rfscore_rescoring",
         "parameters": {
             "column_name": "RFScoreVS",
@@ -47,7 +47,7 @@
             "max": 10
             }
         },
-    "plp": {
+    "PLP": {
         "function_name": "plp_rescoring",
         "parameters": {
             "column_name": "PLP",
@@ -55,7 +55,7 @@
             "max": -200
             }
         },
-    "chemplp": {
+    "CHEMPLP": {
         "function_name": "chemplp_rescoring",
         "parameters": {
             "column_name": "CHEMPLP",
