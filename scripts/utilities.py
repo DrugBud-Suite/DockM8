@@ -2,11 +2,7 @@ from pathlib import Path
 from tqdm import tqdm
 from rdkit.Chem import PandasTools
 import math
-from pathlib import Path
-from tqdm import tqdm
-from rdkit.Chem import PandasTools
 import subprocess
-from pathlib import Path
 from rdkit import Chem
 from meeko import MoleculePreparation
 import openbabel
@@ -19,17 +15,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import os
-import math
-from pathlib import Path
-
-from rdkit.Chem import PandasTools
-from tqdm import tqdm
-import math
-
-from pathlib import Path
-import math
-from tqdm import tqdm
-from rdkit.Chem import PandasTools
+import multiprocessing
+import concurrent.futures
+from joblib import Parallel, delayed
 
 
 def split_sdf(dir, sdf_file, ncpus):
@@ -278,3 +266,40 @@ def convert_pdb_to_pdbqt(protein_file):
             stderr=STDOUT)
     except Exception as e:
         print(f'Conversion from PDB to PDBQT failed: {e}')
+        
+def delete_files(folder_path, save_file):
+    folder = Path(folder_path)
+    for item in folder.iterdir():
+        if item.is_file() and item.name != save_file:
+            item.unlink()
+        elif item.is_dir():
+            delete_files(item, save_file)
+            if not any(item.iterdir()) and item.name != save_file:
+                item.rmdir()
+                
+def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
+    with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+                jobs = []
+                for split_file in split_files_sdfs:
+                    try:
+                        job = executor.submit(function, split_file, **kwargs)
+                        jobs.append(job)
+                    except Exception as e:
+                        printlog("Error in concurrent futures job creation: " + str(e))
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc=f'Rescoring with {function}', unit='file'):
+                    try:
+                        res = job.result()
+                    except Exception as e:
+                        printlog("Error in concurrent futures job run: " + str(e))
+    return res
+
+def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
+    jobs = []
+    for split_file in split_files_sdfs:
+        try:
+            job = delayed(function)(split_file, **kwargs)
+            jobs.append(job)
+        except Exception as e:
+            printlog("Error in joblib job creation: " + str(e))
+    results = Parallel(n_jobs=ncpus)(jobs)
+    return results
