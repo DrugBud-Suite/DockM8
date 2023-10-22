@@ -73,8 +73,13 @@ def standardize_scores_percentiles(df):
     with open('rescoring_functions.json', 'r') as json_file:
         rescoring_functions = json.load(json_file)
 
-    def min_max_standardization(score, min_value, max_value):
-        standardized_scores = (score - min_value) / (max_value - min_value)
+    def min_max_standardisation(score, best_value, col_min, col_max):
+        if best_value == 'max':
+            standardized_scores = (score - col_min) / \
+                (col_max - col_min)
+        else:
+            standardized_scores = (col_max - score) / \
+                (col_max - col_min)
         return standardized_scores
 
     for col in df.columns:
@@ -88,7 +93,7 @@ def standardize_scores_percentiles(df):
                 col_max = np.percentile(column_data, 99)
                 # Calculate the min_value as 0 (based on your standardization)
                 col_min = np.percentile(column_data, 1)
-                df[col] = min_max_standardization(df[col], col_min, col_max)
+                df[col] = min_max_standardisation(df[col], column_info['parameters']['order'], col_min, col_max)
     return df
 
 def rank_scores(df):
