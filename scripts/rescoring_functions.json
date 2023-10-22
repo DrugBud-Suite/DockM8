@@ -3,6 +3,7 @@
         "function_name": "gnina_rescoring",
         "parameters": {
             "column_name": "GNINA_Affinity",
+            "order":"min",
             "min": 100,
             "max": -100
             }
@@ -11,6 +12,7 @@
         "function_name": "gnina_rescoring",
         "parameters": {
             "column_name": "CNN-Score",
+            "order":"max",
             "min": 0,
             "max": 1
             }
@@ -19,6 +21,7 @@
         "function_name": "gnina_rescoring",
         "parameters": {
             "column_name": "CNN-Affinity",
+            "order":"max",
             "min": 0,
             "max": 20
             }
@@ -27,6 +30,7 @@
         "function_name": "vinardo_rescoring",
         "parameters": {
             "column_name": "Vinardo",
+            "order":"min",
             "min": 200,
             "max": -20
             }
@@ -35,6 +39,7 @@
         "function_name": "AD4_rescoring",
         "parameters": {
             "column_name": "AD4",
+            "order":"min",
             "min": 100,
             "max": -100
             }
@@ -43,6 +48,7 @@
         "function_name": "rfscore_rescoring",
         "parameters": {
             "column_name": "RFScoreVS",
+            "order":"max",
             "min": 5,
             "max": 10
             }
@@ -51,6 +57,7 @@
         "function_name": "plp_rescoring",
         "parameters": {
             "column_name": "PLP",
+            "order":"min",
             "min": 200,
             "max": -200
             }
@@ -59,6 +66,7 @@
         "function_name": "chemplp_rescoring",
         "parameters": {
             "column_name": "CHEMPLP",
+            "order":"min",
             "min": 200,
             "max": -200
             }
@@ -67,6 +75,7 @@
         "function_name": "oddt_nnscore_rescoring",
         "parameters": {
             "column_name": "NNScore",
+            "order":"max",
             "min": 0,
             "max": 20
             }
@@ -75,6 +84,7 @@
         "function_name": "oddt_plecscore_rescoring",
         "parameters": {
             "column_name": "PLECnn",
+            "order":"max",
             "min": 0,
             "max": 20
             }
@@ -83,6 +93,7 @@
         "function_name": "LinF9_rescoring",
         "parameters": {
             "column_name": "LinF9",
+            "order":"min",
             "min": 100,
             "max": -100
             }
@@ -91,6 +102,7 @@
         "function_name": "AAScore_rescoring",
         "parameters": {
             "column_name": "AAScore",
+            "order":"min",
             "min": 100,
             "max": -100
             }
@@ -99,6 +111,7 @@
         "function_name": "ECIF_rescoring",
         "parameters": {
             "column_name": "ECIF",
+            "order":"max",
             "min": 0.0,
             "max": 1
             }
@@ -107,6 +120,7 @@
         "function_name": "SCORCH_rescoring",
         "parameters": {
             "column_name": "SCORCH",
+            "order":"max",
             "min": 0,
             "max": 1
             }
@@ -115,6 +129,7 @@
         "function_name": "RTMScore_rescoring",
         "parameters": {
             "column_name": "RTMScore",
+            "order":"max",
             "min": 0,
             "max": 100
             }
@@ -123,6 +138,7 @@
         "function_name": "KORPL_rescoring",
         "parameters": {
             "column_name": "KORPL",
+            "order":"min",
             "min": 200,
             "max": -1000
             }
@@ -131,6 +147,7 @@
         "function_name": "ConvexPLR_rescoring",
         "parameters": {
             "column_name": "ConvexPLR",
+            "order":"max",
             "min": -10,
             "max": 10
             }
