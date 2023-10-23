@@ -27,34 +27,26 @@ def split_sdf(dir, sdf_file, ncpus):
     split_files_folder.mkdir(parents=True, exist_ok=True)
     for file in split_files_folder.iterdir():
         file.unlink()
-    df = PandasTools.LoadSDF(
-        str(sdf_file),
-        molColName='Molecule',
-        idName='ID',
-        includeFingerprints=False,
-        strictParsing=True)
+    df = PandasTools.LoadSDF(str(sdf_file),
+                            molColName='Molecule',
+                            idName='ID',
+                            includeFingerprints=False,
+                            strictParsing=True)
     compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
-    for i in tqdm(
-            range(
-                0,
-                len(df),
-                compounds_per_core),
-            desc='Splitting files'):
+    for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting files'):
         chunk = df[i:i + compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
         used_ids.update(set(chunk['ID']))  # add new 'ID' values to used_ids
         output_file = split_files_folder / f'split_{file_counter}.sdf'
-        PandasTools.WriteSDF(
-            chunk,
-            str(output_file),
-            molColName='Molecule',
-            idName='ID')
+        PandasTools.WriteSDF(chunk,
+                            str(output_file),
+                            molColName='Molecule',
+                            idName='ID')
         file_counter += 1
-    print(
-        f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
+    print(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
 
@@ -65,23 +57,20 @@ def split_sdf_single(dir, sdf_file):
     split_files_folder.mkdir(exist_ok=True)
     for file in split_files_folder.iterdir():
         file.unlink()
-    df = PandasTools.LoadSDF(
-        str(sdf_file),
-        molColName='Molecule',
-        idName='ID',
-        includeFingerprints=False,
-        strictParsing=True)
+    df = PandasTools.LoadSDF(str(sdf_file),
+                            molColName='Molecule',
+                            idName='ID',
+                            includeFingerprints=False,
+                            strictParsing=True)
     compounds_per_core = 1
     file_counter = 1
     for i, chunk in enumerate(tqdm(df, desc='Splitting files')):
         output_file = split_files_folder / f'split_{i+1}.sdf'
-        PandasTools.WriteSDF(
-            chunk,
-            str(output_file),
-            molColName='Molecule',
-            idName='ID')
-    print(
-        f'Split SDF file into {file_counter - 1} files each containing 1 compound')
+        PandasTools.WriteSDF(chunk,
+                            str(output_file),
+                            molColName='Molecule',
+                            idName='ID')
+    print(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
     return split_files_folder
 
 
@@ -106,38 +95,12 @@ def Insert_row(row_number, df, row_value):
     return df
 
 
-def show_correlation(input, annotation=bool()):
-    if isinstance(input, pd.DataFrame):
-        dataframe = input
-    elif input.endswith('.sdf'):
-        dataframe = PandasTools.LoadSDF(input)
-    elif input.endswith('.csv'):
-        dataframe = pd.read_csv(input, index_col=0)
-    dataframe = dataframe.drop('Pose ID')
-    matrix = dataframe.corr().round(2)
-    mask = np.triu(np.ones_like(matrix, dtype=bool))
-    fig, ax = plt.subplots(figsize=(10, 10))
-    sns.heatmap(
-        matrix,
-        mask=mask,
-        annot=annotation,
-        vmax=1,
-        vmin=-1,
-        center=0,
-        linewidths=.5,
-        cmap='coolwarm',
-        ax=ax)
-    plt.show()
-
-
 def printlog(message):
     def timestamp_generator():
         dateTimeObj = datetime.datetime.now()
         return "[" + dateTimeObj.strftime("%Y-%b-%d %H:%M:%S") + "]"
     timestamp = timestamp_generator()
-    msg = "\n" + \
-        str(timestamp) + \
-        ": " + str(message)
+    msg = "\n" + str(timestamp) + ": " + str(message)
     print(msg)
     log_file_path = Path(__file__).resolve().parent / '../log.txt'
     with open(log_file_path, 'a') as f_out:
@@ -266,6 +229,7 @@ def convert_pdb_to_pdbqt(protein_file):
             stderr=STDOUT)
     except Exception as e:
         print(f'Conversion from PDB to PDBQT failed: {e}')
+    return pdbqt_file
         
 def delete_files(folder_path, save_file):
     folder = Path(folder_path)
@@ -286,11 +250,11 @@ def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
                         jobs.append(job)
                     except Exception as e:
                         printlog("Error in concurrent futures job creation: " + str(e))
-                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc=f'Rescoring with {function}', unit='file'):
-                    try:
+                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs)):
+                    #try:
                         res = job.result()
-                    except Exception as e:
-                        printlog("Error in concurrent futures job run: " + str(e))
+                    #except Exception as e:
+                        #printlog("Error in concurrent futures job run: " + str(e))
     return res
 
 def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
