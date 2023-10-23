@@ -19,12 +19,7 @@ import glob
 from pathlib import Path
 
 
-def qvinaw_docking(
-        protein_file: str,
-        pocket_definition,
-        software: str,
-        exhaustiveness: int,
-        n_poses: int) -> str:
+def qvinaw_docking(protein_file: str, pocket_definition : dict, software: str, exhaustiveness: int, n_poses: int) -> str:
     """
     Dock a library of molecules using the QVINAW software.
 
@@ -135,12 +130,7 @@ def qvinaw_docking(
 
     return str(qvinaw_docking_results)
 
-def qvina2_docking(
-        protein_file: str,
-        pocket_definition,
-        software: str,
-        exhaustiveness: int,
-        n_poses: int) -> str:
+def qvina2_docking(protein_file: str, pocket_definition : dict, software: str, exhaustiveness: int, n_poses: int) -> str:
     """
     Dock a library of molecules using QVINA2 software.
 
@@ -257,7 +247,7 @@ def qvina2_docking(
     
     return str(qvina2_docking_results)
 
-def smina_docking(protein_file: str, pocket_definition, software: str, exhaustiveness: int, n_poses: int) -> str:
+def smina_docking(protein_file: str, pocket_definition : dict, software: str, exhaustiveness: int, n_poses: int) -> str:
     '''
     Perform docking using the SMINA software on a protein and a reference ligand, and return the path to the results.
 
@@ -409,11 +399,7 @@ def gnina_docking(protein_file, pocket_definition, software, exhaustiveness, n_p
         printlog(e)
     return str(gnina_folder / 'gnina_poses.sdf')
 
-def plants_docking(
-        protein_file, 
-        pocket_definition, 
-        software, 
-        n_poses):
+def plants_docking(protein_file, pocket_definition, software, n_poses):
     '''
     Perform docking using the PLANTS software on a protein and a reference ligand, and return the path to the results.
 
@@ -600,13 +586,7 @@ def smina_docking_splitted(
         printlog(f'SMINA docking failed: {e}')
     return
 
-def gnina_docking_splitted(
-        split_file,
-        protein_file,
-        pocket_definition,
-        software, 
-        exhaustiveness,
-        n_poses):
+def gnina_docking_splitted(split_file, protein_file, pocket_definition, software, exhaustiveness, n_poses):
     w_dir = Path(protein_file).parent
     gnina_folder = w_dir / 'temp' / 'gnina'
     gnina_folder.mkdir(parents=True, exist_ok=True)
@@ -634,12 +614,7 @@ def gnina_docking_splitted(
         printlog(f"GNINA docking failed: {e}")
     return
 
-def plants_docking_splitted(
-        split_file,
-        w_dir,
-        n_poses,
-        pocket_definition, 
-        software):
+def plants_docking_splitted(split_file, w_dir, n_poses, pocket_definition, software):
     plants_docking_results_dir = w_dir / 'temp' / 'plants' / ('results_' + split_file.stem)
     # Generate plants config file
     plants_docking_config_path = w_dir / 'temp' / 'plants' / ('config_' + split_file.stem + '.config')
@@ -879,14 +854,12 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
         printlog(f'Finished docking in {toc-tic:0.4f}!')
         
     else:
-
         split_final_library_path = w_dir / 'temp' / 'split_final_library'
         if not split_final_library_path.is_dir():
             split_files_folder = split_sdf(str(w_dir / 'temp'), str(w_dir / 'temp' / 'final_library.sdf'), ncpus)
         else:
             printlog('Split final library folder already exists...')
             split_files_folder = split_final_library_path
-
         split_files_sdfs = [(split_files_folder / f) for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
         if 'PLANTS' in docking_programs and not (w_dir / 'temp' / 'plants').is_dir():
             tic = time.perf_counter()
@@ -912,7 +885,7 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
                         printlog(e)
             printlog('Docking split files using PLANTS...')
             
-            res = parallel_executor(plants_docking_splitted, split_files_sdfs, ncpus, w_dir=w_dir, n_poses=n_poses, pocket_definition=pocket_definition, software=software)
+            res = parallel_executor_joblib(plants_docking_splitted, split_files_sdfs, ncpus, w_dir=w_dir, n_poses=n_poses, pocket_definition=pocket_definition, software=software)
             
             toc = time.perf_counter()
             printlog(f'Docking with PLANTS complete in {toc - tic:0.4f}!')
@@ -969,7 +942,7 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
             printlog('Docking split files using SMINA...')
             tic = time.perf_counter()
             
-            res = parallel_executor(smina_docking_splitted, 
+            res = parallel_executor_joblib(smina_docking_splitted, 
                                     split_files_sdfs, 
                                     ncpus, 
                                     protein_file=protein_file,
@@ -1018,7 +991,7 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
             printlog('Docking split files using GNINA...')
             tic = time.perf_counter()
             
-            res = parallel_executor(gnina_docking_splitted, 
+            res = parallel_executor_joblib(gnina_docking_splitted, 
                                     split_files_sdfs, 
                                     ncpus, 
                                     protein_file=protein_file,
@@ -1067,7 +1040,7 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
             tic = time.perf_counter()
             protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
             
-            res = parallel_executor(qvinaw_docking_splitted, 
+            res = parallel_executor_joblib(qvinaw_docking_splitted, 
                                     split_files_sdfs, 
                                     ncpus, 
                                     protein_file_pdbqt=protein_file_pdbqt,
@@ -1113,7 +1086,7 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
             tic = time.perf_counter()
             protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
             
-            res = parallel_executor(qvina2_docking_splitted, 
+            res = parallel_executor_joblib(qvina2_docking_splitted, 
                                     split_files_sdfs, 
                                     ncpus, 
                                     protein_file_pdbqt=protein_file_pdbqt,
