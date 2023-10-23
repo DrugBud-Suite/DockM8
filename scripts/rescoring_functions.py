@@ -1,3 +1,5 @@
+from typing import List, Tuple
+from pandas import DataFrame
 import os
 import shutil
 import subprocess
@@ -75,66 +77,100 @@ def rescore_all(w_dir, protein_file, pocket_definition, software, clustered_sdf,
         printlog(f'Rescoring with {column_name} complete in {toc - tic:0.4f}!')
         return gnina_rescoring_results
 
-    def vinardo_rescoring(sdf : str, ncpus : int, column_name : str):
+    def vinardo_rescoring(sdf: str, ncpus: int, column_name: str) -> DataFrame:
+        """
+        Performs rescoring of poses using the Vinardo scoring function.
+
+        Args:
+            sdf (str): The path to the input SDF file containing the poses to be rescored.
+            ncpus (int): The number of CPUs to be used for the rescoring process.
+            column_name (str): The name of the column in the output dataframe to store the Vinardo scores.
+
+        Returns:
+            DataFrame: A dataframe containing the 'Pose ID' and Vinardo score columns for the rescored poses.
+        """
         tic = time.perf_counter()
         printlog('Rescoring with Vinardo')
-        (rescoring_folder / 'Vinardo_rescoring').mkdir(parents=True, exist_ok=True)
-        results = rescoring_folder / 'Vinardo_rescoring' / 'rescored_Vinardo.sdf'
-        vinardo_cmd = (
-            f"{software}/gnina" +
-            f" --receptor {protein_file}" +
-            f" --ligand {sdf}" +
-            f" --out {results}" +
-            f" --center_x {pocket_definition['center'][0]}" +
-            f" --center_y {pocket_definition['center'][1]}" +
-            f" --center_z {pocket_definition['center'][2]}" +
-            f" --size_x {pocket_definition['size'][0]}" +
-            f" --size_y {pocket_definition['size'][1]}" +
-            f" --size_z {pocket_definition['size'][2]}" +
-            " --score_only --scoring vinardo --cnn_scoring none"
-        )
-        subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
-        vinardo_rescoring_results = PandasTools.LoadSDF(str(results),
-                                                        idName='Pose ID',
-                                                        molColName=None,
-                                                        includeFingerprints=False,
-                                                        removeHs=False)
+        
+        vinardo_rescoring_folder = rescoring_folder / 'Vinardo_rescoring'
+        vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
+        results = vinardo_rescoring_folder / 'rescored_Vinardo.sdf'
+        vinardo_cmd = [
+            f"{software}/gnina",
+            f"--receptor {protein_file}",
+            f"--ligand {sdf}",
+            f"--out {results}",
+            f"--center_x {pocket_definition['center'][0]}",
+            f"--center_y {pocket_definition['center'][1]}",
+            f"--center_z {pocket_definition['center'][2]}",
+            f"--size_x {pocket_definition['size'][0]}",
+            f"--size_y {pocket_definition['size'][1]}",
+            f"--size_z {pocket_definition['size'][2]}",
+            "--score_only",
+            "--scoring vinardo",
+            "--cnn_scoring none"
+        ]
+        subprocess.call(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        vinardo_rescoring_results = PandasTools.LoadSDF(str(results), idName='Pose ID', molColName=None,
+                                                        includeFingerprints=False, removeHs=False)
         vinardo_rescoring_results.rename(columns={'minimizedAffinity': column_name}, inplace=True)
         vinardo_rescoring_results = vinardo_rescoring_results[['Pose ID', column_name]]
-        vinardo_scores_path = rescoring_folder / 'Vinardo_rescoring' / 'Vinardo_scores.csv'
+        vinardo_scores_path = vinardo_rescoring_folder / 'Vinardo_scores.csv'
         vinardo_rescoring_results.to_csv(vinardo_scores_path, index=False)
-        delete_files(rescoring_folder / 'Vinardo_rescoring', 'Vinardo_scores.csv')
+        delete_files(vinardo_rescoring_folder, 'Vinardo_scores.csv')
         toc = time.perf_counter()
         printlog(f'Rescoring with Vinardo complete in {toc - tic:0.4f}!')
         return vinardo_rescoring_results
 
-    def AD4_rescoring(sdf : str, ncpus : int, column_name : str):
+    def AD4_rescoring(sdf: str, ncpus: int, column_name: str) -> DataFrame:
+        """
+        Performs rescoring of poses using the AutoDock4 (AD4) scoring function.
+
+        Args:
+            sdf (str): The path to the input SDF file containing the poses to be rescored.
+            ncpus (int): The number of CPUs to be used for the rescoring process.
+            column_name (str): The name of the column in the output dataframe to store the AD4 scores.
+
+        Returns:
+            DataFrame: A dataframe containing the 'Pose ID' and AD4 score columns for the rescored poses.
+        """
         tic = time.perf_counter()
         printlog('Rescoring with AD4')
+    
         ad4_rescoring_folder = Path(rescoring_folder) / 'AD4_rescoring'
         ad4_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results = ad4_rescoring_folder / 'rescored_AD4.sdf'
-        AD4_cmd = (
-            f"{software}/gnina" +
-            f" --receptor {protein_file}" +
-            f" --ligand {sdf}" +
-            f" --out {results}" +
-            f" --center_x {pocket_definition['center'][0]}" +
-            f" --center_y {pocket_definition['center'][1]}" +
-            f" --center_z {pocket_definition['center'][2]}" +
-            f" --size_x {pocket_definition['size'][0]}" +
-            f" --size_y {pocket_definition['size'][1]}" +
-            f" --size_z {pocket_definition['size'][2]}" +
-            " --score_only --scoring ad4_scoring --cnn_scoring none"
-        )
-        subprocess.call(AD4_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    
+        AD4_cmd = [
+            f"{software}/gnina",
+            f"--receptor {protein_file}",
+            f"--ligand {sdf}",
+            f"--out {results}",
+            f"--center_x {pocket_definition['center'][0]}",
+            f"--center_y {pocket_definition['center'][1]}",
+            f"--center_z {pocket_definition['center'][2]}",
+            f"--size_x {pocket_definition['size'][0]}",
+            f"--size_y {pocket_definition['size'][1]}",
+            f"--size_z {pocket_definition['size'][2]}",
+            "--score_only",
+            "--scoring ad4_scoring",
+            "--cnn_scoring none"
+        ]
+    
+        subprocess.run(AD4_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    
         AD4_rescoring_results = PandasTools.LoadSDF(str(results), idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
-        AD4_rescoring_results.rename(columns={'minimizedAffinity': column_name},inplace=True)
+        AD4_rescoring_results.rename(columns={'minimizedAffinity': column_name}, inplace=True)
         AD4_rescoring_results = AD4_rescoring_results[['Pose ID', column_name]]
-        AD4_rescoring_results.to_csv(ad4_rescoring_folder / 'AD4_scores.csv', index=False)
+    
+        ad4_scores_file = ad4_rescoring_folder / 'AD4_scores.csv'
+        AD4_rescoring_results.to_csv(ad4_scores_file, index=False)
+    
         delete_files(ad4_rescoring_folder, 'AD4_scores.csv')
+    
         toc = time.perf_counter()
         printlog(f'Rescoring with AD4 complete in {toc-tic:0.4f}!')
+    
         return AD4_rescoring_results
 
     def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str):
