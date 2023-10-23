@@ -130,13 +130,11 @@ def calculate_and_cluster(metric: str, method: str, df: pd.DataFrame, protein_fi
         'espsim': espsim_calc,
         'USRCAT': USRCAT_calc,
         'SPLIF': SPLIF_calc,
-        '3DScore': '3DScore',
-    }
+        '3DScore': '3DScore'}
 
     methods: Dict[str, Callable] = {
         'KMedoids': kmedoids_S_clustering,
-        'AffProp': affinity_propagation_clustering
-    }
+        'AffProp': affinity_propagation_clustering}
 
     subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
     indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
@@ -178,7 +176,7 @@ def calculate_and_cluster(metric: str, method: str, df: pd.DataFrame, protein_fi
         return clustered_df
 
 
-def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
+def cluster_pebble(metric : str, method : str, w_dir : Path, protein_file : Path, all_poses : pd.DataFrame, ncpus : int):
     '''This function clusters all poses according to the metric selected using multiple CPU cores.
 
     Args:
@@ -206,40 +204,35 @@ def cluster_pebble(metric, method, w_dir, protein_file, all_poses, ncpus):
                              'bestpose_PLANTS': ('PLANTS_1', 'PLANTS_01')}
         if metric in best_pose_filters:
             filter = best_pose_filters[metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(
-                filter)]
+            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
             clustered_poses = clustered_poses[['Pose ID']]
         else:
-            if ncpus > 1:
-                clustered_dataframes = []
-                with pebble.ProcessPool(max_workers=ncpus) as executor:
-                    tic = time.perf_counter()
-                    jobs = []
-                    for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
-                        try:
-                            job = executor.schedule(calculate_and_cluster, args=(
-                                metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
-                            jobs.append(job)
-                        except pebble.TimeoutError as e:
-                            printlog("Timeout error in pebble job creation: " + str(e))
-                        except pebble.JobCancellationError as e:
-                            printlog("Job cancellation error in pebble job creation: " + str(e))
-                        except pebble.JobSubmissionError as e:
-                            printlog("Job submission error in pebble job creation: " + str(e))
-                        except Exception as e:
-                            printlog("Other error in pebble job creation: " + str(e))
-                    toc = time.perf_counter()
-                    for job in tqdm(jobs, total=len(id_list), desc=f'Running {metric} clustering...', unit='jobs'):
-                        try:
-                            res = job.result()
-                            clustered_dataframes.append(res)
-                        except Exception as e:
-                            pass
-                clustered_poses = pd.concat(clustered_dataframes)
-            else:
-                clustered_poses = matrix_calculation_and_clustering(metric, method, all_poses, id_list, protein_file)
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(
-            str).replace('[()\',]', '', regex=True)
+            clustered_dataframes = []
+            with pebble.ProcessPool(max_workers=ncpus) as executor:
+                tic = time.perf_counter()
+                jobs = []
+                for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
+                    try:
+                        job = executor.schedule(calculate_and_cluster, args=(metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
+                        jobs.append(job)
+                    except pebble.TimeoutError as e:
+                        printlog("Timeout error in pebble job creation: " + str(e))
+                    except pebble.JobCancellationError as e:
+                        printlog("Job cancellation error in pebble job creation: " + str(e))
+                    except pebble.JobSubmissionError as e:
+                        printlog("Job submission error in pebble job creation: " + str(e))
+                    except Exception as e:
+                        printlog("Other error in pebble job creation: " + str(e))
+                toc = time.perf_counter()
+                for job in tqdm(jobs, total=len(id_list), desc=f'Running {metric} clustering...', unit='jobs'):
+                    try:
+                        res = job.result()
+                        clustered_dataframes.append(res)
+                    except Exception as e:
+                        print(e)
+                        pass
+            clustered_poses = pd.concat(clustered_dataframes)
+        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]', '', regex=True)
         filtered_poses = all_poses[all_poses['Pose ID'].isin(clustered_poses['Pose ID'])]
         filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
         PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
