@@ -89,19 +89,22 @@ def rank_scores(df):
     df = df.assign(**{col: df[col].rank(method='average', ascending=False) for col in df.columns if col not in ['Pose ID', 'ID']})
     return df
 
+import pandas as pd
+from pathlib import Path
+
 def apply_consensus_methods(w_dir : str, clustering_metric : str, method : str, rescoring_functions : list, standardization_type : str):
     """
-    Applies consensus methods to a set of poses and saves the results in CSV files.
+    Applies consensus methods to rescored data and saves the results to a CSV file.
 
     Args:
-    - w_dir (str): path to the working directory
-    - clustering_metric (str): the clustering metric to use
-    - method (str): the consensus method to use
-    - rescoring_functions (list): a list of rescoring functions to use
-    - standardization_type (str): the type of standardization to use
+    w_dir (str): The working directory where the rescored data is located.
+    clustering_metric (str): The clustering metric used to cluster the poses.
+    method (str): The consensus method to apply.
+    rescoring_functions (list): A list of rescoring functions to apply.
+    standardization_type (str): The type of standardization to apply to the scores.
 
     Returns:
-    - None
+    None
     """
     (Path(w_dir) / 'ranking').mkdir(parents=True, exist_ok=True)
     
@@ -110,9 +113,9 @@ def apply_consensus_methods(w_dir : str, clustering_metric : str, method : str, 
 
     # Standardize and rank the scores
     standardized_dataframe = standardize_scores(rescored_dataframe, standardization_type)
+    standardized_dataframe['ID'] = standardized_dataframe['Pose ID'].str.split('_').str[0]
+    
     ranked_dataframe = rank_scores(standardized_dataframe)
-
-    # Extract ID from 'Pose ID' and save to CSV
     ranked_dataframe['ID'] = ranked_dataframe['Pose ID'].str.split('_').str[0]
 
     (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
@@ -140,3 +143,50 @@ def apply_consensus_methods(w_dir : str, clustering_metric : str, method : str, 
     return
 
 
+
+
+def ensemble_consensus(receptors:list, clustering_metric : str, method : str, threshold : float or int):
+    """
+    Given a list of receptor file paths, this function reads the consensus clustering results for each receptor,
+    selects the top n compounds based on a given threshold, and returns a list of common compounds across all receptors.
+    
+    Parameters:
+    -----------
+    receptors : list of str
+        List of file paths to receptor files.
+    clustering_metric : str
+        The clustering metric used to generate the consensus clustering results.
+    method : str
+        The clustering method used to generate the consensus clustering results.
+    threshold : float or int
+        The percentage of top compounds to select from each consensus clustering result.
+    
+    Returns:
+    --------
+    list of str
+        List of common compounds across all receptors.
+    """
+def ensemble_consensus(receptors:list, clustering_metric : str, method : str, threshold : float or int):
+
+    topn_dataframes = []
+    
+    for receptor in receptors:
+        w_dir = Path(receptor).parent / Path(receptor).stem
+        consensus_file = pd.read_csv(Path(w_dir) / 'consensus' / f'{clustering_metric}_{method}_results.csv')
+        consensus_file_topn = consensus_file.head(math.ceil(consensus_file.shape[0] * (threshold/100)))
+        topn_dataframes.append(consensus_file_topn)
+        
+    # Merge dataframes to find common compounds based on 'ID' column
+
+    common_compounds = set(topn_dataframes[0]['ID'])
+
+    # Find the intersection of 'ID' values with other dataframes
+    for df in topn_dataframes[1:]:
+        common_compounds.intersection_update(df['ID'])
+        
+    common_compounds_list = list(common_compounds)
+        
+    common_compounds_df = pd.DataFrame(common_compounds_list, columns=['Common Compounds'])
+    common_compounds_df.to_csv(Path(receptors[0].parent / 'ensemble_results.csv'), index=False)
+
+    return list(common_compounds)
