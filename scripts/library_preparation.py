@@ -216,12 +216,12 @@ def cleanup(input_sdf: str, output_dir : Path) -> pd.DataFrame:
     (output_dir / 'standardized_library.sdf').unlink(missing_ok=True)
     (output_dir / 'gypsum_dl_failed.smi').unlink(missing_ok=True)
 
-    printlog(f'Preparation of compound library finished: ended with {n_cpds_end}')
+    printlog(f'Preparation of compound library finished: ended with {n_cpds_end} compounds')
 
     return
 
 
-def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonation: str, software:Path, ncpus: int) -> pd.DataFrame:
+def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonation: str, software:Path, ncpus: int):
     """
     Prepares a docking library for further analysis.
     
@@ -230,9 +230,6 @@ def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonati
         id_column (str): The name of the column in the SDF file that contains the compound IDs.
         protonation (str): The method to use for protonation. Can be 'pkasolver', 'GypsumDL', or any other value for no protonation.
         ncpus (int): The number of CPUs to use for parallelization.
-        
-    Returns:
-        pd.DataFrame: The final cleaned DataFrame containing the standardized, protonated (if applicable), and 3D conformer-generated molecules.
     """
     standardized_sdf = output_dir / 'standardized_library.sdf'
     
@@ -244,16 +241,13 @@ def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonati
     
     protonated_sdf = output_dir / 'protonated_library.sdf'
     
-    if not protonated_sdf.is_file():
-        if protonation == 'pkasolver':
-            protonate_library_pkasolver(standardized_sdf, output_dir)
-            generate_conformers_GypsumDL_noprotonation(protonated_sdf, output_dir, software, ncpus)
-        elif protonation == 'GypsumDL':
-            generate_conformers_GypsumDL_withprotonation(standardized_sdf, output_dir, software, ncpus)
-        else:
-            generate_conformers_GypsumDL_noprotonation(standardized_sdf, output_dir, software, ncpus)
-    else:
+    if protonation == 'pkasolver' and not protonation.isfile():
+        protonate_library_pkasolver(standardized_sdf, output_dir)
         generate_conformers_GypsumDL_noprotonation(protonated_sdf, output_dir, software, ncpus)
+    elif protonation == 'GypsumDL':
+        generate_conformers_GypsumDL_withprotonation(standardized_sdf, output_dir, software, ncpus)
+    elif protonation == 'None':
+        generate_conformers_GypsumDL_noprotonation(standardized_sdf, output_dir, software, ncpus)
     
     cleanup(input_sdf, output_dir)
     return
