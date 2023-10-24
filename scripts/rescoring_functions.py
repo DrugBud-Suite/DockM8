@@ -872,7 +872,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
     'PLP': (plp_rescoring, 'PLP'),
     'CHEMPLP': (chemplp_rescoring, 'CHEMPLP'),
     'NNScore': (oddt_nnscore_rescoring, 'NNScore'),
-    'PLECScore': (oddt_plecscore_rescoring, 'PLECnn'),
+    'PLECnn': (oddt_plecscore_rescoring, 'PLECnn'),
     'LinF9': (LinF9_rescoring, 'LinF9'),
     'AAScore': (AAScore_rescoring, 'AAScore'),
     'ECIF': (ECIF_rescoring, 'ECIF'),
