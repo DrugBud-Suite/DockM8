@@ -3,106 +3,19 @@ import pandas as pd
 import os
 from scripts.utilities import *
 from scripts.consensus_methods import *
+from scripts.postprocessing import *
 from pathlib import Path
 import itertools
 from joblib import Parallel, delayed
 import json
 
-def standardize_scores(df):
-    def min_max_standardisation(score, best_value):
-        if best_value == 'max':
-            standardized_scores = (score - score.min()) / (score.max() - score.min())
-        else:
-            standardized_scores = (score.max() - score) / (score.max() - score.min())
-        return standardized_scores
-    rescoring_functions_standardization = {'GNINA_Affinity': 'min',
-                                            'GNINA_CNN_Score': 'max',
-                                            'GNINA_CNN_Affinity': 'max',
-                                            'GNINA': 'min',
-                                            'CNN-Score': 'max',
-                                            'CNN-Affinity': 'max',
-                                            'CNN_VS': 'max',
-                                            'Vinardo_Affinity': 'min',
-                                            'AD4_Affinity': 'min',
-                                            'LinF9_Affinity': 'min',
-                                            'Vinardo': 'min',
-                                            'AD4': 'min',
-                                            'LinF9': 'min',
-                                            'RFScoreVS': 'max',
-                                            'PLP': 'min',
-                                            'CHEMPLP': 'min',
-                                            'NNscore': 'max',
-                                            'PLECnn': 'max',
-                                            'AAScore': 'min',
-                                            'ECIF': 'max',
-                                            'SCORCH': 'max',
-                                            'SCORCH_pose_score': 'max',
-                                            'RTMScore': 'max',
-                                            'KORPL': 'min',
-                                            'ConvexPLR': 'max'}
-    for col in df.columns:
-        if col != 'Pose ID':
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-            df[col] = min_max_standardisation(df[col], rescoring_functions_standardization[col])
-    return df
-
-def standardize_scores_scaled(df):
-    with open('rescoring_functions.json', 'r') as json_file:
-        rescoring_functions = json.load(json_file)
-
-    def min_max_standardization(score, min_value, max_value):
-        standardized_scores = (score - min_value) / (max_value - min_value)
-        return standardized_scores
-
-    for col in df.columns:
-        if col != 'Pose ID':
-            # Get the min and max values from the JSON file
-            column_info = rescoring_functions.get(col)
-            if column_info:
-                col_min = column_info['parameters']['min']
-                col_max = column_info['parameters']['max']
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                df[col] = min_max_standardization(df[col], col_min, col_max)
-    return df
-
-def standardize_scores_percentiles(df):
-    with open('rescoring_functions.json', 'r') as json_file:
-        rescoring_functions = json.load(json_file)
-
-    def min_max_standardisation(score, best_value, col_min, col_max):
-        if best_value == 'max':
-            standardized_scores = (score - col_min) / \
-                (col_max - col_min)
-        else:
-            standardized_scores = (col_max - score) / \
-                (col_max - col_min)
-        return standardized_scores
-
-    for col in df.columns:
-        if col != 'Pose ID':
-            # Get the min and max values from the JSON file
-            column_info = rescoring_functions.get(col)
-            if column_info:
-                df[col] = pd.to_numeric(df[col], errors='coerce')
-                column_data = df[col].dropna().values  # Drop NaN values and convert to numpy array
-                # Calculate the 99th percentile as max_value
-                col_max = np.percentile(column_data, 99)
-                # Calculate the min_value as 0 (based on your standardization)
-                col_min = np.percentile(column_data, 1)
-                df[col] = min_max_standardisation(df[col], column_info['parameters']['order'], col_min, col_max)
-    return df
-
-def rank_scores(df):
-    df = df.assign(**{col: df[col].rank(method='average', ascending=False) for col in df.columns if col not in ['Pose ID', 'ID']})
-    return df
-
+import pandas as pd
 
 def process_dataframes(w_dir, rescoring_folders):
     rescored_dataframes = {name: pd.read_csv(Path(w_dir) / rescoring_folders[name] / 'allposes_rescored.csv') for name in rescoring_folders}
     standardised_dataframes = {f'{name}_standardised': standardize_scores(rescored_dataframes[name]) for name in rescoring_folders}
     ranked_dataframes = {f'{name}_ranked': rank_scores(standardised_dataframes[f'{name}_standardised']) for name in rescoring_folders}
     return standardised_dataframes, ranked_dataframes
-
 
 def process_combination(combination, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods, docking_library, original_df):
     selected_columns = list(combination)
@@ -177,8 +90,7 @@ def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metr
         'method7': method7_Zscore_avg}
 
     print('Loading library')
-    original_df = PandasTools.LoadSDF(
-        str(docking_library), molColName=None, idName='ID')
+    original_df = PandasTools.LoadSDF(str(docking_library), molColName=None, idName='ID')
     original_df = original_df[['ID', 'Activity']]
     original_df['Activity'] = pd.to_numeric(original_df['Activity'])
     df_list = []
@@ -188,9 +100,7 @@ def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metr
     for name in tqdm(rescoring_folders, total=len(rescoring_folders)):
         standardised_df = standardised_dataframes[name + '_standardised']
         ranked_df = ranked_dataframes[name + '_ranked']
-        calc_columns = [
-            col for col in standardised_df.columns if col not in [
-                'Pose ID', 'ID']]
+        calc_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
         column_mapping = {col: f"{col}_R" for col in calc_columns}
         ranked_df = ranked_df.rename(columns=column_mapping)
         parallel = Parallel(n_jobs=int(os.cpu_count() - 2), backend='multiprocessing')
@@ -262,56 +172,3 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
 
     (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
     EF_results.to_csv(Path(w_dir) / 'consensus' / 'EF_single_functions.csv',index=False)
-
-
-def apply_consensus_methods(w_dir, clustering_metric, method, rescoring_functions):
-    (Path(w_dir) / 'ranking').mkdir(parents=True, exist_ok=True)
-    rescoring_folder = f'rescoring_{clustering_metric}_clustered'
-    rescored_dataframe = pd.read_csv(Path(w_dir) / rescoring_folder / 'allposes_rescored.csv')
-    standardised_dataframe = standardize_scores(rescored_dataframe)
-    col_dict = {'gnina': 'GNINA_Affinity',
-                'cnn-score': 'CNN-Score',
-                'cnn-affinity': 'CNN-Affinity',
-                'vinardo': 'Vinardo',
-                'AD4': 'AD4',
-                'LinF9': 'LinF9',
-                'rfscorevs': 'RFScoreVS',
-                'plp': 'PLP',
-                'chemplp': 'CHEMPLP',
-                'NNScore': 'NNScore',
-                'PLECnn': 'PLECnn',
-                'AAScore': 'AAScore',
-                'ECIF': 'ECIF',
-                'SCORCH': 'SCORCH',
-                'RTMScore': 'RTMScore'}
-    col_list = ['Pose ID'] + [col_dict[function] for function in rescoring_functions if function in col_dict]
-
-    filtered_dataframe = standardised_dataframe[col_list]
-    standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, {clustering_metric: rescoring_folder})
-
-    for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
-        for df_name, df in df_dict.items():
-            df['ID'] = df['Pose ID'].str.split('_').str[0]
-            df.to_csv(Path(w_dir) / 'ranking' / f'{df_name}.csv', index=False)
-
-    (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
-    
-    rank_methods = {'method1': method1_ECR_best,
-                    'method2': method2_ECR_average,
-                    'method3': method3_avg_ECR,
-                    'method4': method4_RbR}
-    score_methods = {'method5': method5_RbV,
-                    'method6': method6_Zscore_best,
-                    'method7': method7_Zscore_avg}
-
-    if method in rank_methods:
-        method_function = rank_methods[method]
-        analysed_dataframe = method_function(ranked_dataframes[clustering_metric + '_ranked'], clustering_metric, [col for col in ranked_dataframes[clustering_metric + '_ranked'] if col not in ['Pose ID', 'ID']])
-    elif method in score_methods:
-        method_function = score_methods[method]
-        analysed_dataframe = method_function(standardised_dataframes[clustering_metric + '_standardised'], clustering_metric, [col for col in standardised_dataframes[clustering_metric + '_standardised'] if col not in ['Pose ID', 'ID']])
-    else:
-        raise ValueError(f"Invalid method: {method}")
-
-    analysed_dataframe = analysed_dataframe.drop(columns="Pose ID", errors='ignore')
-    analysed_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{clustering_metric}_{method}_results.csv', index=False)
