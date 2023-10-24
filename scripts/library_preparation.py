@@ -77,7 +77,7 @@ def standardize_library(input_sdf, output_dir, id_column):
         raise Exception('Failed to write standardized library SDF file!')
 
 
-def standardize_library_futures(input_sdf, id_column, output_dir, ncpus):
+def standardize_library_futures(input_sdf, output_dir, id_column, ncpus):
     """
     Standardizes a docking library using the ChemBL Structure Pipeline.
 
@@ -237,7 +237,10 @@ def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonati
     standardized_sdf = output_dir / 'standardized_library.sdf'
     
     if not standardized_sdf.is_file():
-        standardize_library_futures(input_sdf, output_dir, id_column, ncpus)
+        if ncpus == 1:
+            standardize_library(input_sdf, output_dir, id_column)
+        else:
+            standardize_library_futures(input_sdf, output_dir, id_column, ncpus)
     
     protonated_sdf = output_dir / 'protonated_library.sdf'
     
