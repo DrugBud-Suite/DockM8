@@ -671,7 +671,7 @@ def plants_docking_splitted(split_file, w_dir, n_poses, pocket_definition, softw
     return
 
 def qvinaw_docking_splitted(split_file, protein_file_pdbqt, pocket_definition, software, exhaustiveness, n_poses):
-    w_dir = Path(protein_file_pdbqt).parent
+    w_dir = Path(protein_file_pdbqt).parent / Path(protein_file_pdbqt).stem
     qvinaw_folder = w_dir / 'qvinaw'
     pdbqt_files_folder = qvinaw_folder / Path(split_file).stem / 'pdbqt_files'
     pdbqt_files_folder.mkdir(parents=True, exist_ok=True)
@@ -751,7 +751,7 @@ def qvinaw_docking_splitted(split_file, protein_file_pdbqt, pocket_definition, s
     return qvinaw_docking_results
 
 def qvina2_docking_splitted(split_file, protein_file_pdbqt, pocket_definition, software, exhaustiveness, n_poses):
-    w_dir = Path(protein_file_pdbqt).parent
+    w_dir = Path(protein_file_pdbqt).parent / Path(protein_file_pdbqt).stem
     qvina2_folder = w_dir / 'qvina2'
     pdbqt_files_folder = qvina2_folder / Path(split_file).stem / 'pdbqt_files'
     pdbqt_files_folder.mkdir(parents=True, exist_ok=True)
@@ -871,7 +871,7 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
             for file in os.listdir(split_files_folder):
                 if file.endswith('.sdf'):
                     try:
-                        obabel_command = f'obabel -isdf {split_files_folder}/{file} -O {w_dir / "temp" / "plants"}/{Path(file).stem}.mol2'
+                        obabel_command = f'obabel -isdf {split_files_folder}/{file} -O {w_dir / "plants"}/{Path(file).stem}.mol2'
                         subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
                     except Exception as e:
                         printlog(f'ERROR: Failed to convert {file} to .mol2!')
@@ -1034,13 +1034,13 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
             protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
             
             res = parallel_executor_joblib(qvinaw_docking_splitted, 
-                                    split_files_sdfs, 
-                                    ncpus, 
-                                    protein_file_pdbqt=protein_file_pdbqt,
-                                    pocket_definition = pocket_definition,
-                                    software = software,
-                                    exhaustiveness = exhaustiveness,
-                                    n_poses = n_poses)
+                                            split_files_sdfs, 
+                                            ncpus, 
+                                            protein_file_pdbqt=protein_file_pdbqt,
+                                            pocket_definition = pocket_definition,
+                                            software = software,
+                                            exhaustiveness = exhaustiveness,
+                                            n_poses = n_poses)
             
             toc = time.perf_counter()
             printlog(f'Docking with QVINAW complete in {toc - tic:0.4f}!')
@@ -1080,13 +1080,13 @@ def docking(w_dir, protein_file, pocket_definition, software,  docking_programs,
             protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
             
             res = parallel_executor_joblib(qvina2_docking_splitted, 
-                                    split_files_sdfs, 
-                                    ncpus, 
-                                    protein_file_pdbqt=protein_file_pdbqt,
-                                    pocket_definition = pocket_definition,
-                                    software = software,
-                                    exhaustiveness = exhaustiveness,
-                                    n_poses = n_poses)
+                                            split_files_sdfs, 
+                                            ncpus, 
+                                            protein_file_pdbqt=protein_file_pdbqt,
+                                            pocket_definition = pocket_definition,
+                                            software = software,
+                                            exhaustiveness = exhaustiveness,
+                                            n_poses = n_poses)
             toc = time.perf_counter()
             printlog(f'Docking with QVINA2 complete in {toc - tic:0.4f}!')
         # Fetch QVINA2 poses
@@ -1125,7 +1125,7 @@ def concat_all_poses(w_dir, docking_programs):
         all_poses = pd.DataFrame()
         for program in docking_programs:
             try:
-                df = PandasTools.LoadSDF(f"{w_dir}/temp/{program.lower()}/{program.lower()}_poses.sdf",
+                df = PandasTools.LoadSDF(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf",
                                         idName='Pose ID',
                                         molColName='Molecule',
                                         includeFingerprints=False,
@@ -1134,11 +1134,11 @@ def concat_all_poses(w_dir, docking_programs):
                                         strictParsing=True)
                 all_poses = pd.concat([all_poses, df])
             except Exception as e:
-                printlog(f'ERROR: Failed to write {program} SDF file!')
+                printlog(f'ERROR: Failed to load {program} SDF file!')
                 printlog(e)
         try:
             PandasTools.WriteSDF(all_poses,
-                                f"{w_dir}/temp/allposes.sdf",
+                                f"{w_dir}/allposes.sdf",
                                 molColName='Molecule',
                                 idName='Pose ID',
                                 properties=list(all_poses.columns))
