@@ -20,7 +20,7 @@ def standardize_molecule(molecule):
     return standardized_molecule
 
 
-def standardize_library(input_sdf, id_column):
+def standardize_library(input_sdf, output_dir, id_column):
     """
     Standardizes a docking library using the ChemBL Structure Pipeline.
 
@@ -39,15 +39,14 @@ def standardize_library(input_sdf, id_column):
     printlog('Standardizing docking library using ChemBL Structure Pipeline...')
     # Load Original Library SDF into Pandas
     try:
-        df = PandasTools.LoadSDF(
-            str(input_sdf),
-            idName=id_column,
-            molColName='Molecule',
-            includeFingerprints=False,
-            embedProps=True,
-            removeHs=True,
-            strictParsing=True,
-            smilesName='SMILES')
+        df = PandasTools.LoadSDF(str(input_sdf),
+                                idName=id_column,
+                                molColName='Molecule',
+                                includeFingerprints=False,
+                                embedProps=True,
+                                removeHs=True,
+                                strictParsing=True,
+                                smilesName='SMILES')
         df.rename(columns={id_column: 'ID'}, inplace=True)
         n_cpds_start = len(df)
     except BaseException:
@@ -64,24 +63,21 @@ def standardize_library(input_sdf, id_column):
     df = df.drop(columns='flag')
     df = df.loc[:, ~df.columns.duplicated()].copy()
     n_cpds_end = len(df)
-    printlog(
-        f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
+    printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
     # Write standardized molecules to standardized SDF file
-    wdir = Path(input_sdf).parent
-    output_sdf = wdir / 'temp' / 'standardized_library.sdf'
+    output_sdf = output_dir / 'standardized_library.sdf'
     try:
-        PandasTools.WriteSDF(
-            df,
-            str(output_sdf),
-            molColName='Molecule',
-            idName='ID',
-            allNumeric=True)
+        PandasTools.WriteSDF(df,
+                            str(output_sdf),
+                            molColName='Molecule',
+                            idName='ID',
+                            allNumeric=True)
     except BaseException:
         printlog('ERROR: Failed to write standardized library SDF file!')
         raise Exception('Failed to write standardized library SDF file!')
 
 
-def standardize_library_futures(input_sdf, id_column, ncpus):
+def standardize_library_futures(input_sdf, output_dir, id_column, ncpus):
     """
     Standardizes a docking library using the ChemBL Structure Pipeline.
 
@@ -106,8 +102,7 @@ def standardize_library_futures(input_sdf, id_column, ncpus):
         df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in df['SMILES']]
         n_cpds_start = len(df)
     except Exception as e:
-        printlog(
-            'ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
+        printlog('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
         printlog(e)
     with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
         df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
@@ -116,13 +111,12 @@ def standardize_library_futures(input_sdf, id_column, ncpus):
     df = df.loc[:, ~df.columns.duplicated()].copy()
     n_cpds_end = len(df)
     printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
-    wdir = Path(input_sdf).parent
-    output_sdf = wdir / 'temp' / 'standardized_library.sdf'
+    output_sdf = output_dir / 'standardized_library.sdf'
     PandasTools.WriteSDF(df, str(output_sdf), molColName='Molecule', idName='ID')
     return df
 
 
-def protonate_library_pkasolver(input_sdf):
+def protonate_library_pkasolver(input_sdf, output_dir):
     printlog('Calculating protonation states using pkaSolver...')
     try:
         input_df = PandasTools.LoadSDF(str(input_sdf),
@@ -153,13 +147,13 @@ def protonate_library_pkasolver(input_sdf):
     protonated_df = protonated_df.loc[:, ~protonated_df.columns.duplicated()].copy()
     n_cpds_end = len(input_df)
     printlog(f'Protonation of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
-    output_sdf = Path(input_sdf).parent / 'protonated_library.sdf'
+    output_sdf = output_dir / 'protonated_library.sdf'
     PandasTools.WriteSDF(protonated_df, str(output_sdf), molColName='Molecule', idName='ID')
     return
 
 # NOT WORKING
-def generate_confomers_RDKit(input_sdf, software, ID):
-    output_sdf = Path(input_sdf).parent / '3D_library_RDkit.sdf'
+def generate_confomers_RDKit(input_sdf, output_dir, software, ID):
+    output_sdf = output_dir / '3D_library_RDkit.sdf'
     try:
         genConf_command = f'python {software}/genConf.py -isdf {input_sdf} -osdf {output_sdf} -n 1'
         os.system(genConf_command)
@@ -169,27 +163,27 @@ def generate_confomers_RDKit(input_sdf, software, ID):
     return output_sdf
 
 
-def generate_conformers_GypsumDL_withprotonation(input_sdf, software, ncpus):
+def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software, ncpus):
     printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
     try:
-        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {Path(input_sdf).parent} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: Failed to generate protomers and conformers!')
         printlog(e)
 
 
-def generate_conformers_GypsumDL_noprotonation(input_sdf, software, ncpus):
+def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, ncpus):
     printlog('Generating 3D conformers using GypsumDL...')
     try:
-        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {Path(input_sdf).parent} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: Failed to generate conformers!')
         printlog(e)
 
 
-def cleanup(input_sdf: str) -> pd.DataFrame:
+def cleanup(input_sdf: str, output_dir : Path) -> pd.DataFrame:
     """
     Cleans up the temporary files generated during the library preparation process.
 
@@ -200,10 +194,9 @@ def cleanup(input_sdf: str) -> pd.DataFrame:
         pd.DataFrame: The final DataFrame containing the cleaned-up library with only the 'Molecule' and 'ID' columns.
     """
     printlog('Cleaning up files...')
-    wdir = Path(input_sdf).parent
-
+    
     # Load the successfully generated conformers from the GypsumDL process into a pandas DataFrame
-    gypsum_df = PandasTools.LoadSDF(str(wdir / 'temp' / 'gypsum_dl_success.sdf'), molColName='Molecule',idName='ID', removeHs=False, strictParsing=True)
+    gypsum_df = PandasTools.LoadSDF(str(output_dir / 'gypsum_dl_success.sdf'), molColName='Molecule',idName='ID', removeHs=False, strictParsing=True)
 
     # Remove the first row of the DataFrame, which contains the original input molecule
     final_df = gypsum_df.iloc[1:, :]
@@ -215,20 +208,20 @@ def cleanup(input_sdf: str) -> pd.DataFrame:
     n_cpds_end = len(final_df)
 
     # Write the final DataFrame to a new SDF file
-    PandasTools.WriteSDF(final_df, str(wdir / 'temp' / 'final_library.sdf'), molColName='Molecule', idName='ID')
+    PandasTools.WriteSDF(final_df, str(output_dir / 'final_library.sdf'), molColName='Molecule', idName='ID')
 
     # Delete the temporary files generated during the library preparation process
-    (wdir / 'temp' / 'gypsum_dl_success.sdf').unlink(missing_ok=True)
-    (wdir / 'temp' / 'protonated_library.sdf').unlink(missing_ok=True)
-    (wdir / 'temp' / 'standardized_library.sdf').unlink(missing_ok=True)
-    (wdir / 'temp' / 'gypsum_dl_failed.smi').unlink(missing_ok=True)
+    (output_dir / 'gypsum_dl_success.sdf').unlink(missing_ok=True)
+    (output_dir / 'protonated_library.sdf').unlink(missing_ok=True)
+    (output_dir / 'standardized_library.sdf').unlink(missing_ok=True)
+    (output_dir / 'gypsum_dl_failed.smi').unlink(missing_ok=True)
 
-    printlog(f'Preparation of compound library finished: ended with {n_cpds_end}')
+    printlog(f'Preparation of compound library finished: ended with {n_cpds_end} compounds')
 
     return
 
 
-def prepare_library(input_sdf: str, id_column: str, protonation: str, software:Path, ncpus: int) -> pd.DataFrame:
+def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonation: str, software:Path, ncpus: int):
     """
     Prepares a docking library for further analysis.
     
@@ -237,29 +230,25 @@ def prepare_library(input_sdf: str, id_column: str, protonation: str, software:P
         id_column (str): The name of the column in the SDF file that contains the compound IDs.
         protonation (str): The method to use for protonation. Can be 'pkasolver', 'GypsumDL', or any other value for no protonation.
         ncpus (int): The number of CPUs to use for parallelization.
-        
-    Returns:
-        pd.DataFrame: The final cleaned DataFrame containing the standardized, protonated (if applicable), and 3D conformer-generated molecules.
     """
-    wdir = Path(input_sdf).parent
-    standardized_sdf = wdir / 'temp' / 'standardized_library.sdf'
+    standardized_sdf = output_dir / 'standardized_library.sdf'
     
     if not standardized_sdf.is_file():
-        standardize_library_futures(input_sdf, id_column, ncpus)
-    
-    protonated_sdf = wdir / 'temp' / 'protonated_library.sdf'
-    
-    if not protonated_sdf.is_file():
-        if protonation == 'pkasolver':
-            protonate_library_pkasolver(standardized_sdf)
-            generate_conformers_GypsumDL_noprotonation(protonated_sdf, software, ncpus)
-        elif protonation == 'GypsumDL':
-            generate_conformers_GypsumDL_withprotonation(standardized_sdf, software, ncpus)
+        if ncpus == 1:
+            standardize_library(input_sdf, output_dir, id_column)
         else:
-            generate_conformers_GypsumDL_noprotonation(standardized_sdf, software, ncpus)
-    else:
-        generate_conformers_GypsumDL_noprotonation(protonated_sdf, software, ncpus)
+            standardize_library_futures(input_sdf, output_dir, id_column, ncpus)
     
-    cleanup(input_sdf)
+    protonated_sdf = output_dir / 'protonated_library.sdf'
+    
+    if protonation == 'pkasolver' and not protonation.isfile():
+        protonate_library_pkasolver(standardized_sdf, output_dir)
+        generate_conformers_GypsumDL_noprotonation(protonated_sdf, output_dir, software, ncpus)
+    elif protonation == 'GypsumDL':
+        generate_conformers_GypsumDL_withprotonation(standardized_sdf, output_dir, software, ncpus)
+    elif protonation == 'None':
+        generate_conformers_GypsumDL_noprotonation(standardized_sdf, output_dir, software, ncpus)
+    
+    cleanup(input_sdf, output_dir)
     return
 
