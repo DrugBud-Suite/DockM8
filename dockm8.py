@@ -16,7 +16,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Parse required arguments')
 #parser.add_argument('--software', required=True, type=str, help ='Path to software folder')
-parser.add_argument('--proteinfile', required=True, type=str, help ='Path to protein file')
+parser.add_argument('--mode', type = str, default='single', choices = ['single', 'ensemble', 'active_learning'], help ='Changes mode from classical docking, to ensemble or active learning mode')
+parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to protein file or protein files if using ensemble docking mode')
 parser.add_argument('--pocket', required=True, type = str, choices = ['reference', 'RoG', 'dogsitescorer'], help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, help ='Path to reference ligand file')
 parser.add_argument('--dockinglibrary', required=True, type=str, help ='Path to docking library file')
@@ -39,47 +40,92 @@ if any(metric in args.clustering for metric in ['RMSD', 'spyRMSD', 'espsim', 'US
     parser.error("Must specify a clustering method when --metric is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
     
 def run_command(**kwargs):
-    w_dir = Path(kwargs.get('proteinfile')).parent
-    print('The working directory has been set to:', w_dir)
-    (w_dir/'temp').mkdir(exist_ok=True)
+    if kwargs.get('mode') == 'single':
+        
+        w_dir = Path(kwargs.get('receptor')).parent / Path(kwargs.get('receptor')).stem
+        print('The working directory has been set to:', w_dir)
+        (w_dir).mkdir(exist_ok=True)
 
-    if os.path.isfile(kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')) == False:
-        if kwargs.get('pocket') == 'reference':
-            pocket_definition = get_pocket(kwargs.get('reffile'), kwargs.get('proteinfile'), 10)
-        if kwargs.get('pocket') == 'RoG':
-            pocket_definition = get_pocket_RoG(kwargs.get('reffile'), kwargs.get('proteinfile'))
-        elif kwargs.get('pocket') == 'dogsitescorer':
-            pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('proteinfile'), w_dir, method='volume')
-    else:
-        pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((kwargs.get('proteinfile').replace('.pdb', '_pocket.pdb')))
+        if os.path.isfile(kwargs.get('receptor').replace('.pdb', '_pocket.pdb')) == False:
+            if kwargs.get('pocket') == 'reference':
+                pocket_definition = get_pocket(kwargs.get('reffile'), kwargs.get('receptor'), 10)
+            if kwargs.get('pocket') == 'RoG':
+                pocket_definition = get_pocket_RoG(kwargs.get('reffile'), kwargs.get('receptor'))
+            elif kwargs.get('pocket') == 'dogsitescorer':
+                pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('receptor'), w_dir, method='volume')
+        else:
+            pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((kwargs.get('receptor').replace('.pdb', '_pocket.pdb')))
 
-    if os.path.isfile(w_dir+'/temp/final_library.sdf') == False:
-        prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('protonation'), kwargs.get('ncpus'))
+        if os.path.isfile(w_dir+'/final_library.sdf') == False:
+            prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('protonation'), kwargs.get('ncpus'))
 
-    docking_programs = ['GNINA', 'SMINA', 'PLANTS']
-    for program in docking_programs:
-        if program in kwargs.get('docking'):
-            docking(w_dir, kwargs.get('proteinfile'), pocket_definition, [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
+        docking_programs = ['GNINA', 'SMINA', 'PLANTS']
+        for program in docking_programs:
+            if program in kwargs.get('docking'):
+                docking(w_dir, kwargs.get('receptor'), pocket_definition, [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
 
-    concat_all_poses(w_dir, docking_programs)
+        concat_all_poses(w_dir, docking_programs)
+        
+        for metric in kwargs.get('metric'):
+            if os.path.isfile(w_dir+f'/clustering/{metric}_clustered.sdf') == False:
+                print('Loading all poses SDF file...')
+                tic = time.perf_counter()
+                all_poses = PandasTools.LoadSDF(w_dir+'/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
+                toc = time.perf_counter()
+                print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
+
+        for metric in kwargs.get('metric'):
+            if os.path.isfile(w_dir+f'/clustering/{metric}_clustered.sdf') == False:
+                cluster_pebble(metric, kwargs.get('clustering'), w_dir, kwargs.get('receptor'), all_poses, kwargs.get('ncpus'))
+        
+        for metric in kwargs.get('metric'):
+            rescore_all(w_dir, kwargs.get('receptor'), pocket_definition, w_dir+f'/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
+
+        #apply_consensus_methods(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
+        
+    if kwargs.get('mode') == 'ensemble':
+        
+        for receptor in kwargs.get('receptor'):
     
-    for metric in kwargs.get('metric'):
-        if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
-            print('Loading all poses SDF file...')
-            tic = time.perf_counter()
-            all_poses = PandasTools.LoadSDF(w_dir+'/temp/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
-            toc = time.perf_counter()
-            print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
+            w_dir = Path(kwargs.get('receptor')).parent / Path(kwargs.get('receptor')).stem
+            print('The working directory has been set to:', w_dir)
+            (w_dir).mkdir(exist_ok=True)
 
-    for metric in kwargs.get('metric'):
-        if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
-            cluster_pebble(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'), all_poses, kwargs.get('ncpus'))
-    
-    for metric in kwargs.get('metric'):
-        rescore_all(w_dir, kwargs.get('proteinfile'), pocket_definition, w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
+            if os.path.isfile(kwargs.get('receptor').replace('.pdb', '_pocket.pdb')) == False:
+                if kwargs.get('pocket') == 'reference':
+                    pocket_definition = get_pocket(kwargs.get('reffile'), kwargs.get('receptor'), 10)
+                if kwargs.get('pocket') == 'RoG':
+                    pocket_definition = get_pocket_RoG(kwargs.get('reffile'), kwargs.get('receptor'))
+                elif kwargs.get('pocket') == 'dogsitescorer':
+                    pocket_definition = binding_site_coordinates_dogsitescorer(kwargs.get('receptor'), w_dir, method='volume')
+            else:
+                pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((kwargs.get('receptor').replace('.pdb', '_pocket.pdb')))
 
-    calculate_EF_single_functions(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
-    
-    apply_consensus_methods_combinations(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
+            if os.path.isfile(w_dir+'/final_library.sdf') == False:
+                prepare_library(kwargs.get('dockinglibrary'), kwargs.get('idcolumn'), kwargs.get('protonation'), kwargs.get('ncpus'))
+
+            docking_programs = ['GNINA', 'SMINA', 'PLANTS']
+            for program in docking_programs:
+                if program in kwargs.get('docking'):
+                    docking(w_dir, kwargs.get('receptor'), pocket_definition, [program], kwargs.get('exhaustiveness'), kwargs.get('nposes'), kwargs.get('ncpus'))
+
+            concat_all_poses(w_dir, docking_programs)
+            
+            for metric in kwargs.get('metric'):
+                if os.path.isfile(w_dir+f'/clustering/{metric}_clustered.sdf') == False:
+                    print('Loading all poses SDF file...')
+                    tic = time.perf_counter()
+                    all_poses = PandasTools.LoadSDF(w_dir+'/allposes.sdf', idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
+                    toc = time.perf_counter()
+                    print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
+
+            for metric in kwargs.get('metric'):
+                if os.path.isfile(w_dir+f'/clustering/{metric}_clustered.sdf') == False:
+                    cluster_pebble(metric, kwargs.get('clustering'), w_dir, kwargs.get('receptor'), all_poses, kwargs.get('ncpus'))
+            
+            for metric in kwargs.get('metric'):
+                rescore_all(w_dir, kwargs.get('receptor'), pocket_definition, w_dir+f'/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
+
+            #apply_consensus_methods_combinations(w_dir, kwargs.get('dockinglibrary'), kwargs.get('metric'))
     
 run_command(**vars(args))
