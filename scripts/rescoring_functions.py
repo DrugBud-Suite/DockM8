@@ -48,7 +48,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
     
     tic = time.perf_counter()
     rescoring_folder_name = Path(clustered_sdf).stem
-    rescoring_folder = w_dir / 'temp' / f'rescoring_{rescoring_folder_name}'
+    rescoring_folder = w_dir / f'rescoring_{rescoring_folder_name}'
     (rescoring_folder).mkdir(parents=True, exist_ok=True)
 
     def gnina_rescoring(sdf : str, ncpus : int, column_name : str):
