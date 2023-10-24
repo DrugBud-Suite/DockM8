@@ -243,18 +243,18 @@ def delete_files(folder_path, save_file):
                 
 def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
     with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-                jobs = []
-                for split_file in split_files_sdfs:
-                    try:
-                        job = executor.submit(function, split_file, **kwargs)
-                        jobs.append(job)
-                    except Exception as e:
-                        printlog("Error in concurrent futures job creation: " + str(e))
-                for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs)):
-                    try:
-                        res = job.result()
-                    except Exception as e:
-                        printlog("Error in concurrent futures job run: " + str(e))
+        jobs = []
+        for split_file in split_files_sdfs:
+            try:
+                job = executor.submit(function, split_file, **kwargs)
+                jobs.append(job)
+            except Exception as e:
+                printlog("Error in concurrent futures job creation: " + str(e))
+        for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs)):
+            try:
+                res = job.result()
+            except Exception as e:
+                printlog("Error in concurrent futures job run: " + str(e))
     return res
 
 def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
