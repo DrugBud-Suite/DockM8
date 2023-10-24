@@ -57,7 +57,7 @@ def run_command(**kwargs):
             pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((kwargs.get('receptor').replace('.pdb', '_pocket.pdb')))
 
         if os.path.isfile(w_dir+'/final_library.sdf') == False:
-            prepare_library(kwargs.get('dockinglibrary'), w_dir, kwargs.get('idcolumn'), kwargs.get('protonation'), kwargs.get('ncpus'))
+            prepare_library(kwargs.get('dockinglibrary'), w_dir, kwargs.get('idcolumn'), kwargs.get('protonation'), kwargs.get('software'), kwargs.get('ncpus'))
 
         docking_programs = ['GNINA', 'SMINA', 'PLANTS']
         for program in docking_programs:
