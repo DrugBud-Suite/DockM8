@@ -190,9 +190,9 @@ def cluster_pebble(metric : str, method : str, w_dir : Path, protein_file : Path
     Returns:
         None. The function writes the clustered poses to a SDF file.
     '''
-    temp_cluster_dir = Path(w_dir) / 'temp' / 'clustering'
-    temp_cluster_dir.mkdir(exist_ok=True)
-    cluster_file = temp_cluster_dir / f'{metric}_clustered.sdf'
+    cluster_dir = Path(w_dir) / 'clustering'
+    cluster_dir.mkdir(exist_ok=True)
+    cluster_file = cluster_dir / f'{metric}_clustered.sdf'
     if not cluster_file.exists():
         id_list = np.unique(np.array(all_poses['ID']))
         printlog(f"*Calculating {metric} metrics and clustering*")

@@ -174,7 +174,6 @@ def method6_Zscore_best(df: pd.DataFrame, clustering_metric: str, selected_colum
     
     # Aggregate rows using best Z-score per ID
     df = df.sort_values(f'Method6_Zscore_{clustering_metric}', ascending=False).drop_duplicates('ID')
-    df.set_index('ID', inplace=True)
     
     return df[['ID', f'Method6_Zscore_{clustering_metric}']]
 
