@@ -48,7 +48,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
     
     tic = time.perf_counter()
     rescoring_folder_name = Path(clustered_sdf).stem
-    rescoring_folder = w_dir / 'temp' / f'rescoring_{rescoring_folder_name}'
+    rescoring_folder = w_dir / f'rescoring_{rescoring_folder_name}'
     (rescoring_folder).mkdir(parents=True, exist_ok=True)
 
     def gnina_rescoring(sdf : str, ncpus : int, column_name : str):
@@ -98,7 +98,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
             return
         results = parallel_executor(gnina_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
         try:
-            gnina_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / 'gnina_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+            gnina_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
         except Exception as e:
             printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
             printlog(e)
@@ -137,21 +137,21 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
         vinardo_rescoring_folder = rescoring_folder / 'Vinardo_rescoring'
         vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results = vinardo_rescoring_folder / 'rescored_Vinardo.sdf'
-        vinardo_cmd = [
-            f"{software}/gnina",
-            f"--receptor {protein_file}",
-            f"--ligand {sdf}",
-            f"--out {results}",
-            f"--center_x {pocket_definition['center'][0]}",
-            f"--center_y {pocket_definition['center'][1]}",
-            f"--center_z {pocket_definition['center'][2]}",
-            f"--size_x {pocket_definition['size'][0]}",
-            f"--size_y {pocket_definition['size'][1]}",
-            f"--size_z {pocket_definition['size'][2]}",
-            "--score_only",
-            "--scoring vinardo",
-            "--cnn_scoring none"
-        ]
+        vinardo_cmd = (
+            f"{software}/gnina"
+            f" --receptor {protein_file}"
+            f" --ligand {sdf}"
+            f" --out {results}"
+            f" --center_x {pocket_definition['center'][0]}"
+            f" --center_y {pocket_definition['center'][1]}"
+            f" --center_z {pocket_definition['center'][2]}"
+            f" --size_x {pocket_definition['size'][0]}"
+            f" --size_y {pocket_definition['size'][1]}"
+            f" --size_z {pocket_definition['size'][2]}"
+            " --score_only"
+            " --scoring vinardo"
+            " --cnn_scoring none"
+        )
         subprocess.call(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         vinardo_rescoring_results = PandasTools.LoadSDF(str(results), idName='Pose ID', molColName=None,
                                                         includeFingerprints=False, removeHs=False)
@@ -183,21 +183,21 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
         ad4_rescoring_folder.mkdir(parents=True, exist_ok=True)
         results = ad4_rescoring_folder / 'rescored_AD4.sdf'
     
-        AD4_cmd = [
-            f"{software}/gnina",
-            f"--receptor {protein_file}",
-            f"--ligand {sdf}",
-            f"--out {results}",
-            f"--center_x {pocket_definition['center'][0]}",
-            f"--center_y {pocket_definition['center'][1]}",
-            f"--center_z {pocket_definition['center'][2]}",
-            f"--size_x {pocket_definition['size'][0]}",
-            f"--size_y {pocket_definition['size'][1]}",
-            f"--size_z {pocket_definition['size'][2]}",
-            "--score_only",
-            "--scoring ad4_scoring",
-            "--cnn_scoring none"
-        ]
+        AD4_cmd = (
+            f"{software}/gnina"
+            f" --receptor {protein_file}"
+            f" --ligand {sdf}"
+            f" --out {results}"
+            f" --center_x {pocket_definition['center'][0]}"
+            f" --center_y {pocket_definition['center'][1]}"
+            f" --center_z {pocket_definition['center'][2]}"
+            f" --size_x {pocket_definition['size'][0]}"
+            f" --size_y {pocket_definition['size'][1]}"
+            f" --size_z {pocket_definition['size'][2]}"
+            " --score_only"
+            " --scoring ad4_scoring"
+            " --cnn_scoring none"
+        )
     
         subprocess.run(AD4_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     
@@ -597,7 +597,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
         split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
         global RTMScore_rescoring_splitted
         
-        def RTMScore_rescoring_splitted(split_file, protein_file, ncpus):
+        def RTMScore_rescoring_splitted(split_file, protein_file):
             output_file = str(rescoring_folder / 'RTMScore_rescoring' / f'{split_file.stem}_RTMScore.csv')
             try:
                 rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=str(f'{software}/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
@@ -605,7 +605,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
                 printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
                 rtmscore(prot=protein_file, lig=split_file, output=output_file, model=str(f'{software}/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
             
-        res = parallel_executor(RTMScore_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+        res = parallel_executor(RTMScore_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
         
         results_dataframes = [pd.read_csv(file) for file in glob.glob(str(rescoring_folder / 'RTMScore_rescoring' / 'split*.csv'))]
         results = pd.concat(results_dataframes)
@@ -702,8 +702,8 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
         A pandas DataFrame containing the rescored poses and their scores.
         """
         tic = time.perf_counter()
-        rescoring_folder / 'AAScore_rescoring'.mkdir(parents=True, exist_ok=True)
-        pocket = protein_file.replace('.pdb', '_pocket.pdb')
+        (rescoring_folder / 'AAScore_rescoring').mkdir(parents=True, exist_ok=True)
+        pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
 
         if ncpus == 1:
             printlog('Rescoring with AAScore')
@@ -872,7 +872,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
     'PLP': (plp_rescoring, 'PLP'),
     'CHEMPLP': (chemplp_rescoring, 'CHEMPLP'),
     'NNScore': (oddt_nnscore_rescoring, 'NNScore'),
-    'PLECScore': (oddt_plecscore_rescoring, 'PLECnn'),
+    'PLECnn': (oddt_plecscore_rescoring, 'PLECnn'),
     'LinF9': (LinF9_rescoring, 'LinF9'),
     'AAScore': (AAScore_rescoring, 'AAScore'),
     'ECIF': (ECIF_rescoring, 'ECIF'),
@@ -881,12 +881,12 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
     'KORPL': (KORPL_rescoring, 'KORPL'),
     'ConvexPLR': (ConvexPLR_rescoring, 'ConvexPLR')
     #add new scoring functions here!
-}
+    }
 
     skipped_functions = []
     for function in functions:
         if not (rescoring_folder / f'{function}_rescoring' / f'{function}_scores.csv').is_file():
-            rescoring_functions[function][0](clustered_sdf, ncpus, )
+            rescoring_functions[function][0](clustered_sdf, ncpus, rescoring_functions[function][1])
         else:
             skipped_functions.append(function)
     if skipped_functions:
