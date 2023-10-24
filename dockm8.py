@@ -17,7 +17,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Parse required arguments')
 #parser.add_argument('--software', required=True, type=str, help ='Path to software folder')
 parser.add_argument('--proteinfile', required=True, type=str, help ='Path to protein file')
-parser.add_argument('--pocket', required=True, type = str, choices = ['reference', 'dogsitescorer'], help ='Method to use for pocket determination')
+parser.add_argument('--pocket', required=True, type = str, choices = ['reference', 'RoG', 'dogsitescorer'], help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, help ='Path to reference ligand file')
 parser.add_argument('--dockinglibrary', required=True, type=str, help ='Path to docking library file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Unique identifier column')
@@ -28,11 +28,11 @@ parser.add_argument('--nposes', default=10, type=int, help ='Number of poses')
 parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision of SMINA/GNINA')
 parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of cpus to use')
 parser.add_argument('--clustering', type = str, choices = ['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
-parser.add_argument('--rescoring', type = str, nargs='+', choices = ['gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore'], help='Rescoring methods to use')
+parser.add_argument('--rescoring', type = str, nargs='+', choices = ['GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore', 'NNScore', 'PLECnn', 'KORPL', 'ConvexPLR'], help='Rescoring methods to use')
 
 args = parser.parse_args()
 
-if args.pocket == 'reference' and not args.reffile:
+if args.pocket == 'reference' or args.pocket == 'RoG' and not args.reffile:
     parser.error("Must specify a reference ligand file when --pocket is set to 'reference'")
     
 if any(metric in args.clustering for metric in ['RMSD', 'spyRMSD', 'espsim', 'USRCAT']) and not args.clustering:
@@ -73,7 +73,7 @@ def run_command(**kwargs):
 
     for metric in kwargs.get('metric'):
         if os.path.isfile(w_dir+f'/temp/clustering/{metric}_clustered.sdf') == False:
-            cluster(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'), all_poses, kwargs.get('ncpus'))
+            cluster_pebble(metric, kwargs.get('clustering'), w_dir, kwargs.get('proteinfile'), all_poses, kwargs.get('ncpus'))
     
     for metric in kwargs.get('metric'):
         rescore_all(w_dir, kwargs.get('proteinfile'), pocket_definition, w_dir+f'/temp/clustering/{metric}_clustered.sdf', kwargs.get('rescoring'), kwargs.get('ncpus'))
