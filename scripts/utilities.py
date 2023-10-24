@@ -251,10 +251,10 @@ def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
                     except Exception as e:
                         printlog("Error in concurrent futures job creation: " + str(e))
                 for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs)):
-                    #try:
+                    try:
                         res = job.result()
-                    #except Exception as e:
-                        #printlog("Error in concurrent futures job run: " + str(e))
+                    except Exception as e:
+                        printlog("Error in concurrent futures job run: " + str(e))
     return res
 
 def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
