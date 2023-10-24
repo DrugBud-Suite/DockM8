@@ -153,8 +153,7 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
             clustering_metric = file.replace('_standardised.csv', '')
             std_df = pd.read_csv(Path(w_dir) / 'ranking' / file)
             numeric_cols = std_df.select_dtypes(include='number').columns
-            std_df_grouped = std_df.groupby(
-                'ID')[numeric_cols].mean().reset_index()
+            std_df_grouped = std_df.groupby('ID')[numeric_cols].mean().reset_index()
             merged_df = pd.merge(std_df_grouped, original_df, on='ID')
 
             for col in merged_df.columns:
