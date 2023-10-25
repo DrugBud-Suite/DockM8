@@ -139,18 +139,9 @@ def upload_pdb_file(filepath):
     # Open the local PDB file for reading in binary mode
     with open(Path(filepath).with_suffix(".pdb"), "rb") as f:
         # Post API query and get the response
-        url_of_id = _send_request_get_results(
-            "post",
-            [APIConsts.FileUpload.RESPONSE_MSG["url_of_id"]],
-            APIConsts.FileUpload.URL,
-            files={APIConsts.FileUpload.REQUEST_MSG: f}
-        )[0]
+        url_of_id = _send_request_get_results("post",[APIConsts.FileUpload.RESPONSE_MSG["url_of_id"]],APIConsts.FileUpload.URL,files={APIConsts.FileUpload.REQUEST_MSG: f})[0]
 
-    protein_id = _send_request_get_results(
-        "get",
-        [APIConsts.FileUpload.RESPONSE_MSG_FETCH_ID["id"]],
-        url_of_id
-    )[0]
+    protein_id = _send_request_get_results("get", [APIConsts.FileUpload.RESPONSE_MSG_FETCH_ID["id"]], url_of_id)[0]
     return protein_id
 
 
@@ -191,9 +182,7 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
     # We cannot load the table from a string directly but from a file
     # Use io.StringIO to wrap this string as file-like object as needed for read_csv method
     # See more: https://docs.python.org/3/library/io.html#io.StringIO
-    result_table_df = pd.read_csv(
-        io.StringIO(result_table),
-        sep="\t").set_index("name")
+    result_table_df = pd.read_csv(io.StringIO(result_table), sep="\t").set_index("name")
     result_table_df = result_table_df[["lig_cov",
                                        "poc_cov",
                                        "lig_name",
@@ -238,20 +227,16 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
 
     # Submit job to proteins.plus
     # For details on parameters see: https://proteins.plus/help/dogsite_rest
-    r = requests.post(
-        "https://proteins.plus/api/dogsite_rest",
-        json={
-            "dogsite": {
-                "pdbCode": pdb_code,  # PDB code of protein
-                "analysisDetail": "1",  # 1 = include subpockets in results
-                "bindingSitePredictionGranularity": "1",  # 1 = include drugablity scores
-                "ligand": ligand,  # if name is specified, ligand coverage is calculated
-                "chain": chain_id,  # if chain is specified, calculation is only performed on this chain
-            }
-        },
-        headers={
-            "Content-type": "application/json",
-            "Accept": "application/json"},
+    r = requests.post("https://proteins.plus/api/dogsite_rest",json={"dogsite": {
+                                                                        "pdbCode": pdb_code,  # PDB code of protein
+                                                                        "analysisDetail": "1",  # 1 = include subpockets in results
+                                                                        "bindingSitePredictionGranularity": "1",  # 1 = include drugablity scores
+                                                                        "ligand": ligand,  # if name is specified, ligand coverage is calculated
+                                                                        "chain": chain_id,  # if chain is specified, calculation is only performed on this chain
+                                                                    }
+                                                                },
+        headers={"Content-type": "application/json",
+                 "Accept": "application/json"},
     )
 
     r.raise_for_status()

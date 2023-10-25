@@ -166,8 +166,6 @@ def ensemble_consensus(receptors:list, clustering_metric : str, method : str, th
     list of str
         List of common compounds across all receptors.
     """
-def ensemble_consensus(receptors:list, clustering_metric : str, method : str, threshold : float or int):
-
     topn_dataframes = []
     
     for receptor in receptors:
