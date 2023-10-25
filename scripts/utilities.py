@@ -120,8 +120,7 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
             mol_name = f"molecule_{mol.GetIdx()}"
 
         valid_filename = "".join(
-            c for c in mol_name if c.isalnum() or c in (
-                ' ', '.', '_')).rstrip()
+            c for c in mol_name if c.isalnum() or c in (' ', '.', '_')).rstrip()
         output_file = Path(output_dir) / f"{valid_filename}.pdbqt"
         obConversion.WriteFile(mol, str(output_file))
 
@@ -141,11 +140,7 @@ def parallel_sdf_to_pdbqt(input_file, output_dir, ncpus):
 
     try:
         with ThreadPoolExecutor(max_workers=ncpus) as executor:
-            tasks = [
-                executor.submit(
-                    convert_molecule,
-                    m,
-                    output_dir) for m in molecules]
+            tasks = [executor.submit(convert_molecule, m, output_dir) for m in molecules]
             _ = [t.result() for t in tasks]
     except Exception as e:
         print(f"ERROR: Could note convert SDF file to .pdbqt: {e}")
@@ -183,16 +178,11 @@ def load_molecule(molecule_file):
         RDKit molecule instance for the loaded molecule.
     """
     if molecule_file.endswith('.mol2'):
-        mol = Chem.MolFromMol2File(
-            molecule_file, sanitize=False, removeHs=False)
+        mol = Chem.MolFromMol2File(molecule_file, sanitize=False, removeHs=False)
     if molecule_file.endswith('.mol'):
-        mol = Chem.MolFromMolFile(
-            molecule_file,
-            sanitize=False,
-            removeHs=False)
+        mol = Chem.MolFromMolFile(molecule_file, sanitize=False, removeHs=False)
     elif molecule_file.endswith('.sdf'):
-        supplier = Chem.SDMolSupplier(
-            molecule_file, sanitize=False, removeHs=False)
+        supplier = Chem.SDMolSupplier(molecule_file, sanitize=False, removeHs=False)
         mol = supplier[0]
     elif molecule_file.endswith('.pdbqt'):
         with open(molecule_file) as f:
@@ -202,10 +192,7 @@ def load_molecule(molecule_file):
             pdb_block += '{}\n'.format(line[:66])
         mol = Chem.MolFromPDBBlock(pdb_block, sanitize=False, removeHs=False)
     elif molecule_file.endswith('.pdb'):
-        mol = Chem.MolFromPDBFile(
-            molecule_file,
-            sanitize=False,
-            removeHs=False)
+        mol = Chem.MolFromPDBFile(molecule_file, sanitize=False, removeHs=False)
     else:
         return ValueError(
             f'Expect the format of the molecule_file to be '
@@ -222,11 +209,7 @@ def convert_pdb_to_pdbqt(protein_file):
 
     # Execute command
     try:
-        subprocess.call(
-            obabel_command,
-            shell=True,
-            stdout=DEVNULL,
-            stderr=STDOUT)
+        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         print(f'Conversion from PDB to PDBQT failed: {e}')
     return pdbqt_file
