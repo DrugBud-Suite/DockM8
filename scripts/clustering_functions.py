@@ -111,7 +111,7 @@ def affinity_propagation_clustering(input_dataframe: pd.DataFrame) -> pd.DataFra
     
     return merged_df
 
-def calculate_and_cluster(metric: str, method: str, df: pd.DataFrame, protein_file: str) -> pd.DataFrame:
+def calculate_and_cluster(clustering_metric: str, clustering_method: str, df: pd.DataFrame, protein_file: str) -> pd.DataFrame:
     """
     Calculates a clustering metric and performs clustering on a given dataframe.
 
@@ -124,27 +124,25 @@ def calculate_and_cluster(metric: str, method: str, df: pd.DataFrame, protein_fi
     Returns:
         clustered_df: A pandas DataFrame containing the Pose IDs of the cluster centers.
     """
-    metrics: Dict[str, Union[str, Callable]] = {
-        'RMSD': simpleRMSD_calc,
-        'spyRMSD': spyRMSD_calc,
-        'espsim': espsim_calc,
-        'USRCAT': USRCAT_calc,
-        'SPLIF': SPLIF_calc,
-        '3DScore': '3DScore'}
+    clustering_metrics: Dict[str, Union[str, Callable]] = {'RMSD': simpleRMSD_calc,
+                                                'spyRMSD': spyRMSD_calc,
+                                                'espsim': espsim_calc,
+                                                'USRCAT': USRCAT_calc,
+                                                'SPLIF': SPLIF_calc,
+                                                '3DScore': '3DScore'}
 
-    methods: Dict[str, Callable] = {
-        'KMedoids': kmedoids_S_clustering,
-        'AffProp': affinity_propagation_clustering}
+    clustering_methods: Dict[str, Callable] = {'KMedoids': kmedoids_S_clustering,
+                                    'AffProp': affinity_propagation_clustering}
 
     subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
     indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
 
-    if metric == '3DScore':
-        metric_func = metrics['spyRMSD']
-    elif metric in metrics:
-        metric_func = metrics[metric]
+    if clustering_metric == '3DScore':
+        metric_func = clustering_metrics['spyRMSD']
+    elif clustering_metric in clustering_metrics:
+        metric_func = clustering_metrics[clustering_metric]
     else:
-        raise ValueError(f"Invalid metric '{metric}'")
+        raise ValueError(f"Invalid metric '{clustering_metric}'")
 
     vectorized_calc_vec = np.vectorize(lambda x, y: metric_func(x, y, protein_file))
 
@@ -157,7 +155,7 @@ def calculate_and_cluster(metric: str, method: str, df: pd.DataFrame, protein_fi
     matrix[i, j] = results
     matrix[j, i] = results
 
-    if metric == '3DScore':
+    if clustering_metric == '3DScore':
         clustered_df = pd.DataFrame(matrix,
                                     index=df['Pose ID'].values.tolist(),
                                     columns=df['Pose ID'].values.tolist())
@@ -172,11 +170,11 @@ def calculate_and_cluster(metric: str, method: str, df: pd.DataFrame, protein_fi
                                  index=df['Pose ID'].values.tolist(),
                                  columns=df['Pose ID'].values.tolist())
         matrix_df.fillna(0)
-        clustered_df = methods[method](matrix_df)
+        clustered_df = clustering_method[clustering_method](matrix_df)
         return clustered_df
 
 
-def cluster_pebble(metric : str, method : str, w_dir : Path, protein_file : Path, all_poses : pd.DataFrame, ncpus : int):
+def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Path, protein_file : Path, all_poses : pd.DataFrame, ncpus : int):
     '''This function clusters all poses according to the metric selected using multiple CPU cores.
 
     Args:
@@ -192,18 +190,18 @@ def cluster_pebble(metric : str, method : str, w_dir : Path, protein_file : Path
     '''
     cluster_dir = Path(w_dir) / 'clustering'
     cluster_dir.mkdir(exist_ok=True)
-    cluster_file = cluster_dir / f'{metric}_clustered.sdf'
+    cluster_file = cluster_dir / f'{clustering_metric}_clustered.sdf'
     if not cluster_file.exists():
         id_list = np.unique(np.array(all_poses['ID']))
-        printlog(f"*Calculating {metric} metrics and clustering*")
+        printlog(f"*Calculating {clustering_metric} metrics and clustering*")
         best_pose_filters = {'bestpose': ('_1', '_01'),
                              'bestpose_GNINA': ('GNINA_1', 'GNINA_01'),
                              'bestpose_SMINA': ('SMINA_1', 'SMINA_01'),
                              'bestpose_QVINA2': ('QVINA2_1', 'QVINA2_01'),
                              'bestpose_QVINAW': ('QVINAW_1', 'QVINAW_01'),
                              'bestpose_PLANTS': ('PLANTS_1', 'PLANTS_01')}
-        if metric in best_pose_filters:
-            filter = best_pose_filters[metric]
+        if clustering_metric in best_pose_filters:
+            filter = best_pose_filters[clustering_metric]
             clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
             clustered_poses = clustered_poses[['Pose ID']]
         else:
@@ -211,9 +209,9 @@ def cluster_pebble(metric : str, method : str, w_dir : Path, protein_file : Path
             with pebble.ProcessPool(max_workers=ncpus) as executor:
                 tic = time.perf_counter()
                 jobs = []
-                for current_id in tqdm(id_list, desc=f'Submitting {metric} jobs...', unit='IDs'):
+                for current_id in tqdm(id_list, desc=f'Submitting {clustering_metric} jobs...', unit='IDs'):
                     try:
-                        job = executor.schedule(calculate_and_cluster, args=(metric, method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
+                        job = executor.schedule(calculate_and_cluster, args=(clustering_metric, clustering_method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
                         jobs.append(job)
                     except pebble.TimeoutError as e:
                         printlog("Timeout error in pebble job creation: " + str(e))
@@ -224,7 +222,7 @@ def cluster_pebble(metric : str, method : str, w_dir : Path, protein_file : Path
                     except Exception as e:
                         printlog("Other error in pebble job creation: " + str(e))
                 toc = time.perf_counter()
-                for job in tqdm(jobs, total=len(id_list), desc=f'Running {metric} clustering...', unit='jobs'):
+                for job in tqdm(jobs, total=len(id_list), desc=f'Running {clustering_metric} clustering...', unit='jobs'):
                     try:
                         res = job.result()
                         clustered_dataframes.append(res)
@@ -237,5 +235,5 @@ def cluster_pebble(metric : str, method : str, w_dir : Path, protein_file : Path
         filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
         PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
     else:
-        printlog(f'Clustering using {metric} already done, moving to next metric...')
+        printlog(f'Clustering using {clustering_metric} already done, moving to next metric...')
     return
