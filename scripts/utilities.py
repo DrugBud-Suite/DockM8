@@ -20,7 +20,24 @@ import concurrent.futures
 from joblib import Parallel, delayed
 
 
+import math
+from pathlib import Path
+from rdkit.Chem import PandasTools
+from tqdm import tqdm
+
+
 def split_sdf(dir, sdf_file, ncpus):
+    """
+    Split an SDF file into multiple smaller SDF files, each containing a subset of the original compounds.
+
+    Args:
+        dir (str): The directory where the split SDF files will be saved.
+        sdf_file (str): The path to the original SDF file to be split.
+        ncpus (int): The number of CPUs to use for the splitting process.
+
+    Returns:
+        Path: The path to the directory containing the split SDF files.
+    """
     sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
     print(f'Splitting SDF file {sdf_file_name}.sdf ...')
     split_files_folder = Path(dir) / f'split_{sdf_file_name}'
