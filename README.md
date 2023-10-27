@@ -50,7 +50,7 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 `git clone https://gitlab.com/Tonylac77/DockM8.git` 
 
 3. Create and activate a DockM8 conda environment:  
-`conda create -n dockm8 python=3.10` 
+`conda create -n dockm8 python=3.10`  
 `conda activate dockm8`  
 
 4. Install required packages using the following commands:  
@@ -90,19 +90,53 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 
 `python /path/to/dockm8.py --args`  
 
+
 `--software`: The path to the software folder.  
-`--proteinfile`: The path to the protein file (.pdb).  
-`--pocket`: The method to use for pocket determination. Must be one of 'reference' or 'dogsitescorer'.  
-`--dockinglibrary`: The path to the docking library file (.sdf).  
+`--mode`: Choose mode with which to run dockm8. Options are:
+  - 'single' : Regular docking on one receptor.
+  - 'ensemble' : Ensemble docking on multiple receptor conformations.  
+
+`--receptor`: The path to the protein file (.pdb) or multiple paths if using ensemble mode.  
+`--pocket`: The method to use for pocket determination. Must be one of:
+  - 'reference' : Uses reference ligand to define pocket.
+  - 'RoG' (radius of gyration) : Uses reference ligand's radius of gyration to define pocket.  
+  - 'dogsitescorer' : API call to DogSiteScorer webserver to determine pocket.  
+
+`--reffile`: The path to the reference ligand to use for pocket determination. Must be set if using 'reference' or 'RoG' pocket mode.  
+`--docking_library`: The path to the docking library file (.sdf).  
 `--idcolumn`: The unique identifier column used in the docking library.  
-`--protonation`: The method to use for compound protonation. Must be one of 'pkasolver', 'GypsumDL', or 'None'.  
-`--docking`: The method(s) to use for docking. Must be one or more of 'GNINA', 'SMINA', or 'PLANTS'.  
-`--metric`: The method(s) to use for pose clustering. Must be one or more of 'RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', or 'bestpose_PLANTS'.  
+`--protonation`: The method to use for compound protonation. Must be one of:
+  - 'pkasolver' : Use pkasolver library to protonate library
+  - 'GypsumDL' : Use GypsumDL library to protonate library
+  - 'None' : Do not protonate library  
+
+`--docking_programs`: The method(s) to use for docking. Must be one or more of:
+  - 'GNINA'
+  - 'SMINA'
+  - 'QVINAW'
+  - 'QVINA2'
+  - 'PLANTS'  
+
+`--clustering_metric`: The method(s) to use for pose clustering. Must be one or more of:
+  - 'RMSD' : Cluster compounds on RMSD matrix of poses
+  - 'spyRMSD' : Cluster compounds on symmetry-corrected RMSD matrix of poses
+  - 'espsim' : Cluster compounds on electrostatic shape similarity matrix of poses
+  - 'USRCAT' : Cluster compounds on shape similarity matrix of poses
+  - '3DScore' : Selects pose with the lowest average RMSD to all other poses
+  - 'bestpose' : Takes the best pose from each docking program
+  - 'bestpose_GNINA' : Takes the best pose from GNINA docking program
+  - 'bestpose_SMINA' : Takes the best pose from SMINA docking program
+  - 'bestpose_QVINAW' : Takes the best pose from QVINAW docking program
+  - 'bestpose_QVINA2' : Takes the best pose from QVINA2 docking program
+  - 'bestpose_PLANTS' : Takes the best pose from PLANTS docking program  
+
 `--nposes`: The number of poses to generate for each docking software. Default=10  
-`--exhaustiveness`: The precision used if docking with SMINA/GNINA. Default=8  
-`-- ncpus`: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.  
-`-- clustering`: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'.  
-`--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'gnina', 'AD4', 'chemplp', 'rfscorevs', 'LinF9', 'vinardo', 'plp', 'AAScore', 'RTMScore', 'SCORCH'.  
+`--exhaustiveness`: The precision used if docking with SMINA/GNINA/QVINA. Default=8  
+`--ncpus`: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.  
+`--clustering_method`: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'. Must be set when using 'RMSD', 'spyRMSD', 'espsim', 'USRCAT' clustering metrics.  
+`--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore', 'NNScore', 'PLECnn', 'KORPL', 'ConvexPLR'.  
+`--consensus`: Which consensus method to use. Must be one of 'method1', 'method2', 'method3', 'method4', 'method5', 'method6', 'method7'.  
+`--threshold`: Threshold in % to use when using 'ensemble' mode. Will find the hits in common in the x% of top ranked compounds in all of the conformations.  
 
 ## Running DockM8 (via Jupyter Notebook)
 
