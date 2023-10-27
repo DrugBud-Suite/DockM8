@@ -20,7 +20,6 @@ parser.add_argument('--software', required=True, type=str, help ='Path to softwa
 parser.add_argument('--mode', type = str, default='single', choices = ['single', 'ensemble', 'active_learning'], help ='Changes mode from classical docking, to ensemble or active learning mode')
 parser.add_argument('--split', default=1, ftype=int, help='Whether to split the docking library into chunks (when using very large libraries)')
 
-parser.add_argument('--software', required=True, type=str, help ='Path to software folder')
 parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to protein file or protein files if using ensemble docking mode')
 parser.add_argument('--pocket', required=True, type = str, choices = ['reference', 'RoG', 'dogsitescorer'], help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, nargs='+', help ='Path to reference ligand file')
@@ -40,7 +39,7 @@ parser.add_argument('--threshold', type=float, default=0.5, help='Threshold for 
 args = parser.parse_args()
 
 if args.mode == 'ensemble' or args.mode == 'active_learning' and not args.threshold:
-    parser.error(f"Must specify a reference ligand file when --mode is set to {args.mode} mode")
+    parser.error(f"Must specify a threshold when --mode is set to {args.mode} mode")
 
 if args.pocket == 'reference' or args.pocket == 'RoG' and not args.reffile:
     parser.error(f"Must specify a reference ligand file when --pocket is set to {args.pocket}")
