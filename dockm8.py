@@ -5,9 +5,11 @@ from scripts.docking_functions import *
 from scripts.clustering_functions import *
 from scripts.rescoring_functions import *
 from scripts.consensus_methods import *
-from scripts.get_pocket import *
-from scripts.dogsitescorer import *
 from scripts.performance_calculation import *
+from scripts.dogsitescorer import *
+from scripts.get_pocket import *
+from scripts.postprocessing import *
+from scripts.protein_preparation import *
 from IPython.display import display
 from pathlib import Path
 import numpy as np
@@ -25,6 +27,7 @@ parser.add_argument('--pocket', required=True, type = str, choices = ['reference
 parser.add_argument('--reffile', type=str, nargs='+', help ='Path to reference ligand file')
 parser.add_argument('--docking_library', required=True, type=str, help ='Path to docking library file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Unique identifier column')
+parser.add_argument('--prepare_proteins', default=1, type = int, help ='Whether or not to add hydrogens to the protein using Protoss')
 parser.add_argument('--protonation', required=True, type = str, choices = ['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
 parser.add_argument('--docking_programs', required=True, type = str, nargs='+', choices = ['GNINA', 'SMINA', 'PLANTS'], help ='Method(s) to use for docking')
 parser.add_argument('--clustering_metric', required=True, type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS'], help ='Method(s) to use for pose clustering')
@@ -47,26 +50,31 @@ if args.pocket == 'reference' or args.pocket == 'RoG' and not args.reffile:
 if any(metric in args.clustering_metric for metric in ['RMSD', 'spyRMSD', 'espsim', 'USRCAT']) and not args.clustering_method:
     parser.error("Must specify a clustering method when --clustering_metric is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
     
-def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, protonation, docking_programs, clustering_metrics, nposes, exhaustiveness, ncpus, clustering, rescoring, consensus):
+def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_protein, protonation, docking_programs, clustering_metrics, nposes, exhaustiveness, ncpus, clustering, rescoring, consensus):
     # Set working directory
     w_dir = Path(receptor).parent / Path(receptor).stem
     print('The working directory has been set to:', w_dir)
     (w_dir).mkdir(exist_ok=True)
-    # Determine pocket definition
-    if os.path.isfile(str(receptor).replace('.pdb', '_pocket.pdb')) == False:
-        if pocket == 'reference':
-            pocket_definition = get_pocket(ref, receptor, 10)
-        if pocket == 'RoG':
-            pocket_definition = get_pocket_RoG(ref, receptor)
-        elif pocket == 'dogsitescorer':
-            pocket_definition = binding_site_coordinates_dogsitescorer(receptor, w_dir, method='volume')
+    # Prepare protein
+    if prepare_protein == 1:
+        prepared_receptor = prepare_protein_protoss(receptor)
     else:
-        pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((str(receptor).replace('.pdb', '_pocket.pdb')))
+        prepared_receptor = receptor
+    # Determine pocket definition
+    if os.path.isfile(str(prepared_receptor).replace('.pdb', '_pocket.pdb')) == False:
+        if pocket == 'reference':
+            pocket_definition = get_pocket(ref, prepared_receptor, 10)
+        if pocket == 'RoG':
+            pocket_definition = get_pocket_RoG(ref, prepared_receptor)
+        elif pocket == 'dogsitescorer':
+            pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
+    else:
+        pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((str(prepared_receptor).replace('.pdb', '_pocket.pdb')))
     # Prepare docking library
     if os.path.isfile(w_dir+'/final_library.sdf') == False:
         prepare_library(docking_library, idcolumn, protonation, software, ncpus)
     # Docking
-    docking(w_dir, receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus)
+    docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus)
     concat_all_poses(w_dir, docking_programs)
     # Clustering
     for metric in clustering_metrics:
@@ -78,10 +86,10 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, protonati
             print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
     for metric in clustering_metrics:
         if os.path.isfile(w_dir+f'/clustering/{metric}_clustered.sdf') == False:
-            cluster_pebble(metric, clustering, w_dir, receptor, all_poses, ncpus)
+            cluster_pebble(metric, clustering, w_dir, prepared_receptor, all_poses, ncpus)
     # Rescoring
     for metric in clustering_metrics:
-        rescore_all(w_dir, receptor, pocket_definition, software, w_dir+f'/clustering/{metric}_clustered.sdf', rescoring, ncpus)
+        rescore_all(w_dir, prepared_receptor, pocket_definition, software, w_dir+f'/clustering/{metric}_clustered.sdf', rescoring, ncpus)
     # Consensus
     apply_consensus_methods(w_dir, clustering_metrics, consensus, rescoring, standardization_type='min_max')
 
@@ -96,6 +104,7 @@ def run_command(**kwargs):
                 ref = kwargs.get('reffile'), 
                 docking_library = kwargs.get('docking_library'), 
                 idcolumn = kwargs.get('idcolumn'), 
+                prepare_protein = kwargs.get('prepare_protein'),
                 protonation = kwargs.get('protonation'), 
                 docking = kwargs.get('docking'), 
                 clustering_metrics = kwargs.get('clustering_metric'), 
