@@ -18,6 +18,8 @@ import os
 import multiprocessing
 import concurrent.futures
 from joblib import Parallel, delayed
+from meeko import PDBQTMolecule
+from meeko import RDKitMolCreate
 
 def split_sdf(dir, sdf_file, ncpus):
     """
@@ -91,7 +93,6 @@ def split_sdf_single(dir, sdf_file):
                             idName='ID')
     print(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
     return split_files_folder
-
 
 def Insert_row(row_number, df, row_value):
     """
@@ -214,7 +215,7 @@ def meeko_to_pdbqt(sdf_path: str, output_dir: str) -> None:
         with open(output_path, 'w') as f:
             f.write(pdbqt_string)
 
-
+    
 def load_molecule(molecule_file):
     """Load a molecule from a file.
     Parameters
@@ -320,6 +321,9 @@ def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
                 printlog("Error in concurrent futures job run: " + str(e))
     return res
 
+from joblib import Parallel, delayed
+from tqdm import tqdm
+
 def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
     """
     Executes a function in parallel using joblib library.
@@ -340,5 +344,26 @@ def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
             jobs.append(job)
         except Exception as e:
             printlog("Error in joblib job creation: " + str(e))
-    results = Parallel(n_jobs=ncpus)(jobs)
+        results = Parallel(n_jobs=ncpus, verbose=10)(tqdm(jobs))
     return results
+
+import openbabel as ob
+
+def convert_molecules(input_file, output_file, input_format, output_format):
+    # Create an Open Babel molecule object
+    mol = ob.OBMol()
+    
+    # Read the input molecule file
+    obConversion = ob.OBConversion()
+    obConversion.SetInAndOutFormats(input_format, output_format)
+    obConversion.ReadFile(mol, str(input_file))
+    
+    mol_name = mol.GetTitle()
+
+    if not mol_name:
+            mol_name = f"molecule_{mol.GetIdx()}"
+
+    # Loop through each molecule in the input file
+    while obConversion.Read(mol):
+        # Write the current molecule to the output file
+        obConversion.WriteFile(mol, str(output_file))
