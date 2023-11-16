@@ -120,7 +120,7 @@ def _send_request_get_results(
     return results
 
 
-def upload_pdb_file(filepath):
+def upload_pdb_file(filepath : Path):
     """
     Upload a PDB file to the DoGSiteScorer webserver using their API
     and get back a dummy PDB code, which can be used to submit a detection job.
@@ -137,7 +137,7 @@ def upload_pdb_file(filepath):
     """
 
     # Open the local PDB file for reading in binary mode
-    with open(Path(filepath).with_suffix(".pdb"), "rb") as f:
+    with open(filepath.with_suffix(".pdb"), "rb") as f:
         # Post API query and get the response
         url_of_id = _send_request_get_results("post",[APIConsts.FileUpload.RESPONSE_MSG["url_of_id"]],APIConsts.FileUpload.URL,files={APIConsts.FileUpload.REQUEST_MSG: f})[0]
 
@@ -330,7 +330,7 @@ def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
     return result[0]
 
 
-def save_binding_site_to_file(pdbpath, binding_site_url, output_path):
+def save_binding_site_to_file(pdbpath : Path, binding_site_url):
     """
     Download and save the PDB and CCP4 files corresponding to the calculated binding sites.
 
@@ -344,9 +344,8 @@ def save_binding_site_to_file(pdbpath, binding_site_url, output_path):
     response = requests.get(binding_site_url)
     response.raise_for_status()
     response_file_content = response.content
-    file_extension = ".pdb"
-    file_name = os.path.basename(pdbpath).split(".")[0] + "_pocket.pdb"
-    with open(Path(output_path) / file_name, "wb") as f:
+    output_path = pdbpath.with_suffix('.pdb').with_name(pdbpath.stem + '_pocket.pdb')
+    with open(output_path, "wb") as f:
         f.write(response_file_content)
     return
 
@@ -381,17 +380,18 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     coordinates = [float(element) for element in coordinates_data_as_list if re.compile(r'\d+(?:\.\d*)').match(element)]
     pocket_coordinates = {
         "center": coordinates[:3],
-        "size": [coordinates[-1] * 2 for dim in range(3)],
+        "size": [coordinates[-1] for dim in range(3)],
     }
     return pocket_coordinates
 
 
-def binding_site_coordinates_dogsitescorer(pdbpath, w_dir, method='volume'):
-    pdb_upload = upload_pdb_file(str(pdbpath))
+def binding_site_coordinates_dogsitescorer(pdbpath : Path, w_dir : Path, method='volume'):
+    pdb_upload = upload_pdb_file(pdbpath)
     job_location = submit_dogsitescorer_job_with_pdbid(pdb_upload, 'A', '')
     binding_site_df = get_dogsitescorer_metadata(job_location)
+    print(binding_site_df)
     best_binding_site = sort_binding_sites(binding_site_df, method)
-    pocket = get_selected_pocket_location(job_location, best_binding_site)
-    save_binding_site_to_file(str(pdbpath), pocket, w_dir)
+    pocket_url = get_selected_pocket_location(job_location, best_binding_site)
+    save_binding_site_to_file(pdbpath, pocket_url)
     pocket_coordinates = calculate_pocket_coordinates_from_pocket_pdb_file(str(pdbpath).replace('.pdb', '_pocket.pdb'))
     return pocket_coordinates
