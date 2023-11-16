@@ -773,7 +773,7 @@ def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
                     if line.startswith('MODEL'):
                         model_number = int(line.split()[-1])
                         break
-                output_filename = file.with_name(f"{file.stem}_QVINA2_{model_number}.pdbqt")
+                output_filename = file.with_name(f"{file.stem}_QVINAW_{model_number}.pdbqt")
                 with open(output_filename, 'w') as output_file:
                     output_file.writelines(model)
             os.remove(file)
