@@ -32,7 +32,7 @@ def simpleRMSD_calc(*args):
     atom_map = list(zip(ref_atoms, target_atoms))
     
     # Calculate the distances between corresponding atoms in the two molecules
-    distances = [np.linalg.norm(np.array(args[0].GetConformer().GetAtomPosition(ref).ToXYZ()) - np.array(args[1].GetConformer().GetAtomPosition(target).ToXYZ())) for ref, target in atom_map]
+    distances = [np.linalg.norm(np.array(args[0].GetConformer().GetAtomPosition(ref)) - np.array(args[1].GetConformer().GetAtomPosition(target))) for ref, target in atom_map]
     
     # Apply the RMSD formula
     rmsd = np.sqrt(np.mean(np.square(distances)))
