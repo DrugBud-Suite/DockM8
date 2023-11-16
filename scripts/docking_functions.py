@@ -20,6 +20,7 @@ from pathlib import Path
 from meeko import PDBQTMolecule, RDKitMolCreate
 from rdkit import Chem
 from posebusters import PoseBusters
+from yaml import safe_load
 
 def qvinaw_docking(w_dir : Path, protein_file: str, pocket_definition : dict, software: str, exhaustiveness: int, n_poses: int) -> str:
     """
@@ -111,49 +112,16 @@ def qvinaw_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
                 with open(output_filename, 'w') as output_file:
                     output_file.writelines(model)
             os.remove(file)
-
-        # Convert PDBQT to SDF
-        for pose_file in results_path.glob('*.pdbqt'):
-            output_file = pose_file.with_suffix('.sdf')
-            obConversion = ob.OBConversion()
-            obConversion.SetInAndOutFormats('pdbqt', 'sdf')
-            mol = ob.OBMol()
-            if not obConversion.ReadFile(mol, str(pose_file)):
-                raise ValueError(f"Could not read file {pose_file}")
-            out = obConversion.WriteFile(mol, str(output_file))
-            if not out:
-                raise ValueError(f"Could not write to output file {output_file}")
-            os.remove(pose_file)
-    except Exception as e:
-        printlog('ERROR: Failed to parse QVINAW results!')
-        printlog(e)
-    try:
-        # Combine SDF files into a single dataframe
-        sdf_files = list(results_path.glob('*.sdf'))
-        qvinaw_poses = []
-        for sdf in sdf_files:
-            modified_lines = []
-            with open(sdf, 'r') as f:
-                lines = f.readlines()
-                for line in lines:
-                    if len(line) > 51 and line[50] != '0':
-                        line = line[:50] + '0' + line[51:]
-                    modified_lines.append(line)
-            with open(sdf, 'w') as f:
-                f.write(''.join(modified_lines))
-            df = PandasTools.LoadSDF(str(sdf),
-                                    idName='ID',
-                                    molColName='Molecule',
-                                    includeFingerprints=False,
-                                    embedProps=False,
-                                    removeHs=False,
-                                    strictParsing=False)
-            df['Pose ID'] = f'{sdf.stem}'
-            df = df.rename(columns={'REMARK': 'QVINAW_Affinity'})[['Molecule', 'QVINAW_Affinity', 'Pose ID']]
-            df['QVINAW_Affinity'] = df['QVINAW_Affinity'].str.split().str[2]
-            qvinaw_poses.append(df)
-        qvinaw_poses = pd.concat(qvinaw_poses)
-        PandasTools.WriteSDF(qvinaw_poses,
+            qvinaw_poses = pd.DataFrame(columns=['Pose ID', 'Molecule', 'QVINAW_Affinity'])
+            for pose_file in results_path.glob('*.pdbqt'):
+                pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
+                rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
+                qvinaw_poses = qvinaw_poses.append({
+                    'Pose ID': pose_file.stem,
+                    'Molecule': rdkit_mol[0],
+                    'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                    }, ignore_index=True)
+            PandasTools.WriteSDF(qvinaw_poses,
                             str(qvinaw_docking_results),
                             molColName='Molecule',
                             idName='Pose ID',
@@ -255,57 +223,20 @@ def qvina2_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
                 with open(output_filename, 'w') as output_file:
                     output_file.writelines(model)
             os.remove(file)
-
-        # Convert PDBQT to SDF
-        for pose_file in results_path.glob('*.pdbqt'):
-            output_file = pose_file.with_suffix('.sdf')
-            obConversion = ob.OBConversion()
-            obConversion.SetInAndOutFormats('pdbqt', 'sdf')
-            mol = ob.OBMol()
-            if not obConversion.ReadFile(mol, str(pose_file)):
-                raise ValueError(f"Could not read file {pose_file}")
-            out = obConversion.WriteFile(mol, str(output_file))
-            if not out:
-                raise ValueError(f"Could not write to output file {output_file}")
-            os.remove(pose_file)
-    except Exception as e:
-        printlog('ERROR: Failed to parse QVINA2 results!')
-        printlog(e)
-    try:
-        # Combine SDF files into a single dataframe
-        sdf_files = list(results_path.glob('*.sdf'))
-        qvina2_poses = []
-        for sdf in sdf_files:
-            modified_lines = []
-
-            with open(sdf, 'r') as f:
-                lines = f.readlines()
-                for line in lines:
-                    if len(line) > 51 and line[50] != '0':
-                        line = line[:50] + '0' + line[51:]
-                    modified_lines.append(line)
-
-            with open(sdf, 'w') as f:
-                f.write(''.join(modified_lines))
-            df = PandasTools.LoadSDF(str(sdf),
-                                    idName='ID',
-                                    molColName='Molecule',
-                                    includeFingerprints=False,
-                                    embedProps=False,
-                                    removeHs=False,
-                                    strictParsing=False)
-            df['Pose ID'] = f'{sdf.stem}'
-            df = df.rename(columns={'REMARK': 'QVINA2_Affinity'})[['Molecule', 'QVINA2_Affinity', 'Pose ID']]
-            df['QVINA2_Affinity'] = df['QVINA2_Affinity'].str.split().str[2]
-            qvina2_poses.append(df)
-        
-        qvina2_poses = pd.concat(qvina2_poses)
-        PandasTools.WriteSDF(qvina2_poses,
+            qvina2_poses = pd.DataFrame(columns=['Pose ID', 'Molecule', 'QVINA2_Affinity'])
+            for pose_file in results_path.glob('*.pdbqt'):
+                pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
+                rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
+                qvina2_poses = qvina2_poses.append({
+                    'Pose ID': pose_file.stem,
+                    'Molecule': rdkit_mol[0],
+                    'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                    }, ignore_index=True)
+            PandasTools.WriteSDF(qvina2_poses,
                             str(qvina2_docking_results),
                             molColName='Molecule',
                             idName='Pose ID',
-                            properties=list(qvina2_poses.columns)
-        )
+                            properties=list(qvina2_poses.columns))
     except Exception as e:
         printlog('ERROR: Failed to combine QVINA2 SDF file!')
         printlog(e)
@@ -827,11 +758,9 @@ def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
 
     results_pdbqt_files = list(results_path.glob('*.pdbqt'))
     try:
-        # Split PDBQT files by model
         for file in results_pdbqt_files:
             with open(file, 'r') as f:
                 lines = f.readlines()
-
             models = []
             current_model = []
             for line in lines:
@@ -839,7 +768,6 @@ def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
                 if line.startswith('ENDMDL'):
                     models.append(current_model)
                     current_model = []
-
             for i, model in enumerate(models):
                 for line in model:
                     if line.startswith('MODEL'):
@@ -848,58 +776,21 @@ def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
                 output_filename = file.with_name(f"{file.stem}_QVINA2_{model_number}.pdbqt")
                 with open(output_filename, 'w') as output_file:
                     output_file.writelines(model)
-            #os.remove(file)
-
-        # Convert PDBQT to SDF
+            os.remove(file)
+        qvinaw_poses = pd.DataFrame(columns=['Pose ID', 'Molecule', 'QVINAW_Affinity'])
         for pose_file in results_path.glob('*.pdbqt'):
-            output_file = pose_file.with_suffix('.sdf')
-            obConversion = ob.OBConversion()
-            obConversion.SetInAndOutFormats('pdbqt', 'sdf')
-            mol = ob.OBMol()
-            if not obConversion.ReadFile(mol, str(pose_file)):
-                raise ValueError(f"Could not read file {pose_file}")
-            out = obConversion.WriteFile(mol, str(output_file))
-            if not out:
-                raise ValueError(f"Could not write to output file {output_file}")
-            #os.remove(pose_file)
-    except Exception as e:
-        printlog('ERROR: Failed to parse QVINAW results!')
-        printlog(e)
-    try:
-        # Combine SDF files into a single dataframe
-        sdf_files = list(results_path.glob('*.sdf'))
-        qvinaw_poses = []
-        for sdf in sdf_files:
-            modified_lines = []
-
-            with open(sdf, 'r') as f:
-                lines = f.readlines()
-                for line in lines:
-                    if len(line) > 51 and line[50] != '0':
-                        line = line[:50] + '0' + line[51:]
-                    modified_lines.append(line)
-
-            with open(sdf, 'w') as f:
-                f.write(''.join(modified_lines))
-            df = PandasTools.LoadSDF(str(sdf),
-                                    idName='ID',
-                                    molColName='Molecule',
-                                    includeFingerprints=False,
-                                    embedProps=False,
-                                    removeHs=False,
-                                    strictParsing=False)
-            df['Pose ID'] = f'{sdf.stem}'
-            df = df.rename(columns={'REMARK': 'QVINAW_Affinity'})[['Molecule', 'QVINAW_Affinity', 'Pose ID']]
-            df['QVINAW_Affinity'] = df['QVINAW_Affinity'].str.split().str[2]
-            qvinaw_poses.append(df)
-        qvinaw_poses = pd.concat(qvinaw_poses)
-        qvinaw_poses = qvinaw_poses.sort_values(by='Pose ID')
-        # Write the combined dataframe to an SDF file
+            pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
+            rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
+            qvinaw_poses = qvinaw_poses.append({
+                'Pose ID': pose_file.stem,
+                'Molecule': rdkit_mol[0],
+                'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                }, ignore_index=True)
         PandasTools.WriteSDF(qvinaw_poses,
-                            str(qvinaw_docking_results),
-                            molColName='Molecule',
-                            idName='Pose ID',
-                            properties=list(qvinaw_poses.columns))
+                        str(qvinaw_docking_results),
+                        molColName='Molecule',
+                        idName='Pose ID',
+                        properties=list(qvinaw_poses.columns))
     except Exception as e:
         printlog('ERROR: Failed to combine QVINAW SDF file!')
         printlog(e)
@@ -966,7 +857,6 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
         for file in results_pdbqt_files:
             with open(file, 'r') as f:
                 lines = f.readlines()
-
             models = []
             current_model = []
             for line in lines:
@@ -974,7 +864,6 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
                 if line.startswith('ENDMDL'):
                     models.append(current_model)
                     current_model = []
-
             for i, model in enumerate(models):
                 for line in model:
                     if line.startswith('MODEL'):
@@ -984,52 +873,16 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
                 with open(output_filename, 'w') as output_file:
                     output_file.writelines(model)
             os.remove(file)
-
-        # Convert PDBQT to SDF
-        for pose_file in results_path.glob('*.pdbqt'):
-            output_file = pose_file.with_suffix('.sdf')
-            obConversion = ob.OBConversion()
-            obConversion.SetInAndOutFormats('pdbqt', 'sdf')
-            mol = ob.OBMol()
-            if not obConversion.ReadFile(mol, str(pose_file)):
-                raise ValueError(f"Could not read file {pose_file}")
-            out = obConversion.WriteFile(mol, str(output_file))
-            if not out:
-                raise ValueError(f"Could not write to output file {output_file}")
-            os.remove(pose_file)
-    except Exception as e:
-        printlog('ERROR: Failed to parse QVINA2 results!')
-        printlog(e)
-    try:
-        # Combine SDF files into a single dataframe
-        sdf_files = list(results_path.glob('*.sdf'))
-        qvina2_poses = []
-        for sdf in sdf_files:
-            modified_lines = []
-            with open(sdf, 'r') as f:
-                lines = f.readlines()
-                for line in lines:
-                    if len(line) > 51 and line[50] != '0':
-                        line = line[:50] + '0' + line[51:]
-                    modified_lines.append(line)
-            with open(sdf, 'w') as f:
-                f.write(''.join(modified_lines))
-            df = PandasTools.LoadSDF(str(sdf),
-                                    idName='ID',
-                                    molColName='Molecule',
-                                    includeFingerprints=False,
-                                    embedProps=False,
-                                    removeHs=False,
-                                    strictParsing=False)
-            df['Pose ID'] = f'{sdf.stem}'
-            df = df.rename(columns={'REMARK': 'QVINA2_Affinity'})[['Molecule', 'QVINA2_Affinity', 'Pose ID']]
-            df['QVINA2_Affinity'] = df['QVINA2_Affinity'].str.split().str[2]
-            qvina2_poses.append(df)
-        qvina2_poses = pd.concat(qvina2_poses)
-        qvina2_poses = qvina2_poses.sort_values(by='Pose ID')
-
-        # Write the combined dataframe to an SDF file
-        PandasTools.WriteSDF(qvina2_poses,
+            qvina2_poses = pd.DataFrame(columns=['Pose ID', 'Molecule', 'QVINA2_Affinity'])
+            for pose_file in results_path.glob('*.pdbqt'):
+                pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
+                rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
+                qvina2_poses = qvina2_poses.append({
+                    'Pose ID': pose_file.stem,
+                    'Molecule': rdkit_mol[0],
+                    'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                    }, ignore_index=True)
+            PandasTools.WriteSDF(qvina2_poses,
                             str(qvina2_docking_results),
                             molColName='Molecule',
                             idName='Pose ID',
@@ -1272,7 +1125,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             tic = time.perf_counter()
             protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
             
-            res = parallel_executor_joblib(qvinaw_docking_splitted, 
+            res = parallel_executor(qvinaw_docking_splitted, 
                                             split_files_sdfs, 
                                             ncpus, 
                                             w_dir = w_dir,
@@ -1362,15 +1215,15 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
     shutil.rmtree(w_dir / 'split_final_library', ignore_errors=True)
     return
 
-
 def concat_all_poses(w_dir, docking_programs, protein_file):
     """
-    Concatenates all poses from multiple docking programs into a single SDF file.
-
+    Concatenates all poses from the specified docking programs and checks them for quality using PoseBusters.
+    
     Args:
-    w_dir (str): Working directory where the SDF files are located.
-    docking_programs (list): List of docking program names.
-
+    w_dir (str): Working directory where the docking program output files are located.
+    docking_programs (list): List of strings specifying the names of the docking programs used.
+    protein_file (str): Path to the protein file used for docking.
+    
     Returns:
     None
     """
@@ -1389,17 +1242,20 @@ def concat_all_poses(w_dir, docking_programs, protein_file):
             printlog(f'ERROR: Failed to load {program} SDF file!')
             printlog(e)
     try:
-        buster = PoseBusters(config="dock")
+        start_time = time.time()
+        buster = PoseBusters(config=safe_load(open('./scripts/posebusters_config.yml')))
         all_poses['mol_cond'] = str(protein_file)
         all_poses = all_poses.rename(columns={'Molecule':'mol_pred'})
         df = buster.bust_table(all_poses)
         # Remove rows where any of the specified columns is 'False'
-        cols_to_check = ['all_atoms_connected', 'bond_lengths', 'bond_angles', 'internal_steric_clash', 'aromatic_ring_flatness', 'double_bond_flatness', 'internal_energy', 'protein-ligand_maximum_distance']
+        cols_to_check = ['all_atoms_connected', 'bond_lengths', 'bond_angles', 'internal_steric_clash', 'aromatic_ring_flatness', 'double_bond_flatness', 'protein-ligand_maximum_distance']
         df = df.loc[(df[cols_to_check] != False).all(axis=1)]
-        all_poses = df[['file', 'molecule']]
-        all_poses = df.rename(columns={'molecule':'ID', 'file':'Molecule'})
+        df.reset_index(inplace=True)
+        all_poses = all_poses[all_poses['Pose ID'].isin(df['molecule'])].rename(columns={'mol_pred':'Molecule'})  
+        end_time = time.time()
+        printlog(f"PoseBusters checking completed in {end_time - start_time:.2f} seconds.")
     except Exception as e:
-        printlog('ERROR: Failed to check poses with PoseBusters!')        
+        printlog('ERROR: Failed to check poses with PoseBusters!')     
         printlog(e)
     try:
         PandasTools.WriteSDF(all_poses,
@@ -1407,15 +1263,8 @@ def concat_all_poses(w_dir, docking_programs, protein_file):
                             molColName='Molecule',
                             idName='Pose ID',
                             properties=list(all_poses.columns))
-        printlog('All poses succesfully combined!')
+        printlog('All poses succesfully checked and combined!')
     except Exception as e:
         printlog('ERROR: Failed to write all_poses SDF file!')        
         printlog(e)
-    try:
-        printlog('Checking docking poses using PoseBusters...') 
-        buster = PoseBusters(config="dock")
-        df = buster.bust([f"{w_dir}/allposes.sdf"], None, None, full_report=True)
-
-    except:
-        printlog('ERROR: Failed to verify docking poses using PoseBusters!') 
-
+    return
