@@ -5,21 +5,15 @@ import math
 import subprocess
 from rdkit import Chem
 from meeko import MoleculePreparation
+from meeko import PDBQTWriterLegacy
 import openbabel
 import datetime
 from subprocess import DEVNULL, STDOUT
-from rdkit.Chem import AllChem
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import os
-import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 from joblib import Parallel, delayed
-from meeko import PDBQTMolecule
-from meeko import RDKitMolCreate
+
+
 
 def split_sdf(dir, sdf_file, ncpus):
     """
@@ -202,8 +196,8 @@ def meeko_to_pdbqt(sdf_path: str, output_dir: str) -> None:
     for mol in Chem.SDMolSupplier(sdf_path, removeHs=False):
         preparator = MoleculePreparation(min_ring_size=10)
         mol = Chem.AddHs(mol)
-        preparator.prepare(mol)
-        pdbqt_string = preparator.write_pdbqt_string()
+        setup_list = preparator.prepare(mol)
+        pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
 
         # Extract the molecule name from the SDF file
         mol_name = mol.GetProp('_Name')
@@ -215,7 +209,6 @@ def meeko_to_pdbqt(sdf_path: str, output_dir: str) -> None:
         with open(output_path, 'w') as f:
             f.write(pdbqt_string)
 
-    
 def load_molecule(molecule_file):
     """Load a molecule from a file.
     Parameters
