@@ -928,15 +928,13 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     split_files_folder = split_sdf((rescoring_folder / 'ConvexPLR_rescoring'), sdf, ncpus)
     split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     global ConvexPLR_rescoring_splitted
-
     def ConvexPLR_rescoring_splitted(split_file, protein_file):
         df = PandasTools.LoadSDF(str(split_file), idName='Pose ID', molColName=None)
         df = df[['Pose ID']]
-        ConvexPLR_command = (
-        f'{software}' +
-        f' --receptor {protein_file}' +
-        f' --ligand {split_file}' +
-        ' --sdf --regscore')
+        ConvexPLR_command = (f'{software}' +
+                            f' --receptor {protein_file}' +
+                            f' --ligand {split_file}' +
+                            ' --sdf --regscore')
         process = subprocess.Popen(ConvexPLR_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         stdout, stderr = process.communicate()
         energies = []
@@ -966,23 +964,23 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     return
 
 RESCORING_FUNCTIONS = {
-    'GNINA_Affinity': (gnina_rescoring, 'GNINA_Affinity'),
-    'CNN-Score': (gnina_rescoring, 'CNN-Score'),
-    'CNN-Affinity': (gnina_rescoring, 'CNN-Affinity'),
-    'Vinardo': (vinardo_rescoring, 'Vinardo'),
-    'AD4': (AD4_rescoring, 'AD4'),
-    'RFScoreVS': (rfscorevs_rescoring, 'RFScoreVS'),
-    'PLP': (plp_rescoring, 'PLP'),
-    'CHEMPLP': (chemplp_rescoring, 'CHEMPLP'),
-    'NNScore': (oddt_nnscore_rescoring, 'NNScore'),
-    'PLECScore': (oddt_plecscore_rescoring, 'PLECScore'),
-    'LinF9': (LinF9_rescoring, 'LinF9'),
-    'AAScore': (AAScore_rescoring, 'AAScore'),
-    'ECIF': (ECIF_rescoring, 'ECIF'),
-    'SCORCH': (SCORCH_rescoring, 'SCORCH'),
-    'RTMScore': (RTMScore_rescoring, 'RTMScore'),
-    'KORPL': (KORPL_rescoring, 'KORPL'),
-    'ConvexPLR': (ConvexPLR_rescoring, 'ConvexPLR')
+    'GNINA_Affinity':   (gnina_rescoring, 'GNINA_Affinity', 'min'),
+    'CNN-Score':        (gnina_rescoring, 'CNN-Score', 'max'),
+    'CNN-Affinity':     (gnina_rescoring, 'CNN-Affinity', 'max'),
+    'Vinardo':          (vinardo_rescoring, 'Vinardo', 'min'),
+    'AD4':              (AD4_rescoring, 'AD4', 'min'),
+    'RFScoreVS':        (rfscorevs_rescoring, 'RFScoreVS', 'max'),
+    'PLP':              (plp_rescoring, 'PLP', 'min'),
+    'CHEMPLP':          (chemplp_rescoring, 'CHEMPLP', 'min'),
+    'NNScore':          (oddt_nnscore_rescoring, 'NNScore', 'max'),
+    'PLECScore':        (oddt_plecscore_rescoring, 'PLECScore', 'max'),
+    'LinF9':            (LinF9_rescoring, 'LinF9', 'min'),
+    'AAScore':          (AAScore_rescoring, 'AAScore', 'max'),
+    'ECIF':             (ECIF_rescoring, 'ECIF', 'max'),
+    'SCORCH':           (SCORCH_rescoring, 'SCORCH', 'max'),
+    'RTMScore':         (RTMScore_rescoring, 'RTMScore', 'max'),
+    'KORPL':            (KORPL_rescoring, 'KORPL', 'min'),
+    'ConvexPLR':        (ConvexPLR_rescoring, 'ConvexPLR', 'max')
     #add new scoring functions here!
     }
 def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, software: Path, clustered_sdf: Path, functions: List[str], ncpus: int) -> None:
@@ -1072,32 +1070,27 @@ def rescore_docking(w_dir: Path, protein_file: Path, pocket_definition: dict, so
     all_poses = Path(f"{w_dir}/allposes.sdf")
 
     RESCORING_FUNCTIONS[function][0](all_poses, ncpus, RESCORING_FUNCTIONS[function][1], protein_file=protein_file, pocket_definition=pocket_definition, software=software, rescoring_folder=w_dir)
-
-    score_files = [f'{function}_scores.csv' for function in functions]
-    printlog(f'Combining all scores for {rescoring_folder}')
-    csv_files = [file for file in (rescoring_folder.rglob('*.csv')) if file.name in score_files]
-    csv_dfs = []
-    for file in csv_files:
-        df = pd.read_csv(file)
-        if 'Unnamed: 0' in df.columns:
-            df = df.drop(columns=['Unnamed: 0'])
-        csv_dfs.append(df)
-    combined_dfs = csv_dfs[0]
-    for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
-        combined_dfs = pd.merge(combined_dfs, df, on='Pose ID', how='inner')
-    first_column = combined_dfs.pop('Pose ID')
-    combined_dfs.insert(0, 'Pose ID', first_column)
-    columns = combined_dfs.columns
-    col = columns[1:]
-    for c in col.tolist():
-        if c == 'Pose ID':
-            pass
-        if combined_dfs[c].dtypes is not float:
-            combined_dfs[c] = combined_dfs[c].apply(pd.to_numeric, errors='coerce')
-        else:
-            pass
-    combined_dfs.to_csv(rescoring_folder / 'allposes_rescored.csv', index=False)
-
-    toc = time.perf_counter()
-    printlog(f'Rescoring complete in {toc - tic:0.4f}!')
-    return
+    
+    score_file = f'{w_dir}/{function}_rescoring/{function}_scores.csv'
+    
+    score_df = pd.read_csv(score_file)
+    if 'Unnamed: 0' in score_df.columns:
+        score_df = score_df.drop(columns=['Unnamed: 0'])
+        
+    score_df['Pose_Number'] = score_df['Pose ID'].str.split('_').str[2].astype(int)
+    score_df['Docking_program'] = score_df['Pose ID'].str.split('_').str[1].astype(str)
+    score_df['ID'] = score_df['Pose ID'].str.split('_').str[0].astype(str)
+    
+    if RESCORING_FUNCTIONS[function][0] == 'min':
+        best_pose_indices = score_df.groupby('ID')[RESCORING_FUNCTIONS[function][1]].idxmin()
+    else:
+        best_pose_indices = score_df.groupby('ID')[RESCORING_FUNCTIONS[function][1]].idxmax()
+    
+    if os.path.exists(score_file):
+        os.remove(score_file)
+    if os.path.exists(f'{w_dir}/{function}_rescoring'):
+        os.rmdir(f'{w_dir}/{function}_rescoring')
+        
+    best_poses = pd.DataFrame(score_df.loc[best_pose_indices, 'Pose ID'])
+        
+    return best_poses
