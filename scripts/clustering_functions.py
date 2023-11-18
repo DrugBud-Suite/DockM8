@@ -3,6 +3,7 @@ import pebble
 import traceback
 from scripts.clustering_metrics import *
 from scripts.utilities import *
+from scripts.rescoring_functions import *
 import pandas as pd
 import numpy as np
 import math
@@ -20,6 +21,7 @@ import multiprocessing
 import concurrent.futures
 import time
 from pathlib import Path
+
 
 
 def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -180,7 +182,7 @@ def calculate_and_cluster(clustering_metric: str, clustering_method: str, df: pd
         return clustered_df
 
 
-def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Path, protein_file : Path, all_poses : pd.DataFrame, ncpus : int):
+def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Path, protein_file: Path, pocket_definition: dict, software: Path, all_poses : pd.DataFrame, ncpus : int):
     '''This function clusters all poses according to the metric selected using multiple CPU cores.
 
     Args:
@@ -200,17 +202,18 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
     if not cluster_file.exists():
         id_list = np.unique(np.array(all_poses['ID']))
         printlog(f"*Calculating {clustering_metric} metrics and clustering*")
-        best_pose_filters = {'bestpose': ('_1', '_01'),
-                             'bestpose_GNINA': ('GNINA_1', 'GNINA_01'),
-                             'bestpose_SMINA': ('SMINA_1', 'SMINA_01'),
-                             'bestpose_QVINA2': ('QVINA2_1', 'QVINA2_01'),
-                             'bestpose_QVINAW': ('QVINAW_1', 'QVINAW_01'),
-                             'bestpose_PLANTS': ('PLANTS_1', 'PLANTS_01')}
-        if clustering_metric in best_pose_filters:
-            filter = best_pose_filters[clustering_metric]
-            clustered_poses = all_poses[all_poses['Pose ID'].str.endswith(filter)]
-            clustered_poses = clustered_poses[['Pose ID']]
-        else:
+        
+        all_poses['Pose_Number'] = all_poses['Pose ID'].str.split('_').str[2].astype(int)
+        all_poses['Docking_program'] = all_poses['Pose ID'].str.split('_').str[1].astype(str)
+
+        if clustering_metric == 'bestpose':
+            min_pose_indices = all_poses.groupby(['ID', 'Docking_program'])['Pose_Number'].idxmin()
+            clustered_poses = all_poses.loc[min_pose_indices]
+        elif clustering_metric in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']:
+            min_pose_indices = all_poses.groupby('ID')['Pose_Number'].idxmin()
+            docking_program = clustering_metric.split('_')[1]
+            clustered_poses = all_poses[all_poses['Docking_program'] == docking_program]
+        elif clustering_metric in ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore']:
             clustered_dataframes = []
             with pebble.ProcessPool(max_workers=ncpus) as executor:
                 tic = time.perf_counter()
@@ -236,10 +239,12 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
                         print(e)
                         pass
             clustered_poses = pd.concat(clustered_dataframes)
+        else:
+            clustered_poses = rescore_docking(w_dir, protein_file, pocket_definition, software, clustering_metric, ncpus)
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]', '', regex=True)
         filtered_poses = all_poses[all_poses['Pose ID'].isin(clustered_poses['Pose ID'])]
         filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
         PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
     else:
         printlog(f'Clustering using {clustering_metric} already done, moving to next metric...')
-    return
+    return filtered_poses
