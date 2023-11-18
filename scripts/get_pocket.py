@@ -15,19 +15,19 @@ pd.options.mode.chained_assignment = None
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
 
-def get_pocket(ligand_file, protein_file, radius):
+def get_pocket(ligand_file : Path, protein_file : Path, radius : int):
     """
     ligand_file: format mol
     protein_file: format pdb
     """
-    printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+    printlog(f'Extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
     ligand_mol = load_molecule(str(ligand_file))
     pocket_mol, temp_file = process_protein_and_ligand(
         str(protein_file), ligand_mol, radius)
     pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
     Chem.MolToPDBFile(pocket_mol, pocket_path)
     os.remove(temp_file)
-    printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+    printlog(f'Finished extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
     ligu = get_ligand_coordinates(ligand_mol)
     center_x = ligu['x_coord'].mean().round(2)
     center_y = ligu['y_coord'].mean().round(2)
@@ -38,12 +38,12 @@ def get_pocket(ligand_file, protein_file, radius):
     return pocket_coordinates
 
 
-def get_pocket_RoG(ligand_file, protein_file):
+def get_pocket_RoG(ligand_file : Path, protein_file : Path):
     """
     ligand_file: format mol
     protein_file: format pdb
     """
-    printlog(f'Extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+    printlog(f'Extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
     ligand_mol = load_molecule(str(ligand_file))
     radius_of_gyration = Descriptors3D.RadiusOfGyration(ligand_mol)
     printlog(f'Radius of Gyration of reference ligand is: {radius_of_gyration}')
@@ -51,7 +51,7 @@ def get_pocket_RoG(ligand_file, protein_file):
     pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
     Chem.MolToPDBFile(pocket_mol, pocket_path)
     os.remove(temp_file)
-    printlog(f'Finished extracting pocket from {protein_file} using {ligand_file} as reference ligand')
+    printlog(f'Finished extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
 
     ligu = get_ligand_coordinates(ligand_mol)
     center_x = ligu['x_coord'].mean().round(2)

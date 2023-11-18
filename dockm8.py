@@ -61,15 +61,12 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     else:
         prepared_receptor = receptor
     # Determine pocket definition
-    if os.path.isfile(str(prepared_receptor).replace('.pdb', '_pocket.pdb')) == False:
-        if pocket == 'reference':
-            pocket_definition = get_pocket(ref, prepared_receptor, 10)
-        if pocket == 'RoG':
-            pocket_definition = get_pocket_RoG(ref, prepared_receptor)
-        elif pocket == 'dogsitescorer':
-            pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
-    else:
-        pocket_definition = calculate_pocket_coordinates_from_pocket_pdb_file((str(prepared_receptor).replace('.pdb', '_pocket.pdb')))
+    if pocket == 'reference':
+        pocket_definition = get_pocket(ref, prepared_receptor, 10)
+    elif pocket == 'RoG':
+        pocket_definition = get_pocket_RoG(ref, prepared_receptor)
+    elif pocket == 'dogsitescorer':
+        pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
     # Prepare docking library
     if os.path.isfile(w_dir+'/final_library.sdf') == False:
         prepare_library(docking_library, idcolumn, protonation, software, ncpus)
