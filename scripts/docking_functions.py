@@ -119,7 +119,8 @@ def qvinaw_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
                 qvinaw_poses = qvinaw_poses.append({
                     'Pose ID': pose_file.stem,
                     'Molecule': rdkit_mol[0],
-                    'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                    'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
+                    'ID': pose_file.stem.split('_')[0]
                     }, ignore_index=True)
             PandasTools.WriteSDF(qvinaw_poses,
                             str(qvinaw_docking_results),
@@ -230,7 +231,8 @@ def qvina2_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
                 qvina2_poses = qvina2_poses.append({
                     'Pose ID': pose_file.stem,
                     'Molecule': rdkit_mol[0],
-                    'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                    'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
+                    'ID': pose_file.stem.split('_')[0]
                     }, ignore_index=True)
             PandasTools.WriteSDF(qvina2_poses,
                             str(qvina2_docking_results),
@@ -784,7 +786,8 @@ def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
             qvinaw_poses = qvinaw_poses.append({
                 'Pose ID': pose_file.stem,
                 'Molecule': rdkit_mol[0],
-                'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
+                'ID': pose_file.stem.split('_')[0]
                 }, ignore_index=True)
         PandasTools.WriteSDF(qvinaw_poses,
                         str(qvinaw_docking_results),
@@ -879,7 +882,8 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
                 qvina2_poses = qvina2_poses.append({
                     'Pose ID': pose_file.stem,
                     'Molecule': rdkit_mol[0],
-                    'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line)
+                    'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
+                    'ID': pose_file.stem.split('_')[0]
                     }, ignore_index=True)
             PandasTools.WriteSDF(qvina2_poses,
                             str(qvina2_docking_results),
