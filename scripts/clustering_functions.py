@@ -36,49 +36,55 @@ def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
     Returns:
         A dataframe containing the Pose IDs of the cluster centers.
     """
-    df = input_dataframe.copy()
-    molecule_list = input_dataframe.columns.tolist()
+    try:
+        df = input_dataframe.copy()
+        print(df)
+        molecule_list = input_dataframe.columns.tolist()
 
-    # Scale the values of the molecules in the dataframe using StandardScaler
-    scaler = StandardScaler()
-    df[molecule_list] = scaler.fit_transform(df)
+        # Scale the values of the molecules in the dataframe using StandardScaler
+        scaler = StandardScaler()
+        df[molecule_list] = scaler.fit_transform(df)
 
-    silhouette_scores = {}
-    for num_clusters in range(2, 5):
-        # Calculate silhouette average score for every cluster and select the optimal number of clusters
-        # Choosing PAM method as it's more accurate
+        silhouette_scores = {}
+        for num_clusters in range(2, 5):
+            # Calculate silhouette average score for every cluster and select the optimal number of clusters
+            # Choosing PAM method as it's more accurate
+            kmedoids = KMedoids(
+                n_clusters=num_clusters,
+                method='pam',
+                init='build',
+                max_iter=150
+            )
+            kmedoids.fit_predict(df)
+            silhouette_average_score = silhouette_score(df, kmedoids.labels_)
+            silhouette_scores[num_clusters] = silhouette_average_score
+
+        optimum_no_clusters = max(silhouette_scores, key=silhouette_scores.get)
+
+        # Apply optimized k-medoids clustering
         kmedoids = KMedoids(
-            n_clusters=num_clusters,
+            n_clusters=optimum_no_clusters,
             method='pam',
             init='build',
             max_iter=150
         )
-        kmedoids.fit_predict(df)
-        silhouette_average_score = silhouette_score(df, kmedoids.labels_)
-        silhouette_scores[num_clusters] = silhouette_average_score
+        clusters = kmedoids.fit_predict(df)
+        df['KMedoids Cluster'] = clusters
+        df['Pose ID'] = molecule_list
 
-    optimum_no_clusters = max(silhouette_scores, key=silhouette_scores.get)
+        # Determine cluster centers
+        centroids = kmedoids.cluster_centers_
+        cluster_centers = pd.DataFrame(centroids, columns=molecule_list)
 
-    # Apply optimized k-medoids clustering
-    kmedoids = KMedoids(
-        n_clusters=optimum_no_clusters,
-        method='pam',
-        init='build',
-        max_iter=150
-    )
-    clusters = kmedoids.fit_predict(df)
-    df['KMedoids Cluster'] = clusters
-    df['Pose ID'] = molecule_list
+        # Merge the dataframe with the cluster labels and the dataframe of cluster centers on the molecule list
+        merged_df = pd.merge(df, cluster_centers, on=molecule_list, how='inner')
+        merged_df = merged_df[['Pose ID']]
 
-    # Determine cluster centers
-    centroids = kmedoids.cluster_centers_
-    cluster_centers = pd.DataFrame(centroids, columns=molecule_list)
-
-    # Merge the dataframe with the cluster labels and the dataframe of cluster centers on the molecule list
-    merged_df = pd.merge(df, cluster_centers, on=molecule_list, how='inner')
-    merged_df = merged_df[['Pose ID']]
-
-    return merged_df
+        return merged_df
+    except Exception as e:
+        print(f"Error in kmedoids_S_clustering: {e}")
+        traceback.print_exc()
+        return None
 
 def affinity_propagation_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
     """
@@ -170,7 +176,7 @@ def calculate_and_cluster(clustering_metric: str, clustering_method: str, df: pd
                                  index=df['Pose ID'].values.tolist(),
                                  columns=df['Pose ID'].values.tolist())
         matrix_df.fillna(0)
-        clustered_df = clustering_method[clustering_method](matrix_df)
+        clustered_df = clustering_methods[clustering_method](matrix_df)
         return clustered_df
 
 

@@ -1,7 +1,6 @@
 from typing import List, Tuple
 from pandas import DataFrame
 import os
-import shutil
 import subprocess
 from subprocess import DEVNULL, STDOUT, PIPE
 import pandas as pd
@@ -26,6 +25,10 @@ from pandas import DataFrame
 from rdkit.Chem import PandasTools
 import pandas as pd
 from scripts.utilities import parallel_executor, split_sdf, delete_files, printlog
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software: str, clustered_sdf: str, functions: List[str], ncpus: int) -> None:
     """
@@ -872,7 +875,7 @@ def rescore_all(w_dir: str, protein_file: str, pocket_definition: dict, software
     'PLP': (plp_rescoring, 'PLP'),
     'CHEMPLP': (chemplp_rescoring, 'CHEMPLP'),
     'NNScore': (oddt_nnscore_rescoring, 'NNScore'),
-    'PLECnn': (oddt_plecscore_rescoring, 'PLECnn'),
+    'PLECScore': (oddt_plecscore_rescoring, 'PLECScore'),
     'LinF9': (LinF9_rescoring, 'LinF9'),
     'AAScore': (AAScore_rescoring, 'AAScore'),
     'ECIF': (ECIF_rescoring, 'ECIF'),

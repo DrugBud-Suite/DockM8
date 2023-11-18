@@ -18,25 +18,25 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Parse required arguments')
 
-parser.add_argument('--software', required=True, type=str, help ='Path to software folder')
-parser.add_argument('--mode', type = str, default='single', choices = ['single', 'ensemble', 'active_learning'], help ='Changes mode from classical docking, to ensemble or active learning mode')
-parser.add_argument('--split', default=1, ftype=int, help='Whether to split the docking library into chunks (when using very large libraries)')
+parser.add_argument('--software', required=True, type=str, help ='Path to the software folder')
+parser.add_argument('--mode', type=str, default='single', choices=['single', 'ensemble', 'active_learning'], help ='Specifies the mode: single, ensemble, or active_learning')
+parser.add_argument('--split', default=1, type=int, help='Whether to split the docking library into chunks (useful for large libraries)')
 
-parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to protein file or protein files if using ensemble docking mode')
-parser.add_argument('--pocket', required=True, type = str, choices = ['reference', 'RoG', 'dogsitescorer'], help ='Method to use for pocket determination')
-parser.add_argument('--reffile', type=str, nargs='+', help ='Path to reference ligand file')
-parser.add_argument('--docking_library', required=True, type=str, help ='Path to docking library file')
-parser.add_argument('--idcolumn', required=True, type=str, help ='Unique identifier column')
-parser.add_argument('--prepare_proteins', default=1, type = int, help ='Whether or not to add hydrogens to the protein using Protoss')
-parser.add_argument('--protonation', required=True, type = str, choices = ['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
-parser.add_argument('--docking_programs', required=True, type = str, nargs='+', choices = ['GNINA', 'SMINA', 'PLANTS'], help ='Method(s) to use for docking')
-parser.add_argument('--clustering_metric', required=True, type = str, nargs='+', choices = ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS'], help ='Method(s) to use for pose clustering')
-parser.add_argument('--nposes', default=10, type=int, help ='Number of poses')
-parser.add_argument('--exhaustiveness', default=8, type = int, help ='Precision of SMINA/GNINA')
-parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of cpus to use')
-parser.add_argument('--clustering_method', type = str, choices = ['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
-parser.add_argument('--rescoring', type = str, nargs='+', choices = ['GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore', 'NNScore', 'PLECnn', 'KORPL', 'ConvexPLR'], help='Rescoring methods to use')
-parser.add_argument('--consensus', type=str, required=True, choices=['method1', 'method2', 'method3', 'method4', 'method5', 'method6', 'method7'])
+parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to the protein file(s) or protein files if using ensemble docking mode')
+parser.add_argument('--pocket', required=True, type=str, choices=['reference', 'RoG', 'dogsitescorer'], help ='Method to use for pocket determination')
+parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the reference ligand file(s)')
+parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library file')
+parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
+parser.add_argument('--prepare_proteins', default=1, type=int, help ='Whether or not to add hydrogens to the protein using Protoss (1 for yes, 0 for no)')
+parser.add_argument('--protonation', required=True, type=str, choices=['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
+parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=['GNINA', 'SMINA', 'PLANTS'], help ='Method(s) to use for docking')
+parser.add_argument('--clustering_metric', required=True, type=str, nargs='+', choices=['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS'], help ='Method(s) to use for pose clustering')
+parser.add_argument('--nposes', default=10, type=int, help ='Number of poses to generate')
+parser.add_argument('--exhaustiveness', default=8, type=int, help ='Precision of SMINA/GNINA')
+parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of CPUs to use')
+parser.add_argument('--clustering_method', type=str, choices=['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
+parser.add_argument('--rescoring', type=str, nargs='+', choices=['GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore', 'NNScore', 'PLECScore', 'KORPL', 'ConvexPLR'], help='Rescoring methods to use')
+parser.add_argument('--consensus', type=str, required=True, choices=['method1', 'method2', 'method3', 'method4', 'method5', 'method6', 'method7'], help='Consensus method to use')
 parser.add_argument('--threshold', type=float, default=0.5, help='Threshold for ensemble and active_learning methods')
 
 args = parser.parse_args()
@@ -71,7 +71,7 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     if os.path.isfile(w_dir+'/final_library.sdf') == False:
         prepare_library(docking_library, idcolumn, protonation, software, ncpus)
     # Docking
-    docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus)
+    docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus, 'joblib')
     concat_all_poses(w_dir, docking_programs)
     # Clustering
     for metric in clustering_metrics:

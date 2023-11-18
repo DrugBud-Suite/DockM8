@@ -207,7 +207,7 @@ def meeko_to_pdbqt(sdf_path: str, output_dir: str) -> None:
 
         # Write the pdbqt string to the file
         with open(output_path, 'w') as f:
-            f.write(pdbqt_string)
+            f.write(pdbqt_string[0])
 
 def load_molecule(molecule_file):
     """Load a molecule from a file.
