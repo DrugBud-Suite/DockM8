@@ -28,7 +28,6 @@ def split_sdf(dir, sdf_file, ncpus):
         Path: The path to the directory containing the split SDF files.
     """
     sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
-    print(f'Splitting SDF file {sdf_file_name}.sdf ...')
     split_files_folder = Path(dir) / f'split_{sdf_file_name}'
     split_files_folder.mkdir(parents=True, exist_ok=True)
     for file in split_files_folder.iterdir():
@@ -41,7 +40,7 @@ def split_sdf(dir, sdf_file, ncpus):
     compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
-    for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting files'):
+    for i in tqdm(range(0, len(df), compounds_per_core)):
         chunk = df[i:i + compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
@@ -52,7 +51,7 @@ def split_sdf(dir, sdf_file, ncpus):
                             molColName='Molecule',
                             idName='ID')
         file_counter += 1
-    print(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
+    printlog(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
 def split_sdf_single(dir, sdf_file):
@@ -67,7 +66,6 @@ def split_sdf_single(dir, sdf_file):
     - split_files_folder (Path): The path to the directory containing the split SDF files.
     """
     sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
-    print(f'Splitting SDF file {sdf_file_name}.sdf ...')
     split_files_folder = Path(dir) / f'split_{sdf_file_name}'
     split_files_folder.mkdir(exist_ok=True)
     for file in split_files_folder.iterdir():
@@ -85,7 +83,7 @@ def split_sdf_single(dir, sdf_file):
                             str(output_file),
                             molColName='Molecule',
                             idName='ID')
-    print(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
+    printlog(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
     return split_files_folder
 
 def Insert_row(row_number, df, row_value):
