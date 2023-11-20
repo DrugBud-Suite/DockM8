@@ -7,6 +7,7 @@ from rdkit import Chem
 from meeko import MoleculePreparation
 from meeko import PDBQTWriterLegacy
 import openbabel
+from openbabel import pybel
 import datetime
 from subprocess import DEVNULL, STDOUT
 from concurrent.futures import ThreadPoolExecutor
@@ -179,6 +180,52 @@ def parallel_sdf_to_pdbqt(input_file: str, output_dir: str, ncpus: int) -> int:
         print(f"ERROR: Could note convert SDF file to .pdbqt: {e}")
     return len(molecules)
 
+def convert_molecules(input_file : Path, output_file : Path, input_format : str, output_format : str):
+    #For protein conversion to pdbqt file format
+    if input_format == 'pdb' and output_format == 'pdbqt':
+        try:
+            obConversion = openbabel.OBConversion()
+            mol = openbabel.OBMol()
+            obConversion.ReadFile(mol, str(input_file))
+            obConversion.SetInAndOutFormats("pdb", "pdbqt")
+            # Calculate Gasteiger charges
+            charge_model = openbabel.OBChargeModel.FindType("gasteiger")
+            charge_model.ComputeCharges(mol)
+            obConversion.WriteFile(mol, str(output_file))
+            
+            # Remove all torsions from pdbqt output
+            with open(output_file, 'r') as file:
+                lines = file.readlines()
+                lines = [line for line in lines if all(keyword not in line for keyword in ['between atoms:', 'BRANCH', 'ENDBRANCH', 'torsions', 'Active', 'ENDROOT'])]
+                lines = [line.replace(line, 'TER\n') if line.startswith('TORSDOF') else line for line in lines]
+                with open(output_file, 'w') as file:
+                    file.writelines(lines)
+        except Exception as e:
+            printlog(f"Error occurred during conversion using OpenBabel: {str(e)}")
+        return output_file
+    #For compound conversion to pdbqt file format
+    if input_format == 'sdf' and output_format == 'pdbqt':
+        for mol in Chem.SDMolSupplier(str(input_file), removeHs=False):
+            preparator = MoleculePreparation(min_ring_size=10)
+            mol = Chem.AddHs(mol)
+            setup_list = preparator.prepare(mol)
+            pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
+            mol_name = mol.GetProp('_Name')
+            output_path = Path(output_file) / f"{mol_name}.pdbqt"
+            # Write the pdbqt string to the file
+            with open(output_path, 'w') as f:
+                f.write(pdbqt_string[0])
+        return output_file
+    else:
+        try:
+            output = pybel.Outputfile(output_format, str(output_file), overwrite=True)
+            for mol in pybel.readfile(input_format, str(input_file)):
+                output.write(mol)
+            output.close()
+            printlog(f"Conversion from {input_format} to {output_format} using Pybel was successful.")
+        except Exception as e:
+            printlog(f"Error occurred during conversion using Pybel: {str(e)}")
+        return output_file
 
 def meeko_to_pdbqt(sdf_path: str, output_dir: str) -> None:
     """
@@ -240,28 +287,7 @@ def load_molecule(molecule_file):
             f'Expect the format of the molecule_file to be '
             'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
     return mol
-def convert_pdb_to_pdbqt(protein_file: Path) -> Path:
-    """
-    Converts a PDB file to PDBQT format using Open Babel.
 
-    Args:
-        protein_file (Path): Path to the input PDB file.
-
-    Returns:
-        Path: Path to the output PDBQT file.
-    """
-    # Define output file name
-    pdbqt_file = protein_file.with_suffix('.pdbqt')
-
-    # Open Babel command
-    obabel_command = f'obabel {protein_file} -O {pdbqt_file} -partialcharges Gasteiger -xr'
-
-    # Execute command
-    try:
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        print(f'Conversion from PDB to PDBQT failed: {e}')
-    return pdbqt_file
         
 
 def delete_files(folder_path: str, save_file: str) -> None:
@@ -337,24 +363,3 @@ def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
             printlog("Error in joblib job creation: " + str(e))
         results = Parallel(n_jobs=ncpus, verbose=10)(tqdm(jobs))
     return results
-
-import openbabel as ob
-
-def convert_molecules(input_file, output_file, input_format, output_format):
-    # Create an Open Babel molecule object
-    mol = ob.OBMol()
-    
-    # Read the input molecule file
-    obConversion = ob.OBConversion()
-    obConversion.SetInAndOutFormats(input_format, output_format)
-    obConversion.ReadFile(mol, str(input_file))
-    
-    mol_name = mol.GetTitle()
-
-    if not mol_name:
-            mol_name = f"molecule_{mol.GetIdx()}"
-
-    # Loop through each molecule in the input file
-    while obConversion.Read(mol):
-        # Write the current molecule to the output file
-        obConversion.WriteFile(mol, str(output_file))
