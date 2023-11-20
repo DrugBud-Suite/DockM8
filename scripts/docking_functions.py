@@ -22,7 +22,7 @@ from rdkit import Chem
 from posebusters import PoseBusters
 from yaml import safe_load
 
-def qvinaw_docking(w_dir : Path, protein_file: str, pocket_definition : dict, software: str, exhaustiveness: int, n_poses: int) -> str:
+def qvinaw_docking(w_dir : Path, protein_file: Path, pocket_definition : dict, software: Path, exhaustiveness: int, n_poses: int) -> str:
     """
     Dock a library of molecules using the QVINAW software.
 
@@ -47,11 +47,11 @@ def qvinaw_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
     results_path.mkdir(parents=True, exist_ok=True)
 
     # Convert the protein file to .pdbqt format
-    protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
+    protein_file_pdbqt = convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), str(protein_file).replace('.pdb', '_pocket.pdbqt'), 'pdb', 'pdbqt')
 
     try:
         print('Converting molecules to .pdbqt using Meeko')
-        meeko_to_pdbqt(str(library), str(pdbqt_files_folder))
+        convert_molecules(library, str(pdbqt_files_folder), 'sdf', 'pdbqt')
     except Exception as e:
         print('Failed to convert sdf file to .pdbqt')
         print(e)
@@ -108,7 +108,7 @@ def qvinaw_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
                     if line.startswith('MODEL'):
                         model_number = int(line.split()[-1])
                         break
-                output_filename = file.with_name(f"{file.stem}_QVINA2_{model_number}.pdbqt")
+                output_filename = file.with_name(f"{file.stem}_QVINAW_{model_number}.pdbqt")
                 with open(output_filename, 'w') as output_file:
                     output_file.writelines(model)
             os.remove(file)
@@ -160,15 +160,15 @@ def qvina2_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
     results_path = qvina2_folder / 'docked'
     results_path.mkdir(parents=True, exist_ok=True)
     
-    # Convert the molecules in the library to .pdbqt format using the Meeko tool
-    protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
+    # Convert the protein file to .pdbqt format
+    protein_file_pdbqt = convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), str(protein_file).replace('.pdb', '_pocket.pdbqt'), 'pdb', 'pdbqt')
+
     try:
         print('Converting molecules to .pdbqt using Meeko')
-        meeko_to_pdbqt(str(library), str(pdbqt_files_folder))
+        convert_molecules(library, str(pdbqt_files_folder), 'sdf', 'pdbqt')
     except Exception as e:
         print('Failed to convert sdf file to .pdbqt')
         print(e)
-    
     pdbqt_files = list(pdbqt_files_folder.glob('*.pdbqt'))
     
     # Perform docking using QVINA2 for each ligand in the library
@@ -421,24 +421,12 @@ def plants_docking(w_dir : Path, protein_file, pocket_definition, software, n_po
     plants_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = w_dir / 'plants' / 'protein.mol2'
-    try:
-        printlog('Converting protein file to .mol2 format for PLANTS docking...')
-        obabel_command = 'obabel -ipdb ' + \
-            str(protein_file) + ' -O ' + str(plants_protein_mol2)
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to convert protein file to .mol2!')
-        printlog(e)
+    convert_molecules(protein_file, plants_docking_results_mol2, 'pdb', 'mol2')
     # Convert prepared ligand file to .mol2 using open babel
     library = w_dir / 'final_library.sdf'
     plants_library_mol2 = plants_folder / 'ligands.mol2'
-    try:
-        obabel_command = 'obabel -isdf ' + \
-            str(library) + ' -O ' + str(plants_library_mol2)
-        os.system(obabel_command)
-    except Exception as e:
-        printlog('ERROR: Failed to convert docking library file to .mol2!')
-        printlog(e)
+    convert_molecules(library, plants_library_mol2, 'sdf', 'mol2')
+    
     # Generate plants config file
     plants_docking_config_path = plants_folder / 'config.config'
     plants_config = ['# search algorithm\n',
@@ -502,8 +490,7 @@ def plants_docking(w_dir : Path, protein_file, pocket_definition, software, n_po
     # Convert PLANTS poses to sdf
     try:
         printlog('Converting PLANTS poses to .sdf format...')
-        obabel_command = 'obabel -imol2 ' + str(plants_docking_results_mol2) + ' -O ' + str(plants_docking_results_sdf)
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        convert_molecules(plants_docking_results_mol2, plants_docking_results_sdf, 'mol2', 'sdf')
     except Exception as e:
         printlog('ERROR: Failed to convert PLANTS poses file to .sdf!')
         printlog(e)
@@ -728,7 +715,8 @@ def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
     results_path.mkdir(parents=True, exist_ok=True)
 
     try:
-        meeko_to_pdbqt(str(split_file), str(pdbqt_files_folder))
+        print('Converting molecules to .pdbqt using Meeko')
+        convert_molecules(split_file, str(pdbqt_files_folder), 'sdf', 'pdbqt')
     except Exception as e:
         print('Failed to convert sdf file to .pdbqt')
         print(e)
@@ -823,7 +811,8 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
     results_path.mkdir(parents=True, exist_ok=True)
 
     try:
-        meeko_to_pdbqt(str(split_file), str(pdbqt_files_folder))
+        print('Converting molecules to .pdbqt using Meeko')
+        convert_molecules(split_file, str(pdbqt_files_folder), 'sdf', 'pdbqt')
     except Exception as e:
         print('Failed to convert sdf file to .pdbqt')
         print(e)
@@ -953,23 +942,11 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             plants_folder.mkdir(parents=True, exist_ok=True)
             # Convert protein file to .mol2 using open babel
             plants_protein_mol2 = plants_folder / 'protein.mol2'
-            try:
-                printlog('Converting protein file to .mol2 format for PLANTS docking...')
-                obabel_command = f'obabel -ipdb {protein_file} -O {plants_protein_mol2}'
-                subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-            except Exception as e:
-                printlog('ERROR: Failed to convert protein file to .mol2!')
-                printlog(e)
+            convert_molecules(protein_file, plants_protein_mol2, 'pdb', 'mol2')
             # Convert prepared ligand file to .mol2 using open babel
             for file in os.listdir(split_files_folder):
                 if file.endswith('.sdf'):
-                    try:
-                        obabel_command = f'obabel -isdf {split_files_folder}/{file} -O {w_dir / "plants"}/{Path(file).stem}.mol2'
-                        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-                    except Exception as e:
-                        printlog(f'ERROR: Failed to convert {file} to .mol2!')
-                        printlog(e)
-            printlog('Docking split files using PLANTS...')
+                    convert_molecules(file, file.with_suffix('.sdf', '.mol2'), 'sdf', 'mol2')
             
             if job_manager == 'multiprocessing':
                 res = parallel_executor(plants_docking_splitted, split_files_sdfs, ncpus, w_dir=w_dir, n_poses=n_poses, pocket_definition=pocket_definition, software=software)
@@ -987,8 +964,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
                     file_path = w_dir / 'plants' / item / 'docked_ligands.mol2'
                     if file_path.is_file():
                         try:
-                            obabel_command = f'obabel -imol2 {file_path} -O {file_path.with_suffix(".sdf")}'
-                            subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+                            convert_molecules(file_path, file_path.with_suffix('.sdf'),'mol2','sdf')
                             plants_poses = PandasTools.LoadSDF(str(file_path.with_suffix('.sdf')),
                                                                 idName='ID',
                                                                 molColName='Molecule',
@@ -1119,7 +1095,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
         if 'QVINAW' in docking_programs and not (w_dir / 'qvinaw').is_dir():
             printlog('Docking split files using QVINAW...')
             tic = time.perf_counter()
-            protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
+            protein_file_pdbqt = convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), str(protein_file).replace('.pdb', '_pocket.pdbqt'), 'pdb', 'pdbqt')
             
             if job_manager == 'multiprocessing':
                 res = parallel_executor(qvinaw_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
@@ -1161,7 +1137,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
         if 'QVINA2' in docking_programs and not (w_dir / 'qvina2').is_dir():
             printlog('Docking split files using QVINA2...')
             tic = time.perf_counter()
-            protein_file_pdbqt = convert_pdb_to_pdbqt(protein_file)
+            protein_file_pdbqt = convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), str(protein_file).replace('.pdb', '_pocket.pdbqt'), 'pdb', 'pdbqt')
             
             if job_manager == 'multiprocessing':
                 res = parallel_executor(qvina2_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
