@@ -196,7 +196,7 @@ def convert_molecules(input_file : Path, output_file : Path, input_format : str,
             # Remove all torsions from pdbqt output
             with open(output_file, 'r') as file:
                 lines = file.readlines()
-                lines = [line for line in lines if all(keyword not in line for keyword in ['between atoms:', 'BRANCH', 'ENDBRANCH', 'torsions', 'Active', 'ENDROOT'])]
+                lines = [line for line in lines if all(keyword not in line for keyword in ['between atoms:', 'BRANCH', 'ENDBRANCH', 'torsions', 'Active', 'ENDROOT', 'ROOT'])]
                 lines = [line.replace(line, 'TER\n') if line.startswith('TORSDOF') else line for line in lines]
                 with open(output_file, 'w') as file:
                     file.writelines(lines)
@@ -205,16 +205,19 @@ def convert_molecules(input_file : Path, output_file : Path, input_format : str,
         return output_file
     #For compound conversion to pdbqt file format
     if input_format == 'sdf' and output_format == 'pdbqt':
-        for mol in Chem.SDMolSupplier(str(input_file), removeHs=False):
-            preparator = MoleculePreparation(min_ring_size=10)
-            mol = Chem.AddHs(mol)
-            setup_list = preparator.prepare(mol)
-            pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
-            mol_name = mol.GetProp('_Name')
-            output_path = Path(output_file) / f"{mol_name}.pdbqt"
-            # Write the pdbqt string to the file
-            with open(output_path, 'w') as f:
-                f.write(pdbqt_string[0])
+        try:
+            for mol in Chem.SDMolSupplier(str(input_file), removeHs=False):
+                preparator = MoleculePreparation(min_ring_size=10)
+                mol = Chem.AddHs(mol)
+                setup_list = preparator.prepare(mol)
+                pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
+                mol_name = mol.GetProp('_Name')
+                output_path = Path(output_file) / f"{mol_name}.pdbqt"
+                # Write the pdbqt string to the file
+                with open(output_path, 'w') as f:
+                    f.write(pdbqt_string[0])
+        except Exception as e:
+            printlog(f"Error occurred during conversion using Meeko: {str(e)}")
         return output_file
     else:
         try:
@@ -222,37 +225,9 @@ def convert_molecules(input_file : Path, output_file : Path, input_format : str,
             for mol in pybel.readfile(input_format, str(input_file)):
                 output.write(mol)
             output.close()
-            printlog(f"Conversion from {input_format} to {output_format} using Pybel was successful.")
         except Exception as e:
             printlog(f"Error occurred during conversion using Pybel: {str(e)}")
         return output_file
-
-def meeko_to_pdbqt(sdf_path: str, output_dir: str) -> None:
-    """
-    Convert an SDF file containing Meeko molecules to PDBQT format and save the output files to the specified directory.
-
-    Args:
-        sdf_path (str): The path to the input SDF file.
-        output_dir (str): The path to the output directory.
-
-    Returns:
-        None
-    """
-    for mol in Chem.SDMolSupplier(sdf_path, removeHs=False):
-        preparator = MoleculePreparation(min_ring_size=10)
-        mol = Chem.AddHs(mol)
-        setup_list = preparator.prepare(mol)
-        pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
-
-        # Extract the molecule name from the SDF file
-        mol_name = mol.GetProp('_Name')
-
-        # Create the output file path
-        output_path = Path(output_dir) / f"{mol_name}.pdbqt"
-
-        # Write the pdbqt string to the file
-        with open(output_path, 'w') as f:
-            f.write(pdbqt_string[0])
 
 def load_molecule(molecule_file):
     """Load a molecule from a file.
@@ -361,5 +336,5 @@ def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
             jobs.append(job)
         except Exception as e:
             printlog("Error in joblib job creation: " + str(e))
-        results = Parallel(n_jobs=ncpus, verbose=10)(tqdm(jobs))
+        results = Parallel(n_jobs=ncpus)(tqdm(jobs))
     return results

@@ -279,21 +279,11 @@ def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     plp_rescoring_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = plp_rescoring_folder / 'protein.mol2'
-    try:
-        printlog('Converting protein file to .mol2 format for PLANTS docking...')
-        obabel_command = 'obabel -ipdb ' + str(protein_file) + ' -O ' + str(plants_protein_mol2)
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to convert protein file to .mol2!')
-        printlog(e)
-    # Convert clustered ligand file to .mol2 using open babel
+    convert_molecules(protein_file, plants_protein_mol2, 'pdb', 'mol2')
+    # Convert prepared ligand file to .mol2 using open babel
     plants_ligands_mol2 = plp_rescoring_folder / 'ligands.mol2'
-    try:
-        obabel_command = f'obabel -isdf {str(sdf)} -O {plants_ligands_mol2}'
-        os.system(obabel_command)
-    except Exception as e:
-        printlog('ERROR: Failed to convert clustered library file to .mol2!')
-        printlog(e)
+    convert_molecules(sdf, plants_ligands_mol2, 'sdf', 'mol2')
+
     # Generate plants config file
     plp_rescoring_config_path_txt = plp_rescoring_folder / 'config.txt'
     plp_config = ['# search algorithm\n',
@@ -380,22 +370,11 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     chemplp_rescoring_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = chemplp_rescoring_folder / 'protein.mol2'
-    try:
-        printlog('Converting protein file to .mol2 format for PLANTS docking...')
-        obabel_command = 'obabel -ipdb ' + \
-            str(kwargs.get('protein_file')) + ' -O ' + str(plants_protein_mol2)
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to convert protein file to .mol2!')
-        printlog(e)
-    # Convert clustered ligand file to .mol2 using open babel
+    convert_molecules(protein_file, plants_protein_mol2, 'pdb', 'mol2')
+    # Convert prepared ligand file to .mol2 using open babel
     plants_ligands_mol2 = chemplp_rescoring_folder / 'ligands.mol2'
-    try:
-        obabel_command = f'obabel -isdf {str(sdf)} -O {plants_ligands_mol2}'
-        os.system(obabel_command)
-    except Exception as e:
-        printlog('ERROR: Failed to convert clustered library file to .mol2!')
-        printlog(e)
+    convert_molecules(sdf, plants_ligands_mol2, 'sdf', 'mol2')
+    
     chemplp_rescoring_config_path_txt = chemplp_rescoring_folder / 'config.txt'
     chemplp_config = ['# search algorithm\n',
                         'search_speed ' + plants_search_speed + '\n',
@@ -599,16 +578,11 @@ def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     SCORCH_rescoring_folder = rescoring_folder / 'SCORCH_rescoring'
     SCORCH_rescoring_folder.mkdir(parents=True, exist_ok=True)
     SCORCH_protein = SCORCH_rescoring_folder / "protein.pdbqt"
-    printlog('Converting protein file to .pdbqt ...')
-    obabel_command = f'obabel -ipdb {protein_file} -O {SCORCH_protein} --partialcharges gasteiger'
-    subprocess.call(obabel_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), SCORCH_protein, 'pdb', 'pdbqt')
     # Convert ligands to pdbqt
-    sdf_file_name = sdf.stem
-    printlog(f'Converting SDF file {sdf_file_name}.sdf to .pdbqt files...')
-    split_files_folder = SCORCH_rescoring_folder / f'split_{sdf_file_name}'
+    split_files_folder = SCORCH_rescoring_folder / f'split_{sdf.stem}'
     split_files_folder.mkdir(exist_ok=True)
-    num_molecules = parallel_sdf_to_pdbqt(sdf, split_files_folder, ncpus)
-    print(f"Converted {num_molecules} molecules.")
+    convert_molecules(sdf, split_files_folder, 'sdf', 'pdbqt')
     # Run SCORCH
     printlog('Rescoring with SCORCH')
     SCORCH_command = f'python {software}/SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
