@@ -30,7 +30,7 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-def gnina_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
     Performs rescoring of ligand poses using the gnina software package. The function splits the input SDF file into
     smaller files, and then runs gnina on each of these files in parallel. The results are then combined into a single
@@ -44,7 +44,6 @@ def gnina_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     Returns:
         A Pandas dataframe containing the rescoring results.
     """
-def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     tic = time.perf_counter()
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
@@ -168,7 +167,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
         sdf (str): The path to the input SDF file containing the poses to be rescored.
         ncpus (int): The number of CPUs to be used for the rescoring process.
         column_name (str): The name of the column in the output dataframe to store the AD4 scores.
-        kwargs: Additional keyword arguments including rescoring_folder, software, protein_file, and pocket_definitions.
+        kwargs: Additional keyword arguments including rescoring_folder, software, protein_file, and pocket_de.
 
     Returns:
         DataFrame: A dataframe containing the 'Pose ID' and AD4 score columns for the rescored poses.
@@ -179,7 +178,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definition = kwargs.get('pocket_definitions')
+    pocket_definition = kwargs.get('pocket_definition')
 
     ad4_rescoring_folder = Path(rescoring_folder) / 'AD4_rescoring'
     ad4_rescoring_folder.mkdir(parents=True, exist_ok=True)
@@ -231,7 +230,7 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
         rescoring_folder (str): Path to the folder for storing the RFScoreVS rescoring results.
         software (str): Path to the RFScoreVS software.
         protein_file (str): Path to the receptor protein file.
-        pocket_definitions (dict): Dictionary containing pocket definitions.
+        pocket_de (dict): Dictionary containing pocket definitions.
 
     Returns:
         pandas.DataFrame: DataFrame containing the RFScoreVS scores for each pose in the input SDF file.
@@ -239,7 +238,7 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definitions = kwargs.get('pocket_definitions')
+    pocket_de = kwargs.get('pocket_de')
 
     tic = time.perf_counter()
     printlog('Rescoring with RFScoreVS')
@@ -486,7 +485,7 @@ def ECIF_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definitions = kwargs.get('pocket_definitions')
+    pocket_de = kwargs.get('pocket_de')
 
     printlog('Rescoring with ECIF')
     ECIF_rescoring_folder = rescoring_folder / 'ECIF_rescoring'
@@ -495,7 +494,7 @@ def ECIF_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     ligands = [split_dir / x for x in os.listdir(split_dir) if x[-3:] == "sdf"]
 
     def ECIF_rescoring_single(ligand, protein_file):
-        ECIF = GetECIF(protein_file, ligand, distance_cutoff=6.0, pocket_definitions=pocket_definitions)
+        ECIF = GetECIF(protein_file, ligand, distance_cutoff=6.0, pocket_de=pocket_de)
         ligand_descriptors = GetRDKitDescriptors(ligand)
         all_descriptors_single = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
         return all_descriptors_single
@@ -774,7 +773,7 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     - rescoring_folder (str): The path to the folder where the rescored results will be saved.
     - software (str): The path to the AA-Score software.
     - protein_file (str): The path to the protein file.
-    - pocket_definitions (str): The path to the pocket definitions file.
+    - pocket_de (str): The path to the pocket definitions file.
 
     Returns:
     - A pandas DataFrame containing the rescored poses and their scores.
@@ -783,7 +782,7 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definitions = kwargs.get('pocket_definitions')
+    pocket_de = kwargs.get('pocket_de')
 
     (rescoring_folder / 'AAScore_rescoring').mkdir(parents=True, exist_ok=True)
     pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
@@ -853,7 +852,6 @@ def KORPL_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definition = kwargs.get('pocket_definition')
 
     tic = time.perf_counter()
     (rescoring_folder / 'KORPL_rescoring').mkdir(parents=True, exist_ok=True)
@@ -922,7 +920,6 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definition = kwargs.get('pocket_definition')
     
     (rescoring_folder / 'ConvexPLR_rescoring').mkdir(parents=True, exist_ok=True)
     split_files_folder = split_sdf((rescoring_folder / 'ConvexPLR_rescoring'), sdf, ncpus)
@@ -931,7 +928,7 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     def ConvexPLR_rescoring_splitted(split_file, protein_file):
         df = PandasTools.LoadSDF(str(split_file), idName='Pose ID', molColName=None)
         df = df[['Pose ID']]
-        ConvexPLR_command = (f'{software}' +
+        ConvexPLR_command = (f'{software}/Convex-PL' +
                             f' --receptor {protein_file}' +
                             f' --ligand {split_file}' +
                             ' --sdf --regscore')
@@ -963,26 +960,27 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     printlog(f'Rescoring with ConvexPLR complete in {toc-tic:0.4f}!')
     return
 
+#add new scoring functions here!
 RESCORING_FUNCTIONS = {
-    'GNINA_Affinity':   (gnina_rescoring, 'GNINA_Affinity', 'min'),
-    'CNN-Score':        (gnina_rescoring, 'CNN-Score', 'max'),
-    'CNN-Affinity':     (gnina_rescoring, 'CNN-Affinity', 'max'),
-    'Vinardo':          (vinardo_rescoring, 'Vinardo', 'min'),
-    'AD4':              (AD4_rescoring, 'AD4', 'min'),
-    'RFScoreVS':        (rfscorevs_rescoring, 'RFScoreVS', 'max'),
-    'PLP':              (plp_rescoring, 'PLP', 'min'),
-    'CHEMPLP':          (chemplp_rescoring, 'CHEMPLP', 'min'),
-    'NNScore':          (oddt_nnscore_rescoring, 'NNScore', 'max'),
-    'PLECScore':        (oddt_plecscore_rescoring, 'PLECScore', 'max'),
-    'LinF9':            (LinF9_rescoring, 'LinF9', 'min'),
-    'AAScore':          (AAScore_rescoring, 'AAScore', 'max'),
-    'ECIF':             (ECIF_rescoring, 'ECIF', 'max'),
-    'SCORCH':           (SCORCH_rescoring, 'SCORCH', 'max'),
-    'RTMScore':         (RTMScore_rescoring, 'RTMScore', 'max'),
-    'KORPL':            (KORPL_rescoring, 'KORPL', 'min'),
-    'ConvexPLR':        (ConvexPLR_rescoring, 'ConvexPLR', 'max')
-    #add new scoring functions here!
-    }
+    'GNINA_Affinity':   (gnina_rescoring,       'GNINA_Affinity',   'min'),
+    'CNN-Score':        (gnina_rescoring,       'CNN-Score',        'max'),
+    'CNN-Affinity':     (gnina_rescoring,       'CNN-Affinity',     'max'),
+    'Vinardo':          (vinardo_rescoring,     'Vinardo',          'min'),
+    'AD4':              (AD4_rescoring,         'AD4',              'min'),
+    'RFScoreVS':        (rfscorevs_rescoring,   'RFScoreVS',        'max'),
+    'PLP':              (plp_rescoring,         'PLP',              'min'),
+    'CHEMPLP':          (chemplp_rescoring,     'CHEMPLP',          'min'),
+    'NNScore':          (oddt_nnscore_rescoring,'NNScore',          'max'),
+    'PLECScore':        (oddt_plecscore_rescoring,'PLECScore',      'max'),
+    'LinF9':            (LinF9_rescoring,       'LinF9',            'min'),
+    'AAScore':          (AAScore_rescoring,     'AAScore',          'max'),
+    'ECIF':             (ECIF_rescoring,        'ECIF',             'max'),
+    'SCORCH':           (SCORCH_rescoring,      'SCORCH',           'max'),
+    'RTMScore':         (RTMScore_rescoring,    'RTMScore',         'max'),
+    'KORPL':            (KORPL_rescoring,       'KORPL',            'min'),
+    'ConvexPLR':        (ConvexPLR_rescoring,   'ConvexPLR',        'max')}
+
+    
 def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, software: Path, clustered_sdf: Path, functions: List[str], ncpus: int) -> None:
     """
     Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into

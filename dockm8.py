@@ -29,8 +29,8 @@ parser.add_argument('--docking_library', required=True, type=str, help ='Path to
 parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
 parser.add_argument('--prepare_proteins', default=1, type=int, help ='Whether or not to add hydrogens to the protein using Protoss (1 for yes, 0 for no)')
 parser.add_argument('--protonation', required=True, type=str, choices=['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
-parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=['GNINA', 'SMINA', 'PLANTS'], help ='Method(s) to use for docking')
-parser.add_argument('--clustering_metric', required=True, type=str, nargs='+', choices=['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS'], help ='Method(s) to use for pose clustering')
+parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=['GNINA', 'SMINA', 'PLANTS', 'QVINA2', 'QVINAW'], help ='Method(s) to use for docking')
+parser.add_argument('--clustering_metric', required=True, type=str, nargs='+', choices=['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore', 'bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINA2', 'bestpose_QINVAW', 'GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore', 'NNScore', 'PLECScore', 'KORPL', 'ConvexPLR'], help ='Method(s) to use for pose clustering')
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses to generate')
 parser.add_argument('--exhaustiveness', default=8, type=int, help ='Precision of SMINA/GNINA')
 parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of CPUs to use')
@@ -83,10 +83,10 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
             print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
     for metric in clustering_metrics:
         if os.path.isfile(w_dir+f'/clustering/{metric}_clustered.sdf') == False:
-            cluster_pebble(metric, clustering, w_dir, prepared_receptor, all_poses, ncpus)
+            cluster_pebble(metric, clustering, w_dir, prepared_receptor, pocket_definition, software, all_poses, ncpus)
     # Rescoring
     for metric in clustering_metrics:
-        rescore_all(w_dir, prepared_receptor, pocket_definition, software, w_dir+f'/clustering/{metric}_clustered.sdf', rescoring, ncpus)
+        rescore_poses(w_dir, prepared_receptor, pocket_definition, software, w_dir+f'/clustering/{metric}_clustered.sdf', rescoring, ncpus)
     # Consensus
     apply_consensus_methods(w_dir, clustering_metrics, consensus, rescoring, standardization_type='min_max')
 
