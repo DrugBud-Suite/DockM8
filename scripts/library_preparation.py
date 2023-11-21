@@ -18,6 +18,8 @@ def standardize_molecule(molecule):
     standardized_molecule = standardizer.get_parent_mol(standardized_molecule)
     return standardized_molecule
 
+
+# This function standardizes a docking library using the ChemBL Structure Pipeline.
 def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus: int):
     """
     Standardizes a docking library using the ChemBL Structure Pipeline.
@@ -53,16 +55,20 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
         printlog('ERROR: Failed to Load library SDF file!')
         raise Exception('Failed to Load library SDF file!')
     try:
+        # Convert SMILES to RDKit molecules
         df.drop(columns='Molecule', inplace=True)
         df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in df['SMILES']]
     except Exception as e:
         printlog('ERROR: Failed to convert SMILES to RDKit molecules!' + e)
     # Standardize molecules using ChemBL Pipeline
     if ncpus == 1:
+        # Standardize molecules sequentially
         df['Molecule'] = [standardizer.get_parent_mol(standardizer.standardize_mol(mol)) for mol in df['Molecule']]
     else: 
+        # Standardize molecules in parallel using multiple CPUs
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
+    # Clean up the DataFrame
     df[['Molecule', 'flag']] = pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df = df.drop(columns='flag')
     df = df.loc[:, ~df.columns.duplicated()].copy()
@@ -79,8 +85,21 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
     except BaseException:
         raise Exception('Failed to write standardized library SDF file!')
 
+
+# This function protonates a compound library using pkaSolver.
 def protonate_library_pkasolver(input_sdf, output_dir):
+    """
+    Protonates a compound library using pkaSolver.
+
+    Args:
+        input_sdf (str): The path to the input SDF file containing the compound library.
+        output_dir (str): The directory where the protonated library will be saved.
+
+    Returns:
+        None
+    """
     printlog('Calculating protonation states using pkaSolver...')
+    # Load the input SDF file and convert SMILES to RDKit molecules
     try:
         input_df = PandasTools.LoadSDF(str(input_sdf),
                                         molColName='Molecule',
@@ -93,11 +112,15 @@ def protonate_library_pkasolver(input_sdf, output_dir):
     except Exception as e:
         printlog('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
         printlog(e)
+    # Calculate microstate pKa values for each molecule
     microstate_pkas = pd.DataFrame(calculate_microstate_pka_values(mol) for mol in input_df['Molecule'])
+    # Identify missing protonation states
     missing_prot_state = microstate_pkas[microstate_pkas[0].isnull()].index.tolist()
     microstate_pkas = microstate_pkas.iloc[:, 0].dropna()
+    # Create a DataFrame for protonated molecules
     protonated_df = pd.DataFrame({"Molecule": [mol.ph7_mol for mol in microstate_pkas]})
     try:
+        # Add missing protonation states to the DataFrame
         for x in missing_prot_state:
             if x > protonated_df.index.max() + 1:
                 printlog("Invalid insertion")
@@ -106,10 +129,12 @@ def protonate_library_pkasolver(input_sdf, output_dir):
     except Exception as e:
         printlog('ERROR in adding missing protonating state')
         printlog(e)
+    # Add ID column to the DataFrame
     protonated_df['ID'] = input_df['ID']
     protonated_df = protonated_df.loc[:, ~protonated_df.columns.duplicated()].copy()
     n_cpds_end = len(input_df)
     printlog(f'Protonation of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
+    # Save the protonated library as an SDF file
     output_sdf = output_dir / 'protonated_library.sdf'
     PandasTools.WriteSDF(protonated_df, str(output_sdf), molColName='Molecule', idName='ID')
     return
@@ -127,6 +152,19 @@ def generate_confomers_RDKit(input_sdf, output_dir, software, ID):
 
 
 def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software, ncpus):
+    """
+    Generates protonation states and 3D conformers using GypsumDL.
+
+    Args:
+        input_sdf (str): Path to the input SDF file.
+        output_dir (str): Path to the output directory.
+        software (str): Path to the GypsumDL software.
+        ncpus (int): Number of CPUs to use for the calculation.
+
+    Raises:
+        Exception: If failed to generate protomers and conformers.
+
+    """
     printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
     try:
         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
@@ -137,6 +175,18 @@ def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software
 
 
 def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, ncpus):
+    """
+    Generates 3D conformers using GypsumDL.
+
+    Args:
+        input_sdf (str): Path to the input SDF file.
+        output_dir (str): Path to the output directory.
+        software (str): Path to the GypsumDL software.
+        ncpus (int): Number of CPUs to use for multiprocessing.
+
+    Returns:
+        None
+    """
     printlog('Generating 3D conformers using GypsumDL...')
     try:
         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
