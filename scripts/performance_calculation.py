@@ -25,7 +25,7 @@ def process_dataframes(w_dir, rescoring_folders):
                ranked_dataframes: A dictionary containing the ranked dataframes.
     """
     rescored_dataframes = {name: pd.read_csv(Path(w_dir) / rescoring_folders[name] / 'allposes_rescored.csv') for name in rescoring_folders}
-    standardised_dataframes = {f'{name}_standardised': standardize_scores(rescored_dataframes[name]) for name in rescoring_folders}
+    standardised_dataframes = {f'{name}_standardised': standardize_scores(rescored_dataframes[name], 'min_max') for name in rescoring_folders}
     ranked_dataframes = {f'{name}_ranked': rank_scores(standardised_dataframes[f'{name}_standardised']) for name in rescoring_folders}
     return standardised_dataframes, ranked_dataframes
 
