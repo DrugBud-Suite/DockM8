@@ -936,23 +936,24 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
 #add new scoring functions here!
 RESCORING_FUNCTIONS = {
-    'GNINA_Affinity':   (gnina_rescoring,       'GNINA_Affinity',   'min'),
-    'CNN-Score':        (gnina_rescoring,       'CNN-Score',        'max'),
-    'CNN-Affinity':     (gnina_rescoring,       'CNN-Affinity',     'max'),
-    'Vinardo':          (vinardo_rescoring,     'Vinardo',          'min'),
-    'AD4':              (AD4_rescoring,         'AD4',              'min'),
-    'RFScoreVS':        (rfscorevs_rescoring,   'RFScoreVS',        'max'),
-    'PLP':              (plp_rescoring,         'PLP',              'min'),
-    'CHEMPLP':          (chemplp_rescoring,     'CHEMPLP',          'min'),
-    'NNScore':          (oddt_nnscore_rescoring,'NNScore',          'max'),
-    'PLECScore':        (oddt_plecscore_rescoring,'PLECScore',      'max'),
-    'LinF9':            (LinF9_rescoring,       'LinF9',            'min'),
-    'AAScore':          (AAScore_rescoring,     'AAScore',          'max'),
-    'ECIF':             (ECIF_rescoring,        'ECIF',             'max'),
-    'SCORCH':           (SCORCH_rescoring,      'SCORCH',           'max'),
-    'RTMScore':         (RTMScore_rescoring,    'RTMScore',         'max'),
-    'KORPL':            (KORPL_rescoring,       'KORPL',            'min'),
-    'ConvexPLR':        (ConvexPLR_rescoring,   'ConvexPLR',        'max')}
+    'GNINA_Affinity':       (gnina_rescoring,         'GNINA_Affinity',       'min', 100, -100),
+    'CNN-Score':            (gnina_rescoring,         'CNN-Score',            'max', 0, 1),
+    'CNN-Affinity':         (gnina_rescoring,         'CNN-Affinity',         'max', 0, 20),
+    'Vinardo':              (vinardo_rescoring,       'Vinardo',              'min', 200, 20),
+    'AD4':                  (AD4_rescoring,           'AD4',                  'min', 100, -100),
+    'RFScoreVS':            (rfscorevs_rescoring,     'RFScoreVS',            'max', 5, 10),
+    'PLP':                  (plp_rescoring,           'PLP',                  'min', 200, -200),
+    'CHEMPLP':              (chemplp_rescoring,       'CHEMPLP',              'min', 200, -200),
+    'NNScore':              (oddt_nnscore_rescoring,  'NNScore',              'max', 0, 20),
+    'PLECScore':            (oddt_plecscore_rescoring,'PLECScore',            'max', 0, 20),
+    'LinF9':                (LinF9_rescoring,         'LinF9',                'min', 100, -100),
+    'AAScore':              (AAScore_rescoring,       'AAScore',              'max', 100, -100),
+    'ECIF':                 (ECIF_rescoring,          'ECIF',                 'max', 0, 1),
+    'SCORCH':               (SCORCH_rescoring,        'SCORCH',               'max', 0, 1),
+    'RTMScore':             (RTMScore_rescoring,      'RTMScore',             'max', 0, 100),
+    'KORPL':                (KORPL_rescoring,         'KORPL',                'min', 200, -1000),
+    'ConvexPLR':            (ConvexPLR_rescoring,     'ConvexPLR',            'max', -10, 10)
+}
 
     
 def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, software: Path, clustered_sdf: Path, functions: List[str], ncpus: int) -> None:
