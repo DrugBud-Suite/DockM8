@@ -244,7 +244,19 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
     return r.json()["location"]
 
 
+# Function to sort the binding sites in a dataframe based on the given method
 def sort_binding_sites(dataframe, method):
+    """
+    Sorts the binding sites in a dataframe based on the given method.
+
+    Parameters:
+    dataframe (pandas.DataFrame): The dataframe containing the binding sites.
+    method (str): The method to use for sorting the binding sites. Can be 'drugScore', 'volume', or any other column name in the dataframe.
+
+    Returns:
+    pandas.DataFrame: The sorted dataframe.
+
+    """
     if method == 'drugScore':
         printlog('Sorting binding sites by drug score')
         dataframe = dataframe.sort_values(by=["drugScore"], ascending=False)
@@ -258,6 +270,7 @@ def sort_binding_sites(dataframe, method):
     return best_pocket_name
 
 
+# Function to get all pocket file locations for a finished DoGSiteScorer job
 def get_url_for_pockets(job_location, file_type="pdb"):
     """
     Get all pocket file locations for a finished DoGSiteScorer job
@@ -289,6 +302,7 @@ def get_url_for_pockets(job_location, file_type="pdb"):
         raise ValueError(f"File type {file_type} not available.")
 
 
+# Function to get the selected binding site file location
 def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
     """
     Get the selected binding site file location.
@@ -314,15 +328,19 @@ def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
 
     for pocket_file in pocket_files:
         if file_type == "pdb":
+            # Check if the pocket file matches the selected pocket id
             if f"{best_pocket}_res" in pocket_file:
                 result.append(pocket_file)
         elif file_type == "ccp4":
+            # Check if the pocket file matches the selected pocket id
             if f"{best_pocket}_gpsAll" in pocket_file:
                 result.append(pocket_file)
 
     if len(result) > 1:
+        # Raise an error if multiple matching pocket files are found
         raise TypeError(f'Multiple strings detected: {", ".join(result)}.')
     elif len(result) == 0:
+        # Raise an error if no matching pocket file is found
         raise TypeError(f"No string detected.")
     else:
         pass
@@ -330,26 +348,40 @@ def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
     return result[0]
 
 
+# Function to download and save the PDB and CCP4 files corresponding to the calculated binding sites
 def save_binding_site_to_file(pdbpath : Path, binding_site_url):
     """
     Download and save the PDB and CCP4 files corresponding to the calculated binding sites.
 
     Parameters
     ----------
-    binding_site_df : pandas.DataFrame
-        Binding site data retrieved from the DoGSiteScorer webserver.
-    output_path : str or pathlib.Path
-        Local folder path to save the files in.
+    pdbpath : pathlib.Path
+        Local path of the PDB file.
+    binding_site_url : str
+        URL of the binding site file.
+
+    Returns
+    -------
+    None
     """
+    # Send a GET request to the binding site URL
     response = requests.get(binding_site_url)
     response.raise_for_status()
+
+    # Get the content of the response
     response_file_content = response.content
+
+    # Set the output path for the PDB file
     output_path = pdbpath.with_suffix('.pdb').with_name(pdbpath.stem + '_pocket.pdb')
+
+    # Write the response content to the output file
     with open(output_path, "wb") as f:
         f.write(response_file_content)
+    
     return
 
 
+# Function to calculate the coordinates of a binding site using the binding site's PDB file
 def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     """
     Calculate the coordinates of a binding site using the binding site's PDB file
@@ -366,32 +398,53 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
         Binding site coordinates in format:
         `{'center': [x, y, z], 'size': [x, y, z]}`
     """
+    # Function to load the PDB file as a dataframe
     def load_pdb_file_as_dataframe(pdb_file_text_content):
         ppdb = PandasPdb().read_pdb_from_list(pdb_file_text_content.splitlines(True))
         pdb_df = ppdb.df
         return pdb_df
+    # Read the content of the PDB file
     with open(Path(filepath).with_suffix(".pdb")) as f:
         pdb_file_text_content = f.read()
+    # Load the PDB file as a dataframe
     pdb_file_df = load_pdb_file_as_dataframe(pdb_file_text_content)
+    # Get the pocket coordinates data from the dataframe
     pocket_coordinates_data = pdb_file_df["OTHERS"].loc[5, "entry"]
-    print(pocket_coordinates_data)
+    # Split the coordinates data into a list of strings
     coordinates_data_as_list = pocket_coordinates_data.split()
-    # select strings representing floats from a list of strings
+    # Select strings representing floats from the list of strings and convert them to floats
     coordinates = [float(element) for element in coordinates_data_as_list if re.compile(r'\d+(?:\.\d*)').match(element)]
-    pocket_coordinates = {
-        "center": coordinates[:3],
-        "size": [coordinates[-1] for dim in range(3)],
-    }
+    # Create a dictionary with the pocket coordinates
+    pocket_coordinates = {"center": coordinates[:3],
+                        "size": [coordinates[-1] for dim in range(3)],}
     return pocket_coordinates
 
 
 def binding_site_coordinates_dogsitescorer(pdbpath : Path, w_dir : Path, method='volume'):
+    """
+    Retrieves the binding site coordinates for a given PDB file using the DogSiteScorer method.
+
+    Parameters:
+    - pdbpath (Path): The path to the PDB file.
+    - w_dir (Path): The working directory path.
+    - method (str): The method used to sort the binding sites. Default is 'volume'.
+
+    Returns:
+    - pocket_coordinates (list): The coordinates of the selected binding site pocket.
+    """
+    # Upload the PDB file
     pdb_upload = upload_pdb_file(pdbpath)
+    # Submit the DoGSiteScorer job with the PDB ID
     job_location = submit_dogsitescorer_job_with_pdbid(pdb_upload, 'A', '')
+    # Get the metadata of the DoGSiteScorer job
     binding_site_df = get_dogsitescorer_metadata(job_location)
     print(binding_site_df)
+    # Sort the binding sites based on the given method
     best_binding_site = sort_binding_sites(binding_site_df, method)
+    # Get the URL of the selected binding site
     pocket_url = get_selected_pocket_location(job_location, best_binding_site)
+    # Save the binding site to a file
     save_binding_site_to_file(pdbpath, pocket_url)
+    # Calculate the pocket coordinates from the saved PDB file
     pocket_coordinates = calculate_pocket_coordinates_from_pocket_pdb_file(str(pdbpath).replace('.pdb', '_pocket.pdb'))
     return pocket_coordinates

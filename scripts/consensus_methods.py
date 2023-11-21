@@ -49,11 +49,22 @@ def method2_ECR_average(df: pd.DataFrame, clustering_metric: str, selected_colum
     Returns:
         pd.DataFrame: Dataframe with two columns: 'ID' and `Method2_ECR_{clustering_metric}`. Each row represents an ID and its corresponding average ECR rank across the clustered poses.
     """
+    # Calculate the sigma value
     sigma = 0.05 * len(df)
+    
+    # Calculate the ECR values for each selected column
     ecr_columns = np.exp(-df[selected_columns] / sigma) / sigma * 1000
+    
+    # Sum the ECR values across each row
     df[f'Method2_ECR_{clustering_metric}'] = ecr_columns.sum(axis=1)
+    
+    # Drop the selected columns from the dataframe
     df.drop(selected_columns, axis=1, inplace=True)
+    
+    # Group the dataframe by 'ID' and calculate the mean of numeric columns
     df2 = df.groupby('ID', as_index=False).mean(numeric_only=True)
+    
+    # Return the dataframe with 'ID' and 'Method2_ECR_{clustering_metric}' columns
     return df2[['ID', f'Method2_ECR_{clustering_metric}']]
 
 
@@ -208,3 +219,11 @@ def method7_Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_column
 
     # Return DataFrame with 'ID' and 'Method7_Zscore_{clustering_metric}' columns
     return df[['ID', f'Method7_Zscore_{clustering_metric}']]
+
+CONSENSUS_METHODS = {'ECR_best' : {'function' : method1_ECR_best, 'type' : 'rank'},
+                     'ECR_avg' : {'function' : method2_ECR_average, 'type' : 'rank'},
+                     'avg_ECR' : {'function' : method3_avg_ECR, 'type' : 'rank'},
+                     'RbR' : {'function' : method4_RbR, 'type' : 'rank'},
+                     'RbV' : {'function' : method5_RbV, 'type' : 'score'},
+                     'Zscore_best' : {'function' : method6_Zscore_best, 'type' : 'score'},
+                     'Zscore_avg' : {'function' : method7_Zscore_avg, 'type' : 'score'}}

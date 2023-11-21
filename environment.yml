@@ -1,12 +1,8 @@
+name: dockm8
 channels:
   - conda-forge
   - defaults
-  - pytorch
 dependencies:
-  - pytorch
-  - cudatoolkit
-  - torchvision
-  - torchaudio
   - python
   - tqdm
   - biopandas
@@ -36,11 +32,17 @@ dependencies:
   - pip:
     - pathlib
     - meeko
-    - torch-sparse
-    - torch-scatter
     - chembl_webresource_client 
     - molvs
     - git+https://github.com/mayrf/pkasolver.git
     - dgl
     - espsim
-    - torch-geometric
+    - torch @ https://download.pytorch.org/whl/cpu
+    - torchvision @ https://download.pytorch.org/whl/cpu
+    - torchaudio @ https://download.pytorch.org/whl/cpu
+    - torch_geometric
+    - torch_sparse
+    - torch_scatter
+    - torch_spline_conv
+    - posebusters
+    - prody

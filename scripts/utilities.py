@@ -13,6 +13,7 @@ from subprocess import DEVNULL, STDOUT
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 from joblib import Parallel, delayed
+import pandas as pd
 
 
 
@@ -76,15 +77,20 @@ def split_sdf_single(dir, sdf_file):
                             idName='ID',
                             includeFingerprints=False,
                             strictParsing=True)
-    compounds_per_core = 1
-    file_counter = 1
-    for i, chunk in enumerate(tqdm(df, desc='Splitting files')):
-        output_file = split_files_folder / f'split_{i+1}.sdf'
-        PandasTools.WriteSDF(chunk,
-                            str(output_file),
-                            molColName='Molecule',
-                            idName='ID')
-    printlog(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
+    for i, row in tqdm(df.iterrows(), total=len(df), desc='Splitting files'):
+        # Extract compound information from the row
+        compound = row['Molecule']
+        compound_id = row['ID']
+        # Create a new DataFrame with a single compound
+        compound_df = pd.DataFrame({'Molecule': [compound], 'ID': [compound_id]})
+        # Output file path
+        output_file = split_files_folder / f'split_{i + 1}.sdf'
+        # Write the single compound DataFrame to an SDF file
+        PandasTools.WriteSDF(compound_df,
+                             str(output_file),
+                             molColName='Molecule',
+                             idName='ID')
+    print(f'Split SDF file into {len(df)} files, each containing 1 compound')
     return split_files_folder
 
 def Insert_row(row_number, df, row_value):
@@ -120,6 +126,15 @@ def Insert_row(row_number, df, row_value):
 
 
 def printlog(message):
+    """
+    Prints the given message along with a timestamp to the console and appends it to a log file.
+
+    Args:
+        message (str): The message to be logged.
+
+    Returns:
+        None
+    """
     def timestamp_generator():
         dateTimeObj = datetime.datetime.now()
         return "[" + dateTimeObj.strftime("%Y-%b-%d %H:%M:%S") + "]"
@@ -131,57 +146,20 @@ def printlog(message):
         f_out.write(msg)
 
 
-def parallel_sdf_to_pdbqt(input_file: str, output_dir: str, ncpus: int) -> int:
+def convert_molecules(input_file : Path, output_file : Path, input_format : str, output_format : str):
     """
-    Convert an SDF file to PDBQT format in parallel using multiple CPUs.
+    Convert molecules from one file format to another.
 
     Args:
-        input_file (str): Path to the input SDF file.
-        output_dir (str): Path to the output directory where the PDBQT files will be saved.
-        ncpus (int): Number of CPUs to use for parallel processing.
+        input_file (Path): The path to the input file.
+        output_file (Path): The path to the output file.
+        input_format (str): The format of the input file.
+        output_format (str): The format of the output file.
 
     Returns:
-        int: Number of molecules converted to PDBQT format.
+        Path: The path to the converted output file.
     """
-    def convert_molecule(mol, output_dir):
-        obConversion = openbabel.OBConversion()
-        obConversion.SetInAndOutFormats("sdf", "pdbqt")
-        # Calculate Gasteiger charges
-        charge_model = openbabel.OBChargeModel.FindType("gasteiger")
-        charge_model.ComputeCharges(mol)
-        mol_name = mol.GetTitle()
-
-        if not mol_name:
-            mol_name = f"molecule_{mol.GetIdx()}"
-
-        valid_filename = "".join(c for c in mol_name if c.isalnum() or c in (' ', '.', '_')).rstrip()
-        output_file = Path(output_dir) / f"{valid_filename}.pdbqt"
-        obConversion.WriteFile(mol, str(output_file))
-
-    obConversion = openbabel.OBConversion()
-    obConversion.SetInAndOutFormats("sdf", "sdf")
-
-    if not Path(output_dir).exists():
-        Path(output_dir).mkdir(parents=True)
-
-    mol = openbabel.OBMol()
-    not_at_end = obConversion.ReadFile(mol, str(input_file))
-    molecules = []
-
-    while not_at_end:
-        molecules.append(openbabel.OBMol(mol))
-        not_at_end = obConversion.Read(mol)
-
-    try:
-        with ThreadPoolExecutor(max_workers=ncpus) as executor:
-            tasks = [executor.submit(convert_molecule, m, output_dir) for m in molecules]
-            _ = [t.result() for t in tasks]
-    except Exception as e:
-        print(f"ERROR: Could note convert SDF file to .pdbqt: {e}")
-    return len(molecules)
-
-def convert_molecules(input_file : Path, output_file : Path, input_format : str, output_format : str):
-    #For protein conversion to pdbqt file format
+    # For protein conversion to pdbqt file format using OpenBabel
     if input_format == 'pdb' and output_format == 'pdbqt':
         try:
             obConversion = openbabel.OBConversion()
@@ -192,7 +170,6 @@ def convert_molecules(input_file : Path, output_file : Path, input_format : str,
             charge_model = openbabel.OBChargeModel.FindType("gasteiger")
             charge_model.ComputeCharges(mol)
             obConversion.WriteFile(mol, str(output_file))
-            
             # Remove all torsions from pdbqt output
             with open(output_file, 'r') as file:
                 lines = file.readlines()
@@ -203,7 +180,7 @@ def convert_molecules(input_file : Path, output_file : Path, input_format : str,
         except Exception as e:
             printlog(f"Error occurred during conversion using OpenBabel: {str(e)}")
         return output_file
-    #For compound conversion to pdbqt file format
+    # For compound conversion to pdbqt file format using RDKit and Meeko
     if input_format == 'sdf' and output_format == 'pdbqt':
         try:
             for mol in Chem.SDMolSupplier(str(input_file), removeHs=False):
@@ -219,6 +196,7 @@ def convert_molecules(input_file : Path, output_file : Path, input_format : str,
         except Exception as e:
             printlog(f"Error occurred during conversion using Meeko: {str(e)}")
         return output_file
+    # For general conversion using Pybel
     else:
         try:
             output = pybel.Outputfile(output_format, str(output_file), overwrite=True)
