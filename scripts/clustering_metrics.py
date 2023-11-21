@@ -136,9 +136,12 @@ def USRCAT_calc(*args):
     return round(usr_sim, 3)
 
 CLUSTERING_METRICS = {
-        'RMSD':     {'function': simpleRMSD_calc},
-        'spyRMSD':  {'function': spyRMSD_calc},
-        'espsim':   {'function': espsim_calc},
-        'USRCAT':   {'function': USRCAT_calc},
-        'SPLIF':    {'function': SPLIF_calc},
+    'RMSD':     {'function': simpleRMSD_calc},
+    'spyRMSD':  {'function': spyRMSD_calc},
+    'espsim':   {'function': espsim_calc},
+    'USRCAT':   {'function': USRCAT_calc},
     }
+
+BROKEN_CLUSTERING_METRICS = {
+    'SPLIF':    {'function': SPLIF_calc},
+}
