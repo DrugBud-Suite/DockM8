@@ -219,3 +219,11 @@ def method7_Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_column
 
     # Return DataFrame with 'ID' and 'Method7_Zscore_{clustering_metric}' columns
     return df[['ID', f'Method7_Zscore_{clustering_metric}']]
+
+CONSENSUS_METHODS = {'ECR_best' : {'function' : method1_ECR_best, 'type' : 'rank'},
+                     'ECR_avg' : {'function' : method2_ECR_average, 'type' : 'rank'},
+                     'avg_ECR' : {'function' : method3_avg_ECR, 'type' : 'rank'},
+                     'RbR' : {'function' : method4_RbR, 'type' : 'rank'},
+                     'RbV' : {'function' : method5_RbV, 'type' : 'score'},
+                     'Zscore_best' : {'function' : method6_Zscore_best, 'type' : 'score'},
+                     'Zscore_avg' : {'function' : method7_Zscore_avg, 'type' : 'score'}}
