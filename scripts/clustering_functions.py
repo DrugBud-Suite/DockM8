@@ -40,7 +40,6 @@ def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     try:
         df = input_dataframe.copy()
-        print(df)
         molecule_list = input_dataframe.columns.tolist()
 
         # Scale the values of the molecules in the dataframe using StandardScaler
