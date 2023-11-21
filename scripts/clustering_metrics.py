@@ -134,3 +134,11 @@ def USRCAT_calc(*args):
 
     # Round the similarity score to 3 decimal places
     return round(usr_sim, 3)
+
+CLUSTERING_METRICS = {
+        'RMSD':     {'function': simpleRMSD_calc},
+        'spyRMSD':  {'function': spyRMSD_calc},
+        'espsim':   {'function': espsim_calc},
+        'USRCAT':   {'function': USRCAT_calc},
+        'SPLIF':    {'function': SPLIF_calc},
+    }

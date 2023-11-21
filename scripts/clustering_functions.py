@@ -23,7 +23,6 @@ import time
 from pathlib import Path
 
 
-
 def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Applies k-medoids clustering to the input dataframe, which contains clustering metrics.
@@ -113,29 +112,18 @@ def calculate_and_cluster(clustering_metric: str, clustering_method: str, df: pd
     Returns:
         clustered_df: A pandas DataFrame containing the Pose IDs of the cluster centers.
     """
-    # Dictionary mapping clustering metrics to their corresponding calculation functions
-    clustering_metrics: Dict[str, Union[str, Callable]] = {'RMSD': simpleRMSD_calc,
-                                                'spyRMSD': spyRMSD_calc,
-                                                'espsim': espsim_calc,
-                                                'USRCAT': USRCAT_calc,
-                                                'SPLIF': SPLIF_calc,
-                                                '3DScore': '3DScore'}
-
     # Dictionary mapping clustering methods to their corresponding clustering functions
     clustering_methods: Dict[str, Callable] = {'KMedoids': kmedoids_S_clustering,
                                     'AffProp': affinity_propagation_clustering}
-
     # Generate all possible combinations of molecules in the dataframe
     subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
-
     # Create a dictionary mapping molecule names to their indices in the dataframe
     indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
-
     # Select the appropriate clustering metric function based on the input metric
     if clustering_metric == '3DScore':
-        metric_func = clustering_metrics['spyRMSD']
-    elif clustering_metric in clustering_metrics:
-        metric_func = clustering_metrics[clustering_metric]
+        metric_func = CLUSTERING_METRICS['spyRMSD']['function']
+    elif clustering_metric in CLUSTERING_METRICS.keys():
+        metric_func = CLUSTERING_METRICS[clustering_metric]['function']
     else:
         raise ValueError(f"Invalid metric '{clustering_metric}'")
 
@@ -214,11 +202,10 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
             min_pose_indices = all_poses.groupby('ID')['Pose_Number'].idxmin()
             docking_program = clustering_metric.split('_')[1]
             clustered_poses = all_poses[all_poses['Docking_program'] == docking_program]
-        elif clustering_metric in ['RMSD', 'spyRMSD', 'espsim', 'USRCAT', '3DScore']:
+        elif clustering_metric in CLUSTERING_METRICS.keys():
             # Perform clustering using multiple CPU cores
             clustered_dataframes = []
             with pebble.ProcessPool(max_workers=ncpus) as executor:
-                tic = time.perf_counter()
                 jobs = []
                 for current_id in tqdm(id_list, desc=f'Submitting {clustering_metric} jobs...', unit='IDs'):
                     try:
@@ -233,7 +220,6 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
                         printlog("Job submission error in pebble job creation: " + str(e))
                     except Exception as e:
                         printlog("Other error in pebble job creation: " + str(e))
-                toc = time.perf_counter()
                 for job in tqdm(jobs, total=len(id_list), desc=f'Running {clustering_metric} clustering...', unit='jobs'):
                     try:
                         # Get the clustering results for each job
@@ -243,17 +229,16 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
                         print(e)
                         pass
             clustered_poses = pd.concat(clustered_dataframes)
-        else:
+        elif clustering_metric in RESCORING_FUNCTIONS.keys():
             # Perform rescoring using the specified metric scoring function
             clustered_poses = rescore_docking(w_dir, protein_file, pocket_definition, software, clustering_metric, ncpus)
-        
+        else:
+            raise ValueError(f'Invalid clustering metric: {clustering_metric}')
         # Clean up the Pose ID column
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]', '', regex=True)
-        
         # Filter the original DataFrame based on the clustered poses
         filtered_poses = all_poses[all_poses['Pose ID'].isin(clustered_poses['Pose ID'])]
         filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
-        
         # Write the filtered poses to a SDF file
         PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
     else:
