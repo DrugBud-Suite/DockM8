@@ -13,6 +13,7 @@ from subprocess import DEVNULL, STDOUT
 from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 from joblib import Parallel, delayed
+import pandas as pd
 
 
 
@@ -76,15 +77,20 @@ def split_sdf_single(dir, sdf_file):
                             idName='ID',
                             includeFingerprints=False,
                             strictParsing=True)
-    compounds_per_core = 1
-    file_counter = 1
-    for i, chunk in enumerate(tqdm(df, desc='Splitting files')):
-        output_file = split_files_folder / f'split_{i+1}.sdf'
-        PandasTools.WriteSDF(chunk,
-                            str(output_file),
-                            molColName='Molecule',
-                            idName='ID')
-    printlog(f'Split SDF file into {file_counter - 1} files each containing 1 compound')
+    for i, row in tqdm(df.iterrows(), total=len(df), desc='Splitting files'):
+        # Extract compound information from the row
+        compound = row['Molecule']
+        compound_id = row['ID']
+        # Create a new DataFrame with a single compound
+        compound_df = pd.DataFrame({'Molecule': [compound], 'ID': [compound_id]})
+        # Output file path
+        output_file = split_files_folder / f'split_{i + 1}.sdf'
+        # Write the single compound DataFrame to an SDF file
+        PandasTools.WriteSDF(compound_df,
+                             str(output_file),
+                             molColName='Molecule',
+                             idName='ID')
+    print(f'Split SDF file into {len(df)} files, each containing 1 compound')
     return split_files_folder
 
 def Insert_row(row_number, df, row_value):
