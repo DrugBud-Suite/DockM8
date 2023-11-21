@@ -890,6 +890,7 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
         shutil.rmtree(qvina2_folder / Path(split_file).stem, ignore_errors=True)
     return qvina2_docking_results
 
+DOCKING_PROGRAMS = ['PLANTS', 'SMINA', 'GNINA', 'QVINA2', 'QVINAW']
 def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: Dict[str, list], software : str or Path, docking_programs : list, exhaustiveness : int, n_poses : int, ncpus : int, job_manager=str):
     """
     Dock ligands into a protein binding site using one or more docking programs.
