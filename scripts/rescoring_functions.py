@@ -1013,7 +1013,7 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
         else:
             pass
     combined_dfs.to_csv(rescoring_folder / 'allposes_rescored.csv', index=False)
-
+    delete_files(rescoring_folder, 'allposes_rescored.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring complete in {toc - tic:0.4f}!')
     return
