@@ -935,6 +935,7 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     return
 
 #add new scoring functions here!
+# Dict key: (function, column_name, min or max ordering, min value for scaled standardisation, max value for scaled standardisation)
 RESCORING_FUNCTIONS = {
     'GNINA_Affinity':       (gnina_rescoring,         'GNINA_Affinity',       'min', 100, -100),
     'CNN-Score':            (gnina_rescoring,         'CNN-Score',            'max', 0, 1),
