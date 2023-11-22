@@ -121,9 +121,27 @@ def USRCAT_calc(*args):
     Returns:
         float: The shape similarity score between the two molecules, rounded to 3 decimal places.
     """
+    # Create Molecule objects for the two molecules
     shape_mol = oddt.toolkits.rdk.Molecule(args[0])
     shape_jmol = oddt.toolkits.rdk.Molecule(args[1])
+
+    # Calculate the USR-CAT fingerprint for the two molecules
     mol_fp = oddt.shape.usr_cat(shape_mol)
     jmol_fp = oddt.shape.usr_cat(shape_jmol)
+
+    # Calculate the USR-CAT similarity between the two fingerprints
     usr_sim = oddt.shape.usr_similarity(mol_fp, jmol_fp)
+
+    # Round the similarity score to 3 decimal places
     return round(usr_sim, 3)
+
+CLUSTERING_METRICS = {
+    'RMSD':     {'function': simpleRMSD_calc},
+    'spyRMSD':  {'function': spyRMSD_calc},
+    'espsim':   {'function': espsim_calc},
+    'USRCAT':   {'function': USRCAT_calc},
+    }
+
+BROKEN_CLUSTERING_METRICS = {
+    'SPLIF':    {'function': SPLIF_calc},
+}

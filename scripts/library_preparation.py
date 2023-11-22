@@ -2,7 +2,6 @@ from typing import Optional
 import os
 import subprocess
 from subprocess import DEVNULL, STDOUT, PIPE
-import multiprocessing
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import PandasTools
@@ -20,13 +19,16 @@ def standardize_molecule(molecule):
     return standardized_molecule
 
 
-def standardize_library(input_sdf, output_dir, id_column):
+# This function standardizes a docking library using the ChemBL Structure Pipeline.
+def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus: int):
     """
     Standardizes a docking library using the ChemBL Structure Pipeline.
 
     Args:
-        input_sdf (str): The path to the input SDF file containing the docking library.
+        input_sdf (Path): The path to the input SDF file containing the docking library.
+        output_dir (Path): The directory where the standardized SDF file will be saved.
         id_column (str): The name of the column in the SDF file that contains the compound IDs.
+        ncpus (int): The number of CPUs to use for parallel processing.
 
     Returns:
         None. The function writes the standardized molecules to a new SDF file.
@@ -53,17 +55,25 @@ def standardize_library(input_sdf, output_dir, id_column):
         printlog('ERROR: Failed to Load library SDF file!')
         raise Exception('Failed to Load library SDF file!')
     try:
+        # Convert SMILES to RDKit molecules
         df.drop(columns='Molecule', inplace=True)
         df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in df['SMILES']]
     except Exception as e:
         printlog('ERROR: Failed to convert SMILES to RDKit molecules!' + e)
     # Standardize molecules using ChemBL Pipeline
-    df['Molecule'] = [standardizer.get_parent_mol(standardizer.standardize_mol(mol)) for mol in df['Molecule']]
+    if ncpus == 1:
+        # Standardize molecules sequentially
+        df['Molecule'] = [standardizer.get_parent_mol(standardizer.standardize_mol(mol)) for mol in df['Molecule']]
+    else: 
+        # Standardize molecules in parallel using multiple CPUs
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+            df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
+    # Clean up the DataFrame
     df[['Molecule', 'flag']] = pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df = df.drop(columns='flag')
     df = df.loc[:, ~df.columns.duplicated()].copy()
     n_cpds_end = len(df)
-    printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
+    printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end}: {n_cpds_start-n_cpds_end} compounds lost')
     # Write standardized molecules to standardized SDF file
     output_sdf = output_dir / 'standardized_library.sdf'
     try:
@@ -73,51 +83,23 @@ def standardize_library(input_sdf, output_dir, id_column):
                             idName='ID',
                             allNumeric=True)
     except BaseException:
-        printlog('ERROR: Failed to write standardized library SDF file!')
         raise Exception('Failed to write standardized library SDF file!')
 
 
-def standardize_library_futures(input_sdf, output_dir, id_column, ncpus):
+# This function protonates a compound library using pkaSolver.
+def protonate_library_pkasolver(input_sdf, output_dir):
     """
-    Standardizes a docking library using the ChemBL Structure Pipeline.
+    Protonates a compound library using pkaSolver.
 
     Args:
-        input_sdf (str): The path to the input SDF file containing the docking library.
-        id_column (str): The name of the column in the SDF file that contains the compound IDs.
-        ncpus (int): The number of CPUs to use for parallelization.
+        input_sdf (str): The path to the input SDF file containing the compound library.
+        output_dir (str): The directory where the protonated library will be saved.
 
     Returns:
-        pandas.DataFrame: The standardized DataFrame containing the standardized molecules.
+        None
     """
-
-    printlog('Standardizing docking library using ChemBL Structure Pipeline...')
-    try:
-        df = PandasTools.LoadSDF(str(input_sdf),
-                                molColName='Molecule',
-                                idName=id_column,
-                                removeHs=True,
-                                strictParsing=True,
-                                smilesName='SMILES')
-        df.rename(columns={id_column: 'ID'}, inplace=True)
-        df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in df['SMILES']]
-        n_cpds_start = len(df)
-    except Exception as e:
-        printlog('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
-        printlog(e)
-    with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-        df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
-    df[['Molecule', 'flag']] = pd.DataFrame(df['Molecule'].tolist(), index=df.index)
-    df = df.drop(columns='flag')
-    df = df.loc[:, ~df.columns.duplicated()].copy()
-    n_cpds_end = len(df)
-    printlog(f'Standardization of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
-    output_sdf = output_dir / 'standardized_library.sdf'
-    PandasTools.WriteSDF(df, str(output_sdf), molColName='Molecule', idName='ID')
-    return df
-
-
-def protonate_library_pkasolver(input_sdf, output_dir):
     printlog('Calculating protonation states using pkaSolver...')
+    # Load the input SDF file and convert SMILES to RDKit molecules
     try:
         input_df = PandasTools.LoadSDF(str(input_sdf),
                                         molColName='Molecule',
@@ -130,11 +112,15 @@ def protonate_library_pkasolver(input_sdf, output_dir):
     except Exception as e:
         printlog('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
         printlog(e)
+    # Calculate microstate pKa values for each molecule
     microstate_pkas = pd.DataFrame(calculate_microstate_pka_values(mol) for mol in input_df['Molecule'])
+    # Identify missing protonation states
     missing_prot_state = microstate_pkas[microstate_pkas[0].isnull()].index.tolist()
     microstate_pkas = microstate_pkas.iloc[:, 0].dropna()
+    # Create a DataFrame for protonated molecules
     protonated_df = pd.DataFrame({"Molecule": [mol.ph7_mol for mol in microstate_pkas]})
     try:
+        # Add missing protonation states to the DataFrame
         for x in missing_prot_state:
             if x > protonated_df.index.max() + 1:
                 printlog("Invalid insertion")
@@ -143,10 +129,12 @@ def protonate_library_pkasolver(input_sdf, output_dir):
     except Exception as e:
         printlog('ERROR in adding missing protonating state')
         printlog(e)
+    # Add ID column to the DataFrame
     protonated_df['ID'] = input_df['ID']
     protonated_df = protonated_df.loc[:, ~protonated_df.columns.duplicated()].copy()
     n_cpds_end = len(input_df)
     printlog(f'Protonation of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
+    # Save the protonated library as an SDF file
     output_sdf = output_dir / 'protonated_library.sdf'
     PandasTools.WriteSDF(protonated_df, str(output_sdf), molColName='Molecule', idName='ID')
     return
@@ -164,6 +152,19 @@ def generate_confomers_RDKit(input_sdf, output_dir, software, ID):
 
 
 def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software, ncpus):
+    """
+    Generates protonation states and 3D conformers using GypsumDL.
+
+    Args:
+        input_sdf (str): Path to the input SDF file.
+        output_dir (str): Path to the output directory.
+        software (str): Path to the GypsumDL software.
+        ncpus (int): Number of CPUs to use for the calculation.
+
+    Raises:
+        Exception: If failed to generate protomers and conformers.
+
+    """
     printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
     try:
         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
@@ -174,6 +175,18 @@ def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software
 
 
 def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, ncpus):
+    """
+    Generates 3D conformers using GypsumDL.
+
+    Args:
+        input_sdf (str): Path to the input SDF file.
+        output_dir (str): Path to the output directory.
+        software (str): Path to the GypsumDL software.
+        ncpus (int): Number of CPUs to use for multiprocessing.
+
+    Returns:
+        None
+    """
     printlog('Generating 3D conformers using GypsumDL...')
     try:
         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
@@ -183,7 +196,7 @@ def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, 
         printlog(e)
 
 
-def cleanup(input_sdf: str, output_dir : Path) -> pd.DataFrame:
+def cleanup(input_sdf: str, output_dir: Path) -> pd.DataFrame:
     """
     Cleans up the temporary files generated during the library preparation process.
 
@@ -221,7 +234,7 @@ def cleanup(input_sdf: str, output_dir : Path) -> pd.DataFrame:
     return
 
 
-def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonation: str, software:Path, ncpus: int):
+def prepare_library(input_sdf: str, output_dir: Path, id_column: str, protonation: str, software: Path, ncpus: int):
     """
     Prepares a docking library for further analysis.
     
@@ -234,10 +247,7 @@ def prepare_library(input_sdf: str, output_dir : Path, id_column: str, protonati
     standardized_sdf = output_dir / 'standardized_library.sdf'
     
     if not standardized_sdf.is_file():
-        if ncpus == 1:
-            standardize_library(input_sdf, output_dir, id_column)
-        else:
-            standardize_library_futures(input_sdf, output_dir, id_column, ncpus)
+        standardize_library(input_sdf, output_dir, id_column, ncpus)
     
     protonated_sdf = output_dir / 'protonated_library.sdf'
     
