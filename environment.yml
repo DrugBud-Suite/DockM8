@@ -1,46 +1,47 @@
+name: dockm8_test
 channels:
-  - conda-forge
-  - defaults
-  - pytorch
+ - conda-forge
+ - defaults
 dependencies:
-  - pytorch
-  - cudatoolkit
-  - torchvision
-  - torchaudio
-  - python
-  - tqdm
-  - biopandas
-  - redo
-  - oddt
-  - pebble
-  - MDAnalysis
-  - rdkit
-  - chembl_structure_pipeline
-  - ipykernel
-  - scipy
-  - spyrmsd
-  - kneed
-  - scikit-learn-extra
-  - cairosvg
-  - svgutils
-  - molvs
-  - jupyter
-  - notebook
-  - seaborn
-  - xgboost
-  - ca-certificates
-  - openssl
-  - openbabel
-  - certifi
+  - cairosvg=2.7.1
+  - ipykernel=6.25.2
+  - ipython=8.15.0
+  - jupyter_client=8.3.1
+  - jupyter_core=5.3.1
+  - joblib=1.3.2
+  - matplotlib-base=3.4.3
+  - matplotlib-inline=0.1.6
+  - molvs=0.1.1=py_0
+  - numpy=1.22.3
+  - openbabel=3.1.1
+  - pandas=1.5.3
+  - pip=23.2.1
+  - py-xgboost=1.7.3
+  - python=3.10.13
+  - scikit-learn=1.0.2
+  - scikit-learn-extra=0.2.0
+  - scipy=1.8.1
+  - seaborn=0.12.2
+  - spyrmsd=0.6.0
+  - svgutils=0.3.4
+  - xgboost=1.7.3
   - pip
   - pip:
-    - pathlib
-    - meeko
-    - torch-sparse
-    - torch-scatter
-    - chembl_webresource_client 
-    - molvs
+    - biopandas==0.4.1
+    - biopython==1.79
+    - chembl-structure-pipeline==1.2.0
+    - espsim==0.0.1
+    - meeko==0.5.0
+    - oddt==0.7
     - git+https://github.com/mayrf/pkasolver.git
-    - dgl
-    - espsim
+    - posebusters==0.2.7
+    - prody==2.4.1
+    - rdkit==2023.3.3
+    - tqdm==4.66.1
+    - --index-url https://download.pytorch.org/whl/cpu
+    - torch
+    - torch-cluster
     - torch-geometric
+    - torch-scatter
+    - torch-sparse
+    - torch-spline-conv
