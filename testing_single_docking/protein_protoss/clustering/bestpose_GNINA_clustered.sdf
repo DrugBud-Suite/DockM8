@@ -43,21 +43,6 @@ FCG18066182_GNINA_1
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (1) 
--6.04560
-
->  <CNNscore>  (1) 
-0.6380053759
-
->  <CNNaffinity>  (1) 
-6.0406923294
-
->  <CNN_VS>  (1) 
-3.8539941311
-
->  <ID>  (1) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_2
      RDKit          3D
@@ -104,21 +89,6 @@ FCG18066182_GNINA_2
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (2) 
--5.86849
-
->  <CNNscore>  (2) 
-0.6181644797
-
->  <CNNaffinity>  (2) 
-5.7767877579
-
->  <CNN_VS>  (2) 
-3.5710051060
-
->  <ID>  (2) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_3
      RDKit          3D
@@ -165,21 +135,6 @@ FCG18066182_GNINA_3
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (3) 
--5.36615
-
->  <CNNscore>  (3) 
-0.6037365794
-
->  <CNNaffinity>  (3) 
-5.8677301407
-
->  <CNN_VS>  (3) 
-3.5425634384
-
->  <ID>  (3) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_4
      RDKit          3D
@@ -226,21 +181,6 @@ FCG18066182_GNINA_4
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (4) 
--6.13339
-
->  <CNNscore>  (4) 
-0.5982680321
-
->  <CNNaffinity>  (4) 
-6.0858688354
-
->  <CNN_VS>  (4) 
-3.6409807205
-
->  <ID>  (4) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_5
      RDKit          3D
@@ -287,21 +227,6 @@ FCG18066182_GNINA_5
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (5) 
--7.94637
-
->  <CNNscore>  (5) 
-0.4399777055
-
->  <CNNaffinity>  (5) 
-6.0012493134
-
->  <CNN_VS>  (5) 
-2.6404159069
-
->  <ID>  (5) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_6
      RDKit          3D
@@ -348,21 +273,6 @@ FCG18066182_GNINA_6
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (6) 
--7.29102
-
->  <CNNscore>  (6) 
-0.4282585979
-
->  <CNNaffinity>  (6) 
-5.9913816452
-
->  <CNN_VS>  (6) 
-2.5658607483
-
->  <ID>  (6) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_7
      RDKit          3D
@@ -409,21 +319,6 @@ FCG18066182_GNINA_7
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (7) 
--5.82978
-
->  <CNNscore>  (7) 
-0.4242024124
-
->  <CNNaffinity>  (7) 
-5.7871551514
-
->  <CNN_VS>  (7) 
-2.4549250603
-
->  <ID>  (7) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_8
      RDKit          3D
@@ -470,21 +365,6 @@ FCG18066182_GNINA_8
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (8) 
--6.24147
-
->  <CNNscore>  (8) 
-0.3988921344
-
->  <CNNaffinity>  (8) 
-5.9214954376
-
->  <CNN_VS>  (8) 
-2.3620378971
-
->  <ID>  (8) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_9
      RDKit          3D
@@ -531,21 +411,6 @@ FCG18066182_GNINA_9
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (9) 
--5.76561
-
->  <CNNscore>  (9) 
-0.3880165517
-
->  <CNNaffinity>  (9) 
-5.8214340210
-
->  <CNN_VS>  (9) 
-2.2588126659
-
->  <ID>  (9) 
-FCG18066182
-
 $$$$
 FCG18066182_GNINA_10
      RDKit          3D
@@ -592,19 +457,4 @@ FCG18066182_GNINA_10
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <GNINA_Affinity>  (10) 
--6.65440
-
->  <CNNscore>  (10) 
-0.3862841725
-
->  <CNNaffinity>  (10) 
-5.7656755447
-
->  <CNN_VS>  (10) 
-2.2271893024
-
->  <ID>  (10) 
-FCG18066182
-
 $$$$

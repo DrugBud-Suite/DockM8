@@ -43,12 +43,6 @@ FCG18066182_SMINA_1
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (1) 
--7.94683
-
->  <ID>  (1) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_2
      RDKit          3D
@@ -95,12 +89,6 @@ FCG18066182_SMINA_2
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (2) 
--7.92557
-
->  <ID>  (2) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_3
      RDKit          3D
@@ -147,12 +135,6 @@ FCG18066182_SMINA_3
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (3) 
--7.77691
-
->  <ID>  (3) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_4
      RDKit          3D
@@ -199,12 +181,6 @@ FCG18066182_SMINA_4
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (4) 
--7.72906
-
->  <ID>  (4) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_5
      RDKit          3D
@@ -251,12 +227,6 @@ FCG18066182_SMINA_5
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (5) 
--7.69645
-
->  <ID>  (5) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_6
      RDKit          3D
@@ -303,12 +273,6 @@ FCG18066182_SMINA_6
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (6) 
--7.68208
-
->  <ID>  (6) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_7
      RDKit          3D
@@ -355,12 +319,6 @@ FCG18066182_SMINA_7
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (7) 
--7.66611
-
->  <ID>  (7) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_8
      RDKit          3D
@@ -407,12 +365,6 @@ FCG18066182_SMINA_8
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (8) 
--7.63092
-
->  <ID>  (8) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_9
      RDKit          3D
@@ -459,12 +411,6 @@ FCG18066182_SMINA_9
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (9) 
--7.61499
-
->  <ID>  (9) 
-FCG18066182
-
 $$$$
 FCG18066182_SMINA_10
      RDKit          3D
@@ -511,10 +457,4 @@ FCG18066182_SMINA_10
  10  5  1  0
 M  CHG  1   4  -1
 M  END
->  <SMINA_Affinity>  (10) 
--7.59110
-
->  <ID>  (10) 
-FCG18066182
-
 $$$$
