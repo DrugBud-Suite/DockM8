@@ -50,31 +50,22 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 `git clone https://gitlab.com/Tonylac77/DockM8.git` 
 
 3. Create and activate a DockM8 conda environment:  
-`conda create -n dockm8 python=3.10`  
-`conda activate dockm8`  
-
-4. Install required packages using the following commands:  
-`conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel -y`  
-`pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline`  
-`pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
-`pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
-`pip install -q git+https://github.com/mayrf/pkasolver.git`  
-
-    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
-    `git clone https://github.com/openbabel/openbabel.git`  
-    `cd openbabel`  
-    `git checkout openbabel-3-1-1 `  
-    `mkdir build`  
-    `cd build`  
-    `cmake -DWITH_MAEPARSER=OFF -DWITH_COORDGEN=OFF -DPYTHON_BINDINGS=ON -DRUN_SWIG=ON ..`  
-    `make`  
-    `make install`  
-
-    If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
+  - From environment file:  
+      `conda env create -f environment.yml`  
+      `conda activate dockm8`
+  - Manual installation:  
+      `conda create -n dockm8 python=3.10`  
+      `conda activate dockm8`  
+    - Install required packages using the following commands:  
+    `conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel -y`  
+    `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline`  
+    `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
+    `pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
+    `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
 6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
 
-5. (Optional) Ensure you have permissions to run the scripts required
+5. **Optional** : Ensure you have permissions to run the scripts required
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
 
 ## Running DockM8 (via command-line / dockm8.py script)
@@ -129,14 +120,15 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
   - 'bestpose_QVINAW' : Takes the best pose from QVINAW docking program
   - 'bestpose_QVINA2' : Takes the best pose from QVINA2 docking program
   - 'bestpose_PLANTS' : Takes the best pose from PLANTS docking program  
+  - You can also use any of the scoring functions (see rescoring argument) and DockM8 will select the best pose for each compound according to the specified scoring function.
 
 `--nposes`: The number of poses to generate for each docking software. Default=10  
 `--exhaustiveness`: The precision used if docking with SMINA/GNINA/QVINA. Default=8  
 `--ncpus`: The number of cpus to use for the workflow. Default behavior is to use half of the available cpus.  
 `--clustering_method`: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'. Must be set when using 'RMSD', 'spyRMSD', 'espsim', 'USRCAT' clustering metrics.  
-`--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'ECIF', 'SCORCH', 'RTMScore', 'NNScore', 'PLECnn', 'KORPL', 'ConvexPLR'.  
-`--consensus`: Which consensus method to use. Must be one of 'method1', 'method2', 'method3', 'method4', 'method5', 'method6', 'method7'.  
-`--threshold`: Threshold in % to use when using 'ensemble' mode. Will find the hits in common in the x% of top ranked compounds in all of the conformations.  
+`--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'SCORCH', 'RTMScore', 'NNScore', 'PLECScore', 'KORPL', 'ConvexPLR'.  
+`--consensus`: Which consensus method to use. Must be one of 'ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'.  
+`--threshold`: Threshold in % to use when using 'ensemble' mode. Will find the hits in common in the x% of top ranked compounds in all of the receptor conformations.  
 
 ## Running DockM8 (via Jupyter Notebook)
 
