@@ -279,21 +279,11 @@ def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     plp_rescoring_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = plp_rescoring_folder / 'protein.mol2'
-    try:
-        printlog('Converting protein file to .mol2 format for PLANTS docking...')
-        obabel_command = 'obabel -ipdb ' + str(protein_file) + ' -O ' + str(plants_protein_mol2)
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to convert protein file to .mol2!')
-        printlog(e)
-    # Convert clustered ligand file to .mol2 using open babel
+    convert_molecules(protein_file, plants_protein_mol2, 'pdb', 'mol2')
+    # Convert prepared ligand file to .mol2 using open babel
     plants_ligands_mol2 = plp_rescoring_folder / 'ligands.mol2'
-    try:
-        obabel_command = f'obabel -isdf {str(sdf)} -O {plants_ligands_mol2}'
-        os.system(obabel_command)
-    except Exception as e:
-        printlog('ERROR: Failed to convert clustered library file to .mol2!')
-        printlog(e)
+    convert_molecules(sdf, plants_ligands_mol2, 'sdf', 'mol2')
+
     # Generate plants config file
     plp_rescoring_config_path_txt = plp_rescoring_folder / 'config.txt'
     plp_config = ['# search algorithm\n',
@@ -380,22 +370,11 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     chemplp_rescoring_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = chemplp_rescoring_folder / 'protein.mol2'
-    try:
-        printlog('Converting protein file to .mol2 format for PLANTS docking...')
-        obabel_command = 'obabel -ipdb ' + \
-            str(kwargs.get('protein_file')) + ' -O ' + str(plants_protein_mol2)
-        subprocess.call(obabel_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to convert protein file to .mol2!')
-        printlog(e)
-    # Convert clustered ligand file to .mol2 using open babel
+    convert_molecules(protein_file, plants_protein_mol2, 'pdb', 'mol2')
+    # Convert prepared ligand file to .mol2 using open babel
     plants_ligands_mol2 = chemplp_rescoring_folder / 'ligands.mol2'
-    try:
-        obabel_command = f'obabel -isdf {str(sdf)} -O {plants_ligands_mol2}'
-        os.system(obabel_command)
-    except Exception as e:
-        printlog('ERROR: Failed to convert clustered library file to .mol2!')
-        printlog(e)
+    convert_molecules(sdf, plants_ligands_mol2, 'sdf', 'mol2')
+    
     chemplp_rescoring_config_path_txt = chemplp_rescoring_folder / 'config.txt'
     chemplp_config = ['# search algorithm\n',
                         'search_speed ' + plants_search_speed + '\n',
@@ -469,6 +448,7 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     printlog(f'Rescoring with CHEMPLP complete in {toc-tic:0.4f}!')
     return chemplp_rescoring_output
 
+# NOT WORKING
 def ECIF_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     """
     Performs rescoring with ECIF.
@@ -485,16 +465,15 @@ def ECIF_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_de = kwargs.get('pocket_de')
 
     printlog('Rescoring with ECIF')
     ECIF_rescoring_folder = rescoring_folder / 'ECIF_rescoring'
     ECIF_rescoring_folder.mkdir(parents=True, exist_ok=True)
     split_dir = split_sdf_single(ECIF_rescoring_folder, sdf)
     ligands = [split_dir / x for x in os.listdir(split_dir) if x[-3:] == "sdf"]
-
+    global ECIF_rescoring_single
     def ECIF_rescoring_single(ligand, protein_file):
-        ECIF = GetECIF(protein_file, ligand, distance_cutoff=6.0, pocket_de=pocket_de)
+        ECIF = GetECIF(protein_file, ligand, distance_cutoff=6.0)
         ligand_descriptors = GetRDKitDescriptors(ligand)
         all_descriptors_single = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
         return all_descriptors_single
@@ -599,16 +578,11 @@ def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     SCORCH_rescoring_folder = rescoring_folder / 'SCORCH_rescoring'
     SCORCH_rescoring_folder.mkdir(parents=True, exist_ok=True)
     SCORCH_protein = SCORCH_rescoring_folder / "protein.pdbqt"
-    printlog('Converting protein file to .pdbqt ...')
-    obabel_command = f'obabel -ipdb {protein_file} -O {SCORCH_protein} --partialcharges gasteiger'
-    subprocess.call(obabel_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), SCORCH_protein, 'pdb', 'pdbqt')
     # Convert ligands to pdbqt
-    sdf_file_name = sdf.stem
-    printlog(f'Converting SDF file {sdf_file_name}.sdf to .pdbqt files...')
-    split_files_folder = SCORCH_rescoring_folder / f'split_{sdf_file_name}'
+    split_files_folder = SCORCH_rescoring_folder / f'split_{sdf.stem}'
     split_files_folder.mkdir(exist_ok=True)
-    num_molecules = parallel_sdf_to_pdbqt(sdf, split_files_folder, ncpus)
-    print(f"Converted {num_molecules} molecules.")
+    convert_molecules(sdf, split_files_folder, 'sdf', 'pdbqt')
     # Run SCORCH
     printlog('Rescoring with SCORCH')
     SCORCH_command = f'python {software}/SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
@@ -961,24 +935,30 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     return
 
 #add new scoring functions here!
+# Dict key: (function, column_name, min or max ordering, min value for scaled standardisation, max value for scaled standardisation)
 RESCORING_FUNCTIONS = {
-    'GNINA_Affinity':   (gnina_rescoring,       'GNINA_Affinity',   'min'),
-    'CNN-Score':        (gnina_rescoring,       'CNN-Score',        'max'),
-    'CNN-Affinity':     (gnina_rescoring,       'CNN-Affinity',     'max'),
-    'Vinardo':          (vinardo_rescoring,     'Vinardo',          'min'),
-    'AD4':              (AD4_rescoring,         'AD4',              'min'),
-    'RFScoreVS':        (rfscorevs_rescoring,   'RFScoreVS',        'max'),
-    'PLP':              (plp_rescoring,         'PLP',              'min'),
-    'CHEMPLP':          (chemplp_rescoring,     'CHEMPLP',          'min'),
-    'NNScore':          (oddt_nnscore_rescoring,'NNScore',          'max'),
-    'PLECScore':        (oddt_plecscore_rescoring,'PLECScore',      'max'),
-    'LinF9':            (LinF9_rescoring,       'LinF9',            'min'),
-    'AAScore':          (AAScore_rescoring,     'AAScore',          'max'),
-    'ECIF':             (ECIF_rescoring,        'ECIF',             'max'),
-    'SCORCH':           (SCORCH_rescoring,      'SCORCH',           'max'),
-    'RTMScore':         (RTMScore_rescoring,    'RTMScore',         'max'),
-    'KORPL':            (KORPL_rescoring,       'KORPL',            'min'),
-    'ConvexPLR':        (ConvexPLR_rescoring,   'ConvexPLR',        'max')}
+    'GNINA_Affinity':   {'function': gnina_rescoring,         'column_name': 'GNINA_Affinity', 'best_value': 'min', 'range': (100, -100)},
+    'CNN-Score':        {'function': gnina_rescoring,         'column_name': 'CNN-Score',      'best_value': 'max', 'range': (0, 1)},
+    'CNN-Affinity':     {'function': gnina_rescoring,         'column_name': 'CNN-Affinity',   'best_value': 'max', 'range': (0, 20)},
+    'Vinardo':          {'function': vinardo_rescoring,       'column_name': 'Vinardo',        'best_value': 'min', 'range': (200, 20)},
+    'AD4':              {'function': AD4_rescoring,           'column_name': 'AD4',            'best_value': 'min', 'range': (100, -100)},
+    'RFScoreVS':        {'function': rfscorevs_rescoring,     'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
+    'PLP':              {'function': plp_rescoring,           'column_name': 'PLP',            'best_value': 'min', 'range': (200, -200)},
+    'CHEMPLP':          {'function': chemplp_rescoring,       'column_name': 'CHEMPLP',        'best_value': 'min', 'range': (200, -200)},
+    'NNScore':          {'function': oddt_nnscore_rescoring,  'column_name': 'NNScore',        'best_value': 'max', 'range': (0, 20)},
+    'PLECScore':        {'function': oddt_plecscore_rescoring,'column_name': 'PLECScore',      'best_value': 'max', 'range': (0, 20)},
+    'LinF9':            {'function': LinF9_rescoring,         'column_name': 'LinF9',          'best_value': 'min', 'range': (100, -100)},
+    'AAScore':          {'function': AAScore_rescoring,       'column_name': 'AAScore',        'best_value': 'max', 'range': (100, -100)},
+    'SCORCH':           {'function': SCORCH_rescoring,        'column_name': 'SCORCH',         'best_value': 'max', 'range': (0, 1)},
+    'RTMScore':         {'function': RTMScore_rescoring,      'column_name': 'RTMScore',       'best_value': 'max', 'range': (0, 100)},
+    'KORPL':            {'function': KORPL_rescoring,         'column_name': 'KORPL',          'best_value': 'min', 'range': (200, -1000)},
+    'ConvexPLR':        {'function': ConvexPLR_rescoring,     'column_name': 'ConvexPLR',      'best_value': 'max', 'range': (-10, 10)}
+}
+
+BROKEN_FUNCTIONS = {
+    'ECIF':             {'function': ECIF_rescoring,          'column_name': 'ECIF',           'best_value': 'max', 'range': (0, 1)},
+}
+
 
     
 def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, software: Path, clustered_sdf: Path, functions: List[str], ncpus: int) -> None:
@@ -1007,8 +987,9 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
 
     skipped_functions = []
     for function in functions:
+        function_info = RESCORING_FUNCTIONS.get(function)
         if not (rescoring_folder / f'{function}_rescoring' / f'{function}_scores.csv').is_file():
-            RESCORING_FUNCTIONS[function][0](clustered_sdf, ncpus, RESCORING_FUNCTIONS[function][1], protein_file=protein_file, pocket_definition=pocket_definition, software=software, rescoring_folder=rescoring_folder)
+            function_info['function'](clustered_sdf, ncpus, function_info['column_name'], protein_file=protein_file, pocket_definition=pocket_definition, software=software, rescoring_folder=rescoring_folder)
         else:
             skipped_functions.append(function)
     if skipped_functions:
@@ -1039,7 +1020,7 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
         else:
             pass
     combined_dfs.to_csv(rescoring_folder / 'allposes_rescored.csv', index=False)
-
+    delete_files(rescoring_folder, 'allposes_rescored.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring complete in {toc - tic:0.4f}!')
     return
@@ -1066,8 +1047,10 @@ def rescore_docking(w_dir: Path, protein_file: Path, pocket_definition: dict, so
     tic = time.perf_counter()
     
     all_poses = Path(f"{w_dir}/allposes.sdf")
+    
+    function_info = RESCORING_FUNCTIONS.get(function)
 
-    RESCORING_FUNCTIONS[function][0](all_poses, ncpus, RESCORING_FUNCTIONS[function][1], protein_file=protein_file, pocket_definition=pocket_definition, software=software, rescoring_folder=w_dir)
+    function_info['function'](all_poses, ncpus, function_info['column_name'], protein_file=protein_file, pocket_definition=pocket_definition, software=software, rescoring_folder=w_dir)
     
     score_file = f'{w_dir}/{function}_rescoring/{function}_scores.csv'
     
@@ -1079,10 +1062,10 @@ def rescore_docking(w_dir: Path, protein_file: Path, pocket_definition: dict, so
     score_df['Docking_program'] = score_df['Pose ID'].str.split('_').str[1].astype(str)
     score_df['ID'] = score_df['Pose ID'].str.split('_').str[0].astype(str)
     
-    if RESCORING_FUNCTIONS[function][0] == 'min':
-        best_pose_indices = score_df.groupby('ID')[RESCORING_FUNCTIONS[function][1]].idxmin()
+    if function_info['best_value'] == 'min':
+        best_pose_indices = score_df.groupby('ID')[function_info['column_name']].idxmin()
     else:
-        best_pose_indices = score_df.groupby('ID')[RESCORING_FUNCTIONS[function][1]].idxmax()
+        best_pose_indices = score_df.groupby('ID')[function_info['column_name']].idxmax()
     
     if os.path.exists(score_file):
         os.remove(score_file)
