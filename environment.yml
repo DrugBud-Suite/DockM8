@@ -1,0 +1,44 @@
+name: dockm8_test
+channels:
+ - conda-forge
+ - defaults
+dependencies:
+  - ipykernel=6.25.2
+  - ipython=8.15.0
+  - jupyter_client=8.3.1
+  - jupyter_core=5.3.1
+  - joblib=1.3.2
+  - matplotlib-base=3.4.3
+  - matplotlib-inline=0.1.6
+  - molvs=0.1.1=py_0
+  - numpy=1.22.3
+  - openbabel=3.1.1
+  - pandas=1.5.3
+  - py-xgboost=1.7.3
+  - python=3.10.13
+  - scikit-learn=1.0.2
+  - scikit-learn-extra=0.2.0
+  - scipy=1.8.1
+  - seaborn=0.12.2
+  - spyrmsd=0.6.0
+  - xgboost=1.7.3
+  - chembl_structure_pipeline
+  - rdkit
+  - biopandas
+  - pip
+  - pip:
+    - biopython    
+    - espsim
+    - meeko
+    - oddt
+    - posebusters
+    - prody
+    - Pebble
+    - tqdm
+    - --extra-index-url https://download.pytorch.org/whl/cpu
+    - torch
+    - torch-cluster
+    - torch-geometric
+    - torch-scatter
+    - torch-sparse
+    - torch-spline-conv
