@@ -6,7 +6,6 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import PandasTools
 from chembl_structure_pipeline import standardizer
-from pkasolver.query import calculate_microstate_pka_values
 from scripts.utilities import *
 from pathlib import Path
 import tqdm
@@ -84,60 +83,6 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
                             allNumeric=True)
     except BaseException:
         raise Exception('Failed to write standardized library SDF file!')
-
-
-# This function protonates a compound library using pkaSolver.
-def protonate_library_pkasolver(input_sdf, output_dir):
-    """
-    Protonates a compound library using pkaSolver.
-
-    Args:
-        input_sdf (str): The path to the input SDF file containing the compound library.
-        output_dir (str): The directory where the protonated library will be saved.
-
-    Returns:
-        None
-    """
-    printlog('Calculating protonation states using pkaSolver...')
-    # Load the input SDF file and convert SMILES to RDKit molecules
-    try:
-        input_df = PandasTools.LoadSDF(str(input_sdf),
-                                        molColName='Molecule',
-                                        idName='ID',
-                                        removeHs=True,
-                                        strictParsing=True,
-                                        smilesName='SMILES')
-        input_df['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in input_df['SMILES']]
-        n_cpds_start = len(input_df)
-    except Exception as e:
-        printlog('ERROR: Failed to Load library SDF file or convert SMILES to RDKit molecules!')
-        printlog(e)
-    # Calculate microstate pKa values for each molecule
-    microstate_pkas = pd.DataFrame(calculate_microstate_pka_values(mol) for mol in input_df['Molecule'])
-    # Identify missing protonation states
-    missing_prot_state = microstate_pkas[microstate_pkas[0].isnull()].index.tolist()
-    microstate_pkas = microstate_pkas.iloc[:, 0].dropna()
-    # Create a DataFrame for protonated molecules
-    protonated_df = pd.DataFrame({"Molecule": [mol.ph7_mol for mol in microstate_pkas]})
-    try:
-        # Add missing protonation states to the DataFrame
-        for x in missing_prot_state:
-            if x > protonated_df.index.max() + 1:
-                printlog("Invalid insertion")
-            else:
-                protonated_df = Insert_row(x, protonated_df, input_df.loc[x, 'Rdkit_mol'])
-    except Exception as e:
-        printlog('ERROR in adding missing protonating state')
-        printlog(e)
-    # Add ID column to the DataFrame
-    protonated_df['ID'] = input_df['ID']
-    protonated_df = protonated_df.loc[:, ~protonated_df.columns.duplicated()].copy()
-    n_cpds_end = len(input_df)
-    printlog(f'Protonation of compound library finished: Started with {n_cpds_start}, ended with {n_cpds_end} : {n_cpds_start-n_cpds_end} compounds lost')
-    # Save the protonated library as an SDF file
-    output_sdf = output_dir / 'protonated_library.sdf'
-    PandasTools.WriteSDF(protonated_df, str(output_sdf), molColName='Molecule', idName='ID')
-    return
 
 # NOT WORKING
 def generate_confomers_RDKit(input_sdf, output_dir, software, ID):
@@ -225,7 +170,6 @@ def cleanup(input_sdf: str, output_dir: Path) -> pd.DataFrame:
 
     # Delete the temporary files generated during the library preparation process
     (output_dir / 'gypsum_dl_success.sdf').unlink(missing_ok=True)
-    (output_dir / 'protonated_library.sdf').unlink(missing_ok=True)
     (output_dir / 'standardized_library.sdf').unlink(missing_ok=True)
     (output_dir / 'gypsum_dl_failed.smi').unlink(missing_ok=True)
 
@@ -241,7 +185,7 @@ def prepare_library(input_sdf: str, output_dir: Path, id_column: str, protonatio
     Args:
         input_sdf (str): The path to the input SDF file containing the docking library.
         id_column (str): The name of the column in the SDF file that contains the compound IDs.
-        protonation (str): The method to use for protonation. Can be 'pkasolver', 'GypsumDL', or any other value for no protonation.
+        protonation (str): The method to use for protonation. Can be 'GypsumDL', or 'None' for no protonation.
         ncpus (int): The number of CPUs to use for parallelization.
     """
     standardized_sdf = output_dir / 'standardized_library.sdf'
@@ -249,12 +193,7 @@ def prepare_library(input_sdf: str, output_dir: Path, id_column: str, protonatio
     if not standardized_sdf.is_file():
         standardize_library(input_sdf, output_dir, id_column, ncpus)
     
-    protonated_sdf = output_dir / 'protonated_library.sdf'
-    
-    if protonation == 'pkasolver' and not protonation.isfile():
-        protonate_library_pkasolver(standardized_sdf, output_dir)
-        generate_conformers_GypsumDL_noprotonation(protonated_sdf, output_dir, software, ncpus)
-    elif protonation == 'GypsumDL':
+    if protonation == 'GypsumDL':
         generate_conformers_GypsumDL_withprotonation(standardized_sdf, output_dir, software, ncpus)
     elif protonation == 'None':
         generate_conformers_GypsumDL_noprotonation(standardized_sdf, output_dir, software, ncpus)

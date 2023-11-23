@@ -28,7 +28,7 @@ parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the referen
 parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
 parser.add_argument('--prepare_proteins', default=1, type=int, help ='Whether or not to add hydrogens to the protein using Protoss (1 for yes, 0 for no)')
-parser.add_argument('--protonation', required=True, type=str, choices=['pkasolver', 'GypsumDL', 'None'], help ='Method to use for compound protonation')
+parser.add_argument('--protonation', required=True, type=str, choices=['GypsumDL', 'None'], help ='Method to use for compound protonation')
 parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=DOCKING_PROGRAMS, help ='Method(s) to use for docking')
 parser.add_argument('--clustering_metric', required=True, type=str, nargs='+', choices=list(CLUSTERING_METRICS.keys())+['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINA2', 'bestpose_QVINAW']+list(RESCORING_FUNCTIONS.keys()), help ='Method(s) to use for pose clustering')
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses to generate')
