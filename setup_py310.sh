@@ -76,15 +76,13 @@ source $CONDA_SH
 $CONDA_PATH config --set auto_activate_base false
 
 # create the conda environment
-conda create -n dockm8_py310 python=3.10 -y
+conda create -n dockm8 python=3.10 -y
 
-conda activate dockm8_py310
+conda activate dockm8
 
 conda config --add channels conda-forge
 
 conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel -q -y
-
-conda install cairosvg svgutils -q -y
 
 pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters
 
