@@ -1,47 +1,13 @@
 # DockM8
-<!-- markdown-link-check-disable-next-line -->
+
 **Workflow for Consensus Docking**  
 DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
-## Installation (tested on Python 3.8 and 3.9 / Ubuntu 22.04)  
+## Automatic installation
 
-1. Anaconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
+For automatic installation, download and run [**setup.sh**](LINK_TO_SETUP.SH_DOWNLOAD) This will create the required conda environment and download the respository if not done already. Make sure the scripts can be executed by running `chmod +x setup.sh` and then `./setup.sh`.
 
-2. Clone repository to your machine:  
-`git clone https://gitlab.com/Tonylac77/DockM8.git` 
-
-3. Create and activate a DockM8 conda environment:  
-`conda create -n dockm8 python=3.8` OR `conda create -n dockm8 python=3.9`  
-`conda activate dockm8`  
-
-4. Install required packages using the following commands:  
-`conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra cairosvg svgutils molvs seaborn xgboost -y`  
-`pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters`  
-`pip install torch==1.9.1`  
-`pip install torch-scatter==2.1.0 torch-sparse==0.6.12 torch-spline-conv==1.2.1 torch-cluster==1.6.0 torch-geometric==2.0.1 -f https://data.pyg.org/whl/torch-1.9.1+cpu.html`  
-`pip install -q git+https://github.com/mayrf/pkasolver.git`  
-
-    If you want to run the AA-score or the delta_LinF9_XGB scoring functions, you should build OpenBabel from source with Python bindings.  
-    `git clone https://github.com/openbabel/openbabel.git`  
-    `cd openbabel`  
-    `git checkout openbabel-3-1-1 `  
-    `mkdir build`  
-    `cd build`  
-    `cmake -DWITH_MAEPARSER=OFF -DWITH_COORDGEN=OFF -DPYTHON_BINDINGS=ON -DRUN_SWIG=ON ..`  
-    `make`  
-    `make install`  
-    `conda install -c conda-forge openbabel`  
-
-    If not you can simply install OpenBabel using `snap install openbabel` (alternatively install from Ubuntu Software manager)  
-
-6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
-
-5. (Optional) Ensure you have permissions to run the scripts required
-On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
-
-
-## Installation (Python 3.10 / Ubuntu 22.04)
-<!-- markdown-link-check-disable-next-line -->
+## Manual Installation (Python 3.10 / Ubuntu 22.04)
 
 1. Anaconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
 
