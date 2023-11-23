@@ -3,8 +3,7 @@
 **Workflow for Consensus Docking**  
 DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
-## Installation (tested on Python 3.8 and 3.9 / Ubuntu 22.04)
-<!-- markdown-link-check-disable-next-line -->
+## Installation (tested on Python 3.8 and 3.9 / Ubuntu 22.04)  
 
 1. Anaconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
 
