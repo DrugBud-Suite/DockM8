@@ -2,19 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
-## v1.0
+## v0.9
 
 ### Added
-- First release
+- add setup.sh for easy installation (includes conda env and software download)
 
 ### Changed
-- None
+- Docking programs, rescoring functions, consensus methods and clustering metrics now defined as constant dictionaries.
+- Updated to latest version of GypsumDL (1.2.1)
 
 ### Deprecated
 - None
 
 ### Removed
-- None
+- pkasolver removed due to incompatibility with python 3.10.
 
 ### Fixed
 - None
