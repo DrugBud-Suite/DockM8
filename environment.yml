@@ -34,6 +34,10 @@ dependencies:
     - posebusters
     - prody
     - Pebble
+    - redo
+    - MDAnalysis==2.0.0
+    - dgl
+    - tensorflow
     - tqdm
     - --extra-index-url https://download.pytorch.org/whl/cpu
     - torch
