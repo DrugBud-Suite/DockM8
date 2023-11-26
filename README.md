@@ -3,16 +3,21 @@
 **Workflow for Consensus Docking**  
 DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
+![](https://gitlab.com/Tonylac77/dockm8-web/-/blob/master/public/images/mreged_v1.svg?ref_type=heads)
+
 ## Automatic installation
 
-For automatic installation, download and run [**setup.sh**](LINK_TO_SETUP.SH_DOWNLOAD) This will create the required conda environment and download the respository if not done already. Make sure the scripts can be executed by running `chmod +x setup.sh` and then `./setup.sh`.
+For automatic installation, download and run [**setup.sh**](LINK_TO_SETUP.SH_DOWNLOAD) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup.sh` and then `./setup.sh`.
 
 ## Manual Installation (Python 3.10 / Ubuntu 22.04)
 
-1. Anaconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
+1. Anaconda or Miniconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
 
-2. Clone repository to your machine:  
-`git clone https://gitlab.com/Tonylac77/DockM8.git` 
+2. Download DockM8 repository:  
+`wget https://github.com/Tonylac77/DockM8/main.zip -O DockM8.zip --no-check-certificate`  
+`unzip DockM8.zip`  
+`rm DockM8.zip`  
+or by using git : `git clone https://github.com/Tonylac77/DockM8/main.zip`  
 
 3. Create and activate a DockM8 conda environment:  
   - From environment file:  
@@ -30,8 +35,8 @@ For automatic installation, download and run [**setup.sh**](LINK_TO_SETUP.SH_DOW
 
 6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
 
-5. **Optional** : Ensure you have permissions to run the scripts required
-On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh and rf-score-vs.sh.  
+5. **Optional** : Ensure you have permissions to run the scripts required:
+On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh, rf-score-vs.sh, Convex-PL.sh, KORP-PL.sh, qvina-w.sh, qvina2.1.sh, and smina.static.  Alternatively you can use the following command to give execute permissions to all files in the DockM8 folder: `chmod +x DockM8/software`
 
 ## Running DockM8 (via command-line / dockm8.py script)
 
@@ -45,7 +50,6 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 3. Run the following command:
 
 `python /path/to/dockm8.py --args`  
-
 
 `--software`: The path to the software folder.  
 `--mode`: Choose mode with which to run dockm8. Options are:
@@ -93,7 +97,7 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 `--clustering_method`: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'. Must be set when using 'RMSD', 'spyRMSD', 'espsim', 'USRCAT' clustering metrics.  
 `--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'GNINA_Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'SCORCH', 'RTMScore', 'NNScore', 'PLECScore', 'KORPL', 'ConvexPLR'.  
 `--consensus`: Which consensus method to use. Must be one of 'ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'.  
-`--threshold`: Threshold in % to use when using 'ensemble' mode. Will find the hits in common in the x% of top ranked compounds in all of the receptor conformations.  
+`--threshold`: Threshold in % to use when using 'ensemble' mode. Will find the hits in common in the x% of top ranked compounds in all of the receptor conformations.
 
 ## Running DockM8 (via Jupyter Notebook)
 
@@ -101,6 +105,9 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 
 2. Follow the instructions in the Markdown cells
 
+## Acknowledgements
+
+## Citation
 
 ## License (NEEDS CHECKING...)
 <!-- markdown-link-check-disable-next-line -->
