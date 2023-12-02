@@ -375,7 +375,7 @@ def gnina_docking(w_dir : Path, protein_file, pocket_definition, software, exhau
         list_ = [*range(1, int(n_poses) + 1, 1)]
         ser = list_ * (len(gnina_df) // len(list_))
         gnina_df['Pose ID'] = [f'{row["ID"]}_GNINA_{num}' for num, (_,row) in zip(ser + list_[:len(gnina_df) - len(ser)], gnina_df.iterrows())]
-        gnina_df.rename(columns={'minimizedAffinity': 'GNINA_Affinity'}, inplace=True)
+        gnina_df.rename(columns={'minimizedAffinity': 'GNINA_Affinity', 'CNNscore':'CNN-Score', 'CNNaffinity':'CNN-Affinity'}, inplace=True)
     except Exception as e:
         printlog('ERROR: Failed to Load GNINA poses SDF file!')
         printlog(e)
@@ -1080,7 +1080,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
                 list_ = [*range(1, int(n_poses) + 1, 1)]
                 ser = list_ * (len(gnina_df) // len(list_))
                 gnina_df['Pose ID'] = [f'{row["ID"]}_GNINA_{num}' for num, (_, row) in zip( ser + list_[ :len(gnina_df) - len(ser)], gnina_df.iterrows())]
-                gnina_df.rename(columns={'minimizedAffinity': 'GNINA_Affinity'}, inplace=True)
+                gnina_df.rename(columns={'minimizedAffinity': 'GNINA_Affinity', 'CNNscore':'CNN-Score', 'CNNaffinity':'CNN-Affinity'}, inplace=True)
             except Exception as e:
                 printlog('ERROR: Failed to Load GNINA poses SDF file!')
                 printlog(e)
@@ -1182,7 +1182,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
     shutil.rmtree(w_dir / 'split_final_library', ignore_errors=True)
     return
 
-def concat_all_poses(w_dir, docking_programs, protein_file):
+def concat_all_poses(w_dir, docking_programs, protein_file, ncpus):
     """
     Concatenates all poses from the specified docking programs and checks them for quality using PoseBusters.
     
@@ -1196,19 +1196,26 @@ def concat_all_poses(w_dir, docking_programs, protein_file):
     """
     # Create an empty DataFrame to store all poses
     all_poses = pd.DataFrame()
-    
-    # Iterate over each docking program
     for program in docking_programs:
         try:
             # Load the poses from the SDF file of the current docking program
-            df = PandasTools.LoadSDF(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf",
-                                    idName='Pose ID',
-                                    molColName='Molecule',
-                                    includeFingerprints=False,
-                                    embedProps=False,
-                                    removeHs=False,
-                                    strictParsing=True)
-            # Concatenate the poses to the all_poses DataFrame
+            mols = [m for m in Chem.MultithreadedSDMolSupplier((f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf"), 
+                                                            numWriterThreads=ncpus, 
+                                                            removeHs=False, 
+                                                            strictParsing=True) if m is not None]
+                    # Create an empty DataFrame
+            df = pd.DataFrame()
+
+            # Iterate over each molecule
+            for mol in mols:
+                # Get the properties of the molecule
+                mol_props = {'Pose ID': mol.GetProp('_Name')}
+                for prop in mol.GetPropNames():
+                    mol_props[prop] = mol.GetProp(prop)
+                    mol_props['Molecule'] = mol
+                # Append the properties to the DataFrame
+                df = df.append(mol_props, ignore_index=True)
+            print(df)
             all_poses = pd.concat([all_poses, df])
         except Exception as e:
             printlog(f'ERROR: Failed to load {program} SDF file!')
