@@ -36,7 +36,7 @@ parser.add_argument('--exhaustiveness', default=8, type=int, help ='Precision of
 parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of CPUs to use')
 parser.add_argument('--clustering_method', type=str, choices=['KMedoids', 'Aff_Prop'], help ='Clustering method to use')
 parser.add_argument('--rescoring', type=str, nargs='+', choices=list(RESCORING_FUNCTIONS.keys()), help='Rescoring methods to use')
-parser.add_argument('--consensus', type=str, required=True, choices=['method1', 'method2', 'method3', 'method4', 'method5', 'method6', 'method7'], help='Consensus method to use')
+parser.add_argument('--consensus', type=str, required=True, choices=['ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'], help='Consensus method to use')
 parser.add_argument('--threshold', type=float, default=0.5, help='Threshold for ensemble and active_learning methods')
 
 args = parser.parse_args()
