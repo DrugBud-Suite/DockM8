@@ -51,7 +51,7 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 
 `python /path/to/dockm8.py --args`  
 
-`--software`: The path to the software folder.  
+`--software`: The path to the software folder. In most cases this is where the DockM8 repository was downloaded to (`path/to/DockM8/software`)  
 `--mode`: Choose mode with which to run dockm8. Options are:
   - 'single' : Regular docking on one receptor.
   - 'ensemble' : Ensemble docking on multiple receptor conformations.  
@@ -60,13 +60,12 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 `--pocket`: The method to use for pocket determination. Must be one of:
   - 'reference' : Uses reference ligand to define pocket.
   - 'RoG' (radius of gyration) : Uses reference ligand's radius of gyration to define pocket.  
-  - 'dogsitescorer' : API call to DogSiteScorer webserver to determine pocket.  
+  - 'dogsitescorer' :  Call to DogSiteScorer webserver to determine pocket coordinates, works on volume by default although this can be changed in *dogsitescorer.py*.  
 
-`--reffile`: The path to the reference ligand to use for pocket determination. Must be set if using 'reference' or 'RoG' pocket mode.  
-`--docking_library`: The path to the docking library file (.sdf).  
+`--reffile`: The path to the reference ligand to use for pocket determination. Must be provided if using 'reference' or 'RoG' pocket mode.  
+`--docking_library`: The path to the docking library file (.sdf format).  
 `--idcolumn`: The unique identifier column used in the docking library.  
 `--protonation`: The method to use for compound protonation. Must be one of:
-  - 'pkasolver' : Use pkasolver library to protonate library
   - 'GypsumDL' : Use GypsumDL library to protonate library
   - 'None' : Do not protonate library  
 
