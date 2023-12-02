@@ -72,7 +72,7 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
         prepare_library(docking_library, idcolumn, protonation, software, ncpus)
     # Docking
     docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus, 'joblib')
-    concat_all_poses(w_dir, docking_programs)
+    concat_all_poses(w_dir, docking_programs, prepared_receptor, ncpus)
     # Clustering
     for metric in clustering_metrics:
         if os.path.isfile(w_dir+f'/clustering/{metric}_clustered.sdf') == False:
