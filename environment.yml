@@ -27,6 +27,7 @@ dependencies:
   - biopandas
   - pip
   - pip:
+    - streamlit
     - biopython    
     - espsim
     - meeko

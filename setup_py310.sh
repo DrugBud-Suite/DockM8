@@ -84,7 +84,7 @@ conda config --add channels conda-forge
 
 conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel -q -y
 
-pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters
+pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters streamlit
 
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
