@@ -11,6 +11,9 @@ from pathlib import Path
 import tqdm
 import concurrent.futures
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def standardize_molecule(molecule):
     standardized_molecule = standardizer.standardize_mol(molecule)

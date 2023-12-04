@@ -3,6 +3,10 @@ import numpy as np
 from tqdm import tqdm
 from scripts.utilities import *
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 
 def method1_ECR_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     """

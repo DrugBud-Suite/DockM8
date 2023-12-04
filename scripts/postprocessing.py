@@ -10,6 +10,10 @@ import json
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
 import pandas as pd
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 def standardize_scores(df : pd.DataFrame, standardization_type : str):
     """
     Standardizes the scores in the given dataframe.

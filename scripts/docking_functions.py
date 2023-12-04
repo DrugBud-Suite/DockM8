@@ -22,6 +22,10 @@ from rdkit import Chem
 from posebusters import PoseBusters
 from yaml import safe_load
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 def qvinaw_docking(w_dir : Path, protein_file: Path, pocket_definition : dict, software: Path, exhaustiveness: int, n_poses: int) -> str:
     """
     Dock a library of molecules using the QVINAW software.

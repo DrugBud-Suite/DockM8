@@ -14,8 +14,11 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 from joblib import Parallel, delayed
 import pandas as pd
+import argparse
 
-
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def split_sdf(dir, sdf_file, ncpus):
     """
@@ -316,3 +319,16 @@ def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
             printlog("Error in joblib job creation: " + str(e))
         results = Parallel(n_jobs=ncpus)(tqdm(jobs))
     return results
+
+def str2bool(v):
+    """
+    Converts a string representation of a boolean to a boolean value.
+    """
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

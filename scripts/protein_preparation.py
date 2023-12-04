@@ -13,6 +13,10 @@ from Bio.PDB.PDBExceptions import PDBConstructionWarning
 from Bio.PDB.PDBIO import PDBIO
 from rdkit import Chem
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 PROTEINS_PLUS_URL = 'https://proteins.plus/api/v2/'
 UPLOAD = urljoin(PROTEINS_PLUS_URL, 'molecule_handler/upload/')
 UPLOAD_JOBS = urljoin(PROTEINS_PLUS_URL, 'molecule_handler/upload/jobs/')

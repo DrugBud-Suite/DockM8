@@ -22,6 +22,9 @@ import concurrent.futures
 import time
 from pathlib import Path
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
     """

@@ -10,6 +10,9 @@ import pandas as pd
 import numpy as np
 import math
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def simpleRMSD_calc(*args):
     '''

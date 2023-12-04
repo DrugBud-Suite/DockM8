@@ -32,6 +32,9 @@ import os
 from scripts.utilities import *
 from pathlib import Path
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class APIConsts:
     """

@@ -11,6 +11,10 @@ import json
 
 import pandas as pd
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 def process_dataframes(w_dir, rescoring_folders):
     """
     Process the dataframes by reading CSV files, standardizing scores, and ranking scores.

@@ -12,8 +12,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 from pathlib import Path
 pd.options.mode.chained_assignment = None
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=UserWarning)
 
 from pathlib import Path
 import os
