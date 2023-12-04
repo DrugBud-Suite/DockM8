@@ -76,9 +76,11 @@ source $CONDA_SH
 $CONDA_PATH config --set auto_activate_base false
 
 # create the conda environment
-conda create -n dockm8 python=3.10 -y
+ENV_NAME="dockm8_test"
 
-conda activate dockm8
+conda create -n $ENV_NAME python=3.10 -y
+
+conda activate $ENV_NAME
 
 conda config --add channels conda-forge
 
@@ -110,3 +112,33 @@ echo -e """
 ###############################################################
 """
 
+echo -e """
+###############################################################
+# Checking installation success
+###############################################################
+"""
+
+# Check if conda environment is present in the list of environments
+if conda env list | grep -q $ENV_NAME; then
+    echo -e "\nDockM8 conda environment is present!"
+else
+    echo -e "\nDockM8 conda environment is not present!"
+fi
+
+# Check if required packages are installed in the $ENV_NAME environment
+required_packages=("rdkit" "ipykernel" "scipy" "spyrmsd" "kneed" "scikit-learn-extra" "molvs" "seaborn" "xgboost" "openbabel" "pymesh" "espsim" "oddt" "biopandas" "redo" "MDAnalysis==2.0.0" "prody==2.1.0" "dgl" "Pebble" "tensorflow" "meeko" "chembl_structure_pipeline" "posebusters" "streamlit" "torch" "torchvision" "torchaudio" "torch_scatter" "torch_sparse" "torch_spline_conv" "torch_cluster" "torch_geometric")
+
+for package in "${required_packages[@]}"; do
+    if conda list -n $ENV_NAME "$package" &> /dev/null; then
+        echo -e "$package is installed in the $ENV_NAME environment!"
+    else
+        echo -e "\nINSTALLATION ERROR : $package is not installed in the $ENV_NAME environment!"
+    fi
+done
+
+# Check if DockM8 repository is present
+if [[ -f dockm8.py || -d DockM8 ]]; then
+    echo -e "DockM8 repository is present!"
+else
+    echo -e "\nINSTALLATION ERROR : DockM8 repository is not present!"
+fi
