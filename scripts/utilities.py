@@ -45,7 +45,7 @@ def split_sdf(dir, sdf_file, ncpus):
     compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
-    for i in tqdm(range(0, len(df), compounds_per_core)):
+    for i in tqdm(range(0, len(df), compounds_per_core, desc='Splitting SDF file')):
         chunk = df[i:i + compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
@@ -80,7 +80,7 @@ def split_sdf_single(dir, sdf_file):
                             idName='ID',
                             includeFingerprints=False,
                             strictParsing=True)
-    for i, row in tqdm(df.iterrows(), total=len(df), desc='Splitting files'):
+    for i, row in tqdm(df.iterrows(), total=len(df), desc='Splitting SDF file'):
         # Extract compound information from the row
         compound = row['Molecule']
         compound_id = row['ID']
@@ -287,7 +287,7 @@ def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
                 jobs.append(job)
             except Exception as e:
                 printlog("Error in concurrent futures job creation: " + str(e))
-        for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs)):
+        for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc=f"Running {function}"):
             try:
                 res = job.result()
             except Exception as e:
@@ -317,7 +317,7 @@ def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
             jobs.append(job)
         except Exception as e:
             printlog("Error in joblib job creation: " + str(e))
-        results = Parallel(n_jobs=ncpus)(tqdm(jobs))
+        results = Parallel(n_jobs=ncpus)(tqdm(jobs, desc=f"Running {function}"))
     return results
 
 def str2bool(v):
