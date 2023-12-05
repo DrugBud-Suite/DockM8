@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.9.1
+
+### Added
+- add option for conformer generation (Via RDKit MMFF or GypsumDL)
+- added streamlit GUI
+
+### Changed
+- setup script changed to ensure compatibility with WSL2
+
+### Deprecated
+- None
+
+### Removed
+- None
+
+### Fixed
+- None
+
+### Security
+- None
+
+
 ## v0.9
 
 ### Added
