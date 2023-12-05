@@ -96,7 +96,7 @@ id_column = col2.text_input(label="Choose the column name that contains the ID o
 
 # Ligand conformers
 col2.subheader("Ligand conformers", divider='orange')
-ligand_conformers = col2.selectbox(label='How should the ligands be prepared?',
+ligand_conformers = col2.selectbox(label='How should the conformers be generated?',
                                    options=['MMFF', 'GypsumDL'],
                                    help='MMFF: DockM8 will use MMFF to prepare the ligand 3D conformers. '+
                                    'GypsumDL: DockM8 will use Gypsum-DL to prepare the ligand 3D conformers.')
@@ -192,108 +192,38 @@ if mode == 'ensemble' or mode == 'active_learning':
 else:
     command += f' --mode {mode}'
     
-command_list = shlex.split(command)
+open('log.txt', 'w').close()
 
-@contextmanager
-def st_capture(output_func):
-    with StringIO() as stdout, redirect_stdout(stdout):
-        old_write = stdout.write
-
-        def new_write(string):
-            ret = old_write(string)
-            output_func(stdout.getvalue())
-            return ret
+def run_dockm8(command_list):
+    print('Running')
+    result = subprocess.Popen(command_list)
+    
+def read_log_file(file_path):
+    with open(file_path, 'r') as file:
+        content = file.read()
+    return content
         
-        stdout.write = new_write
-        yield
-
-output = st.empty()
+# Run the script file
 if st.button('Run DockM8'):
-    with st_capture(output.code):
-        print("Hello")
-        process = subprocess.Popen(command_list, text=True, bufsize=1, universal_newlines=True)
-    
-# def run_and_display_stdout(cmd_with_args):
-#     result = subprocess.Popen(cmd_with_args, stdout=PIPE)
-#     output_lines = result.stdout.readlines()
-#     print(output_lines)
-#     for line in output_lines:
-#         st.text(line.strip())
-        
-# if st.button('Run DockM8'):
-#     run_and_display_stdout(command_list)
+    command_list = shlex.split(command)
+    run_dockm8(command_list)
 
-# import select
-    
-# def run_and_display_stdout(cmd_with_args):
-#     process = subprocess.Popen(cmd_with_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, universal_newlines=True)
+import time
+from pathlib import Path
 
-#     while process.poll() is None:
-#         # Check for new output on stdout and stderr
-#         readable, _, _ = select.select([process.stdout, process.stderr], [], [], 0.1)
+log_file_path = Path(CWD, 'log.txt')
 
-#         for stream in readable:
-#             line = stream.readline()
-#             if line:
-#                 st.text(line.strip())
-
-#     # Read any remaining output after the process has completed
-#     for line in process.stdout:
-#         st.text(line.strip())
-
-# if st.button('Run DockM8'):
-#     run_and_display_stdout(command_list)
-
-# import io
-    
-# def run_and_display_stdout(cmd_with_args):
-#     process = subprocess.Popen(cmd_with_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1, universal_newlines=True)
-
-#     # Create an iterator to read lines from the subprocess stdout
-#     stdout_iterator = iter(io.TextIOWrapper(process.stdout, line_buffering=True))
-
-#     while process.poll() is None or stdout_iterator:
-#         try:
-#             line = next(stdout_iterator)
-#             st.text(line.strip())
-#         except StopIteration:
-#             # The iterator is exhausted
-#             stdout_iterator = None
-
-#     # Read any remaining output after the process has completed
-#     for line in process.stdout:
-#         st.text(line.strip())
-
-# if st.button('Run DockM8'):
-#     run_and_display_stdout(command_list)
-    
-# output = st.empty()
-# with st_capture(output.code):
-#     if st.button('Run DockM8'):
-#         print('Running DockM8...')
-#         # Run the command
-#         command_list = shlex.split(command)
-#         subprocess.run(command_list, )
-
-
-
-# with st_capture(st.write):
-#     st.write('test')
-#     st.button("Run DockM8", on_click = run_command, kwargs= {'software' : software,
-#                                                             'mode' : mode,
-#                                                             'receptor' : receptor_file,
-#                                                             'pocket' : pocket_mode,
-#                                                             'ref' : reference_file,
-#                                                             'docking_library' : ligand_file,
-#                                                             'idcolumn' : id_column,
-#                                                             'prepare_protein' : prepare_receptor,
-#                                                             'protonation' : ligand_protonation,
-#                                                             'docking_programs' : docking_programs,
-#                                                             'clustering_metrics' : pose_selection,
-#                                                             'nposes' : nposes,
-#                                                             'exhaustiveness' : exhaustiveness,
-#                                                             'ncpus' : num_cpus,
-#                                                             'clustering' : clustering_algorithm,
-#                                                             'rescoring' : rescoring,
-#                                                             'consensus' : consensus_method,
-#                                                             'threshold' : threshold})
+if log_file_path is not None:
+    log_content = read_log_file(log_file_path)
+    # Create an empty container for dynamic content updates
+    log_container = st.empty()
+    # Display initial log content
+    log_container.text_area("Log ", log_content, height=300)
+    # Periodically check for changes in the log file
+    while True:
+        time.sleep(1)  # Adjust the interval as needed
+        new_log_content = read_log_file(log_file_path)
+        if new_log_content != log_content:
+            # Update the contents of the existing text area
+            log_container.text_area("Log ", new_log_content, height=300)
+            log_content = new_log_content
