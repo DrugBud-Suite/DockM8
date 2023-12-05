@@ -3,6 +3,7 @@
 # define the directory SCORCH is cloned into
 BASEDIR=$PWD
 
+
 echo -e """
 ###############################################################
 # Installing DockM8
@@ -30,20 +31,22 @@ echo -e """
 
 # if conda is not a recognised command then download and install
 if ! command -v conda &> /dev/null; then
+    
     echo -e "\nNo conda found - installing..."
-    cd utils && mkdir miniconda3
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3/miniconda.sh --no-check-certificate
+    mkdir -p $HOME/miniconda3
+    cd $HOME/miniconda3
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh --no-check-certificate
     # install miniconda3
     cd miniconda3 && chmod -x miniconda.sh
-    cd $BASEDIR && bash utils/miniconda3/miniconda.sh -b -u -p utils/miniconda3
+    cd $BASEDIR && bash $HOME/miniconda3/miniconda.sh -b -u -p $HOME/miniconda3
 
     # remove the installer
-    rm -f utils/miniconda3/miniconda.sh
+    rm -f $HOME/miniconda3/miniconda.sh
 
     # define conda installation paths
-    CONDA_PATH="utils/miniconda3/bin/conda"
-    CONDA_BASE=$BASEDIR/utils/miniconda3
-    CONDA_SH="utils/miniconda3/etc/profile.d/conda.sh"
+    CONDA_PATH="$HOME/miniconda3/bin/conda"
+    CONDA_BASE=$BASEDIR/$HOME/miniconda3
+    CONDA_SH="$HOME/miniconda3/etc/profile.d/conda.sh"
 else
     echo -e "\nFound existing conda install!"
     # if conda not installed then find location of existing installation
