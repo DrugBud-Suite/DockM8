@@ -32,6 +32,7 @@ parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the referen
 parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
 parser.add_argument('--prepare_proteins', default=True, type=str2bool, help ='Whether or not to add hydrogens to the protein using Protoss (True for yes, False for no)')
+parser.add_argument('--conformers', default='RDKit', type=str, choices=['RDKit', 'MMFF', 'GypsumDL'], help ='Method to use for conformer generation (RDKit and MMFF are equivalent)')
 parser.add_argument('--protonation', required=True, type=str, choices=['GypsumDL', 'None'], help ='Method to use for compound protonation')
 parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=DOCKING_PROGRAMS, help ='Method(s) to use for docking')
 parser.add_argument('--clustering_metric', required=True, type=str, nargs='+', choices=list(CLUSTERING_METRICS.keys())+['bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINA2', 'bestpose_QVINAW']+list(RESCORING_FUNCTIONS.keys()), help ='Method(s) to use for pose clustering')
@@ -49,9 +50,11 @@ args = parser.parse_args()
 if args.mode == 'ensemble':
     # Treat --receptor as a list
     receptors = args.receptor
+    reffile = args.reffile
 else:
     # Treat --receptor as a single file
     receptors = [args.receptor[0]]
+    reffile = [args.reffile[0]]
 
 if args.mode == 'ensemble' or args.mode == 'active_learning' and not args.threshold:
     parser.error(f"Must specify a threshold when --mode is set to {args.mode} mode")
@@ -62,7 +65,7 @@ if (args.pocket == 'Reference' or args.pocket == 'RoG') and not args.reffile:
 if any(metric in args.clustering_metric for metric in CLUSTERING_METRICS.keys()) and (args.clustering_method == None or args.clustering_method == 'None'):
     parser.error("Must specify a clustering method when --clustering_metric is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
     
-def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, protonation, docking_programs, clustering_metrics, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
+def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, clustering_metrics, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
     # Set working directory
     w_dir = Path(receptor).parent / Path(receptor).stem
     print('The working directory has been set to:', w_dir)
@@ -81,7 +84,7 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
         pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
     # Prepare docking library
     if os.path.isfile(w_dir / 'final_library.sdf') == False:
-        prepare_library(docking_library, w_dir, idcolumn, protonation, software, ncpus)
+        prepare_library(docking_library, w_dir, idcolumn, conformers, protonation, software, ncpus)
     # Docking
     docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus, 'joblib')
     concat_all_poses(w_dir, docking_programs, prepared_receptor, ncpus)
@@ -112,6 +115,7 @@ def run_command(**kwargs):
                 docking_library = kwargs.get('docking_library'), 
                 idcolumn = kwargs.get('idcolumn'), 
                 prepare_proteins = kwargs.get('prepare_proteins'),
+                conformers=kwargs.get('conformers'),
                 protonation = kwargs.get('protonation'), 
                 docking_programs = kwargs.get('docking_programs'), 
                 clustering_metrics = kwargs.get('clustering_metric'), 
@@ -141,7 +145,8 @@ def run_command(**kwargs):
                     ref = ref, 
                     docking_library = kwargs.get('docking_library'), 
                     idcolumn = kwargs.get('idcolumn'), 
-                    prepare_proteins = kwargs.get('prepare_proteins'), 
+                    prepare_proteins = kwargs.get('prepare_proteins'),
+                    conformers=kwargs.get('conformers'), 
                     protonation = kwargs.get('protonation'), 
                     docking_programs = kwargs.get('docking_programs'), 
                     clustering_metrics = kwargs.get('clustering_metric'), 

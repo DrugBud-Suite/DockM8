@@ -5,6 +5,9 @@ from subprocess import DEVNULL, STDOUT, PIPE
 import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import PandasTools
+from rdkit.Chem import AllChem
+from rdkit.Chem import rdDepictor
+from rdkit.Chem import rdDistGeom
 from chembl_structure_pipeline import standardizer
 from scripts.utilities import *
 from pathlib import Path
@@ -86,17 +89,51 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
                             allNumeric=True)
     except BaseException:
         raise Exception('Failed to write standardized library SDF file!')
+    
+def conf_gen_RDKit(molecule):
+    """
+    Generates 3D conformers using RDKit.
 
-# NOT WORKING
-def generate_confomers_RDKit(input_sdf, output_dir, software, ID):
-    output_sdf = output_dir / '3D_library_RDkit.sdf'
+    Args:
+        molecule (RDKit molecule): The input molecule.
+
+    Returns:
+        molecule (RDKit molecule): The molecule with 3D conformers.
+    """
+    if molecule.GetConformer().Is3D() == False:
+        molecule = Chem.AddHs(molecule)
+        AllChem.EmbedMolecule(molecule)
+        AllChem.MMFFOptimizeMolecule(molecule)
+    return molecule
+def generate_conformers_RDKit(input_sdf: str, output_dir: str, ncpus: int):
+    """
+    Generates 3D conformers using RDKit.
+
+    Args:
+        input_sdf (str): Path to the input SDF file.
+        output_dir (str): Path to the output directory.
+
+    Returns:
+        None
+    """
+    printlog('Generating 3D conformers using RDKit...')
     try:
-        genConf_command = f'python {software}/genConf.py -isdf {input_sdf} -osdf {output_sdf} -n 1'
-        os.system(genConf_command)
+        df = PandasTools.LoadSDF(str(input_sdf),
+                                idName='ID',
+                                molColName='Molecule',
+                                includeFingerprints=False,
+                                removeHs=False,
+                                smilesName='SMILES')
+        df = df.iloc[1:]  # Filter the dataframe to keep all rows except the first one
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+            df['Molecule'] = list(tqdm.tqdm(executor.map(conf_gen_RDKit, df['Molecule']), total=len(df['Molecule']), desc='Minimizing molecules', unit='mol'))
+
+        # Write the conformers to the output SDF file using PandasTools.WriteSDF()
+        output_file = output_dir / 'gypsum_dl_success.sdf'
+        PandasTools.WriteSDF(df, str(output_file), molColName='Molecule', idName='ID')
     except Exception as e:
-        printlog('ERROR: Failed to generate conformers!')
-        printlog(e)
-    return output_sdf
+        printlog('ERROR: Failed to generate conformers using RDKit!' + e)
+    return
 
 
 def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software, ncpus):
@@ -116,6 +153,28 @@ def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software
     printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
     try:
         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+        subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    except Exception as e:
+        printlog('ERROR: Failed to generate protomers and conformers!')
+        printlog(e)
+        
+def GypsumDL_onlyprotonation(input_sdf, output_dir, software, ncpus):
+    """
+    Generates protonation states and 3D conformers using GypsumDL.
+
+    Args:
+        input_sdf (str): Path to the input SDF file.
+        output_dir (str): Path to the output directory.
+        software (str): Path to the GypsumDL software.
+        ncpus (int): Number of CPUs to use for the calculation.
+
+    Raises:
+        Exception: If failed to generate protomers and conformers.
+
+    """
+    printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
+    try:
+        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1 --2d_output_only'
         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: Failed to generate protomers and conformers!')
@@ -142,7 +201,6 @@ def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, 
     except Exception as e:
         printlog('ERROR: Failed to generate conformers!')
         printlog(e)
-
 
 def cleanup(input_sdf: str, output_dir: Path) -> pd.DataFrame:
     """
@@ -181,7 +239,7 @@ def cleanup(input_sdf: str, output_dir: Path) -> pd.DataFrame:
     return
 
 
-def prepare_library(input_sdf: str, output_dir: Path, id_column: str, protonation: str, software: Path, ncpus: int):
+def prepare_library(input_sdf: str, output_dir: Path, id_column: str, conformers: str, protonation: str, software: Path, ncpus: int):
     """
     Prepares a docking library for further analysis.
     
@@ -195,11 +253,24 @@ def prepare_library(input_sdf: str, output_dir: Path, id_column: str, protonatio
     
     if not standardized_sdf.is_file():
         standardize_library(input_sdf, output_dir, id_column, ncpus)
-    
-    if protonation == 'GypsumDL':
-        generate_conformers_GypsumDL_withprotonation(standardized_sdf, output_dir, software, ncpus)
-    elif protonation == 'None':
-        generate_conformers_GypsumDL_noprotonation(standardized_sdf, output_dir, software, ncpus)
+        
+    if conformers == 'RDKit' or conformers == 'MMFF':
+        if protonation == 'GypsumDL':
+            GypsumDL_onlyprotonation(standardized_sdf, output_dir, software, ncpus)
+            generate_conformers_RDKit(str(output_dir / 'gypsum_dl_success.sdf'), output_dir, ncpus)
+        elif protonation == 'None':
+            generate_conformers_RDKit(standardized_sdf, output_dir, ncpus)
+        else:
+            raise ValueError(f'Invalid protonation method specified : {protonation}. Must be either "None" or "GypsumDL".')
+    elif conformers == 'GypsumDL':
+        if protonation == 'GypsumDL':
+            generate_conformers_GypsumDL_withprotonation(standardized_sdf, output_dir, software, ncpus)
+        elif protonation == 'None':
+            generate_conformers_GypsumDL_noprotonation(standardized_sdf, output_dir, software, ncpus)
+        else:
+            raise ValueError(f'Invalid protonation method specified : {protonation}. Must be either "None" or "GypsumDL".')
+    else:
+        raise ValueError(f'Invalid conformer method specified : {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".')
     
     cleanup(input_sdf, output_dir)
     return
