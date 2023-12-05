@@ -194,8 +194,6 @@ else:
     
 command_list = shlex.split(command)
 
-command
-
 @contextmanager
 def st_capture(output_func):
     with StringIO() as stdout, redirect_stdout(stdout):
