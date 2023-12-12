@@ -98,6 +98,7 @@ id_column = col2.text_input(label="Choose the column name that contains the ID o
 col2.subheader("Ligand conformers", divider='orange')
 ligand_conformers = col2.selectbox(label='How should the conformers be generated?',
                                    options=['MMFF', 'GypsumDL'],
+                                   index = 1, 
                                    help='MMFF: DockM8 will use MMFF to prepare the ligand 3D conformers. '+
                                    'GypsumDL: DockM8 will use Gypsum-DL to prepare the ligand 3D conformers.')
 
@@ -105,6 +106,7 @@ ligand_conformers = col2.selectbox(label='How should the conformers be generated
 col2.subheader("Ligand protonation", divider='orange')
 ligand_protonation = col2.selectbox(label='How should the ligands be protonated?',
                                     options=('None', 'GypsumDL'), 
+                                    index = 1,
                                     help='None: No protonation '+
                                     'Gypsum-DL: DockM8 will use  Gypsum-DL to protonate the ligands')
 
