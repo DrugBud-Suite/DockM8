@@ -26,6 +26,7 @@ dependencies:
   - rdkit
   - biopandas
   - pip
+  - docopt
   - pip:
     - streamlit
     - biopython    
