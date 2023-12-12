@@ -3,6 +3,7 @@
 # define the directory SCORCH is cloned into
 BASEDIR=$PWD
 
+###############################################################
 
 echo -e """
 ###############################################################
@@ -20,6 +21,8 @@ elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     echo -e "\nDetected Linux OS!"
 
 fi
+
+###############################################################
 
 echo -e """
 ###############################################################
@@ -55,6 +58,8 @@ else
     CONDA_SH=$CONDA_BASE/etc/profile.d/conda.sh
 fi
 
+###############################################################
+
 echo -e """
 ###############################################################
 # installing the DockM8 conda environment
@@ -87,13 +92,15 @@ conda activate $ENV_NAME
 
 conda config --add channels conda-forge
 
-conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel -q -y
+conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -q -y
 
 pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters streamlit
 
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric
+
+###############################################################
 
 if [[ -f dockm8.py || -d DockM8 ]]; then
     echo -e "\nDockM8 repository found in current folder. Installation finished"
@@ -109,12 +116,101 @@ else
     echo -e "\nDockM8 repository downloaded. Installation finished"
 fi
 
+###############################################################
+
+echo -e """
+###############################################################
+# Downloading Executables...
+###############################################################
+"""
+if [[ ! -d ./software ]]; then
+    mkdir ./software
+    cd ./software
+else
+    cd ./software
+fi
+
+if [[ ! -f ./gnina.sh ]]; then
+    echo -e "\nDownloading GNINA!"
+    wget https://github.com/gnina/gnina/releases/latest/download/gnina --no-check-certificate  -q --show-progress
+    chmod +x qvina-w
+    chmod +x gnina
+fi
+
+if [[ ! -f ./qvina-w ]]; then
+    echo -e "\nDownloading QVINA-W!"
+    wget https://github.com/QVina/qvina/blob/master/bin/qvina-w --no-check-certificate -q --show-progress
+    chmod +x qvina-w
+fi
+
+if [[ ! -f ./qvina2.1 ]]; then
+    echo -e "\nDownloading QVINA2!"
+    wget https://github.com/QVina/qvina/blob/master/bin/qvina2.1 --no-check-certificate -q --show-progress
+    chmod +x qvina2.1
+fi
+
+if [[ ! -f ./KORP-PL ]]; then
+    echo -e "\nDownloading KORP-PL!"
+    wget https://files.inria.fr/NanoDFiles/Website/Software/KORP-PL/0.1.2/Linux/KORP-PL-LINUX-v0.1.2.2.tar.gz --no-check-certificate -q --show-progress
+    tar -xvf KORP-PL-LINUX-v0.1.2.2.tar.gz
+    rm KORP-PL-LINUX-v0.1.2.2.tar.gz
+    chmod +x KORP-PL
+fi
+
+if [[ ! -f ./Convex-PL ]]; then
+    echo -e "\nDownloading Convex-PLR!"
+    wget https://files.inria.fr/NanoDFiles/Website/Software/Convex-PL/Files/Convex-PL-Linux-v0.5.tar.zip --no-check-certificate -q --show-progress
+    unzip Convex-PL-Linux-v0.5.tar.zip
+    tar -xvf Convex-PL-Linux-v0.5.tar
+    rm Convex-PL-Linux-v0.5.tar.zip
+    rm Convex-PL-Linux-v0.5.tar
+    rm -r __MACOSX
+    chmod +x Convex-PL
+fi
+
+if [[ ! -f ./smina.static ]]; then
+    echo -e "\nDownloading Lin_F9!"
+    wget https://github.com/cyangNYU/Lin_F9_test/blob/master/smina.static --no-check-certificate -q --show-progress
+    chmod +x smina.static
+fi
+
+if [[ ! -d ./AA-Score-Tool-main ]]; then
+    echo -e "\nDownloading AA-Score!"
+    wget https://github.com/Xundrug/AA-Score-Tool/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
+    unzip main.zip
+    rm main.zip
+fi
+
+if [[ ! -d ./gypsum_dl-1.2.1 ]]; then
+    echo -e "\nDownloading GypsumDL!"
+    wget https://github.com/durrantlab/gypsum_dl/archive/refs/tags/v1.2.1.tar.gz --no-check-certificate -q --show-progress
+    tar -xvf v1.2.1.tar.gz
+    rm v1.2.1.tar.gz
+fi
+
+if [[ ! -d ./SCORCH ]]; then
+    echo -e "\nDownloading SCORCH!"
+    wget https://github.com/SMVDGroup/SCORCH/archive/refs/tags/v1.0.0.tar.gz --no-check-certificate -q --show-progress
+    tar -xvf v1.0.0.tar.gz
+    rm v1.0.0.tar.gz
+fi
+
+if [[ ! -d ./rf-score-vs ]]; then
+    echo -e "\nDownloading RF-Score-vs!"
+    wget https://github.com/oddt/rfscorevs_binary/releases/download/1.0/rf-score-vs_v1.0_linux_2.7.zip -q --show-progress --no-check-certificate
+    unzip rf-score-vs_v1.0_linux_2.7.zip
+    rm rf-score-vs_v1.0_linux_2.7.zip
+    rm -r ./test
+    rm README.md
+    chmod +x rf-score-vs
+fi
+
 echo -e """
 ###############################################################
 # DockM8 installation complete
 ###############################################################
 """
-
+###############################################################
 echo -e """
 ###############################################################
 # Checking installation success
