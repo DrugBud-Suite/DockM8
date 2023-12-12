@@ -27,8 +27,8 @@ or by using git : `git clone https://github.com/Tonylac77/DockM8/main.zip`
       `conda create -n dockm8 python=3.10`  
       `conda activate dockm8`  
     - Install required packages using the following commands:  
-    `conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel -y`  
-    `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline streamlit`  
+    `conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -y`  
+    `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline streamlit posebusters`  
     `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
     `pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
     `pip install -q git+https://github.com/mayrf/pkasolver.git`  
