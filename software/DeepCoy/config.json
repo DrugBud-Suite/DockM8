@@ -1,0 +1,1 @@
+{"generation": true, "number_of_generation_per_valid": 25, "batch_size": 1, "train_file": "/home/tony/DockM8/testing_single_docking/DeepCoy/molecules_DockM8_prepared.json", "valid_file": "/home/tony/DockM8/testing_single_docking/DeepCoy/molecules_DockM8_prepared.json", "output_name": "/home/tony/DockM8/testing_single_docking/DeepCoy/DeepCoy_decoys_raw.txt"}

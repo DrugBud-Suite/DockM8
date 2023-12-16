@@ -1,0 +1,1 @@
+/software/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle filter=lfs diff=lfs merge=lfs -text
