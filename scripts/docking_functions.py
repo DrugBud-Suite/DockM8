@@ -580,7 +580,7 @@ def smina_docking_splitted(split_file: str, w_dir: Path, protein_file: str, pock
     )
     try:
         # Execute the smina command
-        subprocess.call(smina_cmd, shell=True)
+        subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog(f'SMINA docking failed: {e}')
     return
@@ -1069,8 +1069,8 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             except Exception as e:
                 printlog('ERROR: Failed to write combined SMINA poses SDF file!')
                 printlog(e)
-            #else:
-                #delete_files(w_dir / 'smina', 'smina_poses.sdf')
+            else:
+                delete_files(w_dir / 'smina', 'smina_poses.sdf')
         # Docking split files using GNINA
         if 'GNINA' in docking_programs and not (w_dir / 'gnina').is_dir():
             printlog('Docking split files using GNINA...')
@@ -1223,9 +1223,7 @@ def concat_all_poses(w_dir, docking_programs, protein_file, ncpus):
                                                             numWriterThreads=ncpus, 
                                                             removeHs=False, 
                                                             strictParsing=True) if m is not None]
-                    # Create an empty DataFrame
-            df = pd.DataFrame()
-
+            data = []
             # Iterate over each molecule
             for mol in mols:
                 # Get the properties of the molecule
@@ -1233,9 +1231,10 @@ def concat_all_poses(w_dir, docking_programs, protein_file, ncpus):
                 for prop in mol.GetPropNames():
                     mol_props[prop] = mol.GetProp(prop)
                     mol_props['Molecule'] = mol
-                # Append the properties to the DataFrame
-                df = df.append(mol_props, ignore_index=True)
-            print(df)
+                # Append the properties to the list
+                data.append(mol_props)
+            # Create a DataFrame from the list of dictionaries
+            df = pd.DataFrame(data)
             all_poses = pd.concat([all_poses, df])
         except Exception as e:
             printlog(f'ERROR: Failed to load {program} SDF file!')
@@ -1243,6 +1242,7 @@ def concat_all_poses(w_dir, docking_programs, protein_file, ncpus):
     
     try:
         tic = time.perf_counter()
+        printlog("Busting poses...")
         # Initialize PoseBusters with the configuration file
         buster = PoseBusters(config=safe_load(open('./scripts/posebusters_config.yml')))
         # Add the protein file path as a column in all_poses DataFrame
