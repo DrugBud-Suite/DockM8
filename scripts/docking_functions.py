@@ -114,12 +114,16 @@ def qvinaw_docking(w_dir : Path, protein_file: Path, pocket_definition : dict, s
         for pose_file in results_path.glob('*.pdbqt'):
             pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
             rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
-            qvinaw_poses = qvinaw_poses.append({
+            # Extracting QVINAW_Affinity from the file
+            with open(pose_file) as file:
+                affinity = next(line.split()[3] for line in file if 'REMARK VINA RESULT:' in line)
+            # Use loc to append a new row to the DataFrame
+            qvinaw_poses.loc[qvinaw_poses.shape[0]] = {
                 'Pose ID': pose_file.stem,
                 'Molecule': rdkit_mol[0],
-                'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
+                'QVINAW_Affinity': affinity,
                 'ID': pose_file.stem.split('_')[0]
-                }, ignore_index=True)
+            }
         PandasTools.WriteSDF(qvinaw_poses,
                         str(qvinaw_docking_results),
                         molColName='Molecule',
@@ -221,12 +225,16 @@ def qvina2_docking(w_dir : Path, protein_file: str, pocket_definition : dict, so
         for pose_file in results_path.glob('*.pdbqt'):
             pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
             rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
-            qvina2_poses = qvina2_poses.append({
+            # Extracting QVINAW_Affinity from the file
+            with open(pose_file) as file:
+                affinity = next(line.split()[3] for line in file if 'REMARK VINA RESULT:' in line)
+            # Use loc to append a new row to the DataFrame
+            qvina2_poses.loc[qvina2_poses.shape[0]] = {
                 'Pose ID': pose_file.stem,
                 'Molecule': rdkit_mol[0],
-                'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
+                'QVINAW_Affinity': affinity,
                 'ID': pose_file.stem.split('_')[0]
-                }, ignore_index=True)
+            }
         PandasTools.WriteSDF(qvina2_poses,
                         str(qvina2_docking_results),
                         molColName='Molecule',
@@ -572,7 +580,7 @@ def smina_docking_splitted(split_file: str, w_dir: Path, protein_file: str, pock
     )
     try:
         # Execute the smina command
-        subprocess.call(smina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(smina_cmd, shell=True)
     except Exception as e:
         printlog(f'SMINA docking failed: {e}')
     return
@@ -775,12 +783,16 @@ def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
         for pose_file in results_path.glob('*.pdbqt'):
             pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
             rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
-            qvinaw_poses = qvinaw_poses.append({
+            # Extracting QVINAW_Affinity from the file
+            with open(pose_file) as file:
+                affinity = next(line.split()[3] for line in file if 'REMARK VINA RESULT:' in line)
+            # Use loc to append a new row to the DataFrame
+            qvinaw_poses.loc[qvinaw_poses.shape[0]] = {
                 'Pose ID': pose_file.stem,
                 'Molecule': rdkit_mol[0],
-                'QVINAW_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
+                'QVINAW_Affinity': affinity,
                 'ID': pose_file.stem.split('_')[0]
-                }, ignore_index=True)
+            }
         PandasTools.WriteSDF(qvinaw_poses,
                         str(qvinaw_docking_results),
                         molColName='Molecule',
@@ -873,15 +885,19 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
                     output_file.writelines(model)
             os.remove(file)
             qvina2_poses = pd.DataFrame(columns=['Pose ID', 'Molecule', 'QVINA2_Affinity'])
-            for pose_file in results_path.glob('*.pdbqt'):
-                pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
-                rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
-                qvina2_poses = qvina2_poses.append({
-                    'Pose ID': pose_file.stem,
-                    'Molecule': rdkit_mol[0],
-                    'QVINA2_Affinity': next(line.split()[3] for line in open(pose_file) if 'REMARK VINA RESULT:' in line),
-                    'ID': pose_file.stem.split('_')[0]
-                    }, ignore_index=True)
+        for pose_file in results_path.glob('*.pdbqt'):
+            pdbqt_mol = PDBQTMolecule.from_file(pose_file, name=pose_file.stem, skip_typing=True)
+            rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
+            # Extracting QVINAW_Affinity from the file
+            with open(pose_file) as file:
+                affinity = next(line.split()[3] for line in file if 'REMARK VINA RESULT:' in line)
+            # Use loc to append a new row to the DataFrame
+            qvina2_poses.loc[qvina2_poses.shape[0]] = {
+                'Pose ID': pose_file.stem,
+                'Molecule': rdkit_mol[0],
+                'QVINA2_Affinity': affinity,
+                'ID': pose_file.stem.split('_')[0]
+            }
             PandasTools.WriteSDF(qvina2_poses,
                             str(qvina2_docking_results),
                             molColName='Molecule',
@@ -1053,8 +1069,8 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             except Exception as e:
                 printlog('ERROR: Failed to write combined SMINA poses SDF file!')
                 printlog(e)
-            else:
-                delete_files(w_dir / 'smina', 'smina_poses.sdf')
+            #else:
+                #delete_files(w_dir / 'smina', 'smina_poses.sdf')
         # Docking split files using GNINA
         if 'GNINA' in docking_programs and not (w_dir / 'gnina').is_dir():
             printlog('Docking split files using GNINA...')

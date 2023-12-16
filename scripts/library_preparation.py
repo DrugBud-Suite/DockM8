@@ -104,6 +104,7 @@ def conf_gen_RDKit(molecule):
         molecule = Chem.AddHs(molecule)
         AllChem.EmbedMolecule(molecule)
         AllChem.MMFFOptimizeMolecule(molecule)
+        AllChem.SanitizeMol(molecule)
     return molecule
 def generate_conformers_RDKit(input_sdf: str, output_dir: str, ncpus: int):
     """
@@ -152,7 +153,7 @@ def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software
     """
     printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
     try:
-        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: Failed to generate protomers and conformers!')
@@ -172,12 +173,12 @@ def GypsumDL_onlyprotonation(input_sdf, output_dir, software, ncpus):
         Exception: If failed to generate protomers and conformers.
 
     """
-    printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
+    printlog('Calculating protonation states using GypsumDL...')
     try:
-        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1 --2d_output_only'
+        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1 --2d_output_only'
         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
-        printlog('ERROR: Failed to generate protomers and conformers!')
+        printlog('ERROR: Failed to generate protomers!')
         printlog(e)
 
 
@@ -196,7 +197,7 @@ def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, 
     """
     printlog('Generating 3D conformers using GypsumDL...')
     try:
-        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.0/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: Failed to generate conformers!')
@@ -215,8 +216,14 @@ def cleanup(input_sdf: str, output_dir: Path) -> pd.DataFrame:
     printlog('Cleaning up files...')
     
     # Load the successfully generated conformers from the GypsumDL process into a pandas DataFrame
-    gypsum_df = PandasTools.LoadSDF(str(output_dir / 'gypsum_dl_success.sdf'), molColName='Molecule',idName='ID', removeHs=False, strictParsing=True)
-
+    gypsum_df = PandasTools.LoadSDF(str(output_dir / 'gypsum_dl_success.sdf'), molColName='Molecule',idName='ID', removeHs=False)
+    
+    # Sanitize all the molecules in the DataFrame
+    #for mol in gypsum_df['Molecule']:
+    #    AllChem.SanitizeMol(mol)
+    
+    # END: abpxx6d04wxr
+    
     # Remove the first row of the DataFrame, which contains the original input molecule
     final_df = gypsum_df.iloc[1:, :]
 

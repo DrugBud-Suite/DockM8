@@ -9,7 +9,6 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 import time
 from scripts.utilities import *
-from software.ECIF.ecif import *
 import pickle
 from functools import partial
 from software.RTMScore.rtmscore_modified import *
@@ -448,46 +447,6 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     printlog(f'Rescoring with CHEMPLP complete in {toc-tic:0.4f}!')
     return chemplp_rescoring_output
 
-# NOT WORKING
-def ECIF_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
-    """
-    Performs rescoring with ECIF.
-
-    Args:
-    sdf (str): Path to the input SDF file.
-    ncpus (int): Number of CPUs to use for parallel execution.
-    column_name (str): Name of the column to store the ECIF scores.
-    **kwargs: Additional keyword arguments.
-
-    Returns:
-    pandas.DataFrame: DataFrame containing the ECIF scores for each pose ID.
-    """
-    rescoring_folder = kwargs.get('rescoring_folder')
-    software = kwargs.get('software')
-    protein_file = kwargs.get('protein_file')
-
-    printlog('Rescoring with ECIF')
-    ECIF_rescoring_folder = rescoring_folder / 'ECIF_rescoring'
-    ECIF_rescoring_folder.mkdir(parents=True, exist_ok=True)
-    split_dir = split_sdf_single(ECIF_rescoring_folder, sdf)
-    ligands = [split_dir / x for x in os.listdir(split_dir) if x[-3:] == "sdf"]
-    global ECIF_rescoring_single
-    def ECIF_rescoring_single(ligand, protein_file):
-        ECIF = GetECIF(protein_file, ligand, distance_cutoff=6.0)
-        ligand_descriptors = GetRDKitDescriptors(ligand)
-        all_descriptors_single = pd.DataFrame(ECIF, columns=PossibleECIF).join(pd.DataFrame(ligand_descriptors, columns=LigandDescriptors))
-        return all_descriptors_single
-
-    results = parallel_executor(ECIF_rescoring_single, ligands, ncpus, protein_file=protein_file)
-    all_descriptors = pd.concat(results)
-
-    model = pickle.load(open(f'{software}/ECIF6_LD_GBT.pkl', 'rb'))
-    ids = PandasTools.LoadSDF(str(sdf), molColName=None, idName='Pose ID')
-    ECIF_rescoring_results = pd.DataFrame(ids, columns=["Pose ID"]).join(pd.DataFrame(model.predict(all_descriptors), columns=[column_name]))
-    ECIF_rescoring_results.to_csv(ECIF_rescoring_folder / 'ECIF_scores.csv', index=False)
-    delete_files(ECIF_rescoring_folder, 'ECIF_scores.csv')
-    return ECIF_rescoring_results
-
 def oddt_nnscore_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     """
     Rescores the input SDF file using the NNscore algorithm and returns a Pandas dataframe with the rescored values.
@@ -585,7 +544,7 @@ def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     convert_molecules(sdf, split_files_folder, 'sdf', 'pdbqt')
     # Run SCORCH
     printlog('Rescoring with SCORCH')
-    SCORCH_command = f'python {software}/SCORCH/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
+    SCORCH_command = f'python {software}/SCORCH-1.0.0/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
     subprocess.call(SCORCH_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     # Clean data
     SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder / 'scoring_results.csv')
@@ -955,12 +914,7 @@ RESCORING_FUNCTIONS = {
     'ConvexPLR':        {'function': ConvexPLR_rescoring,     'column_name': 'ConvexPLR',      'best_value': 'max', 'range': (-10, 10)}
 }
 
-BROKEN_FUNCTIONS = {
-    'ECIF':             {'function': ECIF_rescoring,          'column_name': 'ECIF',           'best_value': 'max', 'range': (0, 1)},
-}
 
-
-    
 def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, software: Path, clustered_sdf: Path, functions: List[str], ncpus: int) -> None:
     """
     Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into

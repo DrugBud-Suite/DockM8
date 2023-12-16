@@ -45,7 +45,7 @@ def split_sdf(dir, sdf_file, ncpus):
     compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
-    for i in tqdm(range(0, len(df), compounds_per_core, desc='Splitting SDF file')):
+    for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting SDF file'):
         chunk = df[i:i + compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
