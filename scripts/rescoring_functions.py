@@ -1,30 +1,18 @@
-from typing import List, Tuple
-from pandas import DataFrame
 import os
 import subprocess
-from subprocess import DEVNULL, STDOUT, PIPE
+import time
+import warnings
+from pathlib import Path
+from subprocess import DEVNULL, STDOUT
+from typing import List
+
 import pandas as pd
-from rdkit import Chem
+from pandas import DataFrame
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
-import time
-from scripts.utilities import *
-import pickle
-from functools import partial
-from pathlib import Path
-import glob
 
-import time
-import os
-import subprocess
-from pathlib import Path
-from typing import List
-from pandas import DataFrame
-from rdkit.Chem import PandasTools
-import pandas as pd
-from scripts.utilities import parallel_executor, split_sdf, delete_files, printlog
-from rdkit import RDLogger
-import warnings
+from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf, convert_molecules
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -236,13 +224,29 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
+    
     tic = time.perf_counter()
     printlog('Rescoring with RFScoreVS')
-    (rescoring_folder / 'RFScoreVS_rescoring').mkdir(parents=True, exist_ok=True)
-    rfscorevs_cmd = f'{software}/rf-score-vs --receptor {protein_file} {str(sdf)} -O {rescoring_folder / "RFScoreVS_rescoring" / "RFScoreVS_scores.csv"} -n {ncpus}'
-    subprocess.call(rfscorevs_cmd, shell=True)
-    rfscorevs_results = pd.read_csv(rescoring_folder / 'RFScoreVS_rescoring' / 'RFScoreVS_scores.csv', delimiter=',', header=0)
-    rfscorevs_results = rfscorevs_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2': column_name})
+    rfscorevs_rescoring_folder = rescoring_folder / 'RFScoreVS_rescoring'
+    rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
+    
+    split_files_folder = split_sdf(rescoring_folder / 'RFScoreVS_rescoring', sdf, ncpus)
+    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    global rf_score_vs_splitted
+    def rf_score_vs_splitted(split_file, protein_file):
+        rfscorevs_cmd = f'{software}/rf-score-vs --receptor {protein_file} {split_file} -O {rfscorevs_rescoring_folder / Path(split_file).stem}_RFScoreVS_scores.csv -n 1'
+        subprocess.call(rfscorevs_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        return
+    
+    results = parallel_executor(rf_score_vs_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
+    
+    try:
+        rfscorevs_dataframes = [pd.read_csv(rfscorevs_rescoring_folder / file, delimiter=',', header=0) for file in os.listdir(rfscorevs_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
+        rfscorevs_results = pd.concat(rfscorevs_dataframes)
+        rfscorevs_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2': column_name}, inplace=True)
+    except Exception as e:
+        printlog('ERROR: Failed to process RFScoreVS results!')
+        printlog(e)
     rfscorevs_results.to_csv(rescoring_folder / 'RFScoreVS_rescoring' / 'RFScoreVS_scores.csv', index=False)
     delete_files(rescoring_folder / 'RFScoreVS_rescoring', 'RFScoreVS_scores.csv')
     toc = time.perf_counter()
@@ -528,7 +532,6 @@ def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definition = kwargs.get('pocket_definition')
 
     tic = time.perf_counter()
     SCORCH_rescoring_folder = rescoring_folder / 'SCORCH_rescoring'
@@ -576,20 +579,22 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definition = kwargs.get('pocket_definition')
 
     tic = time.perf_counter()
     (rescoring_folder / 'RTMScore_rescoring').mkdir(parents=True, exist_ok=True)
-    output_file = str(rescoring_folder / 'RTMScore_rescoring' / f'RTMScore_scores.csv')
+    output_file = str(rescoring_folder / 'RTMScore_rescoring' / 'RTMScore_scores.csv')
     printlog('Rescoring with RTMScore')
     
     RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
                         f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
                         f' -l {sdf}' +
-                        f' -o RTMScore_scores' +
-                        ' -pl' +
+                        ' -o RTMScore_scores' +
+                        ' -pl' 
                         f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
     subprocess.call(RTMScore_command, shell=True)
+    df = pd.read_csv(output_file)
+    df = df.rename(columns={'id': 'Pose ID', 'score': 'RTMScore'})
+    df.to_csv(output_file, index=False)
     delete_files(rescoring_folder / 'RTMScore_rescoring', 'RTMScore_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
