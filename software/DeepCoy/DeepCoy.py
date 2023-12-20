@@ -23,9 +23,9 @@ import sys, traceback
 import pdb
 import json
 import os
-from GGNN_DeepCoy import ChemModel
-import utils
-from utils import *
+from ..DeepCoy.GGNN_DeepCoy import ChemModel
+from ..DeepCoy import utils
+from ..DeepCoy.utils import *
 import pickle
 import random
 from numpy import linalg as LA
@@ -33,7 +33,7 @@ from rdkit import Chem
 from copy import deepcopy
 import os
 import time
-from data_augmentation import *
+from ..DeepCoy.data_augmentation import *
 
 '''
 Comments provide the expected tensor shapes where helpful.

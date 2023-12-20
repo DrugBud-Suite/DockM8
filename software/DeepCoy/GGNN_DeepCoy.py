@@ -8,8 +8,8 @@ import json
 import numpy as np
 import pickle
 import random
-import utils
-from utils import MLP, dataset_info, ThreadedIterator, graph_to_adj_mat, SMALL_NUMBER, LARGE_NUMBER, graph_to_adj_mat
+from ..DeepCoy import utils
+from ..DeepCoy.utils import MLP, dataset_info, ThreadedIterator, graph_to_adj_mat, SMALL_NUMBER, LARGE_NUMBER, graph_to_adj_mat
 
 class ChemModel(object):
     @classmethod

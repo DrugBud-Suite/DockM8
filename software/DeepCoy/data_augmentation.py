@@ -1,4 +1,4 @@
-from utils import *
+from ..DeepCoy.utils import *
 from copy import deepcopy
 import random
 

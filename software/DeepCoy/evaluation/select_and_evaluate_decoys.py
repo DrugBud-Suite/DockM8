@@ -26,9 +26,7 @@ from rdkit.Chem import AllChem
 from rdkit.Chem import MACCSkeys
 from rdkit.SimDivFilters.rdSimDivPickers import MaxMinPicker
 
-import decoy_utils
-
-import sascorer
+from ..evaluation import decoy_utils, sascorer
 
 from joblib import Parallel, delayed
 from docopt import docopt
