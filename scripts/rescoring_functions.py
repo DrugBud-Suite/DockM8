@@ -11,7 +11,6 @@ import time
 from scripts.utilities import *
 import pickle
 from functools import partial
-from software.RTMScore.rtmscore_modified import *
 from pathlib import Path
 import glob
 
@@ -24,7 +23,7 @@ from pandas import DataFrame
 from rdkit.Chem import PandasTools
 import pandas as pd
 from scripts.utilities import parallel_executor, split_sdf, delete_files, printlog
-
+from rdkit import RDLogger
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -237,13 +236,11 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_de = kwargs.get('pocket_de')
-
     tic = time.perf_counter()
     printlog('Rescoring with RFScoreVS')
     (rescoring_folder / 'RFScoreVS_rescoring').mkdir(parents=True, exist_ok=True)
     rfscorevs_cmd = f'{software}/rf-score-vs --receptor {protein_file} {str(sdf)} -O {rescoring_folder / "RFScoreVS_rescoring" / "RFScoreVS_scores.csv"} -n {ncpus}'
-    subprocess.call(rfscorevs_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    subprocess.call(rfscorevs_cmd, shell=True)
     rfscorevs_results = pd.read_csv(rescoring_folder / 'RFScoreVS_rescoring' / 'RFScoreVS_scores.csv', delimiter=',', header=0)
     rfscorevs_results = rfscorevs_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2': column_name})
     rfscorevs_results.to_csv(rescoring_folder / 'RFScoreVS_rescoring' / 'RFScoreVS_scores.csv', index=False)
@@ -583,26 +580,16 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
 
     tic = time.perf_counter()
     (rescoring_folder / 'RTMScore_rescoring').mkdir(parents=True, exist_ok=True)
-    RTMScore_pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
+    output_file = str(rescoring_folder / 'RTMScore_rescoring' / f'RTMScore_scores.csv')
     printlog('Rescoring with RTMScore')
-    split_files_folder = split_sdf(rescoring_folder / 'RTMScore_rescoring', sdf, ncpus * 5)
-    split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
-    global RTMScore_rescoring_splitted
     
-    def RTMScore_rescoring_splitted(split_file, protein_file):
-        output_file = str(rescoring_folder / 'RTMScore_rescoring' / f'{split_file.stem}_RTMScore.csv')
-        try:
-            rtmscore(prot=RTMScore_pocket, lig=split_file, output=output_file, model=str(f'{software}/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
-        except BaseException:
-            printlog('RTMScore scoring with pocket failed, scoring with whole protein...')
-            rtmscore(prot=protein_file, lig=split_file, output=output_file, model=str(f'{software}/RTMScore/trained_models/rtmscore_model1.pth'), ncpus=1)
-        
-    res = parallel_executor(RTMScore_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
-    
-    results_dataframes = [pd.read_csv(file) for file in glob.glob(str(rescoring_folder / 'RTMScore_rescoring' / 'split*.csv'))]
-    results = pd.concat(results_dataframes)
-    results['Pose ID'] = results['Pose ID'].apply(lambda x: x.split('-')[0])
-    results.to_csv(rescoring_folder / 'RTMScore_rescoring' / 'RTMScore_scores.csv', index=False)
+    RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
+                        f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
+                        f' -l {sdf}' +
+                        f' -o RTMScore_scores' +
+                        ' -pl' +
+                        f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
+    subprocess.call(RTMScore_command, shell=True)
     delete_files(rescoring_folder / 'RTMScore_rescoring', 'RTMScore_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
@@ -672,7 +659,7 @@ def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
                                                 removeHs=False,
                                                 strictParsing=True) for file in os.listdir(
                                                 rescoring_folder /
-                                                'LinF9_rescoring') if file.startswith('split') and file.endswith('.sdf')
+                                                'LinF9_rescoring') if file.startswith('split') and file.endswith('_LinF9.sdf')
                             ]
     except Exception as e:
         printlog('ERROR: Failed to Load LinF9 rescoring SDF file!')
@@ -943,7 +930,11 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
     for function in functions:
         function_info = RESCORING_FUNCTIONS.get(function)
         if not (rescoring_folder / f'{function}_rescoring' / f'{function}_scores.csv').is_file():
-            function_info['function'](clustered_sdf, ncpus, function_info['column_name'], protein_file=protein_file, pocket_definition=pocket_definition, software=software, rescoring_folder=rescoring_folder)
+            try:
+                function_info['function'](clustered_sdf, ncpus, function_info['column_name'], protein_file=protein_file, pocket_definition=pocket_definition, software=software, rescoring_folder=rescoring_folder)
+            except Exception as e:
+                printlog(e)
+                printlog(f'Failed for {function}')
         else:
             skipped_functions.append(function)
     if skipped_functions:
@@ -974,7 +965,7 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
         else:
             pass
     combined_dfs.to_csv(rescoring_folder / 'allposes_rescored.csv', index=False)
-    delete_files(rescoring_folder, 'allposes_rescored.csv')
+    #delete_files(rescoring_folder, 'allposes_rescored.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring complete in {toc - tic:0.4f}!')
     return

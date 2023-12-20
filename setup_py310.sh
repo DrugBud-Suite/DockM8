@@ -84,7 +84,7 @@ source $CONDA_SH
 $CONDA_PATH config --set auto_activate_base false
 
 # create the conda environment
-ENV_NAME="dockm8_test"
+ENV_NAME="dockm8"
 
 conda create -n $ENV_NAME python=3.10 -y
 
@@ -130,10 +130,9 @@ else
     cd ./software
 fi
 
-if [[ ! -f ./gnina.sh ]]; then
+if [[ ! -f ./gnina ]]; then
     echo -e "\nDownloading GNINA!"
     wget https://github.com/gnina/gnina/releases/latest/download/gnina --no-check-certificate  -q --show-progress
-    chmod +x qvina-w
     chmod +x gnina
 fi
 
@@ -170,7 +169,7 @@ fi
 
 if [[ ! -f ./smina.static ]]; then
     echo -e "\nDownloading Lin_F9!"
-    wget https://github.com/cyangNYU/Lin_F9_test/blob/master/smina.static --no-check-certificate -q --show-progress
+    wget https://github.com/cyangNYU/Lin_F9_test/raw/master/smina.static --no-check-certificate -q --show-progress
     chmod +x smina.static
 fi
 
@@ -203,6 +202,18 @@ if [[ ! -d ./rf-score-vs ]]; then
     rm -r ./test
     rm README.md
     chmod +x rf-score-vs
+fi
+
+if [[ ! -d ./RTMScore-main ]]; then
+    echo -e "\nDownloading AA-Score!"
+    wget https://github.com/sc8668/RTMScore/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
+    unzip main.zip
+    rm main.zip
+    rm ./RTMScore-main/scripts -r
+    rm ./RTMScore-main/121.jpg
+    cd ./RTMScore-main/examples
+    sed -i '18d' ./RTMScore-main/examples/rtmscore.py
+    cd 
 fi
 
 echo -e """
