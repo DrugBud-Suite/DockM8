@@ -1,28 +1,24 @@
-from typing import Dict, Any, Union
-from pandas import DataFrame
 import os
 import shutil
 import subprocess
-from subprocess import DEVNULL, STDOUT
-import shutil
-import pandas as pd
-from rdkit.Chem import PandasTools
-from IPython.display import display
 import time
-from scripts.utilities import *
-import multiprocessing
-from tqdm import tqdm
+import warnings
 from pathlib import Path
-import concurrent.futures
-from scripts.utilities import load_molecule
-import glob
-from pathlib import Path
+from subprocess import DEVNULL, STDOUT
+from typing import Any, Dict, Union
+
+import pandas as pd
+from IPython.display import display
 from meeko import PDBQTMolecule, RDKitMolCreate
-from rdkit import Chem
+from pandas import DataFrame
 from posebusters import PoseBusters
+from rdkit import Chem
+from rdkit.Chem import PandasTools
+from tqdm import tqdm
 from yaml import safe_load
 
-import warnings
+from scripts.utilities import printlog, convert_molecules, parallel_executor, parallel_executor_joblib, split_sdf, delete_files
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -940,15 +936,15 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
     """
     if ncpus == 1:
         tic = time.perf_counter()
-        if 'SMINA' in docking_programs and (w_dir / 'smina').is_dir() == False:
+        if 'SMINA' in docking_programs and not (w_dir / 'smina').is_dir():
             smina_docking(w_dir, protein_file, pocket_definition, software,  exhaustiveness, n_poses)
-        if 'GNINA' in docking_programs and (w_dir / 'gnina').is_dir() == False:
+        if 'GNINA' in docking_programs and not (w_dir / 'gnina').is_dir():
             gnina_docking(w_dir, protein_file, pocket_definition, software,  exhaustiveness, n_poses)
-        if 'PLANTS' in docking_programs and (w_dir / 'plants').is_dir() == False:
+        if 'PLANTS' in docking_programs and not (w_dir / 'plants').is_dir():
             plants_docking(w_dir, protein_file, pocket_definition, software, n_poses)
-        if 'QVINAW' in docking_programs and (w_dir / 'qvinaw').is_dir() == False:
+        if 'QVINAW' in docking_programs and not (w_dir / 'qvinaw').is_dir():
             qvinaw_docking(w_dir, protein_file, pocket_definition, software,  exhaustiveness, n_poses)
-        if 'QVINA2' in docking_programs and (w_dir / 'qvina2').is_dir() == False:
+        if 'QVINA2' in docking_programs and not (w_dir / 'qvina2').is_dir():
             qvina2_docking(w_dir, protein_file, pocket_definition, software,  exhaustiveness, n_poses)
         toc = time.perf_counter()
         printlog(f'Finished docking in {toc-tic:0.4f}!')

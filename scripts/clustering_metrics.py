@@ -1,16 +1,14 @@
-from spyrmsd import rmsd, molecule
-from espsim import GetEspSim
+import warnings
+import numpy as np
 import oddt
-import oddt.shape
 import oddt.fingerprints
+import oddt.shape
 import oddt.toolkits.rdk
+from espsim import GetEspSim
 from rdkit import Chem
 from rdkit.Chem import rdFMCS
-import pandas as pd
-import numpy as np
-import math
+from spyrmsd import molecule, rmsd
 
-import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

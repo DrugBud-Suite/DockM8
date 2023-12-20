@@ -1,19 +1,15 @@
-import os
 import io
-from pathlib import Path
-import requests
-import sys
 import time
+import warnings
+from pathlib import Path
 from urllib.parse import urljoin
-import warnings
-from scripts.utilities import *
-from IPython.display import Image
-from Bio.PDB import *
-from Bio.PDB.PDBExceptions import PDBConstructionWarning
-from Bio.PDB.PDBIO import PDBIO
-from rdkit import Chem
 
-import warnings
+import requests
+from Bio.PDB import PDBParser
+from Bio.PDB.PDBIO import PDBIO
+
+from scripts.utilities import printlog
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

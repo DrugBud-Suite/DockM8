@@ -1,22 +1,20 @@
-from pathlib import Path
-from tqdm import tqdm
-from rdkit.Chem import PandasTools
-import math
-import subprocess
-from rdkit import Chem
-from meeko import MoleculePreparation
-from meeko import PDBQTWriterLegacy
-import openbabel
-from openbabel import pybel
-import datetime
-from subprocess import DEVNULL, STDOUT
-from concurrent.futures import ThreadPoolExecutor
-import concurrent.futures
-from joblib import Parallel, delayed
-import pandas as pd
 import argparse
-
+import concurrent.futures
+import datetime
+import math
 import warnings
+from pathlib import Path
+
+import openbabel
+import pandas as pd
+from joblib import Parallel, delayed
+from meeko import MoleculePreparation, PDBQTWriterLegacy
+from openbabel import pybel
+from rdkit import Chem
+from rdkit.Chem import PandasTools
+from tqdm import tqdm
+
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -240,8 +238,7 @@ def load_molecule(molecule_file):
         mol = Chem.MolFromPDBFile(molecule_file, sanitize=False, removeHs=False)
     else:
         return ValueError(
-            f'Expect the format of the molecule_file to be '
-            'one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
+            f'Expect the format of the molecule_file to be one of .mol2, .mol, .sdf, .pdbqt and .pdb, got {molecule_file}')
     return mol
 
         
@@ -293,9 +290,6 @@ def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
             except Exception as e:
                 printlog("Error in concurrent futures job run: " + str(e))
     return res
-
-from joblib import Parallel, delayed
-from tqdm import tqdm
 
 def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
     """

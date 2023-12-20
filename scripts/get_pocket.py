@@ -1,25 +1,21 @@
-from rdkit.Chem import Descriptors3D
-from scripts.utilities import *
-import warnings
-from random import randint
-import pandas as pd
 import os
-import glob
+from pathlib import Path
+from random import randint
+
 import numpy as np
-import copy
+import pandas as pd
 from biopandas.pdb import PandasPdb
 from rdkit import Chem
-from rdkit.Chem import AllChem
-from pathlib import Path
+from rdkit.Chem import AllChem, Descriptors3D
+
+from scripts.utilities import load_molecule, printlog
+
 pd.options.mode.chained_assignment = None
 import warnings
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-from pathlib import Path
-import os
-from rdkit import Chem
 
 def get_pocket(ligand_file: Path, protein_file: Path, radius: int):
     """

@@ -1,20 +1,19 @@
-from typing import Optional
+import concurrent.futures
 import os
 import subprocess
-from subprocess import DEVNULL, STDOUT, PIPE
-import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import PandasTools
-from rdkit.Chem import AllChem
-from rdkit.Chem import rdDepictor
-from rdkit.Chem import rdDistGeom
-from chembl_structure_pipeline import standardizer
-from scripts.utilities import *
-from pathlib import Path
-import tqdm
-import concurrent.futures
-
 import warnings
+from pathlib import Path
+from subprocess import DEVNULL, PIPE, STDOUT
+from typing import Optional
+
+import pandas as pd
+import tqdm
+from chembl_structure_pipeline import standardizer
+from rdkit import Chem
+from rdkit.Chem import AllChem, PandasTools, rdDepictor, rdDistGeom
+
+from scripts.utilities import printlog
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -100,7 +99,7 @@ def conf_gen_RDKit(molecule):
     Returns:
         molecule (RDKit molecule): The molecule with 3D conformers.
     """
-    if molecule.GetConformer().Is3D() == False:
+    if not molecule.GetConformer().Is3D():
         molecule = Chem.AddHs(molecule)
         AllChem.EmbedMolecule(molecule)
         AllChem.MMFFOptimizeMolecule(molecule)

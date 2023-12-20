@@ -17,22 +17,21 @@ several methods for selecting the most suitable binding site.
 # for creating file-like objects from strings (needed as input for some
 # functions)
 import io
-import gzip  # for decompressing .gz files downloaded from DoGSiteScorer
+import re  # for filtering floats from a list of strings
+
 # for creating pauses during runtime (e.g. to wait for the response of API
 # requests)
 import time
-from pathlib import Path  # for handling local paths
-import re  # for filtering floats from a list of strings
-
-import requests  # for communicating with web-service APIs
-import pandas as pd  # for creating dataframes and handling data
-from biopandas.pdb import PandasPdb  # for working with PDB files
-import redo  # for retrying API queries if they fail
-import os
-from scripts.utilities import *
-from pathlib import Path
-
 import warnings
+from pathlib import Path  # for handling local paths
+
+import pandas as pd  # for creating dataframes and handling data
+import redo  # for retrying API queries if they fail
+import requests  # for communicating with web-service APIs
+from biopandas.pdb import PandasPdb  # for working with PDB files
+
+from scripts.utilities import printlog
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -344,7 +343,7 @@ def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
         raise TypeError(f'Multiple strings detected: {", ".join(result)}.')
     elif len(result) == 0:
         # Raise an error if no matching pocket file is found
-        raise TypeError(f"No string detected.")
+        raise TypeError("No string detected.")
     else:
         pass
 

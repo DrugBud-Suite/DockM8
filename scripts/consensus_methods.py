@@ -1,9 +1,8 @@
-import pandas as pd
-import numpy as np
-from tqdm import tqdm
-from scripts.utilities import *
-
 import warnings
+
+import numpy as np
+import pandas as pd
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
