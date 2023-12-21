@@ -35,7 +35,7 @@ def process_dataframes(w_dir, rescoring_folders):
     return standardised_dataframes, ranked_dataframes
 
 
-def process_combination(combination, w_dir, name, standardised_df, ranked_df, column_mapping, rank_methods, score_methods, docking_library, original_df):
+def process_combination(combination, w_dir, name, standardised_df, ranked_df, rank_methods, score_methods, docking_library, original_df):
     """
     Process a combination of selected columns and calculate performance metrics.
 
@@ -55,18 +55,17 @@ def process_combination(combination, w_dir, name, standardised_df, ranked_df, co
         dict: A dictionary containing the performance metrics for each method.
     """
     selected_columns = list(combination)
-    ranked_selected_columns = [column_mapping[col] for col in selected_columns]
     subset_name = '_'.join(selected_columns)
-    replacements_dict = {'_R_': '', '_S_': '_'}
-    for key, value in replacements_dict.items():
-        subset_name = subset_name.replace(key, value)
         
     standardised_subset = standardised_df[['ID'] + selected_columns]
-    ranked_subset = ranked_df[['ID'] + ranked_selected_columns]
+    ranked_subset = ranked_df[['ID'] + selected_columns]
     
     # Analyze the dataframes using rank methods and score methods
-    analysed_dataframes = {method: rank_methods[method](ranked_subset, name, ranked_selected_columns) for method in rank_methods}
-    analysed_dataframes.update({method: score_methods[method](standardised_subset, name, selected_columns) for method in score_methods})
+    analysed_dataframes = {}
+    for method in rank_methods:
+        analysed_dataframes[method] = rank_methods[method](ranked_subset, name, selected_columns)
+    for method in score_methods:
+        analysed_dataframes[method] = score_methods[method](standardised_subset, name, selected_columns)
 
     # Calculate the EF1% metric for a dataframe
     def calculate_EF1(df, w_dir, docking_library, original_df):
@@ -100,7 +99,8 @@ def process_combination(combination, w_dir, name, standardised_df, ranked_df, co
     
     result_dict = {}
     for method, df in analysed_dataframes.items():
-        df = df.drop(columns="Pose ID", errors='ignore')
+        df = df.drop(columns="Pose ID", errors='ignore').reset_index(drop=True)
+        df['ID'] = df['ID'].astype(str)
         enrichment_factor = calculate_EF1(df, w_dir, docking_library, original_df)
         ef_df = pd.DataFrame({'clustering_method': [name],
                                 'method_name': [method],
@@ -115,7 +115,7 @@ def process_combination(combination, w_dir, name, standardised_df, ranked_df, co
 def process_combination_wrapper(args):
     return process_combination(*args)
 
-def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metrics):
+def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metrics, ncpus):
     """
     Apply consensus methods combinations to calculate performance metrics.
 
@@ -137,6 +137,7 @@ def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metr
     for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
         for df_name, df in df_dict.items():
             df['ID'] = df['Pose ID'].str.split('_').str[0]
+            df['ID'] = df['ID'].astype(str)
             df.to_csv(Path(w_dir) / 'ranking' / f'{df_name}.csv', index=False)
     # Create 'consensus' directory if it doesn't exist
     (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
@@ -161,9 +162,7 @@ def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metr
         standardised_df = standardised_dataframes[name + '_standardised']
         ranked_df = ranked_dataframes[name + '_ranked']
         calc_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
-        column_mapping = {col: f"{col}_R" for col in calc_columns}
-        ranked_df = ranked_df.rename(columns=column_mapping)
-        parallel = Parallel(n_jobs=int(os.cpu_count() - 2), backend='multiprocessing')
+        parallel = Parallel(n_jobs=ncpus, backend='multiprocessing')
         # Generate combinations of score columns
         for L in range(2, len(calc_columns)):
             combinations = list(itertools.combinations(calc_columns, L))
@@ -173,7 +172,6 @@ def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metr
                  name,
                  standardised_df,
                  ranked_df,
-                 column_mapping,
                  rank_methods,
                  score_methods,
                  docking_library,
@@ -209,6 +207,7 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
     for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
         for df_name, df in df_dict.items():
             df['ID'] = df['Pose ID'].str.split('_').str[0]
+            df['ID'] = df['ID'].astype(str)
             df.to_csv(Path(w_dir) / 'ranking' / f'{df_name}.csv',index=False)
     # Load the original docking library as a Pandas dataframe
     original_df = PandasTools.LoadSDF(str(docking_library), molColName=None, idName='ID')
@@ -221,6 +220,7 @@ def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
         if file.endswith('_standardised.csv'):
             clustering_metric = file.replace('_standardised.csv', '')
             std_df = pd.read_csv(Path(w_dir) / 'ranking' / file)
+            std_df['ID'] = std_df['ID'].astype(str)
             numeric_cols = std_df.select_dtypes(include='number').columns
             std_df_grouped = std_df.groupby('ID')[numeric_cols].mean().reset_index()
             merged_df = pd.merge(std_df_grouped, original_df, on='ID')
