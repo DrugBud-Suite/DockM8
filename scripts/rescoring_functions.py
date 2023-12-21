@@ -9,6 +9,7 @@ from typing import List
 import pandas as pd
 from pandas import DataFrame
 from rdkit.Chem import PandasTools
+from rdkit import RDLogger
 from tqdm import tqdm
 
 from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf, convert_molecules
@@ -65,7 +66,8 @@ def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
             printlog(f'{column_name} rescoring failed: ' + e)
         return
 
-    results = parallel_executor(gnina_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    parallel_executor(gnina_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    
     try:
         gnina_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
     except Exception as e:
@@ -238,7 +240,7 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
         subprocess.call(rfscorevs_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         return
     
-    results = parallel_executor(rf_score_vs_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
+    parallel_executor(rf_score_vs_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
     
     try:
         rfscorevs_dataframes = [pd.read_csv(rfscorevs_rescoring_folder / file, delimiter=',', header=0) for file in os.listdir(rfscorevs_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
@@ -356,11 +358,9 @@ def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     return plp_rescoring_output
 
 def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
-    
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_definition = kwargs.get('pocket_definition')
     
     tic = time.perf_counter()
     printlog('Rescoring with CHEMPLP')
@@ -594,6 +594,7 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     subprocess.call(RTMScore_command, shell=True)
     df = pd.read_csv(output_file)
     df = df.rename(columns={'id': 'Pose ID', 'score': 'RTMScore'})
+    df['Pose ID'] = df['Pose ID'].str.split('-').str[0]
     df.to_csv(output_file, index=False)
     delete_files(rescoring_folder / 'RTMScore_rescoring', 'RTMScore_scores.csv')
     toc = time.perf_counter()
@@ -653,7 +654,7 @@ def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
             printlog(f'LinF9 rescoring failed: {e}')
         return
 
-    res = parallel_executor(LinF9_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    parallel_executor(LinF9_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
     
     try:
         LinF9_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / 'LinF9_rescoring' / file),
@@ -707,7 +708,6 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
-    pocket_de = kwargs.get('pocket_de')
 
     (rescoring_folder / 'AAScore_rescoring').mkdir(parents=True, exist_ok=True)
     pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
@@ -732,7 +732,7 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
             except Exception as e:
                 printlog('AAScore rescoring failed: ' + str(e))
 
-        res = parallel_executor(AAScore_rescoring_splitted, split_files_sdfs, ncpus)
+        parallel_executor(AAScore_rescoring_splitted, split_files_sdfs, ncpus)
 
         try:
             AAScore_dataframes = [pd.read_csv(rescoring_folder / 'AAScore_rescoring' / file,
@@ -805,7 +805,7 @@ def KORPL_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
         df.to_csv(output_csv, index=False)
         return
         
-    res = parallel_executor(KORPL_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
+    parallel_executor(KORPL_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
     
     print('Combining KORPL scores')
     scores_folder = rescoring_folder / 'KORPL_rescoring'
@@ -871,7 +871,7 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
         df.to_csv(output_csv, index=False)
         return
     
-    res = parallel_executor(ConvexPLR_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
+    parallel_executor(ConvexPLR_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
     
     # Get a list of all files with names ending in "_scores.csv"
     score_files = list((rescoring_folder / 'ConvexPLR_rescoring').glob('*_scores.csv'))
@@ -925,7 +925,7 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
     Returns:
         None
     """
-    
+    RDLogger.DisableLog('rdApp.*') 
     tic = time.perf_counter()
     rescoring_folder_name = Path(clustered_sdf).stem
     rescoring_folder = w_dir / f'rescoring_{rescoring_folder_name}'
@@ -992,8 +992,8 @@ def rescore_docking(w_dir: Path, protein_file: Path, pocket_definition: dict, so
 
     Returns:
         None
-    """
-    
+    """    
+    RDLogger.DisableLog('rdApp.*') 
     tic = time.perf_counter()
     
     all_poses = Path(f"{w_dir}/allposes.sdf")
@@ -1023,5 +1023,6 @@ def rescore_docking(w_dir: Path, protein_file: Path, pocket_definition: dict, so
         os.rmdir(f'{w_dir}/{function}_rescoring')
         
     best_poses = pd.DataFrame(score_df.loc[best_pose_indices, 'Pose ID'])
-        
+    toc = time.perf_counter()
+    printlog(f'Rescoring complete in {toc - tic:0.4f}!')
     return best_poses

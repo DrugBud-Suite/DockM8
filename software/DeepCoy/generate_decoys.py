@@ -1,22 +1,13 @@
-from rdkit import Chem
-from rdkit.Chem import AllChem
-from rdkit.Chem import Draw
-from rdkit.Chem import MolStandardize
-
+import os
+import time
+from collections import defaultdict
 from pathlib import Path
+
 from scripts.utilities import convert_molecules, printlog
 
-from itertools import product
-from joblib import Parallel, delayed
-import re
-from collections import defaultdict
-import time
-import os
-
+from ..DeepCoy.data.prepare_data import preprocess, read_file
 from ..DeepCoy.DeepCoy import DenseGGNNChemModel
-from ..DeepCoy.data.prepare_data import read_file, preprocess
 from ..DeepCoy.evaluation.select_and_evaluate_decoys import select_and_evaluate_decoys
-import os
 
 
 def generate_decoys(input_sdf : Path, n_decoys : int, model : str, software : Path):

@@ -27,7 +27,7 @@ def standardize_scores(df : pd.DataFrame, standardization_type : str):
         return (score - min_value) / (max_value - min_value) if best_value == 'max' else (max_value - score) / (max_value - min_value)
 
     for col in df.columns:
-        if col != 'Pose ID':
+        if col not in ['Pose ID', 'ID']:
             # Convert column to numeric values
             df[col] = pd.to_numeric(df[col], errors='coerce')
             # Get information about the scoring function
