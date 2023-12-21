@@ -19,16 +19,24 @@ def method1_ECR_best(df: pd.DataFrame, clustering_metric: str, selected_columns:
     Returns:
         pd.DataFrame: A pandas DataFrame with columns 'ID' and 'Method1_ECR_{clustering_metric}', where 'Method1_ECR_{clustering_metric}' represents the ECR score for each ID.
     """
+    # Check if selected columns exist in the dataframe#
+    for column in selected_columns:
+        if column not in df.columns:
+            raise ValueError(f"Column '{column}' not found in the dataframe.")
+    
     sigma = 0.05 * len(df)
     
     # Calculate ECR scores for each value in selected columns
-    ecr_scores = (np.exp(-(df[selected_columns] / sigma)) / sigma) * 1000
+    try:
+        ecr_scores = (np.exp(-(df[selected_columns] / sigma)) / sigma) * 1000
+    except KeyError as e:
+        raise KeyError(f"Column '{e.args[0]}' not found in the dataframe.")
     
     # Sum the ECR scores for each ID
     df[f'Method1_ECR_{clustering_metric}'] = ecr_scores.sum(axis=1)
     
     # Drop the selected columns
-    df.drop(selected_columns, axis=1, inplace=True)
+    df = df[['ID', f'Method1_ECR_{clustering_metric}']]
     
     # Sort by ECR scores in descending order
     df.sort_values(f'Method1_ECR_{clustering_metric}', ascending=False, inplace=True)
@@ -62,7 +70,7 @@ def method2_ECR_average(df: pd.DataFrame, clustering_metric: str, selected_colum
     df[f'Method2_ECR_{clustering_metric}'] = ecr_columns.sum(axis=1)
     
     # Drop the selected columns from the dataframe
-    df.drop(selected_columns, axis=1, inplace=True)
+    df = df[['ID', f'Method2_ECR_{clustering_metric}']]
     
     # Group the dataframe by 'ID' and calculate the mean of numeric columns
     df2 = df.groupby('ID', as_index=False).mean(numeric_only=True)
