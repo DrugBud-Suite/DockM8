@@ -138,13 +138,13 @@ fi
 
 if [[ ! -f ./qvina-w ]]; then
     echo -e "\nDownloading QVINA-W!"
-    wget https://github.com/QVina/qvina/blob/master/bin/qvina-w --no-check-certificate -q --show-progress
+    wget https://github.com/QVina/qvina/raw/master/bin/qvina-w --no-check-certificate -q --show-progress
     chmod +x qvina-w
 fi
 
 if [[ ! -f ./qvina2.1 ]]; then
     echo -e "\nDownloading QVINA2!"
-    wget https://github.com/QVina/qvina/blob/master/bin/qvina2.1 --no-check-certificate -q --show-progress
+    wget https://github.com/QVina/qvina/raw/master/bin/qvina2.1 --no-check-certificate -q --show-progress
     chmod +x qvina2.1
 fi
 
