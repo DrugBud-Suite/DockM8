@@ -36,7 +36,7 @@ def calculate_performance(w_dir : Path, actives_library : Path, percentages : li
     actives_df = actives_df[['ID', 'Activity']]
     actives_df['Activity'] = pd.to_numeric(actives_df['Activity'])
     # Calculate performance for each clustering method
-    for dir in tqdm(os.listdir(w_dir), desc='Clustering method'):
+    for dir in os.listdir(w_dir):
         if dir.startswith('rescoring'):
             clustering_method = '_'.join(dir.split('_')[1:3]) if len(dir.split('_')) > 3 else dir.split('_')[1] if len(dir.split('_')) == 3 else None
             # Calculate performance for single scoring functions
@@ -45,7 +45,7 @@ def calculate_performance(w_dir : Path, actives_library : Path, percentages : li
             standardised_df['ID'] = standardised_df['Pose ID'].str.split('_').str[0]
             standardised_df['ID'] = standardised_df['ID'].astype(str)
             score_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
-            for col in tqdm(score_columns, desc='Single Scoring function', leave=False):
+            for col in score_columns:
                 filtered_df = standardised_df[['ID', col]]
                 merged_df = pd.merge(filtered_df, actives_df, on='ID')
                 merged_df = merged_df.sort_values(col, ascending=False)
@@ -92,7 +92,7 @@ def calculate_performance(w_dir : Path, actives_library : Path, percentages : li
                                                                 ranked_df, 
                                                                 standardised_df, 
                                                                 actives_df, 
-                                                                percentages) for combination in tqdm(combinations, desc='Consensus method', leave=False))
+                                                                percentages) for combination in combinations)
                 for result in consensus_results:
                     all_results = pd.concat([all_results, result], axis=0)
     (w_dir / 'performance').mkdir(parents=True, exist_ok=True)
