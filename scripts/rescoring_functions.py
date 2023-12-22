@@ -591,10 +591,10 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
                         ' -o RTMScore_scores' +
                         ' -pl' 
                         f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
-    subprocess.call(RTMScore_command, shell=True)
+    subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     df = pd.read_csv(output_file)
     df = df.rename(columns={'id': 'Pose ID', 'score': 'RTMScore'})
-    df['Pose ID'] = df['Pose ID'].str.split('-').str[0]
+    df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]
     df.to_csv(output_file, index=False)
     delete_files(rescoring_folder / 'RTMScore_rescoring', 'RTMScore_scores.csv')
     toc = time.perf_counter()
