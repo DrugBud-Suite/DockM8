@@ -1,22 +1,27 @@
 #Import required libraries and scripts
-from scripts.library_preparation import *
-from scripts.utilities import *
-from scripts.docking_functions import *
+import argparse
+import os
+import warnings
+from pathlib import Path
+
+import numpy as np
+import math
+from IPython.display import display
+
+from software.DeepCoy.generate_decoys import generate_decoys
+
 from scripts.clustering_functions import *
-from scripts.rescoring_functions import *
 from scripts.consensus_methods import *
-from scripts.performance_calculation import *
+from scripts.docking_functions import *
 from scripts.dogsitescorer import *
 from scripts.get_pocket import *
+from scripts.library_preparation import *
+from scripts.performance_calculation import *
 from scripts.postprocessing import *
 from scripts.protein_preparation import *
-from IPython.display import display
-from pathlib import Path
-import numpy as np
-import os
-import argparse
+from scripts.rescoring_functions import *
+from scripts.utilities import *
 
-import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -26,10 +31,15 @@ parser.add_argument('--software', required=True, type=str, help ='Path to the so
 parser.add_argument('--mode', type=str, default='single', choices=['Single', 'Ensemble', 'active_learning'], help ='Specifies the mode: single, ensemble, or active_learning')
 parser.add_argument('--split', default=1, type=int, help='Whether to split the docking library into chunks (useful for large libraries)')
 
+parser.add_argument('--gen_decoys', default=False, type=str2bool, help ='Whether or not to generate decoys using DeepCoy')
+parser.add_argument('--decoy_model', default='DUDE', type=str, choices=['DUDE', 'DEKOIS', 'DUDE_P'], help ='Model to use for decoy generation')
+parser.add_argument('--n_decoys', default=20, type=int, help ='Number of decoys to generate')
+parser.add_argument('--actives', default=None, type=str, help ='Path to the list of active compounds .sdf file')
+
 parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to the protein file(s) or protein files if using ensemble docking mode')
 parser.add_argument('--pocket', required=True, type=str, choices=['Reference', 'RoG', 'Dogsitescorer'], help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the reference ligand file(s)')
-parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library file')
+parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library .sdf file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
 parser.add_argument('--prepare_proteins', default=True, type=str2bool, help ='Whether or not to add hydrogens to the protein using Protoss (True for yes, False for no)')
 parser.add_argument('--conformers', default='RDKit', type=str, choices=['RDKit', 'MMFF', 'GypsumDL'], help ='Method to use for conformer generation (RDKit and MMFF are equivalent)')
@@ -64,7 +74,25 @@ if (args.pocket == 'Reference' or args.pocket == 'RoG') and not args.reffile:
     
 if any(metric in args.clustering_metric for metric in CLUSTERING_METRICS.keys()) and (args.clustering_method == None or args.clustering_method == 'None'):
     parser.error("Must specify a clustering method when --clustering_metric is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
-    
+
+if args.gen_decoys == True and not args.decoy_model:
+    parser.error("Must specify a decoy model when --gen_decoys is set to True")
+
+if args.gen_decoys == True and not args.n_decoys:
+    parser.error("Must specify the number of decoys to generate when --gen_decoys is set to True")
+
+if args.gen_decoys == True and not args.actives:
+    parser.error("Must specify the path to the actives file when --gen_decoys is set to True")
+
+if args.gen_decoys and len(args.rescoring) > 8:
+    possibilites = math.factorial(len(args.rescoring))*len(args.clustering_metric)*len(args.docking_programs)*7
+    print(f"WARNING : At least {possibilites} possible combinations will be tried for optimization, this may take a while.")
+
+for program in DOCKING_PROGRAMS:
+    if f"bestpose_{program}" in args.clustering_metric and program not in args.docking_programs:
+        parser.error(f"Must specify {program} in --docking_programs when --clustering_metric is set to bestpose_{program}")
+
+
 def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, clustering_metrics, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
     # Set working directory
     w_dir = Path(receptor).parent / Path(receptor).stem
@@ -104,6 +132,33 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     apply_consensus_methods(w_dir, clustering_metrics, consensus, rescoring, standardization_type='min_max')
 
 def run_command(**kwargs):
+    
+    if kwargs.get('gen_decoys') == True:
+        print('DockM8 is generating decoys...')
+        
+        output_library = generate_decoys(Path(kwargs.get('actives')), kwargs.get('n_decoys'), kwargs.get('decoy_model'), kwargs.get('software'))
+        
+        dockm8(software = Path(kwargs.get('software')),
+                receptor = (kwargs.get('receptor'))[0], 
+                pocket = kwargs.get('pocket'), 
+                ref = kwargs.get('reffile')[0], 
+                docking_library = output_library, 
+                idcolumn = kwargs.get('idcolumn'), 
+                prepare_proteins = kwargs.get('prepare_proteins'),
+                conformers=kwargs.get('conformers'),
+                protonation = kwargs.get('protonation'), 
+                docking_programs = kwargs.get('docking_programs'), 
+                clustering_metrics = kwargs.get('clustering_metric'), 
+                nposes = kwargs.get('nposes'), 
+                exhaustiveness = kwargs.get('exhaustiveness'), 
+                ncpus = kwargs.get('ncpus'), 
+                clustering_method = kwargs.get('clustering_method'), 
+                rescoring = kwargs.get('rescoring'), 
+                consensus = kwargs.get('consensus'))
+        calculate_performance(Path(kwargs.get('receptor')), 
+                                output_library, 
+                                kwargs.get('clustering_metric'),
+                                kwargs.get('ncpus'))
     # Single mode
     if kwargs.get('mode') == 'Single':
         print('DockM8 is running in single mode...')
