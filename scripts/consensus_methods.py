@@ -92,7 +92,7 @@ def method3_avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: 
         pd.DataFrame: The output dataframe with columns 'ID' and 'Method3_ECR_clustering' representing the ID and Exponential Consensus Ranking values for the selected columns.
     """
     # Calculate the mean ranks for the selected columns
-    mean_ranks = df.groupby('ID')[selected_columns].mean().round(2)
+    mean_ranks = df.groupby('ID', as_index=False)[selected_columns].mean().round(2)
     
     # Rank the mean values in ascending order
     ranks = mean_ranks.rank(method='average', ascending=True)
@@ -107,7 +107,7 @@ def method3_avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: 
     ecr_sum = ecr_values.sum(axis=1)
     
     # Create a new dataframe with ID and ECR values
-    output_df = pd.DataFrame({'ID': mean_ranks.index, f'Method3_ECR_{clustering_metric}': ecr_sum})
+    output_df = pd.DataFrame({'ID': mean_ranks['ID'], f'Method3_ECR_{clustering_metric}': ecr_sum})
     
     return output_df[['ID', f'Method3_ECR_{clustering_metric}']]
 
