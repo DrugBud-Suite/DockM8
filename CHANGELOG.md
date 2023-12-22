@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.9.2
+
+### Added
+- added decoy generation options
+
+### Changed
+- changed handling of performance calculation
+
+### Deprecated
+- None
+
+### Removed
+- None
+
+### Fixed
+- None
+
+### Security
+- None
+
 ## v0.9.1
 
 ### Added
