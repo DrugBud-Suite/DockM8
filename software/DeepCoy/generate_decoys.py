@@ -3,6 +3,10 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
+import pandas as pd
+from rdkit import Chem
+from rdkit.Chem import PandasTools
+
 from scripts.utilities import convert_molecules, printlog
 
 from ..DeepCoy.data.prepare_data import preprocess, read_file
@@ -10,7 +14,19 @@ from ..DeepCoy.DeepCoy import DenseGGNNChemModel
 from ..DeepCoy.evaluation.select_and_evaluate_decoys import select_and_evaluate_decoys
 
 
-def generate_decoys(input_sdf : Path, n_decoys : int, model : str, software : Path):
+def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) -> Path:
+    """
+    Generate decoys based on a given input molecule file.
+
+    Args:
+        input_sdf (Path): The path to the input SDF file containing the molecules for which decoys need to be generated.
+        n_decoys (int): The number of decoys to be generated for each input molecule.
+        model (str): The name of the DeepCoy model to be used for decoy generation.
+        software (Path): The path to the folder containing the DeepCoy software and models.
+
+    Returns:
+        Path: The path to the output SDF file containing the generated decoys and actives.
+    """
     printlog('Generating decoys...')
     tic = time.perf_counter()
     DeepCoy_folder = (input_sdf.parent / 'DeepCoy')
@@ -84,7 +100,28 @@ def generate_decoys(input_sdf : Path, n_decoys : int, model : str, software : Pa
     except Exception as e:
         printlog(e)
         printlog('Error selecting and evaluating decoys!')
+    with open(DeepCoy_folder / 'decoys-selected.smi', 'r') as f:
+        lines = f.readlines()
+        actives = set([line.split()[0] for line in lines])
+        decoys = [line.split()[1] for line in lines]
+
+    # Load the actives and decoys as RDKit molecules from the SMILES format
+    actives_mols = [Chem.MolFromSmiles(smiles) for smiles in actives]
+    decoys_mols = [Chem.MolFromSmiles(smiles) for smiles in decoys]
+
+    # Add them to a dataframe
+    actives_df = pd.DataFrame()
+    actives_df['Molecule'] = actives_mols
+    actives_df['Activity'] = 1
+    actives_df['ID'] = ['Active-' + str(i) for i in range(1, len(actives_df) + 1)]
+    decoys_df = pd.DataFrame()
+    decoys_df['Molecule'] = decoys_mols
+    decoys_df['Activity'] = 0
+    decoys_df['ID'] = ['Decoy-' + str(i) for i in range(1, len(decoys_df) + 1)]
+    output_df = pd.concat([actives_df, decoys_df], ignore_index=True)
+
+    # Save the dataframe as an SDF file
+    PandasTools.WriteSDF(output_df, str(DeepCoy_folder / 'test_set.sdf'), properties=list(output_df.columns))
     toc = time.perf_counter()
     printlog(f'Finished generating decoys in {toc-tic:0.4f}!...')
-    
-    return
+    return DeepCoy_folder / 'test_set.sdf'
