@@ -1,243 +1,120 @@
 import itertools
-import json
 import os
 import warnings
 from pathlib import Path
-from tqdm import tqdm
 
 import pandas as pd
 from joblib import Parallel, delayed
 from rdkit.Chem import PandasTools
+from tqdm import tqdm
 
-from scripts.consensus_methods import method1_ECR_best, method2_ECR_average, method3_avg_ECR, method4_RbR, method5_RbV, method6_Zscore_best, method7_Zscore_avg
-from scripts.postprocessing import standardize_scores, rank_scores
+from scripts.consensus_methods import (
+    CONSENSUS_METHODS,
+)
+from scripts.postprocessing import rank_scores, standardize_scores
 from scripts.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-def process_dataframes(w_dir, rescoring_folders):
+def calculate_performance(w_dir : Path, actives_library : Path, percentages : list):
     """
-    Process the dataframes by reading CSV files, standardizing scores, and ranking scores.
+    Calculates the performance of a scoring system for different clustering methods.
 
     Args:
-        w_dir (str): The working directory.
-        rescoring_folders (dict): A dictionary containing the names of the rescoring folders.
+        w_dir (Path): The directory path where the scoring results are stored.
+        actives_library (Path): The path to the actives library in SDF format.
+        percentages (list): A list of percentages for calculating the EF (enrichment factor).
 
     Returns:
-        tuple: A tuple containing two dictionaries - standardised_dataframes and ranked_dataframes.
-               standardised_dataframes: A dictionary containing the standardized dataframes.
-               ranked_dataframes: A dictionary containing the ranked dataframes.
+        DataFrame: A DataFrame containing the performance results for different clustering methods, consensus methods, and scoring functions.
     """
-    rescored_dataframes = {name: pd.read_csv(Path(w_dir) / rescoring_folders[name] / 'allposes_rescored.csv') for name in rescoring_folders}
-    standardised_dataframes = {f'{name}_standardised': standardize_scores(rescored_dataframes[name], 'min_max') for name in rescoring_folders}
-    ranked_dataframes = {f'{name}_ranked': rank_scores(standardised_dataframes[f'{name}_standardised']) for name in rescoring_folders}
-    return standardised_dataframes, ranked_dataframes
+    printlog('Calculating performance...')
+    all_results = pd.DataFrame(columns=['clustering', 'consensus', 'scoring'] + [f'EF{p}' for p in percentages])
+    #Load actives data
+    actives_df = PandasTools.LoadSDF(str(actives_library), molColName=None, idName='ID')
+    actives_df = actives_df[['ID', 'Activity']]
+    actives_df['Activity'] = pd.to_numeric(actives_df['Activity'])
+    # Calculate performance for each clustering method
+    for dir in os.listdir(w_dir):
+        if dir.startswith('rescoring'):
+            clustering_method = '_'.join(dir.split('_')[1:3]) if len(dir.split('_')) > 3 else dir.split('_')[1] if len(dir.split('_')) == 3 else None
+            # Calculate performance for single scoring functions
+            rescored_df = pd.read_csv(Path(w_dir) / dir / 'allposes_rescored.csv')
+            standardised_df = standardize_scores(rescored_df, 'min_max')
+            standardised_df['ID'] = standardised_df['Pose ID'].str.split('_').str[0]
+            standardised_df['ID'] = standardised_df['ID'].astype(str)
+            score_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
+            for col in score_columns:
+                filtered_df = standardised_df[['ID', col]]
+                merged_df = pd.merge(filtered_df, actives_df, on='ID')
+                merged_df = merged_df.sort_values(col, ascending=False)
+                ef_results = {}
+                for p in percentages:
+                    ef = calculate_EF(merged_df, p)
+                    ef_results[f'EF{p}'] = ef
+                all_results.loc[len(all_results)] = [clustering_method, 'None', col] + list(ef_results.values())
+            # Calculate performance for consensus scoring functions
+            ranked_df = rank_scores(standardised_df)
+            ranked_df['ID'] = ranked_df['Pose ID'].str.split('_').str[0]
+            ranked_df['ID'] = ranked_df['ID'].astype(str)
+            global process_combination
+            def process_combination(combination, clustering_method, ranked_df, standardised_df, actives_df, percentages):
+                filtered_ranked_df = ranked_df[['ID'] + list(combination)]
+                filtered_standardised_df = standardised_df[['ID'] + list(combination)]
+                combination_df = pd.DataFrame()
+                consensus_dfs = {}
+                # For each consensus method
+                for method in CONSENSUS_METHODS.keys():
+                    if CONSENSUS_METHODS[method]['type'] == 'rank':
+                        consensus_dfs[method] = CONSENSUS_METHODS[method]['function'](filtered_ranked_df, clustering_method, list(combination))
+                    elif CONSENSUS_METHODS[method]['type'] == 'score':
+                        consensus_dfs[method] = CONSENSUS_METHODS[method]['function'](filtered_standardised_df, clustering_method, list(combination))
+                    merged_df = pd.merge(consensus_dfs[method], actives_df, on='ID')
+                    # Get the column name that is not 'ID' or 'Activity'
+                    col_to_sort = [col for col in merged_df.columns if col not in ['ID', 'Activity']][0]
+                    merged_df = merged_df.sort_values(col_to_sort, ascending=False)
+                    ef_results = {}
+                    for p in percentages:
+                        ef = calculate_EF(merged_df, p)
+                        ef_results[f'EF{p}'] = ef
+                    method_result = [clustering_method, method, '_'.join(list(combination))] + list(ef_results.values())
+                    method_result_df = pd.DataFrame([method_result], columns=['clustering', 'consensus', 'scoring'] + [f'EF{p}' for p in percentages])
+                    combination_df = pd.concat([combination_df, method_result_df], axis=0)
+                return combination_df
+            # For any length of combination of scoring functions
+            for length in tqdm(range(2, len(score_columns))):
+                combinations = list(itertools.combinations(score_columns, length))
+                # For each combination
+                parallel = Parallel(n_jobs=6, backend='multiprocessing')
+                consensus_results = parallel(delayed(process_combination)(combination, 
+                                                                clustering_method, 
+                                                                ranked_df, 
+                                                                standardised_df, 
+                                                                actives_df, 
+                                                                percentages) for combination in combinations)
+                for result in consensus_results:
+                    all_results = pd.concat([all_results, result], axis=0)
+    (w_dir / 'performance').mkdir(parents=True, exist_ok=True)
+    all_results.to_csv(Path(w_dir) / "performance" / 'performance.csv', index=False)
+    return all_results
 
 
-def process_combination(combination, w_dir, name, standardised_df, ranked_df, rank_methods, score_methods, docking_library, original_df):
+def calculate_EF(merged_df : pd.Dataframe, percentage : float):
     """
-    Process a combination of selected columns and calculate performance metrics.
+    Calculates the Enrichment Factor (EF) for a given percentage.
 
     Args:
-        combination (iterable): The combination of selected columns.
-        w_dir (str): The working directory.
-        name (str): The name of the combination.
-        standardised_df (pandas.DataFrame): The standardized dataframe.
-        ranked_df (pandas.DataFrame): The ranked dataframe.
-        column_mapping (dict): The mapping of columns.
-        rank_methods (dict): The dictionary of rank methods.
-        score_methods (dict): The dictionary of score methods.
-        docking_library (str): The docking library.
-        original_df (pandas.DataFrame): The original dataframe.
+        merged_df (DataFrame): The merged DataFrame containing the scores and activity data.
+        percentage (int): The percentage for calculating the EF.
 
     Returns:
-        dict: A dictionary containing the performance metrics for each method.
+        float: The calculated EF.
     """
-    selected_columns = list(combination)
-    subset_name = '_'.join(selected_columns)
-        
-    standardised_subset = standardised_df[['ID'] + selected_columns]
-    ranked_subset = ranked_df[['ID'] + selected_columns]
-    
-    # Analyze the dataframes using rank methods and score methods
-    analysed_dataframes = {}
-    for method in rank_methods:
-        analysed_dataframes[method] = rank_methods[method](ranked_subset, name, selected_columns)
-    for method in score_methods:
-        analysed_dataframes[method] = score_methods[method](standardised_subset, name, selected_columns)
+    Nx_percent = round((percentage/100) * len(merged_df))
+    N100_percent = len(merged_df)
+    Hitsx_percent = merged_df.head(Nx_percent)['Activity'].sum()
+    Hits100_percent = merged_df['Activity'].sum()
+    ef = round((Hitsx_percent / Nx_percent) * (N100_percent / Hits100_percent), 2)
+    return ef
 
-    # Calculate the EF1% metric for a dataframe
-    def calculate_EF1(df, w_dir, docking_library, original_df):
-        """
-        Calculate the EF1% metric for a dataframe.
-
-        Args:
-            df (pandas.DataFrame): The dataframe.
-            w_dir (str): The working directory.
-            docking_library (str): The docking library.
-            original_df (pandas.DataFrame): The original dataframe.
-
-        Returns:
-            float: The EF1% metric.
-        """
-        merged_df = df.merge(original_df, on='ID')
-        method_list = df.columns.tolist()[1:]
-        method_ranking = {'ECR': False,
-                            'Zscore': False,
-                            'RbV': False,
-                            'RbR': True}
-        for method in method_list:
-            asc = [method_ranking[key] for key in method_ranking if key in method][0]
-            sorted_df = merged_df.sort_values(method, ascending=asc)
-            N1_percent = round(0.01 * len(sorted_df))
-            N100_percent = len(sorted_df)
-            Hits1_percent = sorted_df.head(N1_percent)['Activity'].sum()
-            Hits100_percent = sorted_df['Activity'].sum()
-            ef1 = round((Hits1_percent / N1_percent) * (N100_percent / Hits100_percent), 2)
-        return ef1
-    
-    result_dict = {}
-    for method, df in analysed_dataframes.items():
-        df = df.drop(columns="Pose ID", errors='ignore').reset_index(drop=True)
-        df['ID'] = df['ID'].astype(str)
-        enrichment_factor = calculate_EF1(df, w_dir, docking_library, original_df)
-        ef_df = pd.DataFrame({'clustering_method': [name],
-                                'method_name': [method],
-                                'selected_columns': [subset_name],
-                                'EF1%': [enrichment_factor]
-        })
-
-        result_dict[method] = ef_df
-    return result_dict
-
-
-def process_combination_wrapper(args):
-    return process_combination(*args)
-
-def apply_consensus_methods_combinations(w_dir, docking_library, clustering_metrics, ncpus):
-    """
-    Apply consensus methods combinations to calculate performance metrics.
-
-    Args:
-        w_dir (str): The working directory path.
-        docking_library (str): The path to the docking library.
-        clustering_metrics (list): A list of clustering metrics.
-
-    Returns:
-        None
-    """
-    # Create 'ranking' directory if it doesn't exist
-    (Path(w_dir) / 'ranking').mkdir(parents=True, exist_ok=True)
-    # Create a dictionary of rescoring folders for each clustering metric
-    rescoring_folders = {metric: f'rescoring_{metric}_clustered' for metric in clustering_metrics}
-    # Process dataframes and get standardised and ranked dataframes
-    standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, rescoring_folders)
-    # Save the dataframes to CSV files in the 'ranking' directory
-    for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
-        for df_name, df in df_dict.items():
-            df['ID'] = df['Pose ID'].str.split('_').str[0]
-            df['ID'] = df['ID'].astype(str)
-            df.to_csv(Path(w_dir) / 'ranking' / f'{df_name}.csv', index=False)
-    # Create 'consensus' directory if it doesn't exist
-    (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
-    # Define rank methods and score methods
-    rank_methods = {
-        'method1': method1_ECR_best,
-        'method2': method2_ECR_average,
-        'method3': method3_avg_ECR,
-        'method4': method4_RbR}
-    score_methods = {
-        'method5': method5_RbV,
-        'method6': method6_Zscore_best,
-        'method7': method7_Zscore_avg}
-    # Load the docking library as a DataFrame
-    original_df = PandasTools.LoadSDF(str(docking_library), molColName=None, idName='ID')
-    original_df = original_df[['ID', 'Activity']]
-    original_df['Activity'] = pd.to_numeric(original_df['Activity'])
-    df_list = []
-    printlog('Calculating consensus methods for every possible score combination...')
-    # Iterate over each rescoring folder
-    for name in tqdm(rescoring_folders, total=len(rescoring_folders)):
-        standardised_df = standardised_dataframes[name + '_standardised']
-        ranked_df = ranked_dataframes[name + '_ranked']
-        calc_columns = [col for col in standardised_df.columns if col not in ['Pose ID', 'ID']]
-        parallel = Parallel(n_jobs=ncpus, backend='multiprocessing')
-        # Generate combinations of score columns
-        for L in range(2, len(calc_columns)):
-            combinations = list(itertools.combinations(calc_columns, L))
-            args = [
-                (subset,
-                 w_dir,
-                 name,
-                 standardised_df,
-                 ranked_df,
-                 rank_methods,
-                 score_methods,
-                 docking_library,
-                 original_df) for subset in combinations]
-            results = parallel(delayed(process_combination_wrapper)(arg) for arg in args)
-            for result_dict in results:
-                for method, df in result_dict.items():
-                    df_list.append(df)
-            consensus_summary = pd.concat(df_list, ignore_index=True)
-    # Save the consensus_summary DataFrame to a single CSV file
-    consensus_summary = pd.concat(df_list, ignore_index=True)
-    consensus_summary.to_csv(Path(w_dir) / 'consensus' / 'consensus_summary.csv', index=False)
-
-def calculate_EF_single_functions(w_dir, docking_library, clustering_metrics):
-    """
-    Calculate EF (Enrichment Factor) for single scoring functions.
-
-    Args:
-        w_dir (str): The working directory path.
-        docking_library (str): The path to the docking library.
-        clustering_metrics (list): List of clustering metrics.
-
-    Returns:
-        None
-    """
-    # Create 'ranking' directory if it doesn't exist
-    (Path(w_dir) / 'ranking').mkdir(parents=True, exist_ok=True)
-    # Create a dictionary of rescoring folders for each clustering metric
-    rescoring_folders = {metric: f'rescoring_{metric}_clustered' for metric in clustering_metrics}
-    # Process dataframes and get standardised and ranked dataframes
-    standardised_dataframes, ranked_dataframes = process_dataframes(w_dir, rescoring_folders)
-    # Save standardised and ranked dataframes as CSV files
-    for name, df_dict in {'standardised': standardised_dataframes, 'ranked': ranked_dataframes}.items():
-        for df_name, df in df_dict.items():
-            df['ID'] = df['Pose ID'].str.split('_').str[0]
-            df['ID'] = df['ID'].astype(str)
-            df.to_csv(Path(w_dir) / 'ranking' / f'{df_name}.csv',index=False)
-    # Load the original docking library as a Pandas dataframe
-    original_df = PandasTools.LoadSDF(str(docking_library), molColName=None, idName='ID')
-    original_df = original_df[['ID', 'Activity']]
-    original_df['Activity'] = pd.to_numeric(original_df['Activity'])
-    # Create an empty dataframe to store EF results
-    EF_results = pd.DataFrame(columns=['Scoring Function', 'Clustering Metric', 'EF10%', 'EF1%'])
-    # Calculate EFs for separate scoring functions
-    for file in os.listdir(Path(w_dir) / 'ranking'):
-        if file.endswith('_standardised.csv'):
-            clustering_metric = file.replace('_standardised.csv', '')
-            std_df = pd.read_csv(Path(w_dir) / 'ranking' / file)
-            std_df['ID'] = std_df['ID'].astype(str)
-            numeric_cols = std_df.select_dtypes(include='number').columns
-            std_df_grouped = std_df.groupby('ID')[numeric_cols].mean().reset_index()
-            merged_df = pd.merge(std_df_grouped, original_df, on='ID')
-            # Calculate EF for each scoring function and clustering metric
-            for col in merged_df.columns:
-                if col not in ['ID', 'Activity']:
-                    sorted_df = merged_df.sort_values(col, ascending=False)
-                    N10_percent = round(0.10 * len(sorted_df))
-                    N1_percent = round(0.01 * len(sorted_df))
-                    N100_percent = len(merged_df)
-                    Hits10_percent = sorted_df.head(N10_percent)['Activity'].sum()
-                    Hits1_percent = sorted_df.head(N1_percent)['Activity'].sum()
-                    Hits100_percent = sorted_df['Activity'].sum()
-                    ef10 = round((Hits10_percent / N10_percent) * (N100_percent / Hits100_percent), 2)
-                    ef1 = round((Hits1_percent / N1_percent) * (N100_percent / Hits100_percent), 2)
-                    EF_results.loc[len(EF_results)] = [col, clustering_metric, ef10, ef1]
-    # Create 'consensus' directory if it doesn't exist
-    (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
-    # Save EF results as a CSV file
-    EF_results.to_csv(Path(w_dir) / 'consensus' / 'EF_single_functions.csv',index=False)
