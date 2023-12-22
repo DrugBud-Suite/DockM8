@@ -49,8 +49,6 @@ def standardize_scores(df : pd.DataFrame, standardization_type : str):
 
     return df
 
-
-
 def rank_scores(df):
     """
     Ranks the scores in the given DataFrame in descending order for each column, excluding 'Pose ID' and 'ID'.
@@ -64,7 +62,7 @@ def rank_scores(df):
     df = df.assign(**{col: df[col].rank(method='average', ascending=False) for col in df.columns if col not in ['Pose ID', 'ID']})
     return df
 
-def apply_consensus_methods(w_dir : str, clustering_metric : str, consensus_method : str, rescoring_functions : list, standardization_type : str):
+def apply_consensus_methods(w_dir : str, clustering_metric : str, consensus_methods : str, rescoring_functions : list, standardization_type : str):
     """
     Applies consensus methods to rescored data and saves the results to a CSV file.
 
@@ -89,24 +87,28 @@ def apply_consensus_methods(w_dir : str, clustering_metric : str, consensus_meth
     # Rank the scores and add the 'ID' column
     ranked_dataframe = rank_scores(standardized_dataframe)
     ranked_dataframe['ID'] = ranked_dataframe['Pose ID'].str.split('_').str[0]
-    # Create the 'consensus' directory if it doesn't exist
-    (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
-    if consensus_method not in CONSENSUS_METHODS:
-        raise ValueError(f"Invalid consensus method: {consensus_method}")
-    # Get the method information from the dictionary
-    method_info = CONSENSUS_METHODS[consensus_method]
-    method_type = method_info['type']
-    method_function = method_info['function']
-    # Apply the selected consensus method to the data
-    if method_type == 'rank':
-        consensus_dataframe = method_function(ranked_dataframe, clustering_metric, [col for col in ranked_dataframe.columns if col not in ['Pose ID', 'ID']])
-    elif method_type == 'score':
-        consensus_dataframe = method_function(standardized_dataframe, clustering_metric, [col for col in standardized_dataframe.columns if col not in ['Pose ID', 'ID']])
-    else:
-        raise ValueError(f"Invalid consensus method type: {method_type}")
-    # Drop the 'Pose ID' column and save the consensus results to a CSV file
-    consensus_dataframe = consensus_dataframe.drop(columns="Pose ID", errors='ignore')
-    consensus_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{clustering_metric}_{consensus_method}_results.csv', index=False)
+    # Ensure consensus_methods is a list even if it's a single string
+    if isinstance(consensus_methods, str):
+        consensus_methods = [consensus_methods]
+    for consensus_method in consensus_methods:
+        # Create the 'consensus' directory if it doesn't exist
+        (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
+        if consensus_method not in CONSENSUS_METHODS:
+            raise ValueError(f"Invalid consensus method: {consensus_method}")
+        # Get the method information from the dictionary
+        method_info = CONSENSUS_METHODS[consensus_method]
+        method_type = method_info['type']
+        method_function = method_info['function']
+        # Apply the selected consensus method to the data
+        if method_type == 'rank':
+            consensus_dataframe = method_function(ranked_dataframe, clustering_metric, [col for col in ranked_dataframe.columns if col not in ['Pose ID', 'ID']])
+        elif method_type == 'score':
+            consensus_dataframe = method_function(standardized_dataframe, clustering_metric, [col for col in standardized_dataframe.columns if col not in ['Pose ID', 'ID']])
+        else:
+            raise ValueError(f"Invalid consensus method type: {method_type}")
+        # Drop the 'Pose ID' column and save the consensus results to a CSV file
+        consensus_dataframe = consensus_dataframe.drop(columns="Pose ID", errors='ignore')
+        consensus_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{clustering_metric}_{consensus_method}_results.csv', index=False)
     return
 
 def ensemble_consensus(receptors:list, clustering_metric : str, consensus_method : str, threshold : float or int):
