@@ -140,7 +140,7 @@ def printlog(message):
         dateTimeObj = datetime.datetime.now()
         return "[" + dateTimeObj.strftime("%Y-%b-%d %H:%M:%S") + "]"
     timestamp = timestamp_generator()
-    msg = "\n" + str(timestamp) + ": " + str(message)
+    msg = str(timestamp) + ": " + str(message)
     print(msg)
     log_file_path = Path(__file__).resolve().parent / '../log.txt'
     with open(log_file_path, 'a') as f_out:
