@@ -955,9 +955,12 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
         if 'Unnamed: 0' in df.columns:
             df = df.drop(columns=['Unnamed: 0'])
         csv_dfs.append(df)
-    combined_dfs = csv_dfs[0]
-    for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
-        combined_dfs = pd.merge(combined_dfs, df, on='Pose ID', how='inner')
+    if len(csv_dfs) == 1:
+        combined_dfs = csv_dfs[0]
+    if len(csv_dfs) > 1:
+        combined_dfs = csv_dfs[0]
+        for df in tqdm(csv_dfs[1:], desc='Combining scores', unit='files'):
+            combined_dfs = pd.merge(combined_dfs, df, on='Pose ID', how='inner')
     first_column = combined_dfs.pop('Pose ID')
     combined_dfs.insert(0, 'Pose ID', first_column)
     columns = combined_dfs.columns
