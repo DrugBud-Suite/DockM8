@@ -1,19 +1,17 @@
 # Import necessary libraries
-import streamlit as st
-import pandas as pd
-import numpy as np
 import os
-import subprocess
-from subprocess import DEVNULL, STDOUT, PIPE
-import sys
+from pathlib import Path
 import shlex
-import pathlib
-from contextlib import contextmanager, redirect_stdout
-from io import StringIO
+import subprocess
+import sys
+import time
+import itertools
+import streamlit as st
 
 from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.docking_functions import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
+from scripts.consensus_methods import CONSENSUS_METHODS
 
 st.set_page_config(page_title="DockM8", page_icon=":8ball:", layout="wide")
 # Sidebar
@@ -51,8 +49,30 @@ num_cpus = st.slider('Number of CPUs',
                      step=1, 
                      help='Number of CPUs to use for calculations')
 software = st.text_input("Choose a software directory", 
-                         value=os.getcwd() + '/software', 
-                         help='Type the directory containing the software folder: For example: /home/user/Dockm8/software')
+                         value = CWD + '/software', 
+                         help = 'Type the directory containing the software folder: For example: /home/user/Dockm8/software')
+
+gen_decoys = st.toggle(label="Generate decoys", 
+                         value = False, 
+                         help='Generate decoys for the active ligands and determine optimal DockM8 conditions')
+
+if gen_decoys:
+    st.subheader("Decoy generation", divider='orange')
+    # Active ligands
+    active_ligands = st.text_input(label="Enter the path to the active ligands file (.sdf format)", 
+                                   value = CWD + '/testing_single_docking/actives.sdf', 
+                                   help='Choose an active ligands file (.sdf format)')
+    # Number of decoys
+    n_decoys = st.slider(label='Number of decoys',
+                            min_value=1,
+                            max_value=100,
+                            step=1,
+                            value=10,
+                            help='Number of decoys to generate for each active ligand')
+    # Decoy generation program
+    decoy_model = st.selectbox(label='Which decoy generation model do you want to use?',
+                               options = ('DUD-E', 'DEKOIS', 'DUD-E_phosphorus'),
+                               help = 'Select which Deepcoy decoy generation model you want to use ')
 
 col1, col2 = st.columns(2)
 
@@ -60,7 +80,7 @@ col1, col2 = st.columns(2)
 col1.header("Receptor(s)", divider='orange')
 receptor_file = col1.text_input(label="File path(s) of one or more multiple receptor files (.pdb format), separated by commas", 
                                 help = 'Choose one or multiple receptor files (.pdb format)',
-                                value = CWD+'/testing_single_docking/protein.pdb', 
+                                value = CWD + '/testing_single_docking/protein.pdb', 
                                 placeholder= 'Enter path(s) here')
 
 # Prepare receptor
@@ -130,6 +150,10 @@ exhaustiveness = st.select_slider(label='Exhaustiveness',
                                   value=8, 
                                   help='Exhaustiveness of the docking, only applies to GNINA, SMINA, QVINA2 and QVINAW')
 
+bust_poses = st.checkbox(label="Bust poses using PoseBusters : WARNING may take a long time to run",
+                         value = False,
+                         help = "Bust poses using PoseBusters : WARNING may take a long time to run")
+
 # Pose selection
 st.header("Pose Selection", divider='orange')
 pose_selection = st.multiselect(label="Choose the pose selection method you want to use",
@@ -167,20 +191,30 @@ rescoring = st.multiselect(label = "Choose the scoring functions you want to use
 # Consensus
 st.header("Consensus", divider='orange')
 consensus_method = st.selectbox(label = 'Choose which consensus algorithm to use: ',
-                                options = ('ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'), 
+                                options = list(CONSENSUS_METHODS.keys()), 
                                 help = 'The method to use for consensus.')
+
+if gen_decoys:
+    total_combinations = 0
+    for length in range(2, len(rescoring)):
+        combinations = list(itertools.combinations(rescoring, length))
+        total_combinations += len(combinations)
+    num_possibilities = len(CONSENSUS_METHODS.keys()) * len(pose_selection) * (len(rescoring) + total_combinations)
+    if num_possibilities > 10000:
+        st.warning(f'WARNING: The combination of scoring functions and pose selection method you have selected will yield a large number of possible combinations ({num_possibilities}). This may take a long time to run.')
 
 # Define the common arguments
 command = (f'{sys.executable} {CWD}/dockm8.py 'f'--software {software} '
                                                     f'--receptor {receptor_file} '
-                                                    f'--reffile {reference_file} '
                                                     f'--pocket {pocket_mode} '
+                                                    f'--reffile {reference_file} '
                                                     f'--docking_library {ligand_file} '
                                                     f'--idcolumn {id_column} '
                                                     f'--prepare_proteins {prepare_receptor} '
                                                     f'--protonation {ligand_protonation} '
                                                     f'--docking_programs {" ".join(docking_programs)} '
-                                                    f'--clustering_metric {" ".join(pose_selection)} '
+                                                    f'--bust_poses {bust_poses} '
+                                                    f'--pose_selection {" ".join(pose_selection)} '
                                                     f'--nposes {nposes} '
                                                     f'--exhaustiveness {exhaustiveness} '
                                                     f'--ncpus {num_cpus} '
@@ -193,12 +227,18 @@ if mode == 'ensemble' or mode == 'active_learning':
     command += f' --mode {mode} --threshold {threshold}'
 else:
     command += f' --mode {mode}'
+
+if gen_decoys:
+    command += (' --gen_decoys True '
+    f'--decoy_model {decoy_model} '
+    f'--n_decoys {n_decoys} '
+    f'--actives {active_ligands} ')
     
 open('log.txt', 'w').close()
 
 def run_dockm8(command_list):
     print('Running')
-    result = subprocess.Popen(command_list)
+    subprocess.Popen(command_list)
     
 def read_log_file(file_path):
     with open(file_path, 'r') as file:
@@ -209,9 +249,6 @@ def read_log_file(file_path):
 if st.button('Run DockM8'):
     command_list = shlex.split(command)
     run_dockm8(command_list)
-
-import time
-from pathlib import Path
 
 log_file_path = Path(CWD, 'log.txt')
 
