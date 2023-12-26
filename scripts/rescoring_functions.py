@@ -888,7 +888,7 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 #add new scoring functions here!
 # Dict key: (function, column_name, min or max ordering, min value for scaled standardisation, max value for scaled standardisation)
 RESCORING_FUNCTIONS = {
-    'GNINA_Affinity':   {'function': gnina_rescoring,         'column_name': 'GNINA_Affinity', 'best_value': 'min', 'range': (100, -100)},
+    'GNINA-Affinity':   {'function': gnina_rescoring,         'column_name': 'GNINA-Affinity', 'best_value': 'min', 'range': (100, -100)},
     'CNN-Score':        {'function': gnina_rescoring,         'column_name': 'CNN-Score',      'best_value': 'max', 'range': (0, 1)},
     'CNN-Affinity':     {'function': gnina_rescoring,         'column_name': 'CNN-Affinity',   'best_value': 'max', 'range': (0, 20)},
     'Vinardo':          {'function': vinardo_rescoring,       'column_name': 'Vinardo',        'best_value': 'min', 'range': (200, 20)},
@@ -902,7 +902,7 @@ RESCORING_FUNCTIONS = {
     'AAScore':          {'function': AAScore_rescoring,       'column_name': 'AAScore',        'best_value': 'max', 'range': (100, -100)},
     'SCORCH':           {'function': SCORCH_rescoring,        'column_name': 'SCORCH',         'best_value': 'max', 'range': (0, 1)},
     'RTMScore':         {'function': RTMScore_rescoring,      'column_name': 'RTMScore',       'best_value': 'max', 'range': (0, 100)},
-    'KORPL':            {'function': KORPL_rescoring,         'column_name': 'KORPL',          'best_value': 'min', 'range': (200, -1000)},
+    'KORP-PL':          {'function': KORPL_rescoring,         'column_name': 'KORP-PL',        'best_value': 'min', 'range': (200, -1000)},
     'ConvexPLR':        {'function': ConvexPLR_rescoring,     'column_name': 'ConvexPLR',      'best_value': 'max', 'range': (-10, 10)}
 }
 
@@ -947,7 +947,6 @@ def rescore_poses(w_dir: Path, protein_file: Path, pocket_definition: dict, soft
 
 
     score_files = [f'{function}_scores.csv' for function in functions]
-    printlog(f'Combining all scores for {rescoring_folder}')
     csv_files = [file for file in (rescoring_folder.rglob('*.csv')) if file.name in score_files]
     csv_dfs = []
     for file in csv_files:
