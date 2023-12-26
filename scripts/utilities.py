@@ -2,6 +2,7 @@ import argparse
 import concurrent.futures
 import datetime
 import math
+import os
 import warnings
 from pathlib import Path
 
@@ -13,7 +14,6 @@ from openbabel import pybel
 from rdkit import Chem
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
-
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -326,3 +326,43 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+    
+def parallel_SDF_loader(sdf_path : Path, molcolName : str, idName : str, ncpus = os.cpu_count()-2, SMILES = None) -> pd.DataFrame:
+    """
+    Loads a SDF file in parallel using joblib library.
+
+    Args:
+        sdf_path (Path): The path to the SDF file.
+        molcolName (str): The name of the molecule column in the SDF file.
+        idName (str): The name of the ID column in the SDF file.
+        includeFingerprints (bool): Whether to include fingerprints in the loaded DataFrame.
+        strictParsing (bool): Whether to use strict parsing when loading the SDF file.
+
+    Returns:
+        DataFrame: The loaded SDF file as a DataFrame.
+    """
+    try:
+        # Load the molecules from the SDF file
+        mols = [m for m in Chem.MultithreadedSDMolSupplier(sdf_path,
+                                                        numWriterThreads=ncpus, 
+                                                        removeHs=False, 
+                                                        strictParsing=True) if m is not None]
+        data = []
+        # Iterate over each molecule
+        for mol in mols:
+            # Get the properties of the molecule
+            mol_props = {'Pose ID': mol.GetProp('_Name')}
+            for prop in mol.GetPropNames():
+                mol_props[prop] = mol.GetProp(prop)
+                mol_props['Molecule'] = mol
+            # Append the properties to the list
+            data.append(mol_props)
+        # Create a DataFrame from the list of dictionaries
+        df = pd.DataFrame(data).drop(columns=['mol_cond'])
+        # Detect the columns that should be numeric
+        for col in df.columns:
+            if col not in [idName, molcolName, 'ID', 'Pose ID']:
+                df[col] = pd.to_numeric(df[col], errors='coerce', downcast='float')
+    except Exception as e:
+        printlog(f"Error occurred during loading of SDF file: {str(e)}")
+    return df
