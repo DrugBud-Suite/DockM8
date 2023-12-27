@@ -110,7 +110,6 @@ def vinardo_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
         DataFrame: A dataframe containing the 'Pose ID' and Vinardo score columns for the rescored poses.
     """
     tic = time.perf_counter()
-    printlog('Rescoring with Vinardo')
 
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
@@ -161,7 +160,6 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
         DataFrame: A dataframe containing the 'Pose ID' and AD4 score columns for the rescored poses.
     """
     tic = time.perf_counter()
-    printlog('Rescoring with AD4')
 
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
@@ -228,7 +226,7 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     protein_file = kwargs.get('protein_file')
     
     tic = time.perf_counter()
-    printlog('Rescoring with RFScoreVS')
+
     rfscorevs_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
     
@@ -274,7 +272,7 @@ def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     pocket_definition = kwargs.get('pocket_definition')
 
     tic = time.perf_counter()
-    printlog('Rescoring with PLP')
+
     plants_search_speed = 'speed1'
     ants = '20'
     plp_rescoring_folder = Path(rescoring_folder) / f'{column_name}_rescoring'
@@ -363,7 +361,7 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     protein_file = kwargs.get('protein_file')
     
     tic = time.perf_counter()
-    printlog('Rescoring with CHEMPLP')
+
     plants_search_speed = 'speed1'
     ants = '20'
     chemplp_rescoring_folder = kwargs.get('rescoring_folder') / f'{column_name}_rescoring'
@@ -466,7 +464,7 @@ def oddt_nnscore_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     protein_file = kwargs.get('protein_file')
 
     tic = time.perf_counter()
-    printlog('Rescoring with NNscore')
+
     nnscore_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     nnscore_rescoring_folder.mkdir(parents=True, exist_ok=True)
     pickle_path = f'{software}/models/NNScore_pdbbind2016.pickle'
@@ -500,7 +498,7 @@ def oddt_plecscore_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs
     protein_file = kwargs.get('protein_file')
 
     tic = time.perf_counter()
-    printlog('Rescoring with PLECscore')
+
     plecscore_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     plecscore_rescoring_folder.mkdir(parents=True, exist_ok=True)
     pickle_path = f'{software}/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle'
@@ -543,7 +541,7 @@ def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     split_files_folder.mkdir(exist_ok=True)
     convert_molecules(sdf, split_files_folder, 'sdf', 'pdbqt')
     # Run SCORCH
-    printlog('Rescoring with SCORCH')
+
     SCORCH_command = f'python {software}/SCORCH-1.0.0/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
     subprocess.call(SCORCH_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
     # Clean data
@@ -583,7 +581,6 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     tic = time.perf_counter()
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
     output_file = str(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv')
-    printlog('Rescoring with RTMScore')
     
     RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
                         f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
@@ -713,7 +710,6 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
 
     if ncpus == 1:
-        printlog('Rescoring with AAScore')
         results = rescoring_folder / f'{column_name}_rescoring' / 'rescored_AAScore.csv'
         AAscore_cmd = f'python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {sdf} --Out {results}'
         subprocess.call(AAscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
