@@ -211,13 +211,12 @@ if [[ ! -d ./RTMScore-main ]]; then
     rm main.zip
     rm ./RTMScore-main/scripts -r
     rm ./RTMScore-main/121.jpg
-    cd ./RTMScore-main/examples
-    sed -i '18d' ./RTMScore-main/examples/rtmscore.py
-    cd 
+
 fi
 
 if [[ ! -f ./models/DeepCoy* ]]; then
     echo -e "\nDownloading DeepCoy models!"
+    cd ./models
     wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz
     tar -xvf DeepCoy_pretrained_models.tar.gz
     rm DeepCoy_pretrained_models.tar.gz
