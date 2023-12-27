@@ -43,7 +43,7 @@ def split_sdf(dir, sdf_file, ncpus):
     compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
-    for i in tqdm(range(0, len(df), compounds_per_core), desc='Splitting SDF file'):
+    for i in range(0, len(df), compounds_per_core):
         chunk = df[i:i + compounds_per_core]
         # remove rows with 'ID' values that have already been used
         chunk = chunk[~chunk['ID'].isin(used_ids)]
@@ -54,7 +54,7 @@ def split_sdf(dir, sdf_file, ncpus):
                             molColName='Molecule',
                             idName='ID')
         file_counter += 1
-    printlog(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
+    #printlog(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
 def split_sdf_single(dir, sdf_file):
