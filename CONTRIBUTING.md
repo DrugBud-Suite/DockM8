@@ -1,12 +1,11 @@
 # How to contribute
 
-We welcome contributions from external contributors, and this document
-describes how to merge code changes into `DockM8`. 
+We welcome contributions from external contributors, and this document describes how to merge code changes into `DockM8`. 
 
 ## Getting Started
 
 1. Make sure you have a [GitHub](https://github.com/signup/free) or [GitLab](https://gitlab.com/users/sign_up) account.
-2. [Fork](https://help.github.com/articles/fork-a-repo/) this repository on GitHub.
+2. [Fork](https://help.github.com/articles/fork-a-repo/) this repository on GitLab.
 3. On your local machine, [clone](https://help.github.com/articles/cloning-a-repository/) your fork of the repository.
 
 ## Making Changes
