@@ -78,7 +78,7 @@ def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     except Exception as e:
         printlog(f'ERROR: Could not combine {column_name} rescored poses')
         printlog(e)
-    gnina_rescoring_results.rename(columns={'minimizedAffinity': 'GNINA_Affinity',
+    gnina_rescoring_results.rename(columns={'minimizedAffinity': 'GNINA-Affinity',
                                             'CNNscore': 'CNN-Score',
                                             'CNNaffinity': 'CNN-Affinity'},
                                             inplace=True)
