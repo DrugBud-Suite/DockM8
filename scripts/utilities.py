@@ -1,5 +1,7 @@
 import argparse
 import concurrent.futures
+import pebble
+import ray
 import datetime
 import math
 import os
@@ -263,7 +265,8 @@ def delete_files(folder_path: str, save_file: str) -> None:
             if not any(item.iterdir()) and item.name != save_file:
                 item.rmdir()
                 
-def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
+def parallel_executor(function, list_of_objects : list, ncpus : int, backend : str, **kwargs):
+    
     """
     Executes a function in parallel using multiple processes.
 
@@ -276,42 +279,37 @@ def parallel_executor(function, split_files_sdfs, ncpus, **kwargs):
     Returns:
         The result of the function execution.
     """
-    with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-        jobs = []
-        for split_file in split_files_sdfs:
-            try:
-                job = executor.submit(function, split_file, **kwargs)
-                jobs.append(job)
-            except Exception as e:
-                printlog("Error in concurrent futures job creation: " + str(e))
-        for job in tqdm(concurrent.futures.as_completed(jobs), total=len(split_files_sdfs), desc=f"Running {function}"):
-            try:
-                res = job.result()
-            except Exception as e:
-                printlog("Error in concurrent futures job run: " + str(e))
-    return res
-
-def parallel_executor_joblib(function, split_files_sdfs, ncpus, **kwargs):
-    """
-    Executes a function in parallel using joblib library.
-
-    Args:
-        function (function): The function to be executed in parallel.
-        split_files_sdfs (list): A list of split files.
-        ncpus (int): The number of CPUs to be used for parallel execution.
-        **kwargs: Additional keyword arguments to be passed to the function.
-
-    Returns:
-        list: A list of results from the parallel execution.
-    """
-    jobs = []
-    for split_file in split_files_sdfs:
+    if backend == "concurrent_process":
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+            jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
+            results = [job.result() for job in tqdm(concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function}")]
+    
+    if backend == "concurrent_thread":
+        with concurrent.futures.ThreadPoolExecutor(max_workers=ncpus) as executor:
+            jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
+            results = [job.result() for job in tqdm(concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function}")]
+    
+    if backend == 'joblib':
+        jobs = [delayed(function)(obj, **kwargs) for obj in list_of_objects]
+        results = Parallel(n_jobs=ncpus)(tqdm(jobs, total=len(list_of_objects), desc=f"Running {function}"))
+    
+    if backend == 'pebble_process':
+        print(kwargs)
+        with pebble.ProcessPool(max_workers=ncpus) as executor:
+            jobs = [executor.schedule(function, args=(obj,), kwargs = kwargs) for obj in list_of_objects]
+            results = [job.result() for job in jobs]
+            
+    if backend == 'pebble_thread':
+        with pebble.ThreadPool(max_workers=ncpus) as executor:
+            jobs = [executor.schedule(function, args=(obj,), kwargs = kwargs) for obj in list_of_objects]
+            results = [job.result() for job in jobs]
+    
+    if backend == 'ray':
+        ray.init(num_cpus=ncpus)
         try:
-            job = delayed(function)(split_file, **kwargs)
-            jobs.append(job)
-        except Exception as e:
-            printlog("Error in joblib job creation: " + str(e))
-        results = Parallel(n_jobs=ncpus)(tqdm(jobs, desc=f"Running {function}"))
+            results = ray.get([function.remote(obj, **kwargs) for obj in list_of_objects])
+        finally:
+            ray.shutdown()
     return results
 
 def str2bool(v):

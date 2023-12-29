@@ -21,7 +21,6 @@ from scripts.utilities import (
     convert_molecules,
     delete_files,
     parallel_executor,
-    parallel_executor_joblib,
     printlog,
     split_sdf,
 )
@@ -978,11 +977,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
                 if file_path.suffix == '.sdf':
                     convert_molecules(file_path, file_path.with_suffix('.mol2'), 'sdf', 'mol2')
             
-            if job_manager == 'multiprocessing':
-                parallel_executor(plants_docking_splitted, split_files_sdfs, ncpus, w_dir=w_dir, n_poses=n_poses, pocket_definition=pocket_definition, software=software)
-            else: 
-                parallel_executor_joblib(plants_docking_splitted, split_files_sdfs, ncpus, w_dir=w_dir, n_poses=n_poses, pocket_definition=pocket_definition, software=software)
-                
+            parallel_executor(plants_docking_splitted, split_files_sdfs, ncpus, job_manager, w_dir=w_dir, n_poses=n_poses, pocket_definition=pocket_definition, software=software)
             toc = time.perf_counter()
             printlog(f'Docking with PLANTS complete in {toc - tic:0.4f}!')
         # Fetch PLANTS poses
@@ -1035,11 +1030,9 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             printlog('Docking split files using SMINA...')
             tic = time.perf_counter()
             
-            if job_manager == 'multiprocessing':
-                parallel_executor(smina_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file=protein_file, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
-            else : 
-                parallel_executor_joblib(smina_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file=protein_file, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
-                
+
+            parallel_executor(smina_docking_splitted, split_files_sdfs, ncpus, job_manager, w_dir = w_dir, protein_file=protein_file, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
+
             toc = time.perf_counter()
             printlog(f'Docking with SMINA complete in {toc - tic:0.4f}!')
         # Fetch SMINA poses
@@ -1080,10 +1073,8 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             printlog('Docking split files using GNINA...')
             tic = time.perf_counter()
             
-            if job_manager == 'multiprocessing':
-                parallel_executor(gnina_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file=protein_file, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
-            else:
-                parallel_executor_joblib(gnina_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file=protein_file, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
+            parallel_executor(gnina_docking_splitted, split_files_sdfs, ncpus, job_manager, w_dir = w_dir, protein_file=protein_file, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
+            
             toc = time.perf_counter()
             printlog(f'Docking with GNINA complete in {toc - tic:0.4f}!')
         # Fetch GNINA poses
@@ -1125,11 +1116,8 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             tic = time.perf_counter()
             protein_file_pdbqt = convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), str(protein_file).replace('.pdb', '_pocket.pdbqt'), 'pdb', 'pdbqt')
             
-            if job_manager == 'multiprocessing':
-                parallel_executor(qvinaw_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
-            else:
-                parallel_executor_joblib(qvinaw_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
-                
+            parallel_executor(qvinaw_docking_splitted, split_files_sdfs, ncpus, job_manager, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
+
             toc = time.perf_counter()
             printlog(f'Docking with QVINAW complete in {toc - tic:0.4f}!')
         # Fetch QVINAW poses
@@ -1167,11 +1155,8 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
             tic = time.perf_counter()
             protein_file_pdbqt = convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), str(protein_file).replace('.pdb', '_pocket.pdbqt'), 'pdb', 'pdbqt')
             
-            if job_manager == 'multiprocessing':
-                parallel_executor(qvina2_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
-            else:
-                parallel_executor_joblib(qvina2_docking_splitted, split_files_sdfs, ncpus, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
-                
+            parallel_executor(qvina2_docking_splitted, split_files_sdfs, ncpus, job_manager, w_dir = w_dir, protein_file_pdbqt=protein_file_pdbqt, pocket_definition = pocket_definition, software = software, exhaustiveness = exhaustiveness, n_poses = n_poses)
+
             toc = time.perf_counter()
             printlog(f'Docking with QVINA2 complete in {toc - tic:0.4f}!')
         # Fetch QVINA2 poses
