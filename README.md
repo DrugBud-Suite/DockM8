@@ -33,10 +33,10 @@ or by using git : `git clone https://github.com/Tonylac77/DockM8/main.zip`
     `pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
     `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
-6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/path/to/anaconda3/lib/`  
+6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:**PATH_TO**/anaconda3/lib/`  
 
 5. **Optional** : Ensure you have permissions to run the scripts required:
-On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh, rf-score-vs.sh, Convex-PL.sh, KORP-PL.sh, qvina-w.sh, qvina2.1.sh, and smina.static.  Alternatively you can use the following command to give execute permissions to all files in the DockM8 folder: `chmod +x DockM8/software`
+On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh, rf-score-vs.sh, Convex-PL.sh, KORP-PL.sh, qvina-w.sh, qvina2.1.sh, and smina.static.  Alternatively you can use the following command to give execute permissions to all files in the DockM8 folder: `chmod +x **PATH_TO**/DockM8/software`
 
 ## Running DockM8 (via command-line / dockm8.py script)
 
@@ -49,7 +49,7 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 
 3. Run the following command:
 
-`python /path/to/dockm8.py --args`  
+`python **PATH_TO**/dockm8.py --args`  
 
 `--software`: The path to the software folder. In most cases this is where the DockM8 repository was downloaded to (`path/to/DockM8/software`)  
 `--mode`: Choose mode with which to run dockm8. Options are:
@@ -109,8 +109,10 @@ On Linux, right-click the script file, and ensure 'allow executing file as progr
 ## Citation
 
 ## License (NEEDS CHECKING...)
-<!-- markdown-link-check-disable-next-line -->
+
 This project is licensed under the MIT License - see the [LICENSE.md](https://gitlab.com/Tonylac77/DockM8/-/blob/main/LICENSE) file for details.
 
+## Contributing
 
+We highly encourage contributions from the community - see the [CONTRIBBUTING.md](https://gitlab.com/Tonylac77/DockM8/-/blob/main/CONTRIBUTING.md) file for details.
 
