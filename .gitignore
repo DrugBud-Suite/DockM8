@@ -1,12 +1,5 @@
 # Byte-compiled / optimized / DLL files
-folder
-Docking
-Docking/
-pkasolver
-Software
 .vscode
-Literature
-consensus_docking_python _BACKUP
 __pycache__/
 *.py[cod]
 *$py.class
@@ -286,7 +279,6 @@ software/SCORCH-1.0.0/utils/params/features.json
 software/SCORCH-1.0.0/Dockerfile
 software/SCORCH-1.0.0/LICENSE.txt
 software/SCORCH-1.0.0/README.md
-log.txt
 software/gypsum_dl-1.2.1/examples/run_gypsum_dl_test.sh
 software/gypsum_dl-1.2.1/examples/sample_molecules.json
 software/gypsum_dl-1.2.1/examples/sample_molecules.smi
@@ -332,5 +324,3 @@ software/RTMScore-main/trained_models/rtmscore_model3.pth
 software/SCORCH-1.0.0/.gitignore
 software/SCORCH-1.0.0/.gitignore
 dekois.ipynb
-log.txt
-log.txt
