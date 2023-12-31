@@ -253,6 +253,50 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     printlog(f'Rescoring with RFScoreVS complete in {toc-tic:0.4f}!')
     return rfscorevs_results
 
+def rfscorevs_rescoring2(sdf : str, ncpus : int, column_name : str, **kwargs):
+    """
+    Rescores poses in an SDF file using RFScoreVS and returns the results as a pandas DataFrame.
+
+    Args:
+        sdf (str): Path to the SDF file containing the poses to be rescored.
+        ncpus (int): Number of CPUs to use for the RFScoreVS calculation.
+        column_name (str): Name of the column to be used for the RFScoreVS scores in the output DataFrame.
+        kwargs: Additional keyword arguments.
+
+    Keyword Args:
+        rescoring_folder (str): Path to the folder for storing the RFScoreVS rescoring results.
+        software (str): Path to the RFScoreVS software.
+        protein_file (str): Path to the receptor protein file.
+        pocket_de (dict): Dictionary containing pocket definitions.
+
+    Returns:
+        pandas.DataFrame: DataFrame containing the RFScoreVS scores for each pose in the input SDF file.
+    """
+    rescoring_folder = kwargs.get('rescoring_folder')
+    software = kwargs.get('software')
+    protein_file = kwargs.get('protein_file')
+    
+    tic = time.perf_counter()
+
+    rfscorevs_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
+    rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
+    
+    rfscorevs_cmd = f'{software}/rf-score-vs --receptor {protein_file} {sdf} -O {rfscorevs_rescoring_folder / f"{column_name}_scores.csv -n {ncpus}"}'
+    subprocess.call(rfscorevs_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    
+    try:
+        rfscorevs_dataframes = [pd.read_csv(rfscorevs_rescoring_folder / file, delimiter=',', header=0) for file in os.listdir(rfscorevs_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
+        rfscorevs_results = pd.concat(rfscorevs_dataframes)
+        rfscorevs_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2': column_name}, inplace=True)
+    except Exception as e:
+        printlog('ERROR: Failed to process RFScoreVS results!')
+        printlog(e)
+    rfscorevs_results.to_csv(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv', index=False)
+    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    toc = time.perf_counter()
+    printlog(f'Rescoring with RFScoreVS complete in {toc-tic:0.4f}!')
+    return rfscorevs_results
+
 def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     """
     Rescores ligands using PLP scoring function.
@@ -890,6 +934,7 @@ RESCORING_FUNCTIONS = {
     'Vinardo':          {'function': vinardo_rescoring,       'column_name': 'Vinardo',        'best_value': 'min', 'range': (200, 20)},
     'AD4':              {'function': AD4_rescoring,           'column_name': 'AD4',            'best_value': 'min', 'range': (100, -100)},
     'RFScoreVS':        {'function': rfscorevs_rescoring,     'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
+    'RFScoreVS2':       {'function': rfscorevs_rescoring2,    'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
     'PLP':              {'function': plp_rescoring,           'column_name': 'PLP',            'best_value': 'min', 'range': (200, -200)},
     'CHEMPLP':          {'function': chemplp_rescoring,       'column_name': 'CHEMPLP',        'best_value': 'min', 'range': (200, -200)},
     'NNScore':          {'function': oddt_nnscore_rescoring,  'column_name': 'NNScore',        'best_value': 'max', 'range': (0, 20)},
