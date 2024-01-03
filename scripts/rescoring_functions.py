@@ -202,7 +202,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
 
     return AD4_rescoring_results
 
-def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+#def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     """
     Rescores poses in an SDF file using RFScoreVS and returns the results as a pandas DataFrame.
 
@@ -253,7 +253,7 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     printlog(f'Rescoring with RFScoreVS complete in {toc-tic:0.4f}!')
     return rfscorevs_results
 
-def rfscorevs_rescoring2(sdf : str, ncpus : int, column_name : str, **kwargs):
+def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     """
     Rescores poses in an SDF file using RFScoreVS and returns the results as a pandas DataFrame.
 
@@ -282,11 +282,10 @@ def rfscorevs_rescoring2(sdf : str, ncpus : int, column_name : str, **kwargs):
     rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
     
     rfscorevs_cmd = f'{software}/rf-score-vs --receptor {protein_file} {sdf} -O {rfscorevs_rescoring_folder / f"{column_name}_scores.csv -n {ncpus}"}'
-    subprocess.call(rfscorevs_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    subprocess.call(rfscorevs_cmd, shell=True)
     
     try:
-        rfscorevs_dataframes = [pd.read_csv(rfscorevs_rescoring_folder / file, delimiter=',', header=0) for file in os.listdir(rfscorevs_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
-        rfscorevs_results = pd.concat(rfscorevs_dataframes)
+        rfscorevs_results = pd.read_csv(rfscorevs_rescoring_folder / f"{column_name}_scores.csv", delimiter=',', header=0)
         rfscorevs_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2': column_name}, inplace=True)
     except Exception as e:
         printlog('ERROR: Failed to process RFScoreVS results!')
@@ -934,7 +933,7 @@ RESCORING_FUNCTIONS = {
     'Vinardo':          {'function': vinardo_rescoring,       'column_name': 'Vinardo',        'best_value': 'min', 'range': (200, 20)},
     'AD4':              {'function': AD4_rescoring,           'column_name': 'AD4',            'best_value': 'min', 'range': (100, -100)},
     'RFScoreVS':        {'function': rfscorevs_rescoring,     'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
-    'RFScoreVS2':       {'function': rfscorevs_rescoring2,    'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
+    #'RFScoreVS2':       {'function': rfscorevs_rescoring2,    'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
     'PLP':              {'function': plp_rescoring,           'column_name': 'PLP',            'best_value': 'min', 'range': (200, -200)},
     'CHEMPLP':          {'function': chemplp_rescoring,       'column_name': 'CHEMPLP',        'best_value': 'min', 'range': (200, -200)},
     'NNScore':          {'function': oddt_nnscore_rescoring,  'column_name': 'NNScore',        'best_value': 'max', 'range': (0, 20)},
