@@ -12,7 +12,7 @@ from rdkit.Chem import PandasTools
 from rdkit import RDLogger
 from tqdm import tqdm
 
-from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf, convert_molecules
+from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf_str, convert_molecules
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -37,7 +37,7 @@ def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     protein_file = kwargs.get('protein_file')
     pocket_definition = kwargs.get('pocket_definition')
     cnn = 'crossdock_default2018'
-    split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
     split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
 
     global gnina_rescoring_splitted
@@ -115,28 +115,50 @@ def vinardo_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
     pocket_definition = kwargs.get('pocket_definition')
+    
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
 
     vinardo_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
-    results = vinardo_rescoring_folder / 'rescored_Vinardo.sdf'
-    vinardo_cmd = (
-        f"{software}/gnina"
-        f" --receptor {protein_file}"
-        f" --ligand {sdf}"
-        f" --out {results}"
-        f" --center_x {pocket_definition['center'][0]}"
-        f" --center_y {pocket_definition['center'][1]}"
-        f" --center_z {pocket_definition['center'][2]}"
-        f" --size_x {pocket_definition['size'][0]}"
-        f" --size_y {pocket_definition['size'][1]}"
-        f" --size_z {pocket_definition['size'][2]}"
-        " --score_only"
-        " --scoring vinardo"
-        " --cnn_scoring none"
-    )
-    subprocess.call(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    vinardo_rescoring_results = PandasTools.LoadSDF(str(results), idName='Pose ID', molColName=None,
-                                                    includeFingerprints=False, removeHs=False)
+
+    global vinardo_rescoring_splitted
+    def vinardo_rescoring_splitted(split_file, protein_file, pocket_definition):
+        vinardo_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
+        results = vinardo_rescoring_folder / f'{Path(split_file).stem}_{column_name}.sdf'
+        vinardo_cmd = (
+            f"{software}/gnina"
+            f" --receptor {protein_file}"
+            f" --ligand {split_file}"
+            f" --out {results}"
+            f" --center_x {pocket_definition['center'][0]}"
+            f" --center_y {pocket_definition['center'][1]}"
+            f" --center_z {pocket_definition['center'][2]}"
+            f" --size_x {pocket_definition['size'][0]}"
+            f" --size_y {pocket_definition['size'][1]}"
+            f" --size_z {pocket_definition['size'][2]}"
+            " --score_only"
+            " --scoring vinardo"
+            " --cnn_scoring none"
+        )
+        try:
+            subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        except Exception as e:
+            printlog(f'{column_name} rescoring failed: ' + e)
+        return
+
+    parallel_executor(vinardo_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    
+    try:
+        vinardo_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+    except Exception as e:
+        printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
+        printlog(e)
+    try:
+        vinardo_rescoring_results = pd.concat(vinardo_dataframes)
+    except Exception as e:
+        printlog(f'ERROR: Could not combine {column_name} rescored poses')
+        printlog(e)
     vinardo_rescoring_results.rename(columns={'minimizedAffinity': column_name}, inplace=True)
     vinardo_rescoring_results = vinardo_rescoring_results[['Pose ID', column_name]]
     vinardo_scores_path = vinardo_rescoring_folder / f'{column_name}_scores.csv'
@@ -165,41 +187,58 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
     pocket_definition = kwargs.get('pocket_definition')
+    
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
 
-    ad4_rescoring_folder = Path(rescoring_folder) / 'AD4_rescoring'
-    ad4_rescoring_folder.mkdir(parents=True, exist_ok=True)
-    results = ad4_rescoring_folder / 'rescored_AD4.sdf'
+    AD4_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
+    AD4_rescoring_folder.mkdir(parents=True, exist_ok=True)
 
-    AD4_cmd = (
-        f"{software}/gnina"
-        f" --receptor {protein_file}"
-        f" --ligand {sdf}"
-        f" --out {results}"
-        f" --center_x {pocket_definition['center'][0]}"
-        f" --center_y {pocket_definition['center'][1]}"
-        f" --center_z {pocket_definition['center'][2]}"
-        f" --size_x {pocket_definition['size'][0]}"
-        f" --size_y {pocket_definition['size'][1]}"
-        f" --size_z {pocket_definition['size'][2]}"
-        " --score_only"
-        " --scoring ad4_scoring"
-        " --cnn_scoring none"
-    )
+    global AD4_rescoring_splitted
+    def AD4_rescoring_splitted(split_file, protein_file, pocket_definition):
+        AD4_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
+        results = AD4_rescoring_folder / f'{Path(split_file).stem}_{column_name}.sdf'
+        AD4_cmd = (
+            f"{software}/gnina"
+            f" --receptor {protein_file}"
+            f" --ligand {split_file}"
+            f" --out {results}"
+            f" --center_x {pocket_definition['center'][0]}"
+            f" --center_y {pocket_definition['center'][1]}"
+            f" --center_z {pocket_definition['center'][2]}"
+            f" --size_x {pocket_definition['size'][0]}"
+            f" --size_y {pocket_definition['size'][1]}"
+            f" --size_z {pocket_definition['size'][2]}"
+            " --score_only"
+            " --scoring ad4_scoring"
+            " --cnn_scoring none"
+        )
+        try:
+            subprocess.call(AD4_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        except Exception as e:
+            printlog(f'{column_name} rescoring failed: ' + e)
+        return
 
-    subprocess.run(AD4_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    parallel_executor(AD4_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    
+    try:
+        AD4_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+    except Exception as e:
+        printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
+        printlog(e)
+    try:
+        AD4_rescoring_results = pd.concat(AD4_dataframes)
+    except Exception as e:
+        printlog(f'ERROR: Could not combine {column_name} rescored poses')
+        printlog(e)
 
-    AD4_rescoring_results = PandasTools.LoadSDF(str(results), idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
     AD4_rescoring_results.rename(columns={'minimizedAffinity': column_name}, inplace=True)
     AD4_rescoring_results = AD4_rescoring_results[['Pose ID', column_name]]
-
-    ad4_scores_file = ad4_rescoring_folder / f'{column_name}_scores.csv'
-    AD4_rescoring_results.to_csv(ad4_scores_file, index=False)
-
-    delete_files(ad4_rescoring_folder, f'{column_name}_scores.csv')
-
+    AD4_scores_file = AD4_rescoring_folder / f'{column_name}_scores.csv'
+    AD4_rescoring_results.to_csv(AD4_scores_file, index=False)
+    delete_files(AD4_rescoring_folder, f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with AD4 complete in {toc-tic:0.4f}!')
-
     return AD4_rescoring_results
 
 #def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
@@ -230,7 +269,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     rfscorevs_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
     
-    split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
     split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     global rf_score_vs_splitted
     def rf_score_vs_splitted(split_file, protein_file):
@@ -667,7 +706,7 @@ def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
     tic = time.perf_counter()
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
     split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     
     global LinF9_rescoring_splitted
@@ -758,7 +797,7 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
         subprocess.call(AAscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         AAScore_rescoring_results = pd.read_csv(results, delimiter='\t', header=None, names=['Pose ID', column_name])
     else:
-        split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+        split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
         split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
         global AAScore_rescoring_splitted
 
@@ -819,7 +858,7 @@ def KORPL_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
     tic = time.perf_counter()
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    split_files_folder = split_sdf((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
+    split_files_folder = split_sdf_str((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
     split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     global KORPL_rescoring_splitted
 
@@ -886,7 +925,7 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     protein_file = kwargs.get('protein_file')
     
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    split_files_folder = split_sdf((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
+    split_files_folder = split_sdf_str((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
     split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     global ConvexPLR_rescoring_splitted
     def ConvexPLR_rescoring_splitted(split_file, protein_file):
