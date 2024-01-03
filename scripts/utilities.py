@@ -1,7 +1,6 @@
 import argparse
 import concurrent.futures
 import pebble
-import ray
 import datetime
 import math
 import os
@@ -265,7 +264,7 @@ def delete_files(folder_path: str, save_file: str) -> None:
             if not any(item.iterdir()) and item.name != save_file:
                 item.rmdir()
                 
-def parallel_executor(function, list_of_objects : list, ncpus : int, backend : str, **kwargs):
+def parallel_executor(function, list_of_objects : list, ncpus : int, backend = 'concurrent_process', **kwargs):
     
     """
     Executes a function in parallel using multiple processes.
@@ -303,13 +302,6 @@ def parallel_executor(function, list_of_objects : list, ncpus : int, backend : s
         with pebble.ThreadPool(max_workers=ncpus) as executor:
             jobs = [executor.schedule(function, args=(obj,), kwargs = kwargs) for obj in list_of_objects]
             results = [job.result() for job in jobs]
-    
-    if backend == 'ray':
-        ray.init(num_cpus=ncpus)
-        try:
-            results = ray.get([function.remote(obj, **kwargs) for obj in list_of_objects])
-        finally:
-            ray.shutdown()
     return results
 
 def str2bool(v):
