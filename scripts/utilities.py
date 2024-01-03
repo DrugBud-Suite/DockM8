@@ -265,7 +265,7 @@ def delete_files(folder_path: str, save_file: str) -> None:
             if not any(item.iterdir()) and item.name != save_file:
                 item.rmdir()
                 
-def parallel_executor(function, list_of_objects : list, ncpus : int, backend : str, **kwargs):
+def parallel_executor(function, list_of_objects : list, ncpus : int, backend = "concurrent_process", **kwargs):
     
     """
     Executes a function in parallel using multiple processes.
