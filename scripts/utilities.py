@@ -283,6 +283,11 @@ def parallel_executor(function, list_of_objects : list, ncpus : int, backend = '
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
             results = [job.result() for job in tqdm(concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function}")]
     
+    if backend == "concurrent_process_silent":
+        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+            jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
+            results = [job.result() for job in concurrent.futures.as_completed(jobs)]
+    
     if backend == "concurrent_thread":
         with concurrent.futures.ThreadPoolExecutor(max_workers=ncpus) as executor:
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
