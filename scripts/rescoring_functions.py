@@ -12,7 +12,7 @@ from rdkit.Chem import PandasTools
 from rdkit import RDLogger
 from tqdm import tqdm
 
-from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf, convert_molecules
+from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf, split_sdf_str, convert_molecules
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -37,7 +37,7 @@ def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     protein_file = kwargs.get('protein_file')
     pocket_definition = kwargs.get('pocket_definition')
     cnn = 'crossdock_default2018'
-    split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
     split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
 
     global gnina_rescoring_splitted
@@ -230,7 +230,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     rfscorevs_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
     
-    split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
     split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     global rf_score_vs_splitted
     def rf_score_vs_splitted(split_file, protein_file):
@@ -667,7 +667,7 @@ def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
     tic = time.perf_counter()
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
     split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     
     global LinF9_rescoring_splitted
@@ -758,7 +758,7 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
         subprocess.call(AAscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         AAScore_rescoring_results = pd.read_csv(results, delimiter='\t', header=None, names=['Pose ID', column_name])
     else:
-        split_files_folder = split_sdf(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+        split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
         split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
         global AAScore_rescoring_splitted
 
@@ -819,7 +819,7 @@ def KORPL_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
     tic = time.perf_counter()
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    split_files_folder = split_sdf((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
+    split_files_folder = split_sdf_str((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
     split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     global KORPL_rescoring_splitted
 
@@ -886,7 +886,7 @@ def ConvexPLR_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     protein_file = kwargs.get('protein_file')
     
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    split_files_folder = split_sdf((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
+    split_files_folder = split_sdf_str((rescoring_folder / f'{column_name}_rescoring'), sdf, ncpus)
     split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
     global ConvexPLR_rescoring_splitted
     def ConvexPLR_rescoring_splitted(split_file, protein_file):
