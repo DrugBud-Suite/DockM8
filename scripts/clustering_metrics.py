@@ -141,6 +141,7 @@ CLUSTERING_METRICS = {
     'spyRMSD':  {'function': spyRMSD_calc},
     'espsim':   {'function': espsim_calc},
     'USRCAT':   {'function': USRCAT_calc},
+    '3DScore':   {'function': None},
     }
 
 BROKEN_CLUSTERING_METRICS = {
