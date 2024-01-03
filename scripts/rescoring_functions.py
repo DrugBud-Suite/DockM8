@@ -12,7 +12,7 @@ from rdkit.Chem import PandasTools
 from rdkit import RDLogger
 from tqdm import tqdm
 
-from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf_str, convert_molecules
+from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf, split_sdf_str, convert_molecules
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
