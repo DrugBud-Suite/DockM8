@@ -58,6 +58,40 @@ def split_sdf(dir, sdf_file, ncpus):
     #printlog(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
+def split_sdf_str(dir, sdf_file, ncpus):
+    sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
+    split_files_folder = Path(dir) / f'split_{sdf_file_name}'
+    split_files_folder.mkdir(parents=True, exist_ok=True)
+    
+    with open(sdf_file, 'r') as infile:
+        sdf_lines = infile.readlines()
+
+    total_compounds = sdf_lines.count("$$$$\n")
+    
+    n = math.ceil(total_compounds // ncpus // 2)
+
+    compound_count = 0
+    current_compound_lines = []
+
+    for line in sdf_lines:
+        current_compound_lines.append(line)
+
+        if line.startswith("$$$$"):
+            compound_count += 1
+
+            if compound_count % n == 0:
+                output_file = split_files_folder / f"split_{compound_count // n}.sdf"
+                with open(output_file, 'w') as outfile:
+                    outfile.writelines(current_compound_lines)
+                current_compound_lines = []
+
+    # Write the remaining compounds to the last file
+    if current_compound_lines:
+        output_file = split_files_folder / f"split_{compound_count // n + 1}.sdf"
+        with open(output_file, 'w') as outfile:
+            outfile.writelines(current_compound_lines)
+    return split_files_folder
+
 def split_sdf_single(dir, sdf_file):
     """
     Split a single SDF file into multiple SDF files, each containing one compound.
@@ -93,6 +127,38 @@ def split_sdf_single(dir, sdf_file):
                              molColName='Molecule',
                              idName='ID')
     print(f'Split SDF file into {len(df)} files, each containing 1 compound')
+    return split_files_folder
+
+def split_sdf_single_str(dir, sdf_file):
+    sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
+    split_files_folder = Path(dir) / f'split_{sdf_file_name}'
+    split_files_folder.mkdir(parents=True, exist_ok=True)
+    
+    with open(sdf_file, 'r') as infile:
+        sdf_lines = infile.readlines()
+
+    n = sdf_lines.count("$$$$\n")
+
+    compound_count = 0
+    current_compound_lines = []
+
+    for line in sdf_lines:
+        current_compound_lines.append(line)
+
+        if line.startswith("$$$$"):
+            compound_count += 1
+
+            if compound_count % n == 0:
+                output_file = split_files_folder / f"split_{compound_count // n}.sdf"
+                with open(output_file, 'w') as outfile:
+                    outfile.writelines(current_compound_lines)
+                current_compound_lines = []
+
+    # Write the remaining compounds to the last file
+    if current_compound_lines:
+        output_file = split_files_folder / f"split_{compound_count // n + 1}.sdf"
+        with open(output_file, 'w') as outfile:
+            outfile.writelines(current_compound_lines)
     return split_files_folder
 
 def Insert_row(row_number, df, row_value):

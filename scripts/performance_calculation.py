@@ -1,21 +1,18 @@
 import itertools
+import math
 import os
 import warnings
 from pathlib import Path
-import os
 
-import pandas as pd
 import numpy as np
-from joblib import Parallel, delayed
+import pandas as pd
 from rdkit.Chem import PandasTools
-from tqdm import tqdm
-import math
 
 from scripts.consensus_methods import (
     CONSENSUS_METHODS,
 )
 from scripts.postprocessing import rank_scores, standardize_scores
-from scripts.utilities import printlog, parallel_executor
+from scripts.utilities import parallel_executor, printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -98,7 +95,7 @@ def calculate_performance(w_dir : Path, actives_library : Path, percentages : li
                 result_list.append(result)
         all_results = pd.concat(result_list, axis=0)
         return all_results
-    res = parallel_executor(calculate_performance_for_clustering_method, dirs, ncpus = 10, backend = 'concurrent_process_silent')
+    res = parallel_executor(calculate_performance_for_clustering_method, dirs, ncpus = math.ceil(os.cpu_count()/len(dirs)), backend = 'concurrent_process_silent')
     all_results = pd.concat(res, ignore_index=True)
     (w_dir / 'performance').mkdir(parents=True, exist_ok=True)
     all_results.to_csv(Path(w_dir) / "performance" / 'performance.csv', index=False)
