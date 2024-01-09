@@ -5,6 +5,7 @@ import warnings
 from pathlib import Path
 from subprocess import DEVNULL, STDOUT
 from typing import List
+import math
 
 import pandas as pd
 from pandas import DataFrame
@@ -241,7 +242,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     printlog(f'Rescoring with AD4 complete in {toc-tic:0.4f}!')
     return AD4_rescoring_results
 
-#def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     """
     Rescores poses in an SDF file using RFScoreVS and returns the results as a pandas DataFrame.
 
@@ -292,7 +293,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     printlog(f'Rescoring with RFScoreVS complete in {toc-tic:0.4f}!')
     return rfscorevs_results
 
-def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+#def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     """
     Rescores poses in an SDF file using RFScoreVS and returns the results as a pandas DataFrame.
 
@@ -675,6 +676,141 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     df = df.rename(columns={'id': 'Pose ID', 'score': f'{column_name}'})
     df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]
     df.to_csv(output_file, index=False)
+    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    toc = time.perf_counter()
+    printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
+    return
+
+#def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
+    """
+    Rescores poses in an SDF file using RTMScore.
+
+    Args:
+    - sdf (str): Path to the SDF file containing the poses to be rescored.
+    - ncpus (int): Number of CPUs to use for parallel execution.
+    - column_name (str): Name of the column in the output CSV file that will contain the RTMScore scores.
+    - **kwargs: Additional keyword arguments.
+
+    Keyword Args:
+    - rescoring_folder (str): Path to the folder where the rescoring results will be saved.
+    - software (str): Path to the RTMScore software.
+    - protein_file (str): Path to the protein file.
+    - pocket_definition (str): Path to the pocket definition file.
+
+    Returns:
+    - None
+    """
+    rescoring_folder = kwargs.get('rescoring_folder')
+    software = kwargs.get('software')
+    protein_file = kwargs.get('protein_file')
+    
+    tic = time.perf_counter()
+    
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus*2)
+    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+
+    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
+    
+    global RTMScore_rescoring_splitted
+    
+    def RTMScore_rescoring_splitted(split_file, protein_file):
+        RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
+                            f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
+                            f' -l {split_file}' +
+                            f' -o RTMScore_scores_{split_file.stem}' +
+                            f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
+        subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        return
+    
+    parallel_executor(RTMScore_rescoring_splitted, split_files_sdfs, 3, protein_file=protein_file)
+    
+    try:
+        score_dfs = []
+        for file in os.listdir(rescoring_folder / 'RTMScore_rescoring'):
+            if file.startswith('RTMScore_scores_') and file.endswith('.csv'):
+                df = pd.read_csv(rescoring_folder / 'RTMScore_rescoring' / file)
+                df = df.rename(columns={'id': 'Pose ID', 'score': f'{column_name}'})
+                df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]
+                score_dfs.append(df)
+        RTMScore_rescoring_results = pd.concat(score_dfs)
+    except Exception as e:
+        printlog(f'Failed to combine {column_name} score files!')
+        printlog(e)
+        
+    try:
+        output_file = str(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv')
+        RTMScore_rescoring_results.to_csv(output_file, index=False)
+    except Exception as e:
+        printlog(f'ERROR: Could not write {column_name} combined scores')
+        printlog(e)
+    
+    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    toc = time.perf_counter()
+    printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
+    return
+
+#def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
+    """
+    Rescores poses in an SDF file using RTMScore.
+
+    Args:
+    - sdf (str): Path to the SDF file containing the poses to be rescored.
+    - ncpus (int): Number of CPUs to use for parallel execution.
+    - column_name (str): Name of the column in the output CSV file that will contain the RTMScore scores.
+    - **kwargs: Additional keyword arguments.
+
+    Keyword Args:
+    - rescoring_folder (str): Path to the folder where the rescoring results will be saved.
+    - software (str): Path to the RTMScore software.
+    - protein_file (str): Path to the protein file.
+    - pocket_definition (str): Path to the pocket definition file.
+
+    Returns:
+    - None
+    """
+    rescoring_folder = kwargs.get('rescoring_folder')
+    software = kwargs.get('software')
+    protein_file = kwargs.get('protein_file')
+    
+    tic = time.perf_counter()
+    
+    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus*2)
+    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+
+    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True) 
+    for file in tqdm(split_files_sdfs):
+        try:
+            RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
+                                f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
+                                f' -l {file}' +
+                                f' -o RTMScore_scores_{file.stem}' +
+                                ' -pl'
+                                f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
+            subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        except Exception as e:
+            printlog(f'Failed to run RTMScore on {file}!')
+            printlog(e)
+    
+    try:
+        score_dfs = []
+        for file in os.listdir(rescoring_folder / 'RTMScore_rescoring'):
+            if file.startswith('RTMScore_scores_') and file.endswith('.csv'):
+                df = pd.read_csv(rescoring_folder / 'RTMScore_rescoring' / file)
+                df = df.rename(columns={'id': 'Pose ID', 'score': f'{column_name}'})
+                df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]
+                score_dfs.append(df)
+        RTMScore_rescoring_results = pd.concat(score_dfs)
+    except Exception as e:
+        printlog(f'Failed to combine {column_name} score files!')
+        printlog(e)
+        
+    try:
+        output_file = str(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv')
+        RTMScore_rescoring_results.to_csv(output_file, index=False)
+    except Exception as e:
+        printlog(f'ERROR: Could not write {column_name} combined scores')
+        printlog(e)
+    
     delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
