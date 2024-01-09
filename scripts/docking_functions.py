@@ -6,6 +6,7 @@ import warnings
 from pathlib import Path
 from subprocess import DEVNULL, STDOUT
 from typing import Dict
+import traceback
 
 import pandas as pd
 from meeko import PDBQTMolecule, RDKitMolCreate
@@ -1227,7 +1228,7 @@ def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path,
             all_poses = pd.concat([all_poses, df])
         except Exception as e:
             printlog(f'ERROR: Failed to load {program} SDF file!')
-            printlog(e)
+            printlog(traceback.format_exc())
     if bust_poses:
         try:
             tic = time.perf_counter()
