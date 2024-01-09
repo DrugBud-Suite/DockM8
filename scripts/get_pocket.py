@@ -37,13 +37,16 @@ def get_pocket(ligand_file: Path, protein_file: Path, radius: int):
     printlog(f'Extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
     # Load the reference ligand molecule
     ligand_mol = load_molecule(str(ligand_file))
-    # Process the protein and ligand to extract the pocket
-    pocket_mol, temp_file = process_protein_and_ligand(str(protein_file), ligand_mol, radius)
-    pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
-    # Convert the pocket molecule to PDB file format and save it
-    Chem.MolToPDBFile(pocket_mol, pocket_path)
-    os.remove(temp_file)
-    printlog(f'Finished extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
+    if not os.path.exists(str(protein_file).replace('.pdb', '_pocket.pdb')):
+        # Process the protein and ligand to extract the pocket
+        pocket_mol, temp_file = process_protein_and_ligand(str(protein_file), ligand_mol, radius)
+        pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
+        # Convert the pocket molecule to PDB file format and save it
+        Chem.MolToPDBFile(pocket_mol, pocket_path)
+        os.remove(temp_file)
+        printlog(f'Finished extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
+    else:
+        pass
     # Calculate the center coordinates of the pocket
     ligu = get_ligand_coordinates(ligand_mol)
     center_x = ligu['x_coord'].mean().round(2)
@@ -74,13 +77,16 @@ def get_pocket_RoG(ligand_file : Path, protein_file : Path):
     # Load the reference ligand molecule and calculate its radius of gyration
     ligand_mol = load_molecule(str(ligand_file))
     radius_of_gyration = Descriptors3D.RadiusOfGyration(ligand_mol)
-    printlog(f'Radius of Gyration of reference ligand is: {radius_of_gyration}')
-    # Process the protein and ligand to extract the pocket
-    pocket_mol, temp_file = process_protein_and_ligand(str(protein_file), ligand_mol, round(0.5 * 2.857 * float(radius_of_gyration), 2))
-    pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
-    Chem.MolToPDBFile(pocket_mol, pocket_path)
-    os.remove(temp_file)
-    printlog(f'Finished extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
+    if not os.path.exists(str(protein_file).replace('.pdb', '_pocket.pdb')):
+        printlog(f'Radius of Gyration of reference ligand is: {radius_of_gyration}')
+        # Process the protein and ligand to extract the pocket
+        pocket_mol, temp_file = process_protein_and_ligand(str(protein_file), ligand_mol, round(0.5 * 2.857 * float(radius_of_gyration), 2))
+        pocket_path = str(protein_file).replace('.pdb', '_pocket.pdb')
+        Chem.MolToPDBFile(pocket_mol, pocket_path)
+        os.remove(temp_file)
+        printlog(f'Finished extracting pocket from {protein_file.stem} using {ligand_file.stem} as reference ligand')
+    else:
+        pass
     # Calculate the center coordinates of the pocket
     ligu = get_ligand_coordinates(ligand_mol)
     center_x = ligu['x_coord'].mean().round(2)
