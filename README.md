@@ -2,6 +2,10 @@
   <img src="https://gitlab.com/Tonylac77/DockM8/blob/main/media/DockM8_white_horizontal_smaller.png">
 </p>
 
+![](https://gitlab.com/Tonylac77/DockM8/blob/main/media/DockM8_white_horizontal_smaller.png)
+
+![](./media/DockM8_white_horizontal_smaller.png)
+
 **Workflow for Consensus Docking**  
 DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library preparation, docking, clustering of docking poses, rescoring and ranking.
 
