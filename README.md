@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://gitlab.com/Tonylac77/DockM8/blob/main/media/DockM8_white_horizontal.png">
+  <img src="https://gitlab.com/Tonylac77/DockM8/blob/main/media/DockM8_white_horizontal_smaller.png">
 </p>
 
 **Workflow for Consensus Docking**  
