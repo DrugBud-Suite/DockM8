@@ -1,9 +1,3 @@
-<p align="center">
-  <img src="https://gitlab.com/Tonylac77/DockM8/blob/main/media/DockM8_white_horizontal_smaller.png">
-</p>
-
-![](https://gitlab.com/Tonylac77/DockM8/blob/main/media/DockM8_white_horizontal_smaller.png)
-
 ![](./media/DockM8_white_horizontal_smaller.png)
 
 **Workflow for Consensus Docking**  
