@@ -378,3 +378,5 @@ results/plots/DUD-E_comparison_BEDROC.png
 results/plots/DUD-E_comparison_EF1_filtered.png
 results/plots/DUD-E_comparison_EF1.png
 performance.ipynb
+results/DEKOIS_RESULTS/results_dockm8_max.csv
+results/DUD-E_RESULTS/results_dockm8_max.csv
