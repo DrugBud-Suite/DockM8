@@ -68,7 +68,10 @@ def split_sdf_str(dir, sdf_file, ncpus):
 
     total_compounds = sdf_lines.count("$$$$\n")
     
-    n = math.ceil(total_compounds // ncpus // 2)
+    if total_compounds > 100000:
+        n = math.ceil(total_compounds // ncpus // 8)
+    else:
+        n = math.ceil(total_compounds // ncpus // 2)
 
     compound_count = 0
     current_compound_lines = []
