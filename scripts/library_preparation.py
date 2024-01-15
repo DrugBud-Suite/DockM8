@@ -5,14 +5,17 @@ import warnings
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, STDOUT
 from typing import Optional
+import shutil
+import math
 
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 from chembl_structure_pipeline import standardizer
 from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools, rdDepictor, rdDistGeom
+from tqdm import tqdm
 
-from scripts.utilities import printlog
+from scripts.utilities import printlog, split_sdf_single_str, split_sdf_str, parallel_executor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -71,7 +74,7 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
     else: 
         # Standardize molecules in parallel using multiple CPUs
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-            df['Molecule'] = list(tqdm.tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
+            df['Molecule'] = list(tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
     # Clean up the DataFrame
     df[['Molecule', 'flag']] = pd.DataFrame(df['Molecule'].tolist(), index=df.index)
     df = df.drop(columns='flag')
@@ -126,7 +129,7 @@ def generate_conformers_RDKit(input_sdf: str, output_dir: str, ncpus: int):
                                 smilesName='SMILES')
         df = df.iloc[1:]  # Filter the dataframe to keep all rows except the first one
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
-            df['Molecule'] = list(tqdm.tqdm(executor.map(conf_gen_RDKit, df['Molecule']), total=len(df['Molecule']), desc='Minimizing molecules', unit='mol'))
+            df['Molecule'] = list(tqdm(executor.map(conf_gen_RDKit, df['Molecule']), total=len(df['Molecule']), desc='Minimizing molecules', unit='mol'))
 
         # Write the conformers to the output SDF file using PandasTools.WriteSDF()
         output_file = output_dir / 'gypsum_dl_success.sdf'
@@ -151,13 +154,48 @@ def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software
 
     """
     printlog('Calculating protonation states and generating 3D conformers using GypsumDL...')
-    try:
-        gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
-        subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    except Exception as e:
-        printlog('ERROR: Failed to generate protomers and conformers!')
-        printlog(e)
-        
+    printlog('Splitting input SDF file into smaller files for parallel processing...')
+    n_splits = 10
+    split_files_folder = split_sdf_str(output_dir / 'GypsumDL_split', input_sdf, n_splits)
+    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+
+    global gypsum_dl_run
+    def gypsum_dl_run(split_file, output_dir, cpus):
+        results_dir = output_dir / 'GypsumDL_results'
+        try:
+            gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {split_file} -o {results_dir} --job_manager multiprocessing -p {cpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1 --separate_output_files'
+            subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        except Exception as e:
+            printlog('ERROR: Failed to generate protomers and conformers!')
+            printlog(e)
+        return
+    printlog('Running GypsumDL in parallel...')
+    n_workers = 3
+    parallel_executor(gypsum_dl_run, split_files_sdfs, n_workers, output_dir=output_dir, cpus = math.ceil(ncpus//n_workers))
+    
+    # for file in tqdm(split_files_sdfs, desc='Running GypsumDL in parallel', unit='file'):
+    #     results_dir = output_dir / 'GypsumDL_results'
+    #     try:
+    #         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {file} -o {results_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
+    #         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    #         os.rename(results_dir / 'gypsum_dl_success.sdf', results_dir / f'{file.stem}.sdf')
+    #     except Exception as e:
+    #         printlog('ERROR: Failed to generate protomers and conformers!')
+    #         printlog(e)
+    
+    results_dfs = []
+    
+    for file in os.listdir(output_dir / 'GypsumDL_results'):
+        if file.endswith('.sdf'):
+            sdf_df = PandasTools.LoadSDF(str(output_dir / 'GypsumDL_results' / file), molColName='Molecule', idName='ID', removeHs=False)
+            results_dfs.append(sdf_df)
+    
+    final_df = pd.concat(results_dfs)
+    
+    PandasTools.WriteSDF(final_df, str(output_dir / 'gypsum_dl_success.sdf'), molColName='Molecule', idName='ID')
+    shutil.rmtree(output_dir / 'GypsumDL_results')
+    shutil.rmtree(output_dir / 'GypsumDL_split')
+    
 def GypsumDL_onlyprotonation(input_sdf, output_dir, software, ncpus):
     """
     Generates protonation states and 3D conformers using GypsumDL.
