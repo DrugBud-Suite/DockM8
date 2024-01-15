@@ -23,7 +23,7 @@ from scripts.utilities import (
     delete_files,
     parallel_executor,
     printlog,
-    split_sdf,
+    split_sdf, split_sdf_str
 )
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -960,7 +960,7 @@ def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: 
     else:
         split_final_library_path = w_dir / 'split_final_library'
         if not split_final_library_path.is_dir():
-            split_files_folder = split_sdf(str(w_dir), str(w_dir / 'final_library.sdf'), ncpus)
+            split_files_folder = split_sdf_str(str(w_dir), str(w_dir / 'final_library.sdf'), ncpus)
         else:
             printlog('Split final library folder already exists...')
             split_files_folder = split_final_library_path
