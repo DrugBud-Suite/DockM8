@@ -198,12 +198,13 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
             clustered_poses = all_poses.loc[min_pose_indices]
         elif clustering_metric in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']:
             # Select the best pose for each ID based on the specified docking program
-            min_pose_indices = all_poses.groupby('ID')['Pose_Number'].idxmin()
-            docking_program = clustering_metric.split('_')[1]
-            clustered_poses = all_poses[all_poses['Docking_program'] == docking_program]
+            min_pose_indices = all_poses.groupby(['ID', 'Docking_program'])['Pose_Number'].idxmin()
+            clustered_poses = all_poses.loc[min_pose_indices]
+            clustered_poses = clustered_poses[clustered_poses['Docking_program'] == clustering_metric.split('_')[1]]
         elif clustering_metric in CLUSTERING_METRICS.keys():
             # Perform clustering using multiple CPU cores
             clustered_dataframes = []
+            
             with pebble.ProcessPool(max_workers=ncpus) as executor:
                 jobs = []
                 for current_id in tqdm(id_list, desc=f'Submitting {clustering_metric} jobs...', unit='IDs'):
@@ -242,5 +243,4 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
         PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
     else:
         printlog(f'Clustering using {clustering_metric} already done, moving to next metric...')
-    
-    return filtered_poses
+    return

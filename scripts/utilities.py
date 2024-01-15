@@ -68,7 +68,10 @@ def split_sdf_str(dir, sdf_file, ncpus):
 
     total_compounds = sdf_lines.count("$$$$\n")
     
-    n = math.ceil(total_compounds // ncpus // 2)
+    if total_compounds > 100000:
+        n = math.ceil(total_compounds // ncpus // 8)
+    else:
+        n = math.ceil(total_compounds // ncpus // 2)
 
     compound_count = 0
     current_compound_lines = []
@@ -137,8 +140,6 @@ def split_sdf_single_str(dir, sdf_file):
     with open(sdf_file, 'r') as infile:
         sdf_lines = infile.readlines()
 
-    n = sdf_lines.count("$$$$\n")
-
     compound_count = 0
     current_compound_lines = []
 
@@ -148,18 +149,20 @@ def split_sdf_single_str(dir, sdf_file):
         if line.startswith("$$$$"):
             compound_count += 1
 
-            if compound_count % n == 0:
-                output_file = split_files_folder / f"split_{compound_count // n}.sdf"
-                with open(output_file, 'w') as outfile:
-                    outfile.writelines(current_compound_lines)
-                current_compound_lines = []
+            output_file = split_files_folder / f"split_{compound_count}.sdf"
+            with open(output_file, 'w') as outfile:
+                outfile.writelines(current_compound_lines)
+            current_compound_lines = []
 
     # Write the remaining compounds to the last file
     if current_compound_lines:
-        output_file = split_files_folder / f"split_{compound_count // n + 1}.sdf"
+        compound_count += 1
+        output_file = split_files_folder / f"split_{compound_count}.sdf"
         with open(output_file, 'w') as outfile:
             outfile.writelines(current_compound_lines)
     return split_files_folder
+
+
 
 def Insert_row(row_number, df, row_value):
     """
