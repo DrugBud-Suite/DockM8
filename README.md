@@ -5,7 +5,7 @@ DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the
 
 ## Automatic installation
 
-For automatic installation, download and run [**setup.sh**](LINK_TO_SETUP.SH_DOWNLOAD) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup.sh` and then `./setup.sh`.
+For automatic installation, download and run [**setup.sh**](https://gitlab.com/Tonylac77/DockM8/-/blob/main/setup_py310.sh) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup.sh` and then `./setup.sh`.
 
 ## Manual Installation (Python 3.10 / Ubuntu 22.04)
 
