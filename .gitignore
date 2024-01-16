@@ -332,11 +332,9 @@ testing_notebook_parallel.ipynb
 lit-pcba.ipynb
 dude copy.ipynb
 dude.ipynb
-results/DEKOIS_RESULTS/DEKOIS_all_models_plot.ipynb
 results/DEKOIS_RESULTS/DEKOIS_consensus_clustering_plots.ipynb
 results/DEKOIS_RESULTS/DEKOIS_literature.xlsx
 results/DUD-E_RESULTS/DUD-E_literature.xlsx
-results/DUD-E_RESULTS/DUDE_all_models_plot.ipynb
 results/Lit-PCBA_RESULTS/Lit-PCBA_literature.xlsx
 results/plots/DEKOIS_all_models_AUCROC.png
 results/plots/DEKOIS_all_models_BEDROC.png
