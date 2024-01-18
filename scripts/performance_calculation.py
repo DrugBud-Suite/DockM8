@@ -82,7 +82,7 @@ def calculate_performance_for_clustering_method(dir, w_dir, actives_df, percenta
                 'AUC_ROC': auc_roc,
                 'BEDROC': bedroc,
                 'AUC': auc,
-                **{f'EF_{p}%_2': ef for p, ef in zip(percentages, ef_results)},
+                **{f'EF_{p}%': ef for p, ef in zip(percentages, ef_results)},
                 'RIE': rie}, index=[0]))
         # Calculate performance for consensus scoring functions
         ranked_df = rank_scores(standardised_df)
