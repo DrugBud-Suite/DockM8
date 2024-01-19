@@ -132,4 +132,7 @@ def calculate_EF(merged_df, percentage: float):
     Hitsx_percent = np.sum(merged_df.head(Nx_percent)['Activity'])
 
     ef = (Hitsx_percent / Nx_percent) * (N100_percent / Hits100_percent)
-    return round(ef, 2)
+    if ef > 100:
+        return 100
+    else:
+        return round(ef, 2)
