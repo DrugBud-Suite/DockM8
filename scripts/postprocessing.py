@@ -63,13 +63,13 @@ def rank_scores(df):
     df = df.assign(**{col: df[col].rank(method='average', ascending=False) for col in df.columns if col not in ['Pose ID', 'ID']})
     return df
 
-def apply_consensus_methods(w_dir : str, clustering_metric : str, consensus_methods : str, rescoring_functions : list, standardization_type : str):
+def apply_consensus_methods(w_dir : str, selection_method : str, consensus_methods : str, rescoring_functions : list, standardization_type : str):
     """
     Applies consensus methods to rescored data and saves the results to a CSV file.
 
     Args:
     w_dir (str): The working directory where the rescored data is located.
-    clustering_metric (str): The clustering metric used to cluster the poses.
+    selection_method (str): The clustering metric used to cluster the poses.
     method (str): The consensus method to apply.
     rescoring_functions (list): A list of rescoring functions to apply.
     standardization_type (str): The type of standardization to apply to the scores.
@@ -84,7 +84,7 @@ def apply_consensus_methods(w_dir : str, clustering_metric : str, consensus_meth
         # Create the 'ranking' directory if it doesn't exist
         (Path(w_dir) / 'ranking').mkdir(parents=True, exist_ok=True)
         # Read the rescored data from the CSV file
-        rescoring_folder = f'rescoring_{clustering_metric}_clustered'
+        rescoring_folder = f'rescoring_{selection_method}_clustered'
         rescored_dataframe = pd.read_csv(Path(w_dir) / rescoring_folder / 'allposes_rescored.csv')
         # Standardize the scores and add the 'ID' column
         standardized_dataframe = standardize_scores(rescored_dataframe, standardization_type)
@@ -101,22 +101,23 @@ def apply_consensus_methods(w_dir : str, clustering_metric : str, consensus_meth
             if consensus_method not in CONSENSUS_METHODS:
                 raise ValueError(f"Invalid consensus method: {consensus_method}")
             # Get the method information from the dictionary
-            method_info = CONSENSUS_METHODS[consensus_method]
-            method_type = method_info['type']
-            method_function = method_info['function']
+            conensus_info = CONSENSUS_METHODS[consensus_method]
+            conensus_type = conensus_info['type']
+            conensus_function = conensus_info['function']
             # Apply the selected consensus method to the data
-            if method_type == 'rank':
-                consensus_dataframe = method_function(ranked_dataframe, clustering_metric, [col for col in ranked_dataframe.columns if col not in ['Pose ID', 'ID']])
-            elif method_type == 'score':
-                consensus_dataframe = method_function(standardized_dataframe, clustering_metric, [col for col in standardized_dataframe.columns if col not in ['Pose ID', 'ID']])
+            if conensus_type == 'rank':
+                consensus_dataframe = conensus_function(ranked_dataframe, selection_method, [col for col in ranked_dataframe.columns if col not in ['Pose ID', 'ID']])
+            elif conensus_type == 'score':
+                consensus_dataframe = conensus_function(standardized_dataframe, selection_method, [col for col in standardized_dataframe.columns if col not in ['Pose ID', 'ID']])
             else:
-                raise ValueError(f"Invalid consensus method type: {method_type}")
+                raise ValueError(f"Invalid consensus method type: {conensus_type}")
             # Drop the 'Pose ID' column and save the consensus results to a CSV file
             consensus_dataframe = consensus_dataframe.drop(columns="Pose ID", errors='ignore')
-            consensus_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{clustering_metric}_{consensus_method}_results.csv', index=False)
+            consensus_dataframe = consensus_dataframe.sort_values(by='ID')
+            consensus_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv', index=False)
         return
 
-def ensemble_consensus(receptors:list, clustering_metric : str, consensus_method : str, threshold : float or int):
+def ensemble_consensus(receptors:list, selection_method : str, consensus_method : str, threshold : float or int):
     """
     Given a list of receptor file paths, this function reads the consensus clustering results for each receptor,
     selects the top n compounds based on a given threshold, and returns a list of common compounds across all receptors.
@@ -125,7 +126,7 @@ def ensemble_consensus(receptors:list, clustering_metric : str, consensus_method
     -----------
     receptors : list of str
         List of file paths to receptor files.
-    clustering_metric : str
+    selection_method : str
         The clustering metric used to generate the consensus clustering results.
     method : str
         The clustering method used to generate the consensus clustering results.
@@ -142,7 +143,7 @@ def ensemble_consensus(receptors:list, clustering_metric : str, consensus_method
     for receptor in receptors:
         w_dir = Path(receptor).parent / Path(receptor).stem
         # Read the consensus clustering results for the receptor
-        consensus_file = pd.read_csv(Path(w_dir) / 'consensus' / f'{clustering_metric}_{consensus_method}_results.csv')
+        consensus_file = pd.read_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv')
         # Select the top n compounds based on the given threshold
         consensus_file_topn = consensus_file.head(math.ceil(consensus_file.shape[0] * (threshold/100)))
         # Append the top n compounds dataframe to the list
