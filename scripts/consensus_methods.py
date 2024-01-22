@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def method1_ECR_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def ECR_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     """
     Calculates the Exponential Consensus Ranking (ECR) score for each ID in the rescored dataframe and returns the ID for the pose with the best ECR rank.
     
@@ -35,22 +35,22 @@ def method1_ECR_best(df: pd.DataFrame, clustering_metric: str, selected_columns:
         raise KeyError(f"Column '{e.args[0]}' not found in the dataframe.")
     
     # Sum the ECR scores for each ID
-    df[f'Method1_ECR_{clustering_metric}'] = ecr_scores.sum(axis=1)
+    df[f'ECR_best_{clustering_metric}'] = ecr_scores.sum(axis=1)
     
     # Drop the selected columns
-    df = df[['ID', f'Method1_ECR_{clustering_metric}']]
+    df = df[['ID', f'ECR_best_{clustering_metric}']]
     
     # Sort by ECR scores in descending order
-    df.sort_values(f'Method1_ECR_{clustering_metric}', ascending=False, inplace=True)
+    df.sort_values(f'ECR_best_{clustering_metric}', ascending=False, inplace=True)
     
     # Drop duplicate rows based on ID, keeping only the highest ECR score
     df.drop_duplicates(subset='ID', inplace=True)
     
     # Return dataframe with ID and ECR scores
-    return df[['ID', f'Method1_ECR_{clustering_metric}']]
+    return df[['ID', f'ECR_best_{clustering_metric}']]
 
 
-def method2_ECR_average(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def ECR_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     """
     Calculates the Exponential Consensus Ranking (ECR) score for each ID in the input dataframe and returns the ID along with the average ECR rank across the clustered poses.
 
@@ -69,19 +69,19 @@ def method2_ECR_average(df: pd.DataFrame, clustering_metric: str, selected_colum
     ecr_columns = np.exp(-df[selected_columns] / sigma) / sigma * 1000
     
     # Sum the ECR values across each row
-    df[f'Method2_ECR_{clustering_metric}'] = ecr_columns.sum(axis=1)
+    df[f'ECR_avg_{clustering_metric}'] = ecr_columns.sum(axis=1)
     
     # Drop the selected columns from the dataframe
-    df = df[['ID', f'Method2_ECR_{clustering_metric}']]
+    df = df[['ID', f'ECR_avg_{clustering_metric}']]
     
     # Group the dataframe by 'ID' and calculate the mean of numeric columns
     df2 = df.groupby('ID', as_index=False).mean(numeric_only=True)
     
-    # Return the dataframe with 'ID' and 'Method2_ECR_{clustering_metric}' columns
-    return df2[['ID', f'Method2_ECR_{clustering_metric}']]
+    # Return the dataframe with 'ID' and 'ECR_avg_{clustering_metric}' columns
+    return df2[['ID', f'ECR_avg_{clustering_metric}']]
 
 
-def method3_avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     """
     Calculates the Exponential Consensus Ranking (ECR) for a given dataframe.
 
@@ -91,7 +91,7 @@ def method3_avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: 
         selected_columns (list): The list of selected columns to calculate ECR for.
 
     Returns:
-        pd.DataFrame: The output dataframe with columns 'ID' and 'Method3_ECR_clustering' representing the ID and Exponential Consensus Ranking values for the selected columns.
+        pd.DataFrame: The output dataframe with columns 'ID' and 'avg_ECR_clustering' representing the ID and Exponential Consensus Ranking values for the selected columns.
     """
     # Calculate the mean ranks for the selected columns
     mean_ranks = df.groupby('ID', as_index=False)[selected_columns].mean().round(2)
@@ -109,12 +109,12 @@ def method3_avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: 
     ecr_sum = ecr_values.sum(axis=1)
     
     # Create a new dataframe with ID and ECR values
-    output_df = pd.DataFrame({'ID': mean_ranks['ID'], f'Method3_ECR_{clustering_metric}': ecr_sum})
+    output_df = pd.DataFrame({'ID': mean_ranks['ID'], f'avg_ECR_{clustering_metric}': ecr_sum})
     
-    return output_df[['ID', f'Method3_ECR_{clustering_metric}']]
+    return output_df[['ID', f'avg_ECR_{clustering_metric}']]
 
 
-def method4_RbR(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def RbR(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     """
     Calculates the Rank by Rank (RbR) consensus score for each ID in the input dataframe.
 
@@ -124,7 +124,7 @@ def method4_RbR(df: pd.DataFrame, clustering_metric: str, selected_columns: list
         selected_columns (list): A list of strings representing the selected columns for calculating the RbR score.
 
     Returns:
-        pd.DataFrame: A pandas DataFrame with columns 'ID' and 'Method4_RbR_{clustering_metric}', where 'Method4_RbR_{clustering_metric}' represents the RbR score for each ID.
+        pd.DataFrame: A pandas DataFrame with columns 'ID' and 'RbR_{clustering_metric}', where 'RbR_{clustering_metric}' represents the RbR score for each ID.
     """
     # Select the 'ID' column and the selected columns from the input dataframe
     df = df[['ID'] + selected_columns]
@@ -133,12 +133,12 @@ def method4_RbR(df: pd.DataFrame, clustering_metric: str, selected_columns: list
     df = df.groupby('ID', as_index=False).mean(numeric_only=True).round(2)
     
     # Calculate the mean of the selected columns for each row and add it as a new column
-    df[f'Method4_RbR_{clustering_metric}'] = df[selected_columns].mean(axis=1)
+    df[f'RbR_{clustering_metric}'] = df[selected_columns].mean(axis=1)
 
-    return df[['ID', f'Method4_RbR_{clustering_metric}']]
+    return df[['ID', f'RbR_{clustering_metric}']]
 
 
-def method5_RbV(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def RbV(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     """
     Calculates the Rank by Vote consensus for a given DataFrame.
 
@@ -148,8 +148,8 @@ def method5_RbV(df: pd.DataFrame, clustering_metric: str, selected_columns: list
         selected_columns (list): A list of column names to consider for the calculation.
 
     Returns:
-        pd.DataFrame: A DataFrame with two columns: 'ID' and 'Method5_RbV_' followed by the 'clustering_metric' value.
-                     The 'Method5_RbV_' column contains the Rank by Vote consensus scores for each ID.
+        pd.DataFrame: A DataFrame with two columns: 'ID' and 'RbV_' followed by the 'clustering_metric' value.
+                     The 'RbV_' column contains the Rank by Vote consensus scores for each ID.
     """
     # Initialize a new column 'vote' in the DataFrame with default value 0
     df['vote'] = 0
@@ -165,13 +165,13 @@ def method5_RbV(df: pd.DataFrame, clustering_metric: str, selected_columns: list
     df = df.round(2)
     
     # Calculate the mean of each row in the DataFrame, excluding the 'ID' column
-    df[f'Method5_RbV_{clustering_metric}'] = df.mean(axis=1, numeric_only=True)
+    df[f'RbV_{clustering_metric}'] = df.mean(axis=1, numeric_only=True)
     
-    # Return the DataFrame with columns 'ID' and 'Method5_RbV_' followed by the clustering_metric value
-    return df[['ID', f'Method5_RbV_{clustering_metric}']]
+    # Return the DataFrame with columns 'ID' and 'RbV_' followed by the clustering_metric value
+    return df[['ID', f'RbV_{clustering_metric}']]
 
 
-def method6_Zscore_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def Zscore_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     '''
     Calculates the Z-score consensus scores for each row in the given DataFrame,
     and aggregates rows by selecting the pose with the best Z-score for each ID.
@@ -182,7 +182,7 @@ def method6_Zscore_best(df: pd.DataFrame, clustering_metric: str, selected_colum
     - selected_columns: A list of strings representing the selected columns for calculating the Z-score score.
     
     Returns:
-    - A pandas DataFrame with columns 'ID' and 'Method6_Zscore_{clustering_metric}', where 'Method6_Zscore_{clustering_metric}' represents the Z-score score for each ID. Only the row with the highest Z-score for each ID is included in the output.
+    - A pandas DataFrame with columns 'ID' and 'Zscore_best_{clustering_metric}', where 'Zscore_best_{clustering_metric}' represents the Z-score score for each ID. Only the row with the highest Z-score for each ID is included in the output.
     '''
     # Convert selected columns to numeric values
     df[selected_columns] = df[selected_columns].apply(pd.to_numeric, errors='coerce')
@@ -194,15 +194,15 @@ def method6_Zscore_best(df: pd.DataFrame, clustering_metric: str, selected_colum
     consensus_scores = z_scores.mean(axis=1)
     
     # Add new column with mean Z-scores
-    df[f'Method6_Zscore_{clustering_metric}'] = consensus_scores
+    df[f'Zscore_best_{clustering_metric}'] = consensus_scores
     
     # Aggregate rows using best Z-score per ID
-    df = df.sort_values(f'Method6_Zscore_{clustering_metric}', ascending=False).drop_duplicates('ID')
+    df = df.sort_values(f'Zscore_best_{clustering_metric}', ascending=False).drop_duplicates('ID')
     
-    return df[['ID', f'Method6_Zscore_{clustering_metric}']]
+    return df[['ID', f'Zscore_best_{clustering_metric}']]
 
 
-def method7_Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
     """
     Calculates the Z-score consensus scores for each row in the given DataFrame,
     and aggregates rows by averaging the Z-score for each ID.
@@ -213,7 +213,7 @@ def method7_Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_column
     - selected_columns: A list of strings representing the selected columns for calculating the Z-score score.
 
     Returns:
-    - A pandas DataFrame with columns 'ID' and 'Method7_Zscore_{clustering_metric}', where 'Method7_Zscore_{clustering_metric}' represents the averaged Z-score for each ID.
+    - A pandas DataFrame with columns 'ID' and 'Zscore_avg_{clustering_metric}', where 'Zscore_avg_{clustering_metric}' represents the averaged Z-score for each ID.
     """
     # Convert selected columns to numeric values
     df[selected_columns] = df[selected_columns].apply(pd.to_numeric, errors='coerce')
@@ -225,18 +225,18 @@ def method7_Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_column
     consensus_scores = z_scores.mean(axis=1)
 
     # Add new column with mean Z-scores
-    df[f'Method7_Zscore_{clustering_metric}'] = consensus_scores
+    df[f'Zscore_avg_{clustering_metric}'] = consensus_scores
 
     # Aggregate rows by grouping them by 'ID' and calculating mean of numeric columns
     df = df.groupby('ID', as_index=False).mean(numeric_only=True)
 
-    # Return DataFrame with 'ID' and 'Method7_Zscore_{clustering_metric}' columns
-    return df[['ID', f'Method7_Zscore_{clustering_metric}']]
+    # Return DataFrame with 'ID' and 'Zscore_avg_{clustering_metric}' columns
+    return df[['ID', f'Zscore_avg_{clustering_metric}']]
 
-CONSENSUS_METHODS = {'ECR_best' : {'function' : method1_ECR_best, 'type' : 'rank'},
-                     'ECR_avg' : {'function' : method2_ECR_average, 'type' : 'rank'},
-                     'avg_ECR' : {'function' : method3_avg_ECR, 'type' : 'rank'},
-                     'RbR' : {'function' : method4_RbR, 'type' : 'rank'},
-                     'RbV' : {'function' : method5_RbV, 'type' : 'score'},
-                     'Zscore_best' : {'function' : method6_Zscore_best, 'type' : 'score'},
-                     'Zscore_avg' : {'function' : method7_Zscore_avg, 'type' : 'score'}}
+CONSENSUS_METHODS = {'ECR_best' : {'function' : ECR_best, 'type' : 'rank'},
+                     'ECR_avg' : {'function' : ECR_avg, 'type' : 'rank'},
+                     'avg_ECR' : {'function' : avg_ECR, 'type' : 'rank'},
+                     'RbR' : {'function' : RbR, 'type' : 'rank'},
+                     'RbV' : {'function' : RbV, 'type' : 'score'},
+                     'Zscore_best' : {'function' : Zscore_best, 'type' : 'score'},
+                     'Zscore_avg' : {'function' : Zscore_avg, 'type' : 'score'}}
