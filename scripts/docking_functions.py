@@ -23,7 +23,7 @@ from scripts.utilities import (
     delete_files,
     parallel_executor,
     printlog,
-    split_sdf, split_sdf_str
+    split_sdf_str
 )
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -1226,7 +1226,7 @@ def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path,
             # Create a DataFrame from the list of dictionaries
             df = pd.DataFrame(data)
             all_poses = pd.concat([all_poses, df])
-        except Exception as e:
+        except Exception:
             printlog(f'ERROR: Failed to load {program} SDF file!')
             printlog(traceback.format_exc())
     if bust_poses:
@@ -1243,7 +1243,7 @@ def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path,
             df = buster.bust_table(all_poses)
             # Remove rows where any of the specified columns is 'False'
             cols_to_check = ['all_atoms_connected', 'bond_lengths', 'bond_angles', 'internal_steric_clash', 'aromatic_ring_flatness', 'double_bond_flatness', 'protein-ligand_maximum_distance']
-            df = df.loc[(df[cols_to_check] != False).all(axis=1)]
+            df = df.loc[(df[cols_to_check] is not False).all(axis=1)]
             df.reset_index(inplace=True)
             # Filter the all_poses DataFrame based on the valid poses identified by PoseBusters
             all_poses = all_poses[all_poses['Pose ID'].isin(df['molecule'])].rename(columns={'mol_pred':'Molecule'})  
