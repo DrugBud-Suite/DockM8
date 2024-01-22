@@ -1,21 +1,19 @@
 import concurrent.futures
+import math
 import os
+import shutil
 import subprocess
 import warnings
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, STDOUT
-from typing import Optional
-import shutil
-import math
+from subprocess import DEVNULL, STDOUT
 
 import pandas as pd
-from tqdm import tqdm
 from chembl_structure_pipeline import standardizer
 from rdkit import Chem
-from rdkit.Chem import AllChem, PandasTools, rdDepictor, rdDistGeom
+from rdkit.Chem import AllChem, PandasTools
 from tqdm import tqdm
 
-from scripts.utilities import printlog, split_sdf_single_str, split_sdf_str, parallel_executor
+from scripts.utilities import parallel_executor, printlog, split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
