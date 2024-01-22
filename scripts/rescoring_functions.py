@@ -5,15 +5,20 @@ import warnings
 from pathlib import Path
 from subprocess import DEVNULL, STDOUT
 from typing import List
-import math
 
 import pandas as pd
 from pandas import DataFrame
-from rdkit.Chem import PandasTools
 from rdkit import RDLogger
+from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
-from scripts.utilities import delete_files, parallel_executor, printlog, split_sdf, split_sdf_str, convert_molecules
+from scripts.utilities import (
+    convert_molecules,
+    delete_files,
+    parallel_executor,
+    printlog,
+    split_sdf_str,
+)
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
