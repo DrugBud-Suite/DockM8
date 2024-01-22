@@ -35,11 +35,11 @@ def process_combination(combination, clustering_method, ranked_df, standardised_
         scores = merged_df[col_to_sort].values
         activities = merged_df['Activity'].values
         # Calculate EF for all percentages at once using vectorized operations
-        auc_roc = roc_auc_score(activities, scores, multi_class='ovo')
-        bedroc = Scoring.CalcBEDROC(list(zip(scores, activities)), 1, 80.5)
-        auc = Scoring.CalcAUC(list(zip(scores, activities)), 1)
-        ef_results = Scoring.CalcEnrichment(list(zip(scores, activities)), 1, [p//100 for p in percentages])
-        rie = Scoring.CalcRIE(list(zip(scores, activities)), 1, 80.5)
+        auc_roc = round(roc_auc_score(activities, scores, multi_class='ovo'), 3)
+        bedroc = round(Scoring.CalcBEDROC(list(zip(scores, activities)), 1, 80.5), 3)
+        auc = round(Scoring.CalcAUC(list(zip(scores, activities)), 1), 3)
+        ef_results = [calculate_EF(merged_df, p) for p in percentages]
+        rie = round(Scoring.CalcRIE(list(zip(scores, activities)), 1, 80.5), 3)
         combination_dfs.append(pd.DataFrame({'clustering': clustering_method,
                                         'consensus': method,
                                         'scoring': '_'.join(list(combination)),
@@ -67,11 +67,11 @@ def calculate_performance_for_clustering_method(dir, w_dir, actives_df, percenta
             scores = merged_df[col].values
             activities = merged_df['Activity'].values
             # Calculate EF for all percentages at once using vectorized operations
-            auc_roc = roc_auc_score(activities, scores, multi_class='ovo')
-            bedroc = Scoring.CalcBEDROC(list(zip(scores, activities)), 1, 80.5)
-            auc = Scoring.CalcAUC(list(zip(scores, activities)), 1)
-            ef_results = Scoring.CalcEnrichment(list(zip(scores, activities)), 1, [p//100 for p in percentages])
-            rie = Scoring.CalcRIE(list(zip(scores, activities)), 1, 80.5)
+            auc_roc = round(roc_auc_score(activities, scores, multi_class='ovo'), 3)
+            bedroc = round(Scoring.CalcBEDROC(list(zip(scores, activities)), 1, 80.5), 3)
+            auc = round(Scoring.CalcAUC(list(zip(scores, activities)), 1), 3)
+            ef_results = [calculate_EF(merged_df, p) for p in percentages]
+            rie = round(Scoring.CalcRIE(list(zip(scores, activities)), 1, 80.5), 3)
             result_list.append(pd.DataFrame({
                 'clustering': clustering_method,
                 'consensus': 'None',
@@ -118,3 +118,18 @@ def calculate_performance(w_dir : Path, actives_library : Path, percentages : li
     (w_dir / 'performance').mkdir(parents=True, exist_ok=True)
     all_results.to_csv(Path(w_dir) / "performance" / 'performance.csv', index=False)
     return all_results
+
+def calculate_EF(merged_df, percentage: float):
+    total_rows = len(merged_df)
+    N100_percent = total_rows
+
+    Nx_percent = round((percentage / 100) * total_rows)
+    Hits100_percent = np.sum(merged_df['Activity'])
+
+    Hitsx_percent = np.sum(merged_df.head(Nx_percent)['Activity'])
+
+    ef = (Hitsx_percent / Nx_percent) * (N100_percent / Hits100_percent)
+    if ef > 100:
+        return 100
+    else:
+        return round(ef, 2)
