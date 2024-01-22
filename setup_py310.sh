@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# define the directory SCORCH is cloned into
 BASEDIR=$PWD
 
 ###############################################################
@@ -86,7 +85,11 @@ $CONDA_PATH config --set auto_activate_base false
 # create the conda environment
 ENV_NAME="dockm8"
 
-conda create -n $ENV_NAME python=3.10 -y
+if ! conda env list | grep -q "$ENV_NAME"; then
+    conda create -n $ENV_NAME python=3.10 -y
+else
+    echo -e "\n$ENV_NAME environment already exists. "
+fi
 
 conda activate $ENV_NAME
 
@@ -94,28 +97,31 @@ conda config --add channels conda-forge
 
 conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -q -y
 
-pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters streamlit
+pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters streamlit -q
 
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
 
-pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric
+pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 
 ###############################################################
 
-if [[ -f dockm8.py || -d DockM8 ]]; then
+if [[ -f dockm8.py ]]; then
     echo -e "\nDockM8 repository found in current folder. Installation finished"
+    DOCKM8_FOLDER=$(pwd)
 else
     echo -e """
 ###############################################################
 # Downloading DockM8 repository...
 ###############################################################
 """
-    wget https://github.com/Tonylac77/DockM8/main.zip -O DockM8.zip --no-check-certificate
-    unzip DockM8.zip
-    rm DockM8.zip
+    wget https://gitlab.com/Tonylac77/DockM8/archive/main.tar.gz -O DockM8.tar.gz --no-check-certificate
+    tar -xvf DockM8.tar.gz
+    DOCKM8_FOLDER=$(pwd)/DockM8
+    rm DockM8.tar.gz
     echo -e "\nDockM8 repository downloaded. Installation finished"
 fi
 
+cd $DOCKM8_FOLDER
 ###############################################################
 
 echo -e """
@@ -123,32 +129,36 @@ echo -e """
 # Downloading Executables...
 ###############################################################
 """
-if [[ ! -d ./software ]]; then
-    mkdir ./software
-    cd ./software
+if [[ ! -d $DOCKM8_FOLDER/software ]]; then
+    mkdir $DOCKM8_FOLDER/software
+    cd $DOCKM8_FOLDER/software
 else
-    cd ./software
+    cd $DOCKM8_FOLDER/software
 fi
 
-if [[ ! -f ./gnina ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/gnina ]]; then
     echo -e "\nDownloading GNINA!"
     wget https://github.com/gnina/gnina/releases/latest/download/gnina --no-check-certificate  -q --show-progress
     chmod +x gnina
 fi
 
-if [[ ! -f ./qvina-w ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/qvina-w ]]; then
     echo -e "\nDownloading QVINA-W!"
     wget https://github.com/QVina/qvina/raw/master/bin/qvina-w --no-check-certificate -q --show-progress
     chmod +x qvina-w
 fi
 
-if [[ ! -f ./qvina2.1 ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/qvina2.1 ]]; then
     echo -e "\nDownloading QVINA2!"
     wget https://github.com/QVina/qvina/raw/master/bin/qvina2.1 --no-check-certificate -q --show-progress
     chmod +x qvina2.1
 fi
 
-if [[ ! -f ./KORP-PL ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/PLANTS ]]; then
+    echo -e "\nPLANTS not found in software folder, if you want to use it, please see documentation for a link to register and download it!"
+fi
+
+if [[ ! -f $DOCKM8_FOLDER/software/KORP-PL ]]; then
     echo -e "\nDownloading KORP-PL!"
     wget https://files.inria.fr/NanoDFiles/Website/Software/KORP-PL/0.1.2/Linux/KORP-PL-LINUX-v0.1.2.2.tar.gz --no-check-certificate -q --show-progress
     tar -xvf KORP-PL-LINUX-v0.1.2.2.tar.gz
@@ -156,7 +166,7 @@ if [[ ! -f ./KORP-PL ]]; then
     chmod +x KORP-PL
 fi
 
-if [[ ! -f ./Convex-PL ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/Convex-PL ]]; then
     echo -e "\nDownloading Convex-PLR!"
     wget https://files.inria.fr/NanoDFiles/Website/Software/Convex-PL/Files/Convex-PL-Linux-v0.5.tar.zip --no-check-certificate -q --show-progress
     unzip Convex-PL-Linux-v0.5.tar.zip
@@ -167,58 +177,60 @@ if [[ ! -f ./Convex-PL ]]; then
     chmod +x Convex-PL
 fi
 
-if [[ ! -f ./smina.static ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/smina.static ]]; then
     echo -e "\nDownloading Lin_F9!"
     wget https://github.com/cyangNYU/Lin_F9_test/raw/master/smina.static --no-check-certificate -q --show-progress
     chmod +x smina.static
 fi
 
-if [[ ! -d ./AA-Score-Tool-main ]]; then
+if [[ ! -d $DOCKM8_FOLDER/software/AA-Score-Tool-main ]]; then
     echo -e "\nDownloading AA-Score!"
     wget https://github.com/Xundrug/AA-Score-Tool/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
     unzip main.zip
     rm main.zip
 fi
 
-if [[ ! -d ./gypsum_dl-1.2.1 ]]; then
+if [[ ! -d $DOCKM8_FOLDER/software/gypsum_dl-1.2.1 ]]; then
     echo -e "\nDownloading GypsumDL!"
     wget https://github.com/durrantlab/gypsum_dl/archive/refs/tags/v1.2.1.tar.gz --no-check-certificate -q --show-progress
     tar -xvf v1.2.1.tar.gz
     rm v1.2.1.tar.gz
 fi
 
-if [[ ! -d ./SCORCH ]]; then
+if [[ ! -d $DOCKM8_FOLDER/software/SCORCH ]]; then
     echo -e "\nDownloading SCORCH!"
     wget https://github.com/SMVDGroup/SCORCH/archive/refs/tags/v1.0.0.tar.gz --no-check-certificate -q --show-progress
     tar -xvf v1.0.0.tar.gz
     rm v1.0.0.tar.gz
 fi
 
-if [[ ! -d ./rf-score-vs ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/rf-score-vs ]]; then
     echo -e "\nDownloading RF-Score-VS!"
     wget https://github.com/oddt/rfscorevs_binary/releases/download/1.0/rf-score-vs_v1.0_linux_2.7.zip -q --show-progress --no-check-certificate
     unzip rf-score-vs_v1.0_linux_2.7.zip
     rm rf-score-vs_v1.0_linux_2.7.zip
-    rm -r ./test
+    rm -r $DOCKM8_FOLDER/software/test
     rm README.md
     chmod +x rf-score-vs
 fi
 
-if [[ ! -d ./RTMScore-main ]]; then
+if [[ ! -d $DOCKM8_FOLDER/software/RTMScore-main ]]; then
     echo -e "\nDownloading RTMScore!"
     wget https://github.com/sc8668/RTMScore/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
     unzip main.zip
     rm main.zip
-    rm ./RTMScore-main/scripts -r
-    rm ./RTMScore-main/121.jpg
+    rm $DOCKM8_FOLDER/software/RTMScore-main/scripts -r
+    rm $DOCKM8_FOLDER/software/RTMScore-main/121.jpg
 
 fi
 
-if [[ ! -f ./models/DeepCoy* ]]; then
+cd $BASEDIR
+
+if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
     echo -e "\nDownloading DeepCoy models!"
-    cd ./models
+    cd $DOCKM8_FOLDER/software/models
     wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz
-    tar -xvf DeepCoy_pretrained_models.tar.gz
+    tar -xvf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/models
     rm DeepCoy_pretrained_models.tar.gz
 fi
 
@@ -238,7 +250,7 @@ echo -e """
 if conda env list | grep -q $ENV_NAME; then
     echo -e "\nDockM8 conda environment is present!"
 else
-    echo -e "\nDockM8 conda environment is not present!"
+    echo -e "\nINSTALLATION ERROR : DockM8 conda environment is not present!"
 fi
 
 # Check if required packages are installed in the $ENV_NAME environment
@@ -251,10 +263,3 @@ for package in "${required_packages[@]}"; do
         echo -e "\nINSTALLATION ERROR : $package is not installed in the $ENV_NAME environment!"
     fi
 done
-
-# Check if DockM8 repository is present
-if [[ -f dockm8.py || -d DockM8 ]]; then
-    echo -e "DockM8 repository is present!"
-else
-    echo -e "\nINSTALLATION ERROR : DockM8 repository is not present!"
-fi
