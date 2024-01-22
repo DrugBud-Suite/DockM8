@@ -2,12 +2,11 @@ import itertools
 import traceback
 import warnings
 from pathlib import Path
-from typing import Any, Callable, Dict, Union
+from typing import Callable, Dict
 
 import numpy as np
 import pandas as pd
 import pebble
-from IPython.display import display
 from rdkit.Chem import PandasTools
 from sklearn.cluster import AffinityPropagation
 from sklearn.metrics import silhouette_score
@@ -163,7 +162,7 @@ def calculate_and_cluster(clustering_metric: str, clustering_method: str, df: pd
         return clustered_df
 
 
-def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Path, protein_file: Path, pocket_definition: dict, software: Path, all_poses : pd.DataFrame, ncpus : int):
+def select_poses(selection_method : str, clustering_method : str, w_dir : Path, protein_file: Path, pocket_definition: dict, software: Path, all_poses : pd.DataFrame, ncpus : int):
     '''This function clusters all poses according to the metric selected using multiple CPU cores.
 
     Args:
@@ -180,37 +179,37 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
     # Create a directory for clustering results
     cluster_dir = Path(w_dir) / 'clustering'
     cluster_dir.mkdir(exist_ok=True)
-    cluster_file = cluster_dir / f'{clustering_metric}_clustered.sdf'
+    cluster_file = cluster_dir / f'{selection_method}_clustered.sdf'
     
     # Check if clustering has already been done for the given metric
     if not cluster_file.exists():
         # Get unique IDs from the input DataFrame
         id_list = np.unique(np.array(all_poses['ID']))
-        printlog(f"*Calculating {clustering_metric} metrics and clustering*")
+        printlog(f"*Calculating {selection_method} metrics and clustering*")
         
         # Add additional columns to the DataFrame for clustering
         all_poses['Pose_Number'] = all_poses['Pose ID'].str.split('_').str[2].astype(int)
         all_poses['Docking_program'] = all_poses['Pose ID'].str.split('_').str[1].astype(str)
 
-        if clustering_metric == 'bestpose':
+        if selection_method == 'bestpose':
             # Select the best pose for each ID and docking program
             min_pose_indices = all_poses.groupby(['ID', 'Docking_program'])['Pose_Number'].idxmin()
             clustered_poses = all_poses.loc[min_pose_indices]
-        elif clustering_metric in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']:
+        elif selection_method in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']:
             # Select the best pose for each ID based on the specified docking program
             min_pose_indices = all_poses.groupby(['ID', 'Docking_program'])['Pose_Number'].idxmin()
             clustered_poses = all_poses.loc[min_pose_indices]
-            clustered_poses = clustered_poses[clustered_poses['Docking_program'] == clustering_metric.split('_')[1]]
-        elif clustering_metric in CLUSTERING_METRICS.keys():
+            clustered_poses = clustered_poses[clustered_poses['Docking_program'] == selection_method.split('_')[1]]
+        elif selection_method in CLUSTERING_METRICS.keys():
             # Perform clustering using multiple CPU cores
             clustered_dataframes = []
             
             with pebble.ProcessPool(max_workers=ncpus) as executor:
                 jobs = []
-                for current_id in tqdm(id_list, desc=f'Submitting {clustering_metric} jobs...', unit='IDs'):
+                for current_id in tqdm(id_list, desc=f'Submitting {selection_method} jobs...', unit='IDs'):
                     try:
                         # Schedule the clustering job for each ID
-                        job = executor.schedule(calculate_and_cluster, args=(clustering_metric, clustering_method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
+                        job = executor.schedule(calculate_and_cluster, args=(selection_method, clustering_method, all_poses[all_poses['ID'] == current_id], protein_file), timeout=120)
                         jobs.append(job)
                     except pebble.TimeoutError as e:
                         printlog("Timeout error in pebble job creation: " + str(e))
@@ -220,7 +219,7 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
                         printlog("Job submission error in pebble job creation: " + str(e))
                     except Exception as e:
                         printlog("Other error in pebble job creation: " + str(e))
-                for job in tqdm(jobs, total=len(id_list), desc=f'Running {clustering_metric} clustering...', unit='jobs'):
+                for job in tqdm(jobs, total=len(id_list), desc=f'Running {selection_method} clustering...', unit='jobs'):
                     try:
                         # Get the clustering results for each job
                         res = job.result()
@@ -229,11 +228,11 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
                         print(e)
                         pass
             clustered_poses = pd.concat(clustered_dataframes)
-        elif clustering_metric in RESCORING_FUNCTIONS.keys():
+        elif selection_method in RESCORING_FUNCTIONS.keys():
             # Perform rescoring using the specified metric scoring function
-            clustered_poses = rescore_docking(w_dir, protein_file, pocket_definition, software, clustering_metric, ncpus)
+            clustered_poses = rescore_docking(w_dir, protein_file, pocket_definition, software, selection_method, ncpus)
         else:
-            raise ValueError(f'Invalid clustering metric: {clustering_metric}')
+            raise ValueError(f'Invalid clustering metric: {selection_method}')
         # Clean up the Pose ID column
         clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(str).replace('[()\',]', '', regex=True)
         # Filter the original DataFrame based on the clustered poses
@@ -242,5 +241,5 @@ def cluster_pebble(clustering_metric : str, clustering_method : str, w_dir : Pat
         # Write the filtered poses to a SDF file
         PandasTools.WriteSDF(filtered_poses, str(cluster_file), molColName='Molecule', idName='Pose ID')
     else:
-        printlog(f'Clustering using {clustering_metric} already done, moving to next metric...')
+        printlog(f'Clustering using {selection_method} already done, moving to next metric...')
     return
