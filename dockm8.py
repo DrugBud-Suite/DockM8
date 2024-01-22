@@ -5,7 +5,6 @@ import os
 import warnings
 from pathlib import Path
 
-
 from scripts.clustering_functions import *
 from scripts.consensus_methods import *
 from scripts.docking_functions import *
@@ -26,7 +25,6 @@ parser = argparse.ArgumentParser(description='Parse required arguments')
 
 parser.add_argument('--software', required=True, type=str, help ='Path to the software folder')
 parser.add_argument('--mode', type=str, default='single', choices=['Single', 'Ensemble', 'active_learning'], help ='Specifies the mode: single, ensemble, or active_learning')
-parser.add_argument('--split', default=1, type=int, help='Whether to split the docking library into chunks (useful for large libraries)')
 
 parser.add_argument('--gen_decoys', default=False, type=str2bool, help ='Whether or not to generate decoys using DeepCoy')
 parser.add_argument('--decoy_model', default='DUDE', type=str, choices=['DUDE', 'DEKOIS', 'DUDE_P'], help ='Model to use for decoy generation')
@@ -46,7 +44,7 @@ parser.add_argument('--bust_poses', default=False, type=str2bool, help ='Whether
 parser.add_argument('--pose_selection', required=True, type=str, nargs='+', choices=list(CLUSTERING_METRICS.keys())+['bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINA2', 'bestpose_QVINAW']+list(RESCORING_FUNCTIONS.keys()), help ='Method(s) to use for pose clustering')
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses to generate')
 parser.add_argument('--exhaustiveness', default=8, type=int, help ='Precision of SMINA/GNINA')
-parser.add_argument('--ncpus', default=int(os.cpu_count()/2), type=int, help ='Number of CPUs to use')
+parser.add_argument('--ncpus', default=int(os.cpu_count()*0.9), type=int, help ='Number of CPUs to use')
 parser.add_argument('--clustering_method', type=str, choices=['KMedoids', 'Aff_Prop', 'None'], help ='Clustering method to use')
 parser.add_argument('--rescoring', type=str, nargs='+', choices=list(RESCORING_FUNCTIONS.keys()), help='Rescoring methods to use')
 parser.add_argument('--consensus', type=str, required=True, choices=['ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'], help='Consensus method to use')
@@ -91,7 +89,7 @@ for program in DOCKING_PROGRAMS:
         parser.error(f"Must specify {program} in --docking_programs when --clustering_metric is set to bestpose_{program}")
 
 
-def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
+def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection_methods, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
     # Set working directory
     w_dir = Path(receptor).parent / Path(receptor).stem
     print('The working directory has been set to:', w_dir)
@@ -120,14 +118,14 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     all_poses = PandasTools.LoadSDF(str(w_dir / 'allposes.sdf'), idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
     toc = time.perf_counter()
     print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
-    for metric in pose_selection:
-        if os.path.isfile(w_dir / f'clustering/{metric}_clustered.sdf') == False:
-            cluster_pebble(metric, clustering_method, w_dir, prepared_receptor, pocket_definition, software, all_poses, ncpus)
+    for method in pose_selection_methods:
+        if os.path.isfile(w_dir / f'clustering/{method}_clustered.sdf') == False:
+            select_poses(method, clustering_method, w_dir, prepared_receptor, pocket_definition, software, all_poses, ncpus)
     # Rescoring
-    for metric in pose_selection:
-        rescore_poses(w_dir, prepared_receptor, pocket_definition, software, w_dir / 'clustering' / f'{metric}_clustered.sdf', rescoring, ncpus)
+    for method in pose_selection_methods:
+        rescore_poses(w_dir, prepared_receptor, pocket_definition, software, w_dir / 'clustering' / f'{method}_clustered.sdf', rescoring, ncpus)
     # Consensus
-    apply_consensus_methods(w_dir, pose_selection, consensus, rescoring, standardization_type='min_max')
+    apply_consensus_methods(w_dir, pose_selection_methods, consensus, rescoring, standardization_type='min_max')
 
 def run_command(**kwargs):
     
@@ -149,7 +147,7 @@ def run_command(**kwargs):
                     protonation = kwargs.get('protonation'), 
                     docking_programs = kwargs.get('docking_programs'),
                     bust_poses = kwargs.get('bust_poses'), 
-                    pose_selection = kwargs.get('pose_selection'), 
+                    pose_selection_methods = kwargs.get('_methods'), 
                     nposes = kwargs.get('nposes'), 
                     exhaustiveness = kwargs.get('exhaustiveness'), 
                     ncpus = kwargs.get('ncpus'), 
@@ -181,7 +179,7 @@ def run_command(**kwargs):
                     protonation = kwargs.get('protonation'), 
                     docking_programs = docking_programs, 
                     bust_poses = kwargs.get('bust_poses'), 
-                    pose_selection = optimal_conditions['clustering'], 
+                    pose_selection_methods = optimal_conditions['clustering'], 
                     nposes = kwargs.get('nposes'), 
                     exhaustiveness = kwargs.get('exhaustiveness'), 
                     ncpus = kwargs.get('ncpus'), 
@@ -204,7 +202,7 @@ def run_command(**kwargs):
                     protonation = kwargs.get('protonation'), 
                     docking_programs = kwargs.get('docking_programs'), 
                     bust_poses = kwargs.get('bust_poses'), 
-                    pose_selection = kwargs.get('pose_selection'), 
+                    pose_selection_methods = kwargs.get('pose_selection'), 
                     nposes = kwargs.get('nposes'), 
                     exhaustiveness = kwargs.get('exhaustiveness'), 
                     ncpus = kwargs.get('ncpus'), 
@@ -245,7 +243,7 @@ def run_command(**kwargs):
                         protonation = kwargs.get('protonation'), 
                         docking_programs = docking_programs, 
                         bust_poses = kwargs.get('bust_poses'), 
-                        pose_selection = optimal_conditions['clustering'], 
+                        pose_selection_methods = optimal_conditions['clustering'], 
                         nposes = kwargs.get('nposes'), 
                         exhaustiveness = kwargs.get('exhaustiveness'), 
                         ncpus = kwargs.get('ncpus'), 
