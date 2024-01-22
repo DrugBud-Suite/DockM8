@@ -1,4 +1,3 @@
-import numpy as np
 import itertools
 import math
 import os
@@ -11,9 +10,7 @@ from rdkit.ML.Scoring import Scoring
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
-from scripts.consensus_methods import (
-    CONSENSUS_METHODS,
-)
+from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.postprocessing import rank_scores, standardize_scores
 from scripts.utilities import parallel_executor, printlog
 
