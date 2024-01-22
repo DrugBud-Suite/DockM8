@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from biopandas.pdb import PandasPdb
 from rdkit import Chem
-from rdkit.Chem import AllChem, Descriptors3D
+from rdkit.Chem import Descriptors3D
 
 from scripts.utilities import load_molecule, printlog
 
