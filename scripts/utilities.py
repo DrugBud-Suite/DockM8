@@ -1,6 +1,5 @@
 import argparse
 import concurrent.futures
-import pebble
 import datetime
 import math
 import os
@@ -9,6 +8,7 @@ from pathlib import Path
 
 import openbabel
 import pandas as pd
+import pebble
 from joblib import Parallel, delayed
 from meeko import MoleculePreparation, PDBQTWriterLegacy
 from openbabel import pybel
