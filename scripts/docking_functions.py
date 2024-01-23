@@ -703,7 +703,7 @@ def plants_docking_splitted(split_file: Path, w_dir: Path, n_poses: int, pocket_
     # Run PLANTS docking
     try:
         plants_docking_command = f'{software / "PLANTS"} --mode screen ' + str(plants_docking_config_path)
-        subprocess.call(plants_docking_command,shell=True)#, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(plants_docking_command,shell=True, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: PLANTS docking command failed...')
         printlog(e)
@@ -914,7 +914,7 @@ def qvina2_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: P
     return qvina2_docking_results
 
 DOCKING_PROGRAMS = ['PLANTS', 'SMINA', 'GNINA', 'QVINA2', 'QVINAW']
-def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: Dict[str, list], software : str or Path, docking_programs : list, exhaustiveness : int, n_poses : int, ncpus : int, job_manager=str):
+def docking(w_dir : str or Path, protein_file : str or Path, pocket_definition: Dict[str, list], software : str or Path, docking_programs : list, exhaustiveness : int, n_poses : int, ncpus : int, job_manager='concurrent_process'):
     """
     Dock ligands into a protein binding site using one or more docking programs.
 
