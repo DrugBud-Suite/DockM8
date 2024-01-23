@@ -94,11 +94,23 @@ conda config --add channels conda-forge
 
 conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -q -y
 
+echo -e """
+###############################################################
+# Installing Pip packages, please wait...
+###############################################################
+"""
+
 pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters streamlit -q
 
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
 
 pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
+
+echo -e """
+###############################################################
+# Finished installing pip packages
+###############################################################
+"""
 
 ###############################################################
 
