@@ -5,6 +5,7 @@ import warnings
 from pathlib import Path
 
 import pandas as pd
+import numpy as np
 from rdkit.Chem import PandasTools
 from rdkit.ML.Scoring import Scoring
 from sklearn.metrics import roc_auc_score
