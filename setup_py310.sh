@@ -13,11 +13,11 @@ echo -e """
 # install dependencies for xgboost, GWOVina & MGLTools
 if [[ "$OSTYPE" == "darwin"* || "$OSTYPE" == "msys"* ]]; then
     # dependencies for mac and windows
-    echo -e "\nDockM8 is not compatible with Mac OS or Windows!"
+    echo -e "DockM8 is not compatible with Mac OS or Windows!"
     exit
 
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo -e "\nDetected Linux OS!"
+    echo -e "Detected Linux OS!"
 
 fi
 
@@ -34,12 +34,12 @@ echo -e """
 # if conda is not a recognised command then download and install
 if ! command -v conda &> /dev/null; then
     
-    echo -e "\nNo conda found - installing..."
+    echo -e "No conda found - installing..."
     mkdir -p $HOME/miniconda3
     cd $HOME/miniconda3
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh --no-check-certificate
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh --no-check-certificate -q --show-progress
     # install miniconda3
-    cd miniconda3 && chmod -x miniconda.sh
+    cd $HOME/miniconda3 && chmod -x miniconda.sh
     cd $BASEDIR && bash $HOME/miniconda3/miniconda.sh -b -u -p $HOME/miniconda3
 
     # remove the installer
@@ -50,7 +50,7 @@ if ! command -v conda &> /dev/null; then
     CONDA_BASE=$BASEDIR/$HOME/miniconda3
     CONDA_SH="$HOME/miniconda3/etc/profile.d/conda.sh"
 else
-    echo -e "\nFound existing conda install!"
+    echo -e "Found existing conda install!"
     # if conda not installed then find location of existing installation
     CONDA_PATH=$(which conda)
     CONDA_BASE=$(conda info --base)
@@ -81,16 +81,13 @@ source $CONDA_SH
 
 # configure conda to install environment quickly and silently
 $CONDA_PATH config --set auto_activate_base false
+$CONDA_PATH config --set ssl_verify False
 
 # create the conda environment
 ENV_NAME="dockm8"
-
-if ! conda env list | grep -q "$ENV_NAME"; then
-    conda create -n $ENV_NAME python=3.10 -y
-else
-    echo -e "\n$ENV_NAME environment already exists. "
-fi
-
+conda init bash
+conda create -n $ENV_NAME python=3.10 -y
+conda deactivate
 conda activate $ENV_NAME
 
 conda config --add channels conda-forge
@@ -106,7 +103,7 @@ pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geo
 ###############################################################
 
 if [[ -f dockm8.py ]]; then
-    echo -e "\nDockM8 repository found in current folder. Installation finished"
+    echo -e "\nDockM8 repository found in current folder."
     DOCKM8_FOLDER=$(pwd)
 else
     echo -e """
@@ -114,11 +111,12 @@ else
 # Downloading DockM8 repository...
 ###############################################################
 """
-    wget https://gitlab.com/Tonylac77/DockM8/archive/main.tar.gz -O DockM8.tar.gz --no-check-certificate
+    wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
     tar -xvf DockM8.tar.gz
+    mv DockM8-main DockM8
     DOCKM8_FOLDER=$(pwd)/DockM8
     rm DockM8.tar.gz
-    echo -e "\nDockM8 repository downloaded. Installation finished"
+    echo -e "\nDockM8 repository downloaded."
 fi
 
 cd $DOCKM8_FOLDER
@@ -230,7 +228,7 @@ if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
     echo -e "\nDownloading DeepCoy models!"
     cd $DOCKM8_FOLDER/software/models
     wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz
-    tar -xvf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/models
+    tar -xvf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/
     rm DeepCoy_pretrained_models.tar.gz
 fi
 
