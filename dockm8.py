@@ -110,7 +110,7 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     if os.path.isfile(w_dir / 'final_library.sdf') == False:
         prepare_library(docking_library, w_dir, idcolumn, conformers, protonation, software, ncpus)
     # Docking
-    docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus, 'joblib')
+    docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus, 'concurrent_process')
     concat_all_poses(w_dir, docking_programs, prepared_receptor, ncpus, bust_poses)
     # Clustering
     print('Loading all poses SDF file...')
@@ -125,7 +125,8 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     for method in pose_selection_methods:
         rescore_poses(w_dir, prepared_receptor, pocket_definition, software, w_dir / 'clustering' / f'{method}_clustered.sdf', rescoring, ncpus)
     # Consensus
-    apply_consensus_methods(w_dir, pose_selection_methods, consensus, rescoring, standardization_type='min_max')
+    for method in pose_selection_methods:
+        apply_consensus_methods(w_dir, method, consensus, rescoring, standardization_type='min_max')
 
 def run_command(**kwargs):
     
