@@ -703,11 +703,11 @@ def plants_docking_splitted(split_file: Path, w_dir: Path, n_poses: int, pocket_
     # Run PLANTS docking
     try:
         plants_docking_command = f'{software / "PLANTS"} --mode screen ' + str(plants_docking_config_path)
-        subprocess.call(plants_docking_command,shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(plants_docking_command,shell=True)#, stdout=DEVNULL, stderr=STDOUT)
     except Exception as e:
         printlog('ERROR: PLANTS docking command failed...')
         printlog(e)
-    return
+    return None
 def qvinaw_docking_splitted(split_file: Path, w_dir: Path, protein_file_pdbqt: Path, pocket_definition: Dict[str, list], software: Path, exhaustiveness: int, n_poses: int):
     """
     Dock ligands from a split file to a protein using QVINAW.
