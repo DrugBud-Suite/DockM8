@@ -180,7 +180,7 @@ def run_command(**kwargs):
                     protonation = kwargs.get('protonation'), 
                     docking_programs = docking_programs, 
                     bust_poses = kwargs.get('bust_poses'), 
-                    pose_selection_methods = optimal_conditions['clustering'], 
+                    pose_selection_methods = list(optimal_conditions['clustering']), 
                     nposes = kwargs.get('nposes'), 
                     exhaustiveness = kwargs.get('exhaustiveness'), 
                     ncpus = kwargs.get('ncpus'), 
