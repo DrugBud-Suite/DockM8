@@ -128,6 +128,7 @@ else
 # Downloading DockM8 repository...
 ###############################################################
 """
+    rm -rf ./DockM8
     wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
     tar -xvf DockM8.tar.gz
     mv -f DockM8-main DockM8
