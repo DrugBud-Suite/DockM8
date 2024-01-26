@@ -89,7 +89,7 @@ for program in DOCKING_PROGRAMS:
         parser.error(f"Must specify {program} in --docking_programs when --pose_selection is set to bestpose_{program}")
 
 
-def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection_methods, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
+def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
     # Set working directory
     w_dir = Path(receptor).parent / Path(receptor).stem
     print('The working directory has been set to:', w_dir)
@@ -118,14 +118,14 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     all_poses = PandasTools.LoadSDF(str(w_dir / 'allposes.sdf'), idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
     toc = time.perf_counter()
     print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
-    for method in pose_selection_methods:
+    for method in pose_selection:
         if os.path.isfile(w_dir / f'clustering/{method}_clustered.sdf') == False:
             select_poses(method, clustering_method, w_dir, prepared_receptor, pocket_definition, software, all_poses, ncpus)
     # Rescoring
-    for method in pose_selection_methods:
+    for method in pose_selection:
         rescore_poses(w_dir, prepared_receptor, pocket_definition, software, w_dir / 'clustering' / f'{method}_clustered.sdf', rescoring, ncpus)
     # Consensus
-    for method in pose_selection_methods:
+    for method in pose_selection:
         apply_consensus_methods(w_dir, method, consensus, rescoring, standardization_type='min_max')
 
 def run_command(**kwargs):
@@ -148,7 +148,7 @@ def run_command(**kwargs):
                     protonation = kwargs.get('protonation'), 
                     docking_programs = kwargs.get('docking_programs'),
                     bust_poses = kwargs.get('bust_poses'), 
-                    pose_selection_methods = kwargs.get('_methods'), 
+                    pose_selection = kwargs.get('pose_selection'), 
                     nposes = kwargs.get('nposes'), 
                     exhaustiveness = kwargs.get('exhaustiveness'), 
                     ncpus = kwargs.get('ncpus'), 
@@ -180,7 +180,7 @@ def run_command(**kwargs):
                     protonation = kwargs.get('protonation'), 
                     docking_programs = docking_programs, 
                     bust_poses = kwargs.get('bust_poses'), 
-                    pose_selection_methods = optimal_conditions['clustering'], 
+                    pose_selection = optimal_conditions['clustering'], 
                     nposes = kwargs.get('nposes'), 
                     exhaustiveness = kwargs.get('exhaustiveness'), 
                     ncpus = kwargs.get('ncpus'), 
@@ -203,7 +203,7 @@ def run_command(**kwargs):
                     protonation = kwargs.get('protonation'), 
                     docking_programs = kwargs.get('docking_programs'), 
                     bust_poses = kwargs.get('bust_poses'), 
-                    pose_selection_methods = kwargs.get('pose_selection'), 
+                    pose_selection = kwargs.get('pose_selection'), 
                     nposes = kwargs.get('nposes'), 
                     exhaustiveness = kwargs.get('exhaustiveness'), 
                     ncpus = kwargs.get('ncpus'), 
@@ -244,7 +244,7 @@ def run_command(**kwargs):
                         protonation = kwargs.get('protonation'), 
                         docking_programs = docking_programs, 
                         bust_poses = kwargs.get('bust_poses'), 
-                        pose_selection_methods = optimal_conditions['clustering'], 
+                        pose_selection = optimal_conditions['clustering'], 
                         nposes = kwargs.get('nposes'), 
                         exhaustiveness = kwargs.get('exhaustiveness'), 
                         ncpus = kwargs.get('ncpus'), 
