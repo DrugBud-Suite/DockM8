@@ -1,5 +1,6 @@
 # Import necessary libraries
 import os
+import warnings
 from pathlib import Path
 import shlex
 import subprocess
@@ -8,10 +9,14 @@ import time
 import itertools
 import streamlit as st
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.docking_functions import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
 from scripts.consensus_methods import CONSENSUS_METHODS
+
+
 
 st.set_page_config(page_title="DockM8", page_icon=":8ball:", layout="wide")
 # Sidebar
@@ -48,6 +53,7 @@ if mode != "Single":
 num_cpus = st.slider(
     "Number of CPUs",
     min_value=1,
+    max_value=os.cpu_count(),
     step=1,
     value=int(os.cpu_count() * 0.9),
     help="Number of CPUs to use for calculations",
