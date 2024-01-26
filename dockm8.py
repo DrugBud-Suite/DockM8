@@ -69,7 +69,7 @@ if (args.pocket == 'Reference' or args.pocket == 'RoG') and not args.reffile:
     parser.error(f"Must specify a reference ligand file when --pocket is set to {args.pocket}")
     
 if any(metric in args.pose_selection for metric in CLUSTERING_METRICS.keys()) and (args.clustering_method == None or args.clustering_method == 'None'):
-    parser.error("Must specify a clustering method when --clustering_metric is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
+    parser.error("Must specify a clustering method when --pose_selection is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
 
 if args.gen_decoys == True and not args.decoy_model:
     parser.error("Must specify a decoy model when --gen_decoys is set to True")
@@ -85,8 +85,8 @@ if args.gen_decoys and len(args.rescoring) > 8:
     print(f"WARNING : At least {possibilites} possible combinations will be tried for optimization, this may take a while.")
 
 for program in DOCKING_PROGRAMS:
-    if f"bestpose_{program}" in args.clustering_metric and program not in args.docking_programs:
-        parser.error(f"Must specify {program} in --docking_programs when --clustering_metric is set to bestpose_{program}")
+    if f"bestpose_{program}" in args.pose_selection and program not in args.docking_programs:
+        parser.error(f"Must specify {program} in --docking_programs when --pose_selection is set to bestpose_{program}")
 
 
 def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection_methods, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
