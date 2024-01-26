@@ -64,12 +64,21 @@ gen_decoys = st.toggle(
     help="Generate decoys for the active ligands and determine optimal DockM8 conditions",
 )
 
+if mode == "Single":
+    receptor_value = CWD + "/dockm8_testing/4kd1_p.pdb"
+    reference_value = CWD + "/dockm8_testing/4kd1_l.sdf"
+    library_value = CWD + "/dockm8_testing/library.sdf"
+if mode == "Ensemble":
+    receptor_value = CWD + "/dockm8_testing/4kd1_p.pdb, " + CWD + "/dockm8_testing/1fvv_p.pdb"
+    reference_value = CWD + "/dockm8_testing/4kd1_l.sdf, " + CWD + "/dockm8_testing/1fvv_l.sdf"
+    library_value = CWD + "/dockm8_testing/library.sdf"
+
 if gen_decoys:
     st.subheader("Decoy generation", divider="orange")
     # Active ligands
     active_ligands = st.text_input(
         label="Enter the path to the active ligands file (.sdf format)",
-        value=CWD + "/testing_single_docking/actives.sdf",
+        value = CWD + "/dockm8_testing/CDK2_actives.sdf",
         help="Choose an active ligands file (.sdf format)",
     )
     # Number of decoys
@@ -95,7 +104,7 @@ col1.header("Receptor(s)", divider="orange")
 receptor_file = col1.text_input(
     label="File path(s) of one or more multiple receptor files (.pdb format), separated by commas",
     help="Choose one or multiple receptor files (.pdb format)",
-    value=CWD + "/testing_single_docking/protein.pdb",
+    value=receptor_value,
     placeholder="Enter path(s) here",
 )
 
@@ -121,7 +130,7 @@ if pocket_mode != "Dogsitescorer":
     reference_file = col1.text_input(
         label="File path(s) of one or more multiple reference ligand files (.sdf format), separated by commas",
         help="Choose one or multiple reference ligand files (.pdb format)",
-        value=CWD + "/testing_single_docking/ref.sdf",
+        value=reference_value,
         placeholder="Enter path(s) here",
     )
 
@@ -129,7 +138,7 @@ if pocket_mode != "Dogsitescorer":
 col2.header("Ligands", divider="orange")
 ligand_file = col2.text_input(
     label="Entre the path to the ligand library file (.sdf format)",
-    value=CWD + "/testing_single_docking/library.sdf",
+    value=library_value,
     help="Choose a ligand library file (.sdf format)",
 )
 
