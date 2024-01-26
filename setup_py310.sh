@@ -130,7 +130,7 @@ else
 """
     rm -rf ./DockM8
     wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf DockM8.tar.gz
+    tar -xf DockM8.tar.gz
     mv -f DockM8-main DockM8
     DOCKM8_FOLDER=$(pwd)/DockM8
     rm DockM8.tar.gz
@@ -177,7 +177,7 @@ fi
 if [[ ! -f $DOCKM8_FOLDER/software/KORP-PL ]]; then
     echo -e "\nDownloading KORP-PL!"
     wget https://files.inria.fr/NanoDFiles/Website/Software/KORP-PL/0.1.2/Linux/KORP-PL-LINUX-v0.1.2.2.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf KORP-PL-LINUX-v0.1.2.2.tar.gz
+    tar -xf KORP-PL-LINUX-v0.1.2.2.tar.gz
     rm KORP-PL-LINUX-v0.1.2.2.tar.gz
     chmod +x KORP-PL
 fi
@@ -186,7 +186,7 @@ if [[ ! -f $DOCKM8_FOLDER/software/Convex-PL ]]; then
     echo -e "\nDownloading Convex-PLR!"
     wget https://files.inria.fr/NanoDFiles/Website/Software/Convex-PL/Files/Convex-PL-Linux-v0.5.tar.zip --no-check-certificate -q --show-progress
     unzip Convex-PL-Linux-v0.5.tar.zip
-    tar -xvf Convex-PL-Linux-v0.5.tar
+    tar -xf Convex-PL-Linux-v0.5.tar
     rm Convex-PL-Linux-v0.5.tar.zip
     rm Convex-PL-Linux-v0.5.tar
     rm -r __MACOSX
@@ -209,14 +209,14 @@ fi
 if [[ ! -d $DOCKM8_FOLDER/software/gypsum_dl-1.2.1 ]]; then
     echo -e "\nDownloading GypsumDL!"
     wget https://github.com/durrantlab/gypsum_dl/archive/refs/tags/v1.2.1.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf v1.2.1.tar.gz
+    tar -xf v1.2.1.tar.gz
     rm v1.2.1.tar.gz
 fi
 
 if [[ ! -d $DOCKM8_FOLDER/software/SCORCH ]]; then
     echo -e "\nDownloading SCORCH!"
     wget https://github.com/SMVDGroup/SCORCH/archive/refs/tags/v1.0.0.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf v1.0.0.tar.gz
+    tar -xf v1.0.0.tar.gz
     rm v1.0.0.tar.gz
 fi
 
@@ -246,7 +246,7 @@ if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
     echo -e "\nDownloading DeepCoy models!"
     cd $DOCKM8_FOLDER/software/models
     wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz
-    tar -xvf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/
+    tar -xf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/
     rm DeepCoy_pretrained_models.tar.gz
 fi
 
