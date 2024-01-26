@@ -125,7 +125,7 @@ else
 """
     wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
     tar -xvf DockM8.tar.gz
-    mv DockM8-main DockM8
+    mv -f DockM8-main DockM8
     DOCKM8_FOLDER=$(pwd)/DockM8
     rm DockM8.tar.gz
     echo -e "\nDockM8 repository downloaded."
