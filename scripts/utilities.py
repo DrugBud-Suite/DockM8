@@ -69,11 +69,12 @@ def split_sdf_str(dir, sdf_file, ncpus):
     total_compounds = sdf_lines.count("$$$$\n")
     
     if total_compounds > 100000:
-        n = math.ceil(total_compounds // ncpus // 8)
+        n = max(1, math.ceil(total_compounds // ncpus // 8))
     else:
-        n = math.ceil(total_compounds // ncpus // 2)
+        n = max(1, math.ceil(total_compounds // ncpus // 2))
 
     compound_count = 0
+    file_index = 1
     current_compound_lines = []
 
     for line in sdf_lines:
@@ -83,14 +84,15 @@ def split_sdf_str(dir, sdf_file, ncpus):
             compound_count += 1
 
             if compound_count % n == 0:
-                output_file = split_files_folder / f"split_{compound_count // n}.sdf"
+                output_file = split_files_folder / f"split_{file_index}.sdf"
                 with open(output_file, 'w') as outfile:
                     outfile.writelines(current_compound_lines)
                 current_compound_lines = []
+                file_index += 1
 
     # Write the remaining compounds to the last file
     if current_compound_lines:
-        output_file = split_files_folder / f"split_{compound_count // n + 1}.sdf"
+        output_file = split_files_folder / f"split_{file_index}.sdf"
         with open(output_file, 'w') as outfile:
             outfile.writelines(current_compound_lines)
     return split_files_folder
@@ -210,7 +212,7 @@ def printlog(message):
         dateTimeObj = datetime.datetime.now()
         return "[" + dateTimeObj.strftime("%Y-%b-%d %H:%M:%S") + "]"
     timestamp = timestamp_generator()
-    msg = str(timestamp) + ": " + str(message)
+    msg = str(timestamp) + ": " + str(message) + "\n"
     print(msg)
     log_file_path = Path(__file__).resolve().parent / '../log.txt'
     with open(log_file_path, 'a') as f_out:

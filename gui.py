@@ -1,5 +1,6 @@
 # Import necessary libraries
 import os
+import warnings
 from pathlib import Path
 import shlex
 import subprocess
@@ -8,10 +9,14 @@ import time
 import itertools
 import streamlit as st
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.docking_functions import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
 from scripts.consensus_methods import CONSENSUS_METHODS
+
+
 
 st.set_page_config(page_title="DockM8", page_icon=":8ball:", layout="wide")
 # Sidebar
@@ -48,6 +53,7 @@ if mode != "Single":
 num_cpus = st.slider(
     "Number of CPUs",
     min_value=1,
+    max_value=os.cpu_count(),
     step=1,
     value=int(os.cpu_count() * 0.9),
     help="Number of CPUs to use for calculations",
@@ -64,12 +70,21 @@ gen_decoys = st.toggle(
     help="Generate decoys for the active ligands and determine optimal DockM8 conditions",
 )
 
+if mode == "Single":
+    receptor_value = CWD + "/dockm8_testing/4kd1_p.pdb"
+    reference_value = CWD + "/dockm8_testing/4kd1_l.sdf"
+    library_value = CWD + "/dockm8_testing/library.sdf"
+if mode == "Ensemble":
+    receptor_value = CWD + "/dockm8_testing/4kd1_p.pdb, " + CWD + "/dockm8_testing/1fvv_p.pdb"
+    reference_value = CWD + "/dockm8_testing/4kd1_l.sdf, " + CWD + "/dockm8_testing/1fvv_l.sdf"
+    library_value = CWD + "/dockm8_testing/library.sdf"
+
 if gen_decoys:
     st.subheader("Decoy generation", divider="orange")
     # Active ligands
     active_ligands = st.text_input(
         label="Enter the path to the active ligands file (.sdf format)",
-        value=CWD + "/testing_single_docking/actives.sdf",
+        value = CWD + "/dockm8_testing/CDK2_actives.sdf",
         help="Choose an active ligands file (.sdf format)",
     )
     # Number of decoys
@@ -95,7 +110,7 @@ col1.header("Receptor(s)", divider="orange")
 receptor_file = col1.text_input(
     label="File path(s) of one or more multiple receptor files (.pdb format), separated by commas",
     help="Choose one or multiple receptor files (.pdb format)",
-    value=CWD + "/testing_single_docking/protein.pdb",
+    value=receptor_value,
     placeholder="Enter path(s) here",
 )
 
@@ -121,7 +136,7 @@ if pocket_mode != "Dogsitescorer":
     reference_file = col1.text_input(
         label="File path(s) of one or more multiple reference ligand files (.sdf format), separated by commas",
         help="Choose one or multiple reference ligand files (.pdb format)",
-        value=CWD + "/testing_single_docking/ref.sdf",
+        value=reference_value,
         placeholder="Enter path(s) here",
     )
 
@@ -129,7 +144,7 @@ if pocket_mode != "Dogsitescorer":
 col2.header("Ligands", divider="orange")
 ligand_file = col2.text_input(
     label="Entre the path to the ligand library file (.sdf format)",
-    value=CWD + "/testing_single_docking/library.sdf",
+    value=library_value,
     help="Choose a ligand library file (.sdf format)",
 )
 
@@ -272,7 +287,7 @@ command = (
     f'--docking_library {ligand_file} '
     f'--idcolumn {id_column} '
     f'--prepare_proteins {prepare_receptor} '
-    f'--conformers {ligand_conformers}'
+    f'--conformers {ligand_conformers} '
     f'--protonation {ligand_protonation} '
     f'--docking_programs {" ".join(docking_programs)} '
     f'--bust_poses {bust_poses} '

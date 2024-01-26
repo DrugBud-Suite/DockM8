@@ -85,35 +85,40 @@ $CONDA_PATH config --set ssl_verify False
 
 # create the conda environment
 ENV_NAME="dockm8"
-conda init bash
-conda create -n $ENV_NAME python=3.10 -y
-conda deactivate
-conda activate $ENV_NAME
 
-conda config --add channels conda-forge
+if conda env list | grep -q "^$ENV_NAME\s"; then
+    echo "Conda environment '$ENV_NAME' already exists. Skipping creation."
+    conda activate dockm8
+else
+    conda create -n $ENV_NAME python=3.10 -y
+    conda deactivate
+    conda activate $ENV_NAME
 
-conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -q -y
+    conda config --add channels conda-forge
 
-echo -e """
+    conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -q -y
+
+    echo -e """
+    ###############################################################
+    # Installing Pip packages, please wait...
+    ###############################################################
+    """
+
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters streamlit -q
+
+    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
+
+    pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
+
+    echo -e """
+    ###############################################################
+    # Finished installing pip packages
+    ###############################################################
+    """
+fi
+
 ###############################################################
-# Installing Pip packages, please wait...
-###############################################################
-"""
-
-pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline posebusters streamlit -q
-
-pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
-
-pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
-
-echo -e """
-###############################################################
-# Finished installing pip packages
-###############################################################
-"""
-
-###############################################################
-
+DOCKM8_FOLDER=""
 if [[ -f dockm8.py ]]; then
     echo -e "\nDockM8 repository found in current folder."
     DOCKM8_FOLDER=$(pwd)
@@ -123,9 +128,10 @@ else
 # Downloading DockM8 repository...
 ###############################################################
 """
+    rm -rf ./DockM8
     wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf DockM8.tar.gz
-    mv DockM8-main DockM8
+    tar -xf DockM8.tar.gz
+    mv -f DockM8-main DockM8
     DOCKM8_FOLDER=$(pwd)/DockM8
     rm DockM8.tar.gz
     echo -e "\nDockM8 repository downloaded."
@@ -171,7 +177,7 @@ fi
 if [[ ! -f $DOCKM8_FOLDER/software/KORP-PL ]]; then
     echo -e "\nDownloading KORP-PL!"
     wget https://files.inria.fr/NanoDFiles/Website/Software/KORP-PL/0.1.2/Linux/KORP-PL-LINUX-v0.1.2.2.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf KORP-PL-LINUX-v0.1.2.2.tar.gz
+    tar -xf KORP-PL-LINUX-v0.1.2.2.tar.gz
     rm KORP-PL-LINUX-v0.1.2.2.tar.gz
     chmod +x KORP-PL
 fi
@@ -180,7 +186,7 @@ if [[ ! -f $DOCKM8_FOLDER/software/Convex-PL ]]; then
     echo -e "\nDownloading Convex-PLR!"
     wget https://files.inria.fr/NanoDFiles/Website/Software/Convex-PL/Files/Convex-PL-Linux-v0.5.tar.zip --no-check-certificate -q --show-progress
     unzip Convex-PL-Linux-v0.5.tar.zip
-    tar -xvf Convex-PL-Linux-v0.5.tar
+    tar -xf Convex-PL-Linux-v0.5.tar
     rm Convex-PL-Linux-v0.5.tar.zip
     rm Convex-PL-Linux-v0.5.tar
     rm -r __MACOSX
@@ -203,14 +209,14 @@ fi
 if [[ ! -d $DOCKM8_FOLDER/software/gypsum_dl-1.2.1 ]]; then
     echo -e "\nDownloading GypsumDL!"
     wget https://github.com/durrantlab/gypsum_dl/archive/refs/tags/v1.2.1.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf v1.2.1.tar.gz
+    tar -xf v1.2.1.tar.gz
     rm v1.2.1.tar.gz
 fi
 
 if [[ ! -d $DOCKM8_FOLDER/software/SCORCH ]]; then
     echo -e "\nDownloading SCORCH!"
     wget https://github.com/SMVDGroup/SCORCH/archive/refs/tags/v1.0.0.tar.gz --no-check-certificate -q --show-progress
-    tar -xvf v1.0.0.tar.gz
+    tar -xf v1.0.0.tar.gz
     rm v1.0.0.tar.gz
 fi
 
@@ -240,7 +246,7 @@ if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
     echo -e "\nDownloading DeepCoy models!"
     cd $DOCKM8_FOLDER/software/models
     wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz
-    tar -xvf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/
+    tar -xf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/
     rm DeepCoy_pretrained_models.tar.gz
 fi
 
