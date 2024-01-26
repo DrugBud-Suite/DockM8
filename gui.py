@@ -272,7 +272,7 @@ command = (
     f'--docking_library {ligand_file} '
     f'--idcolumn {id_column} '
     f'--prepare_proteins {prepare_receptor} '
-    f'--conformers {ligand_conformers}'
+    f'--conformers {ligand_conformers} '
     f'--protonation {ligand_protonation} '
     f'--docking_programs {" ".join(docking_programs)} '
     f'--bust_poses {bust_poses} '
