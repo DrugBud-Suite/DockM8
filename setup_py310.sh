@@ -1,6 +1,36 @@
 #!/bin/bash
 
+USE_GIT=0
+
+while getopts "g" opt; do
+  case $opt in
+    g)
+      USE_GIT=1
+      ;;
+    \?)
+      echo "Usage: $0 [-g]" >&2
+      exit 1
+      ;;
+  esac
+done
 BASEDIR=$PWD
+
+
+# Check for the existence of required utilities
+
+function check_dependency() {
+    local command_name="$1"
+    if ! command -v "$command_name" &> /dev/null; then
+        echo "ERROR: $command_name is not installed, please install manually. Please run : "sudo apt-get install $command_name""
+        exit 1
+    fi
+}
+
+check_dependency "wget"
+check_dependency "git"
+check_dependency "unzip"
+check_dependency "gcc"
+
 
 ###############################################################
 
@@ -123,18 +153,24 @@ if [[ -f dockm8.py ]]; then
     echo -e "\nDockM8 repository found in current folder."
     DOCKM8_FOLDER=$(pwd)
 else
-    echo -e """
-###############################################################
-# Downloading DockM8 repository...
-###############################################################
-"""
-    rm -rf ./DockM8
-    wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
-    tar -xf DockM8.tar.gz
-    mv -f DockM8-main DockM8
-    DOCKM8_FOLDER=$(pwd)/DockM8
-    rm DockM8.tar.gz
-    echo -e "\nDockM8 repository downloaded."
+    if [ $USE_GIT -eq 1 ]; then
+        # Replace wget logic with Git logic for DockM8 repository download
+        echo -e "\nDownloading DockM8 repository using Git..."
+        rm -rf ./DockM8
+        git clone https://gitlab.com/Tonylac77/DockM8.git DockM8
+        DOCKM8_FOLDER=$(pwd)/DockM8
+        echo -e "\nDockM8 repository downloaded using Git."
+    else
+        # Use wget logic for DockM8 repository download (as in your original script)
+        echo -e "\nDownloading DockM8 repository using wget..."
+        rm -rf ./DockM8
+        wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
+        tar -xf DockM8.tar.gz
+        mv -f DockM8-main DockM8
+        DOCKM8_FOLDER=$(pwd)/DockM8
+        rm DockM8.tar.gz
+        echo -e "\nDockM8 repository downloaded using wget."
+    fi
 fi
 
 cd $DOCKM8_FOLDER
@@ -278,4 +314,8 @@ for package in "${required_packages[@]}"; do
     else
         echo -e "\nINSTALLATION ERROR : $package is not installed in the $ENV_NAME environment!"
     fi
+
+conda activate $ENV_NAME
+cd $DOCKM8_FOLDER
+
 done
