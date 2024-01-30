@@ -247,3 +247,7 @@ results/plots/DUD-E_SF_methods_counts.png
 results/plots/litpcba_clustering_methods_counts.png
 results/plots/litpcba_consensus_methods_counts.png
 results/plots/litpcba_SF_methods_counts.png
+results/plots/combined_sf_number_counts.png
+results/plots/DEKOIS_SF_number_counts.png
+results/plots/DUD-E_SF_number_counts.png
+results/plots/litpcba_SF_number_counts.png
