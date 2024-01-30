@@ -16,9 +16,7 @@ from scripts.docking_functions import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
 from scripts.consensus_methods import CONSENSUS_METHODS
 
-
-
-st.set_page_config(page_title="DockM8", page_icon=":8ball:", layout="wide")
+st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
 # Sidebar
 st.sidebar.image(image="./media/DockM8_white_horizontal.png", width=200)
 st.sidebar.title("DockM8")
