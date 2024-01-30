@@ -234,3 +234,16 @@ results/plots/litpcba_box_consensus_methods_EF_top1.png
 results/plots/litpcba_box_SF_count_EF_top0.1.png
 results/plots/litpcba_box_SF_count_EF_top1.png
 results/DEKOIS_RESULTS/clustering and consensus top1.ipynb
+results/3datasets_top_counts.ipynb
+results/plots/combined_clustering_methods_counts.png
+results/plots/combined_consensus_methods_counts.png
+results/plots/combined_sf_methods_counts.png
+results/plots/DEKOIS_clustering_methods_counts.png
+results/plots/DEKOIS_consensus_methods_counts.png
+results/plots/DEKOIS_SF_methods_counts.png
+results/plots/DUD-E_clustering_methods_counts.png
+results/plots/DUD-E_consensus_methods_counts.png
+results/plots/DUD-E_SF_methods_counts.png
+results/plots/litpcba_clustering_methods_counts.png
+results/plots/litpcba_consensus_methods_counts.png
+results/plots/litpcba_SF_methods_counts.png
