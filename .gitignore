@@ -142,10 +142,10 @@ software/models/DeepCoy_DEKOIS_model_e10.pickle
 software/models/DeepCoy_DUDE_model_e09.pickle
 software/models/DeepCoy_DUDE_phosphorus_model_e10.pickle
 software/SCORCH-1.0.0/
-aldh1.ipynb
 software/RTMScore-main/
+aldh1.ipynb
+software/RTMScore/
 dekois.ipynb
-log.txt
 log.txt
 dekois copy.ipynb
 dud-e.ipynb
@@ -252,3 +252,9 @@ results/plots/DEKOIS_SF_number_counts.png
 results/plots/DUD-E_SF_number_counts.png
 results/plots/litpcba_SF_number_counts.png
 dockm8 copy.ipynb
+software/RTMScore-main/data/README.md
+software/RTMScore-main/data/val_set1
+software/RTMScore-main/data/val_set2
+software/RTMScore-main/data/val_set3
+software/RTMScore-main/RTMScore/data/__init__.py
+software/RTMScore-main/RTMScore/data/data.py

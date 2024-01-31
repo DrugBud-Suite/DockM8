@@ -1,22 +1,20 @@
 # Import necessary libraries
+import itertools
 import os
-import warnings
-from pathlib import Path
 import shlex
 import subprocess
 import sys
 import time
-import itertools
+import warnings
+from pathlib import Path
 import streamlit as st
 
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 from scripts.clustering_metrics import CLUSTERING_METRICS
+from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.docking_functions import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
-from scripts.consensus_methods import CONSENSUS_METHODS
 
-
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 st.set_page_config(page_title="DockM8", page_icon=":8ball:", layout="wide")
 # Sidebar
@@ -179,9 +177,13 @@ ligand_protonation = col2.selectbox(
 st.header("Docking programs", divider="orange")
 docking_programs = st.multiselect(
     label="Choose the docking programs you want to use",
+    default=["GNINA"],
     options=DOCKING_PROGRAMS,
     help="Choose the docking programs you want to use, mutliple selection is allowed",
 )
+
+if "PLANTS" in docking_programs and not os.path.exists("/path/to/software/PLANTS"):
+    st.warning('PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php', icon=':warning:')
 
 # Number of poses
 nposes = st.slider(
@@ -211,6 +213,7 @@ bust_poses = st.checkbox(
 st.header("Pose Selection", divider="orange")
 pose_selection = st.multiselect(
     label="Choose the pose selection method you want to use",
+    default=["KORP-PL"],
     options=list(CLUSTERING_METRICS.keys())
     + [
         "bestpose",
@@ -250,6 +253,7 @@ else:
 st.header("Scoring functions", divider="orange")
 rescoring = st.multiselect(
     label="Choose the scoring functions you want to use",
+    default=["CNN-Score", "KORP-PL"],
     options=list(RESCORING_FUNCTIONS.keys()),
     help="The method(s) to use for scoring. Multiple selection allowed",
 )
@@ -258,6 +262,7 @@ rescoring = st.multiselect(
 st.header("Consensus", divider="orange")
 consensus_method = st.selectbox(
     label="Choose which consensus algorithm to use: ",
+    index=2,
     options=list(CONSENSUS_METHODS.keys()),
     help="The method to use for consensus.",
 )
