@@ -27,7 +27,9 @@ function check_dependency() {
 }
 
 check_dependency "wget"
-check_dependency "git"
+if [ $USE_GIT -eq 1 ]; then
+    check_dependency "git"
+fi
 check_dependency "unzip"
 check_dependency "gcc"
 
