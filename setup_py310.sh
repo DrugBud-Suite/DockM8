@@ -1,4 +1,4 @@
-#!/bin/bash
+g#!/bin/bash
 
 USE_GIT=0
 
@@ -27,7 +27,9 @@ function check_dependency() {
 }
 
 check_dependency "wget"
-check_dependency "git"
+if [ $USE_GIT -eq 1 ]; then
+    check_dependency "git"
+fi
 check_dependency "unzip"
 check_dependency "gcc"
 
@@ -134,7 +136,7 @@ else
     ###############################################################
     """
 
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit 
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit -q
 
     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
 
@@ -238,7 +240,7 @@ fi
 if [[ ! -d $DOCKM8_FOLDER/software/AA-Score-Tool-main ]]; then
     echo -e "\nDownloading AA-Score!"
     wget https://github.com/Xundrug/AA-Score-Tool/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
-    unzip main.zip
+    unzip -q main.zip
     rm main.zip
 fi
 
@@ -259,7 +261,7 @@ fi
 if [[ ! -f $DOCKM8_FOLDER/software/rf-score-vs ]]; then
     echo -e "\nDownloading RF-Score-VS!"
     wget https://github.com/oddt/rfscorevs_binary/releases/download/1.0/rf-score-vs_v1.0_linux_2.7.zip -q --show-progress --no-check-certificate
-    unzip rf-score-vs_v1.0_linux_2.7.zip
+    unzip -q rf-score-vs_v1.0_linux_2.7.zip
     rm rf-score-vs_v1.0_linux_2.7.zip
     rm -r $DOCKM8_FOLDER/software/test
     rm README.md
@@ -269,7 +271,7 @@ fi
 if [[ ! -d $DOCKM8_FOLDER/software/RTMScore-main ]]; then
     echo -e "\nDownloading RTMScore!"
     wget https://github.com/sc8668/RTMScore/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
-    unzip main.zip
+    unzip -q main.zip 
     rm main.zip
     rm $DOCKM8_FOLDER/software/RTMScore-main/scripts -r
     rm $DOCKM8_FOLDER/software/RTMScore-main/121.jpg

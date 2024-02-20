@@ -164,4 +164,13 @@ results/DUD-E_RESULTS/results_dockm8_max.csv
 tprm5.ipynb
 results/DEKOIS_RESULTS/clustering and consensus top1.ipynb
 dockm8 copy.ipynb
-software/RTMScore-main/
+software/RTMScore-main/analysis.ipynb
+results/DEKOIS_RESULTS/DEKOIS_targetclasses.xlsx
+results/DEKOIS_RESULTS/results_dockm8_EF_1%.csv
+results/DUD-E_RESULTS/DUD-E_results_dockm8_max.csv
+results/DUD-E_RESULTS/results_dockm8_EF_1%.csv
+results/Lit-PCBA_RESULTS/litpcba_results_dockm8_max.csv
+results/Lit-PCBA_RESULTS/results_dockm8_EF_1%.csv
+results/plots/DEKOIS_comparison_EF1_dark.png
+results/plots/DUD-E_comparison_EF1_dark.png
+results/plots/Lit-PCBA_comparison_EF1_dark.png

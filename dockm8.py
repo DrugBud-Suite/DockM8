@@ -169,6 +169,9 @@ def run_command(**kwargs):
                 
             optimal_rescoring_functions = list(optimal_conditions['scoring'].split('_'))
             
+            with open((kwargs.get('receptor'))[0].parent / 'DeepCoy' / 'optimal_conditions.txt', 'w') as file:
+                file.write(str(optimal_conditions))
+            
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -223,6 +226,9 @@ def run_command(**kwargs):
                 docking_programs = kwargs.get('docking_programs')
                 
             optimal_rescoring_functions = list(optimal_conditions['scoring'].split('_'))
+            
+            with open((kwargs.get('receptor'))[0].parent / 'DeepCoy' / 'optimal_conditions.txt', 'w') as file:
+                file.write(str(optimal_conditions))
             
             receptors = kwargs.get('receptor')
             ref_files = kwargs.get('reffile')
