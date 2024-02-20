@@ -259,3 +259,12 @@ software/RTMScore-main/data/val_set3
 software/RTMScore-main/RTMScore/data/__init__.py
 software/RTMScore-main/RTMScore/data/data.py
 analysis.ipynb
+results/DEKOIS_RESULTS/DEKOIS_targetclasses.xlsx
+results/DEKOIS_RESULTS/results_dockm8_EF_1%.csv
+results/DUD-E_RESULTS/DUD-E_results_dockm8_max.csv
+results/DUD-E_RESULTS/results_dockm8_EF_1%.csv
+results/Lit-PCBA_RESULTS/litpcba_results_dockm8_max.csv
+results/Lit-PCBA_RESULTS/results_dockm8_EF_1%.csv
+results/plots/DEKOIS_comparison_EF1_dark.png
+results/plots/DUD-E_comparison_EF1_dark.png
+results/plots/Lit-PCBA_comparison_EF1_dark.png
