@@ -152,20 +152,17 @@ def RbV(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.
                      The 'RbV_' column contains the Rank by Vote consensus scores for each ID.
     """
     # Initialize a new column 'vote' in the DataFrame with default value 0
-    df['vote'] = 0
+    df[f'RbV_{clustering_metric}'] = 0
     
-    # Increment the 'vote' column by 1 if the value in each selected column is greater than the 95th percentile of the column
+    # Increment the f'RbV_{clustering_metric}' column by 1 if the value in each selected column is greater than the 95th percentile of the column
     for column in selected_columns:
-        df['vote'] += (df[column] > df[column].quantile(0.95)).astype(int)
+        df[f'RbV_{clustering_metric}'] += (df[column] > df[column].quantile(0.95)).astype(int)
     
     # Group the DataFrame by 'ID' and calculate the mean of numeric columns
     df = df.groupby('ID', as_index=False).mean(numeric_only=True)
     
     # Round the resulting DataFrame to 2 decimal places
     df = df.round(2)
-    
-    # Calculate the mean of each row in the DataFrame, excluding the 'ID' column
-    df[f'RbV_{clustering_metric}'] = df.mean(axis=1, numeric_only=True)
     
     # Return the DataFrame with columns 'ID' and 'RbV_' followed by the clustering_metric value
     return df[['ID', f'RbV_{clustering_metric}']]
