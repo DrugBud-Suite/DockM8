@@ -2,66 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
-## v0.9.2
+## v0.2.3
+- **Added**: Output docking poses for pose selection methods
+- **Changed**: Improved ID handling for numeric or `_`-containing IDs and change License to GNU GPLv3
+- **Deprecated**: None
+- **Removed**: None
+- **Fixed**: None
+- **Security**: None
 
-### Added
-- added decoy generation options
+## v0.2.2
+- **Added**: Decoy generation options
+- **Changed**: Performance calculation handling
+- **Deprecated**: None
+- **Removed**: None
+- **Fixed**: None
+- **Security**: None
 
-### Changed
-- changed handling of performance calculation
+## v0.2.1
+- **Added**: Conformer generation options (RDKit MMFF or GypsumDL)
+- **Added**: Streamlit GUI
+- **Changed**: Setup script for WSL2 compatibility
+- **Deprecated**: None
+- **Removed**: None
+- **Fixed**: None
+- **Security**: None
 
-### Deprecated
-- None
+## v0.2
+- **Added**: Setup.sh for easy installation (includes conda env and software download)
+- **Changed**: Defined constants for docking programs, rescoring functions, consensus methods, and clustering metrics
+- **Changed**: Updated to GypsumDL 1.2.1
+- **Deprecated**: None
+- **Removed**: pkasolver removed due to Python 3.10 incompatibility
+- **Fixed**: None
+- **Security**: None
 
-### Removed
-- None
-
-### Fixed
-- None
-
-### Security
-- None
-
-## v0.9.1
-
-### Added
-- add option for conformer generation (Via RDKit MMFF or GypsumDL)
-- added streamlit GUI
-
-### Changed
-- setup script changed to ensure compatibility with WSL2
-
-### Deprecated
-- None
-
-### Removed
-- None
-
-### Fixed
-- None
-
-### Security
-- None
-
-
-## v0.9
-
-### Added
-- add setup.sh for easy installation (includes conda env and software download)
-
-### Changed
-- Docking programs, rescoring functions, consensus methods and clustering metrics now defined as constant dictionaries.
-- Updated to latest version of GypsumDL (1.2.1)
-
-### Deprecated
-- None
-
-### Removed
-- pkasolver removed due to incompatibility with python 3.10.
-
-### Fixed
-- None
-
-### Security
-- None
-
+## v0.1 (Initial Commit)
+- **Added**: Initial project setup and files
+- **Changed**: None
+- **Deprecated**: None
+- **Removed**: None
+- **Fixed**: None
+- **Security**: None

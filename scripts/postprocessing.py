@@ -3,6 +3,7 @@ import math
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from rdkit.Chem import PandasTools
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
 from scripts.utilities import printlog
@@ -70,13 +71,14 @@ def apply_consensus_methods(w_dir : str, selection_method : str, consensus_metho
     Args:
     w_dir (str): The working directory where the rescored data is located.
     selection_method (str): The clustering metric used to cluster the poses.
-    method (str): The consensus method to apply.
+    consensus_methods (str): The consensus methods to apply.
     rescoring_functions (list): A list of rescoring functions to apply.
     standardization_type (str): The type of standardization to apply to the scores.
 
     Returns:
     None
     """
+    # Check if consensus_methods is None or 'None'
     if consensus_methods is None or consensus_methods == 'None':
         return printlog('No consensus methods selected, skipping consensus.')
     else:
@@ -98,6 +100,7 @@ def apply_consensus_methods(w_dir : str, selection_method : str, consensus_metho
         for consensus_method in consensus_methods:
             # Create the 'consensus' directory if it doesn't exist
             (Path(w_dir) / 'consensus').mkdir(parents=True, exist_ok=True)
+            # Check if consensus_method is valid
             if consensus_method not in CONSENSUS_METHODS:
                 raise ValueError(f"Invalid consensus method: {consensus_method}")
             # Get the method information from the dictionary
@@ -114,7 +117,15 @@ def apply_consensus_methods(w_dir : str, selection_method : str, consensus_metho
             # Drop the 'Pose ID' column and save the consensus results to a CSV file
             consensus_dataframe = consensus_dataframe.drop(columns="Pose ID", errors='ignore')
             consensus_dataframe = consensus_dataframe.sort_values(by='ID')
-            consensus_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv', index=False)
+            # Save the consensus results to a CSV file or SDF file depending on the selection method
+            if selection_method in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']+list(RESCORING_FUNCTIONS.keys()):
+                poses = PandasTools.LoadSDF(str(w_dir / 'clustering' / f'{selection_method}_clustered.sdf'), molColName='Molecule', idName='Pose ID')
+                poses['ID'] = poses['Pose ID'].str.split('_').str[0]
+                poses = poses[['ID', 'Molecule']]
+                consensus_dataframe = pd.merge(consensus_dataframe, poses, on='ID', how='left')
+                PandasTools.WriteSDF(consensus_dataframe, str(w_dir / 'consensus' / f'{selection_method}_{consensus_method}_results.sdf'), molColName='Molecule', idName='ID', properties=list(consensus_dataframe.columns))
+            else:
+                consensus_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv', index=False)
         return
 
 def ensemble_consensus(receptors:list, selection_method : str, consensus_method : str, threshold : float or int):

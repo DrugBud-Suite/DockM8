@@ -55,6 +55,10 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
                                 strictParsing=True,
                                 smilesName='SMILES')
         df.rename(columns={id_column: 'ID'}, inplace=True)
+        # Add 'DOCKM8-' in front of IDs that contain only numbers
+        df['ID'] = ['DOCKM8-' + str(id) if str(id).isdigit() else id for id in df['ID']]
+        # Replace underscore characters with hyphen in ID column
+        df['ID'] = df['ID'].str.replace('_', '-')
         n_cpds_start = len(df)
     except BaseException:
         printlog('ERROR: Failed to Load library SDF file!')

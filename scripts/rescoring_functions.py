@@ -669,14 +669,19 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     tic = time.perf_counter()
     (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
     output_file = str(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv')
-    
-    RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
-                        f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
-                        f' -l {sdf}' +
-                        ' -o RTMScore_scores' +
-                        ' -pl' 
-                        f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
-    subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    try:
+        RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
+                            f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
+                            f' -l {sdf}' +
+                            ' -o RTMScore_scores' +
+                            ' -pl' 
+                            f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
+        subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    except Exception as e:
+        if not os.path.exists(os.path.join(software, 'RTMScore-main', 'example', 'rtmscore.py')):
+            printlog('ERROR: Failed to run RTMScore! The software folder does not contain rtmscore.py, please reinstall RTMScore.')
+        else:
+            printlog(f'ERROR: Failed to run RTMScore! This was likely caused by a failure in generating the pocket graph : {e}.')
     df = pd.read_csv(output_file)
     df = df.rename(columns={'id': 'Pose ID', 'score': f'{column_name}'})
     df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]

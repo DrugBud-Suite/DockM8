@@ -30,7 +30,6 @@ or by using git : `git clone https://github.com/Tonylac77/DockM8/main.zip`
     `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline streamlit posebusters`  
     `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
     `pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
-    `pip install -q git+https://github.com/mayrf/pkasolver.git`  
 
 6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:**PATH_TO**/anaconda3/lib/`  
 
