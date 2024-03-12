@@ -1,4 +1,4 @@
-![](./media/DockM8_white_horizontal_smaller.png)
+![DockM8 Logo](./media/DockM8_white_horizontal_smaller.png)
 
 **DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [**contribution guide**](https://gitlab.com/Tonylac77/DockM8/-/blob/main/CONTRIBUTING.md) for details.**
 
@@ -19,13 +19,14 @@ For automatic installation, download and run [**setup_py310.sh**](https://gitlab
 or by using git : `git clone https://github.com/Tonylac77/DockM8/main.zip`  
 
 3. Create and activate a DockM8 conda environment:  
-  - From environment file:  
+
+- From environment file:  
       `conda env create -f environment.yml`  
       `conda activate dockm8`
-  - Manual installation:  
+- Manual installation:  
       `conda create -n dockm8 python=3.10`  
       `conda activate dockm8`  
-    - Install required packages using the following commands:  
+  - Install required packages using the following commands:  
     `conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -y`  
     `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline streamlit posebusters`  
     `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
@@ -47,6 +48,7 @@ You can click the `localhost` link to access the GUI.
 ## Running DockM8 (via command-line / dockm8.py script)
 
 1. Ensure the required files are available:
+
 - protein/receptor file as a .pdb file
 - If using a ligand to define the binding pocket : reference ligand file as an .sdf file
 - docking library as a .sdf file
@@ -59,8 +61,9 @@ You can click the `localhost` link to access the GUI.
 
 `--software`: The path to the software folder. In most cases this is where the DockM8 repository was downloaded to (`path/to/DockM8/software`)  
 `--mode`: Choose mode with which to run dockm8. Options are:
-  - 'single' : Regular docking on one receptor.
-  - 'ensemble' : Ensemble docking on multiple receptor conformations.  
+
+- 'single' : Regular docking on one receptor.
+- 'ensemble' : Ensemble docking on multiple receptor conformations.  
 
 `--gen_decoys`: Whether or not to generate decoys suing DeepCoy for the supplied list of acive compounds. DockM8 will then determine the optimal combination of scoring functions, pose selection and consensus method for the protein target (True/False).  
 `--decoy_model`: Model for decoy generation.  
@@ -69,43 +72,48 @@ You can click the `localhost` link to access the GUI.
 
 `--receptor`: The path to the protein file (.pdb) or multiple paths (separated by spaces) if using ensemble mode.  
 `--pocket`: The method to use for pocket determination. Must be one of:
-  - 'reference' : Uses reference ligand to define pocket.
-  - 'RoG' (radius of gyration) : Uses reference ligand's radius of gyration to define pocket.  
-  - 'dogsitescorer' :  Use the DogSiteScorer webserver to determine pocket coordinates, works on pocket volume by default although this can be changed in *dogsitescorer.py*.  
+
+- 'reference' : Uses reference ligand to define pocket.
+- 'RoG' (radius of gyration) : Uses reference ligand's radius of gyration to define pocket.  
+- 'dogsitescorer' :  Use the DogSiteScorer webserver to determine pocket coordinates, works on pocket volume by default although this can be changed in *dogsitescorer.py*.  
 
 `--reffile`: The path to the reference ligand to use for pocket determination. Must be provided if using 'reference' or 'RoG' pocket mode.  
 `--docking_library`: The path to the docking library file (.sdf format).  
 `--idcolumn`: The unique identifier column used in the docking library.  
 `--conformers`: The method to use for compound protonation. Must be one of:
-  - 'GypsumDL' : Use GypsumDL library to generate 3D conformers
-  - 'RDKit' : Use RDKit MMFF forcefield to generate 3D conformers  
+
+- 'GypsumDL' : Use GypsumDL library to generate 3D conformers
+- 'RDKit' : Use RDKit MMFF forcefield to generate 3D conformers  
 
 `--protonation`: The method to use for compound protonation. Must be one of:
-  - 'GypsumDL' : Use GypsumDL library to protonate library
-  - 'None' : Do not protonate library  
+
+- 'GypsumDL' : Use GypsumDL library to protonate library
+- 'None' : Do not protonate library  
 
 `--docking_programs`: The method(s) to use for docking. Must be one or more of:
-  - 'GNINA'
-  - 'SMINA'
-  - 'QVINAW'
-  - 'QVINA2'
-  - 'PLANTS' 
+
+- 'GNINA'
+- 'SMINA'
+- 'QVINAW'
+- 'QVINA2'
+- 'PLANTS'
 
 `--bust_poses`: Whether or not to use the PoseBusters library to remove bad docking poses. WARNING: takes a long time to run.
 
 `--pose_selection`: The method(s) to use for pose clustering. Must be one or more of:
-  - 'RMSD' : Cluster compounds on RMSD matrix of poses
-  - 'spyRMSD' : Cluster compounds on symmetry-corrected RMSD matrix of poses
-  - 'espsim' : Cluster compounds on electrostatic shape similarity matrix of poses
-  - 'USRCAT' : Cluster compounds on shape similarity matrix of poses
-  - '3DScore' : Selects pose with the lowest average RMSD to all other poses
-  - 'bestpose' : Takes the best pose from each docking program
-  - 'bestpose_GNINA' : Takes the best pose from GNINA docking program
-  - 'bestpose_SMINA' : Takes the best pose from SMINA docking program
-  - 'bestpose_QVINAW' : Takes the best pose from QVINAW docking program
-  - 'bestpose_QVINA2' : Takes the best pose from QVINA2 docking program
-  - 'bestpose_PLANTS' : Takes the best pose from PLANTS docking program  
-  - You can also use any of the scoring functions (see rescoring argument) and DockM8 will select the best pose for each compound according to the specified scoring function.
+
+- 'RMSD' : Cluster compounds on RMSD matrix of poses
+- 'spyRMSD' : Cluster compounds on symmetry-corrected RMSD matrix of poses
+- 'espsim' : Cluster compounds on electrostatic shape similarity matrix of poses
+- 'USRCAT' : Cluster compounds on shape similarity matrix of poses
+- '3DScore' : Selects pose with the lowest average RMSD to all other poses
+- 'bestpose' : Takes the best pose from each docking program
+- 'bestpose_GNINA' : Takes the best pose from GNINA docking program
+- 'bestpose_SMINA' : Takes the best pose from SMINA docking program
+- 'bestpose_QVINAW' : Takes the best pose from QVINAW docking program
+- 'bestpose_QVINA2' : Takes the best pose from QVINA2 docking program
+- 'bestpose_PLANTS' : Takes the best pose from PLANTS docking program  
+- You can also use any of the scoring functions (see rescoring argument) and DockM8 will select the best pose for each compound according to the specified scoring function.
 
 `--nposes`: The number of poses to generate for each docking software. Default=10  
 `--exhaustiveness`: The precision used if docking with SMINA/GNINA/QVINA. Default=8  
@@ -125,11 +133,12 @@ You can click the `localhost` link to access the GUI.
 
 ## Citation
 
+Coming Soon
+
 ## License (NEEDS CHECKING...)
 
-This project is licensed under the MIT License - see the [LICENSE.md](https://gitlab.com/Tonylac77/DockM8/-/blob/main/LICENSE) file for details.
+This project is licensed under the GNU GPL v3.0 License - see the [LICENSE.md](https://gitlab.com/Tonylac77/DockM8/-/blob/main/LICENSE) file for details.
 
 ## Contributing
 
 We highly encourage contributions from the community - see the [CONTRIBUTING.md](https://gitlab.com/Tonylac77/DockM8/-/blob/main/CONTRIBUTING.md) file for details.
-
