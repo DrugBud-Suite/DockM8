@@ -148,14 +148,14 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
         apply_consensus_methods(w_dir, method, consensus, rescoring, standardization_type='min_max')
 
 def run_command(**kwargs):
-    
+    # Run DockM8 in decoy mode
     if kwargs.get('gen_decoys') == True:
         if kwargs.get('mode') == 'Single':
             print('DockM8 is running in single mode...')
             print('DockM8 is generating decoys...')
-            
+            # Generate decoys
             output_library = generate_decoys(Path(kwargs.get('actives')), kwargs.get('n_decoys'), kwargs.get('decoy_model'), kwargs.get('software'))
-            
+            # Run DockM8 on decoy library
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -185,12 +185,11 @@ def run_command(**kwargs):
                 docking_programs = list(optimal_conditions['clustering'].split('_')[1])
             else:
                 docking_programs = kwargs.get('docking_programs')
-                
             optimal_rescoring_functions = list(optimal_conditions['scoring'].split('_'))
-            
+            # Save optimal conditions to a file
             with open((kwargs.get('receptor'))[0].parent / 'DeepCoy' / 'optimal_conditions.txt', 'w') as file:
                 file.write(str(optimal_conditions))
-            
+            # Run DockM8 on the test library using the optimal conditions
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -211,9 +210,10 @@ def run_command(**kwargs):
                     consensus = optimal_conditions['consensus'])
         if kwargs.get('mode') == 'Ensemble':
             print('DockM8 is running in ensemble mode...')
-            
+            print('DockM8 is generating decoys...')
+            # Generate decoys
             output_library = generate_decoys(Path(kwargs.get('actives')), kwargs.get('n_decoys'), kwargs.get('decoy_model'), kwargs.get('software'))
-            
+            # Run DockM8 on the decoys library
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -243,21 +243,18 @@ def run_command(**kwargs):
                 docking_programs = list(optimal_conditions['clustering'].split('_')[1])
             else:
                 docking_programs = kwargs.get('docking_programs')
-                
             optimal_rescoring_functions = list(optimal_conditions['scoring'].split('_'))
-            
+            # Save optimal conditions to a file
             with open((kwargs.get('receptor'))[0].parent / 'DeepCoy' / 'optimal_conditions.txt', 'w') as file:
                 file.write(str(optimal_conditions))
-            
+            # Generate target and reference ligand dictionnary
             receptors = kwargs.get('receptor')
             ref_files = kwargs.get('reffile')
-            
             receptor_dict = {}
             for i, receptor in enumerate(receptors):
                 receptor_dict[receptor] = ref_files[i]
-                
+            # Run DockM8 on the test library in ensemble mode
             for receptor, ref in receptor_dict.items():
-        
                 dockm8(software = Path(kwargs.get('software')),
                         receptor = receptor, 
                         pocket = kwargs.get('pocket'), 
@@ -278,10 +275,9 @@ def run_command(**kwargs):
                         consensus = optimal_conditions['consensus'])
             ensemble_consensus(receptors, optimal_conditions['clustering'], optimal_conditions['consensus'], kwargs.get('threshold'))
     else:
-        # Single mode
+        # Run DockM8 in single mode
         if kwargs.get('mode') == 'Single':
             print('DockM8 is running in single mode...')
-            
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -300,20 +296,17 @@ def run_command(**kwargs):
                     clustering_method = kwargs.get('clustering_method'), 
                     rescoring = kwargs.get('rescoring'), 
                     consensus = kwargs.get('consensus'))
-
         # Ensemble mode
         if kwargs.get('mode') == 'Ensemble':
             print('DockM8 is running in ensemble mode...')
-            
+            # Generate target and reference ligand dictionnary
             receptors = kwargs.get('receptor')
             ref_files = kwargs.get('reffile')
-            
             receptor_dict = {}
             for i, receptor in enumerate(receptors):
                 receptor_dict[receptor] = ref_files[i]
-                
+            # Run DockM8 in ensemble mode
             for receptor, ref in receptor_dict.items():
-        
                 dockm8(software = Path(kwargs.get('software')),
                         receptor = receptor, 
                         pocket = kwargs.get('pocket'), 
@@ -333,5 +326,5 @@ def run_command(**kwargs):
                         rescoring = kwargs.get('rescoring'), 
                         consensus = kwargs.get('consensus'))
             ensemble_consensus(receptors, kwargs.get('pose_selection'), kwargs.get('consensus'), kwargs.get('threshold'))
-        
+
 run_command(**vars(args))
