@@ -1,5 +1,11 @@
 ![DockM8 Logo](./media/DockM8_white_horizontal_smaller.png)
 
+![Stars](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=for-the-badge)
+![License](https://img.shields.io/github/license/DrugBud-Suite/DockM8?style=for-the-badge)
+![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)
+
+<a href="https://www.buymeacoffee.com/tonylac77" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
 **DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [**contribution guide**](https://gitlab.com/Tonylac77/DockM8/-/blob/main/CONTRIBUTING.md) for details.**
 
 DockM8 only runs on Linux systems. However, we have tested the installation on Windows Subsystem for Linux v2 and using VirtualBox virtual machines.
@@ -32,7 +38,7 @@ or by using git : `git clone https://github.com/Tonylac77/DockM8/main.zip`
     `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
     `pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
 
-6. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:**PATH_TO**/anaconda3/lib/`  
+4. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:**PATH_TO**/anaconda3/lib/`  
 
 5. **Optional** : Ensure you have permissions to run the scripts required:
 On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh, rf-score-vs.sh, Convex-PL.sh, KORP-PL.sh, qvina-w.sh, qvina2.1.sh, and smina.static.  Alternatively you can use the following command to give execution permissions to all files in the DockM8 folder: `chmod +x **PATH_TO**/DockM8/software`
@@ -130,6 +136,8 @@ You can click the `localhost` link to access the GUI.
 2. Follow the instructions in the Markdown cells
 
 ## Acknowledgements
+
+We acknoyledge and thank the authors of the packages used in DockM8. Please see the publication for citations.
 
 ## Citation
 
