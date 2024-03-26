@@ -3,6 +3,17 @@
 ![Stars](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=for-the-badge)
 ![License](https://img.shields.io/github/license/DrugBud-Suite/DockM8?style=for-the-badge)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)
+  
+[![https img shields io codeclimate maintainability matteoferla Python_SmallWorld_API logo codeclimate](https://img.shields.io/codeclimate/maintainability/DrugBud-Suite/DockM8?logo=codeclimate?style=for-the-badge)](https://codeclimate.com/github/DrugBud-Suite/DockM8)   
+[![https img shields io codeclimate issues matteoferla Python_SmallWorld_API logo codeclimate](https://img.shields.io/codeclimate/issues/DrugBud-Suite/DockM8?logo=codeclimate)](https://codeclimate.com/github/DrugBud-Suite/DockM8)   
+[![https img shields io codeclimate tech debt matteoferla Python_SmallWorld_API logo codeclimate](https://img.shields.io/codeclimate/tech-debt/DrugBud-Suite/DockM8?logo=codeclimate)](https://codeclimate.com/github/DrugBud-Suite/DockM8) 
+[![https img shields io github forks matteoferla Python_SmallWorld_API label Fork style social logo github](https://img.shields.io/github/forks/DrugBud-Suite/DockM8?label=Fork&style=social&logo=github)](https://github.com/DrugBud-Suite/DockM8)   
+[![https img shields io github stars matteoferla Python_SmallWorld_API style social logo github](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=social&logo=github)](https://github.com/DrugBud-Suite/DockM8)   
+[![https img shields io github watchers matteoferla Python_SmallWorld_API label Watch style social logo github](https://img.shields.io/github/watchers/DrugBud-Suite/DockM8?label=Watch&style=social&logo=github)](https://github.com/DrugBud-Suite/DockM8)   
+[![https img shields io github last commit matteoferla Python_SmallWorld_API logo github](https://img.shields.io/github/last-commit/DrugBud-Suite/DockM8?logo=github)](https://github.com/DrugBud-Suite/DockM8)  
+[![https img shields io github commit activity m matteoferla Python_SmallWorld_API logo github](https://img.shields.io/github/commit-activity/m/DrugBud-Suite/DockM8?logo=github)](https://github.com/DrugBud-Suite/DockM8)   
+[![https img shields io github issues matteoferla Python_SmallWorld_API logo github](https://img.shields.io/github/issues/DrugBud-Suite/DockM8?logo=github)](https://github.com/DrugBud-Suite/DockM8)   
+[![https img shields io github issues closed matteoferla Python_SmallWorld_API logo github](https://img.shields.io/github/issues-closed/DrugBud-Suite/DockM8?logo=github)](https://github.com/DrugBud-Suite/DockM8)
 
 <a href="https://www.buymeacoffee.com/tonylac77" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
