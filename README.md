@@ -1,15 +1,14 @@
 ![DockM8 Logo](./media/DockM8_white_horizontal_smaller.png)
 
-![Stars](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=for-the-badge)
-[![Forks](https://img.shields.io/github/forks/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8)
-[![Stars](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8)
-[![Watching](https://img.shields.io/github/watchers/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8)
+[![Forks](https://img.shields.io/github/forks/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
+[![Stars](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
+[![Watching](https://img.shields.io/github/watchers/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 ![License](https://img.shields.io/github/license/DrugBud-Suite/DockM8?style=for-the-badge)
-![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)
-[![Last Commut](https://img.shields.io/github/last-commit/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8)  
-[![Commit Activity](https://img.shields.io/github/commit-activity/m/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8)   
-[![Issues](https://img.shields.io/github/issues/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8)   
-[![Closed Issues](https://img.shields.io/github/issues-closed/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/pulls)
+[![Last Commut](https://img.shields.io/github/last-commit/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
+[![Open Issues](https://img.shields.io/github/issues/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
+[![Closed Issues](https://img.shields.io/github/issues-closed/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
 
 <a href="https://www.buymeacoffee.com/tonylac77" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
