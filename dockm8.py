@@ -32,7 +32,7 @@ parser.add_argument('--n_decoys', default=20, type=int, help ='Number of decoys 
 parser.add_argument('--actives', default=None, type=str, help ='Path to the list of active compounds .sdf file')
 
 parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to the protein file(s) or protein files if using ensemble docking mode')
-parser.add_argument('--pocket', required=True, type=str, choices=['Reference', 'RoG', 'Dogsitescorer'], help ='Method to use for pocket determination')
+parser.add_argument('--pocket', required=True, type=str, help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the reference ligand file(s)')
 parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library .sdf file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
@@ -106,6 +106,8 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
         pocket_definition = get_pocket_RoG(Path(ref), prepared_receptor)
     elif pocket == 'Dogsitescorer':
         pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
+    elif isinstance(eval(pocket), dict):
+        pocket_definition = eval(pocket)
     # Prepare docking library
     if os.path.isfile(w_dir / 'final_library.sdf') == False:
         prepare_library(docking_library, w_dir, idcolumn, conformers, protonation, software, ncpus)
