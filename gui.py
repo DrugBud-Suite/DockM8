@@ -21,8 +21,8 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 st.sidebar.image(image="./media/DockM8_white_horizontal.png", width=200)
 st.sidebar.title("DockM8")
 st.sidebar.subheader("Open-source consensus docking for everyone")
-st.sidebar.link_button("Gitlab", url="https://gitlab.com/Tonylac77/DockM8.git")
-st.sidebar.link_button("Visit Website", url="https://tonylac77.gitlab.io/dockm8-web/")
+st.sidebar.link_button("Github", url="https://github.com/DrugBud-Suite/DockM8")
+st.sidebar.link_button("Visit Website", url="https://drugbud-suite.github.io/dockm8-web/")
 st.sidebar.link_button("Publication", url="https://doi.org/your-doi")
 st.sidebar.link_button("Zenodo repository", url="https://doi.org/your-doi")
 
@@ -320,7 +320,7 @@ if pocket_mode == "Custom":
     command += (f" --pocket {pocket_str}")
 elif pocket_mode == "Reference" or pocket_mode == "RoG":
     command += (f" --pocket {pocket_mode}")
-    command += (f" --reference {reference_file}")
+    command += (f" --reffile {reference_file}")
 elif pocket_mode == "Dogsitescorer":
     command += (f" --pocket {pocket_mode}")
 

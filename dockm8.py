@@ -66,7 +66,8 @@ if args.mode == 'ensemble':
 else:
     # Treat --receptor as a single file
     receptors = [args.receptor[0]]
-    reffile = [args.reffile[0]]
+    if args.reffile:
+        reffile = [args.reffile[0]]
 
 # Validate arguments based on the specified mode
 if args.mode == 'ensemble' or args.mode == 'active_learning' and not args.threshold:
@@ -74,9 +75,6 @@ if args.mode == 'ensemble' or args.mode == 'active_learning' and not args.thresh
 
 if (args.pocket == 'Reference' or args.pocket == 'RoG') and not args.reffile:
     parser.error(f"Must specify a reference ligand file when --pocket is set to {args.pocket}")
-    
-if args.pocket and not args.pocket_coordinates:
-    parser.error("Must specify a either a pocket finding method using --pocket or custom pocket coordinates using --pocket_coordinates (eg.)")
     
 if any(metric in args.pose_selection for metric in CLUSTERING_METRICS.keys()) and (args.clustering_method == None or args.clustering_method == 'None'):
     parser.error("Must specify a clustering method when --pose_selection is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
@@ -136,6 +134,8 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
         pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
     else:
         pocket_definition = parse_pocket_coordinates(pocket)
+    
+    print("The pocket coordinates are:", pocket_definition)
         
     # Prepare the docking library if not already prepared
     if not os.path.isfile(w_dir / 'final_library.sdf'):
@@ -177,7 +177,7 @@ def run_command(**kwargs):
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
-                    ref = kwargs.get('reffile')[0], 
+                    ref = (kwargs.get('reffile'))[0] if kwargs.get('reffile') else None, 
                     docking_library = output_library, 
                     idcolumn = kwargs.get('idcolumn'), 
                     prepare_proteins = kwargs.get('prepare_proteins'),
@@ -211,7 +211,7 @@ def run_command(**kwargs):
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
-                    ref = kwargs.get('reffile')[0], 
+                    ref = (kwargs.get('reffile'))[0] if kwargs.get('reffile') else None, 
                     docking_library = kwargs.get('docking_library'), 
                     idcolumn = kwargs.get('idcolumn'), 
                     prepare_proteins = kwargs.get('prepare_proteins'),
@@ -235,7 +235,7 @@ def run_command(**kwargs):
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
-                    ref = kwargs.get('reffile')[0], 
+                    ref = (kwargs.get('reffile'))[0] if kwargs.get('reffile') else None, 
                     docking_library = output_library, 
                     idcolumn = kwargs.get('idcolumn'), 
                     prepare_proteins = kwargs.get('prepare_proteins'),
@@ -299,7 +299,7 @@ def run_command(**kwargs):
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
-                    ref = kwargs.get('reffile')[0], 
+                    ref = (kwargs.get('reffile'))[0] if kwargs.get('reffile') else None, 
                     docking_library = kwargs.get('docking_library'), 
                     idcolumn = kwargs.get('idcolumn'), 
                     prepare_proteins = kwargs.get('prepare_proteins'),
