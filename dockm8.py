@@ -1,10 +1,11 @@
-#Import required libraries and scripts
+# Import required libraries and scripts
 import argparse
 import math
 import os
 import warnings
 from pathlib import Path
 
+# Import modules for docking, scoring, protein and ligand preparation, etc.
 from scripts.clustering_functions import *
 from scripts.consensus_methods import *
 from scripts.docking_functions import *
@@ -18,11 +19,14 @@ from scripts.rescoring_functions import *
 from scripts.utilities import *
 from software.DeepCoy.generate_decoys import generate_decoys
 
+# Suppress warnings to clean up output
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+# Initialize argument parser to handle command line arguments
 parser = argparse.ArgumentParser(description='Parse required arguments')
 
+# Define command line arguments for the script
 parser.add_argument('--software', required=True, type=str, help ='Path to the software folder')
 parser.add_argument('--mode', type=str, default='single', choices=['Single', 'Ensemble', 'active_learning'], help ='Specifies the mode: single, ensemble, or active_learning')
 
@@ -50,6 +54,7 @@ parser.add_argument('--rescoring', type=str, nargs='+', choices=list(RESCORING_F
 parser.add_argument('--consensus', type=str, required=True, choices=['ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'], help='Consensus method to use')
 parser.add_argument('--threshold', type=float, default=0.5, help='Threshold for ensemble and active_learning methods')
 
+# Parse arguments from command line
 args = parser.parse_args()
 
 # Adjust the receptor argument based on the mode
@@ -62,6 +67,7 @@ else:
     receptors = [args.receptor[0]]
     reffile = [args.reffile[0]]
 
+# Validate arguments based on the specified mode
 if args.mode == 'ensemble' or args.mode == 'active_learning' and not args.threshold:
     parser.error(f"Must specify a threshold when --mode is set to {args.mode} mode")
 
@@ -81,64 +87,77 @@ if args.gen_decoys == True and not args.actives:
     parser.error("Must specify the path to the actives file when --gen_decoys is set to True")
 
 if args.gen_decoys and len(args.rescoring) > 8:
+    # Warn about the large number of combinations that might be tried during optimization
     possibilites = math.factorial(len(args.rescoring))*len(args.clustering_metric)*len(args.docking_programs)*7
     print(f"WARNING : At least {possibilites} possible combinations will be tried for optimization, this may take a while.")
+
+# Validate pose selection method against docking programs
 
 for program in DOCKING_PROGRAMS:
     if f"bestpose_{program}" in args.pose_selection and program not in args.docking_programs:
         parser.error(f"Must specify {program} in --docking_programs when --pose_selection is set to bestpose_{program}")
 
 
+# Main function to manage docking process
 def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
-    # Set working directory
+    # Set working directory based on the receptor file
     w_dir = Path(receptor).parent / Path(receptor).stem
     print('The working directory has been set to:', w_dir)
     (w_dir).mkdir(exist_ok=True)
-    # Prepare protein
+    
+    # Prepare the protein for docking (e.g., adding hydrogens)
     if prepare_proteins == True:
         prepared_receptor = Path(prepare_protein_protoss(receptor))
     else:
         prepared_receptor = Path(receptor)
-    # Determine pocket definition
+    
+    # Determine the docking pocket
     if pocket == 'Reference':
         pocket_definition = get_pocket(Path(ref), prepared_receptor, 10)
     elif pocket == 'RoG':
         pocket_definition = get_pocket_RoG(Path(ref), prepared_receptor)
     elif pocket == 'Dogsitescorer':
         pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
+    
     elif isinstance(eval(pocket), dict):
         pocket_definition = eval(pocket)
-    # Prepare docking library
-    if os.path.isfile(w_dir / 'final_library.sdf') == False:
+    # Prepare the docking library if not already prepared
+    if not os.path.isfile(w_dir / 'final_library.sdf'):
         prepare_library(docking_library, w_dir, idcolumn, conformers, protonation, software, ncpus)
-    # Docking
+    
+    # Perform the docking operation
     docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus, 'concurrent_process')
+    
+    # Concatenate all poses into a single file
     concat_all_poses(w_dir, docking_programs, prepared_receptor, ncpus, bust_poses)
-    # Clustering
+    
+    # Load all poses from SDF file and perform clustering
     print('Loading all poses SDF file...')
     tic = time.perf_counter()
     all_poses = PandasTools.LoadSDF(str(w_dir / 'allposes.sdf'), idName='Pose ID', molColName='Molecule', includeFingerprints=False, strictParsing=True)
     toc = time.perf_counter()
-    print(f'Finished loading all poses SDF in {toc-tic:0.4f}!...')
+    print(f'Finished loading all poses SDF in {toc-tic:0.4f}!')
     for method in pose_selection:
-        if os.path.isfile(w_dir / f'clustering/{method}_clustered.sdf') == False:
+        if not os.path.isfile(w_dir / f'clustering/{method}_clustered.sdf'):
             select_poses(method, clustering_method, w_dir, prepared_receptor, pocket_definition, software, all_poses, ncpus)
-    # Rescoring
+    
+    # Rescore poses for each selection method
     for method in pose_selection:
         rescore_poses(w_dir, prepared_receptor, pocket_definition, software, w_dir / 'clustering' / f'{method}_clustered.sdf', rescoring, ncpus)
-    # Consensus
+    
+    # Apply consensus methods to the poses
     for method in pose_selection:
         apply_consensus_methods(w_dir, method, consensus, rescoring, standardization_type='min_max')
 
 def run_command(**kwargs):
-    
+    # Run DockM8 in decoy mode
     if kwargs.get('gen_decoys') == True:
         if kwargs.get('mode') == 'Single':
             print('DockM8 is running in single mode...')
             print('DockM8 is generating decoys...')
-            
+            # Generate decoys
             output_library = generate_decoys(Path(kwargs.get('actives')), kwargs.get('n_decoys'), kwargs.get('decoy_model'), kwargs.get('software'))
-            
+            # Run DockM8 on decoy library
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -168,12 +187,11 @@ def run_command(**kwargs):
                 docking_programs = list(optimal_conditions['clustering'].split('_')[1])
             else:
                 docking_programs = kwargs.get('docking_programs')
-                
             optimal_rescoring_functions = list(optimal_conditions['scoring'].split('_'))
-            
+            # Save optimal conditions to a file
             with open((kwargs.get('receptor'))[0].parent / 'DeepCoy' / 'optimal_conditions.txt', 'w') as file:
                 file.write(str(optimal_conditions))
-            
+            # Run DockM8 on the test library using the optimal conditions
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -194,9 +212,10 @@ def run_command(**kwargs):
                     consensus = optimal_conditions['consensus'])
         if kwargs.get('mode') == 'Ensemble':
             print('DockM8 is running in ensemble mode...')
-            
+            print('DockM8 is generating decoys...')
+            # Generate decoys
             output_library = generate_decoys(Path(kwargs.get('actives')), kwargs.get('n_decoys'), kwargs.get('decoy_model'), kwargs.get('software'))
-            
+            # Run DockM8 on the decoys library
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -226,21 +245,18 @@ def run_command(**kwargs):
                 docking_programs = list(optimal_conditions['clustering'].split('_')[1])
             else:
                 docking_programs = kwargs.get('docking_programs')
-                
             optimal_rescoring_functions = list(optimal_conditions['scoring'].split('_'))
-            
+            # Save optimal conditions to a file
             with open((kwargs.get('receptor'))[0].parent / 'DeepCoy' / 'optimal_conditions.txt', 'w') as file:
                 file.write(str(optimal_conditions))
-            
+            # Generate target and reference ligand dictionnary
             receptors = kwargs.get('receptor')
             ref_files = kwargs.get('reffile')
-            
             receptor_dict = {}
             for i, receptor in enumerate(receptors):
                 receptor_dict[receptor] = ref_files[i]
-                
+            # Run DockM8 on the test library in ensemble mode
             for receptor, ref in receptor_dict.items():
-        
                 dockm8(software = Path(kwargs.get('software')),
                         receptor = receptor, 
                         pocket = kwargs.get('pocket'), 
@@ -261,10 +277,9 @@ def run_command(**kwargs):
                         consensus = optimal_conditions['consensus'])
             ensemble_consensus(receptors, optimal_conditions['clustering'], optimal_conditions['consensus'], kwargs.get('threshold'))
     else:
-        # Single mode
+        # Run DockM8 in single mode
         if kwargs.get('mode') == 'Single':
             print('DockM8 is running in single mode...')
-            
             dockm8(software = Path(kwargs.get('software')),
                     receptor = (kwargs.get('receptor'))[0], 
                     pocket = kwargs.get('pocket'), 
@@ -283,20 +298,17 @@ def run_command(**kwargs):
                     clustering_method = kwargs.get('clustering_method'), 
                     rescoring = kwargs.get('rescoring'), 
                     consensus = kwargs.get('consensus'))
-
         # Ensemble mode
         if kwargs.get('mode') == 'Ensemble':
             print('DockM8 is running in ensemble mode...')
-            
+            # Generate target and reference ligand dictionnary
             receptors = kwargs.get('receptor')
             ref_files = kwargs.get('reffile')
-            
             receptor_dict = {}
             for i, receptor in enumerate(receptors):
                 receptor_dict[receptor] = ref_files[i]
-                
+            # Run DockM8 in ensemble mode
             for receptor, ref in receptor_dict.items():
-        
                 dockm8(software = Path(kwargs.get('software')),
                         receptor = receptor, 
                         pocket = kwargs.get('pocket'), 
@@ -316,5 +328,5 @@ def run_command(**kwargs):
                         rescoring = kwargs.get('rescoring'), 
                         consensus = kwargs.get('consensus'))
             ensemble_consensus(receptors, kwargs.get('pose_selection'), kwargs.get('consensus'), kwargs.get('threshold'))
-        
+
 run_command(**vars(args))
