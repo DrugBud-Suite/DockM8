@@ -123,20 +123,33 @@ prepare_receptor = col1.toggle(
 col1.subheader("Pocket finding", divider="orange")
 pocket_mode = col1.selectbox(
     label="How should the pocket be defined?",
-    options=("Reference", "RoG", "Dogsitescorer"),
+    options=("Reference", "RoG", "Dogsitescorer", "Custom"),
     help="Reference Ligand: DockM8 will use the reference ligand to define the pocket. "
     + "Reference Ligand RoG: DockM8 will use the reference ligand radius of gyration. "
-    + "DogSiteScorer: DockM8 will use the DogSiteScorer pocket finding algorithm to define the pocket.",
+    + "DogSiteScorer: DockM8 will use the DogSiteScorer pocket finding algorithm to define the pocket."
+    + "Custom: Define your own pocket center and size coordinates."
 )
 
 # Reference ligand
-if pocket_mode != "Dogsitescorer":
+if pocket_mode == "Reference" or pocket_mode == "RoG":
     reference_file = col1.text_input(
         label="File path(s) of one or more multiple reference ligand files (.sdf format), separated by commas",
         help="Choose one or multiple reference ligand files (.pdb format)",
         value=reference_value,
         placeholder="Enter path(s) here",
     )
+elif pocket_mode == "Custom" and mode == "Single":
+    ccol1, ccol2, ccol3 = col1.columns(3)
+    x_center = ccol1.number_input(label="X Center", value=0.0, help="Enter the X coordinate of the pocket center")
+    y_center = ccol2.number_input(label="Y Center", value=0.0, help="Enter the Y coordinate of the pocket center")
+    z_center = ccol3.number_input(label="Z Center", value=0.0, help="Enter the Z coordinate of the pocket center")
+    x_size = ccol1.number_input(label="X Size", value=20.0, help="Enter the size of the pocket in the X direction")
+    y_size = ccol2.number_input(label="Y Size", value=20.0, help="Enter the size of the pocket in the Y direction")
+    z_size = ccol3.number_input(label="Z Size", value=20.0, help="Enter the size of the pocket in the Z direction")
+    pocket_coordinates = {"center": [x_center,y_center,z_center],
+                          "size": [x_size,y_size,z_size]}
+elif pocket_mode == "Custom" and mode != "Single":
+    col1.error("Custom pocket definition does not currently work in ensemble mode, please change the pocket definition mode")
 
 # Ligand library
 col2.header("Ligands", divider="orange")
@@ -283,11 +296,16 @@ if gen_decoys:
         )
 
 # Define the common arguments
+if pocket_mode != "Custom":
+    pocket_definition = pocket_mode
+else:
+    pocket_definition = pocket_coordinates
+
 command = (
     f'{sys.executable} {CWD}/dockm8.py '
     f'--software {software} '
     f'--receptor {receptor_file} '
-    f'--pocket {pocket_mode} '
+    f'--pocket {pocket_definition} '
     f'--reffile {reference_file} '
     f'--docking_library {ligand_file} '
     f'--idcolumn {id_column} '
