@@ -295,18 +295,10 @@ if gen_decoys:
             f"WARNING: The combination of scoring functions and pose selection method you have selected will yield a large number of possible combinations ({num_possibilities}). This may take a long time to run."
         )
 
-# Define the common arguments
-if pocket_mode != "Custom":
-    pocket_definition = pocket_mode
-else:
-    pocket_definition = pocket_coordinates
-
 command = (
     f'{sys.executable} {CWD}/dockm8.py '
     f'--software {software} '
     f'--receptor {receptor_file} '
-    f'--pocket {pocket_definition} '
-    f'--reffile {reference_file} '
     f'--docking_library {ligand_file} '
     f'--idcolumn {id_column} '
     f'--prepare_proteins {prepare_receptor} '
@@ -322,6 +314,15 @@ command = (
     f'--rescoring {" ".join(rescoring)} '
     f'--consensus {consensus_method}'
 )
+
+if pocket_mode == "Custom":
+    command += (f" --pocket {pocket_coordinates}")
+elif pocket_mode == "Reference" or pocket_mode == "RoG":
+    command += (f" --pocket {pocket_mode}")
+    command += (f" --reference {reference_file}")
+elif pocket_mode == "Dogsitescorer":
+    command += (f" --pocket {pocket_mode}")
+
 # Add mode-specific arguments
 if mode == "ensemble" or mode == "active_learning":
     command += f" --mode {mode} --threshold {threshold}"
