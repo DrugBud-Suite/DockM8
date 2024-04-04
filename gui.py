@@ -314,9 +314,10 @@ command = (
     f'--rescoring {" ".join(rescoring)} '
     f'--consensus {consensus_method}'
 )
-
+# Add pocket-specific arguments
 if pocket_mode == "Custom":
-    command += (f" --pocket {pocket_coordinates}")
+    pocket_str = '*'.join([f"{k}:{','.join(map(str, v))}" for k, v in pocket_coordinates.items()])
+    command += (f" --pocket {pocket_str}")
 elif pocket_mode == "Reference" or pocket_mode == "RoG":
     command += (f" --pocket {pocket_mode}")
     command += (f" --reference {reference_file}")

@@ -3,6 +3,7 @@ import argparse
 import math
 import os
 import warnings
+import json
 from pathlib import Path
 
 # Import modules for docking, scoring, protein and ligand preparation, etc.
@@ -36,7 +37,7 @@ parser.add_argument('--n_decoys', default=20, type=int, help ='Number of decoys 
 parser.add_argument('--actives', default=None, type=str, help ='Path to the list of active compounds .sdf file')
 
 parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to the protein file(s) or protein files if using ensemble docking mode')
-parser.add_argument('--pocket', required=True, type=str, help ='Method to use for pocket determination')
+parser.add_argument('--pocket', type=str, help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the reference ligand file(s)')
 parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library .sdf file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
@@ -74,6 +75,9 @@ if args.mode == 'ensemble' or args.mode == 'active_learning' and not args.thresh
 if (args.pocket == 'Reference' or args.pocket == 'RoG') and not args.reffile:
     parser.error(f"Must specify a reference ligand file when --pocket is set to {args.pocket}")
     
+if args.pocket and not args.pocket_coordinates:
+    parser.error("Must specify a either a pocket finding method using --pocket or custom pocket coordinates using --pocket_coordinates (eg.)")
+    
 if any(metric in args.pose_selection for metric in CLUSTERING_METRICS.keys()) and (args.clustering_method == None or args.clustering_method == 'None'):
     parser.error("Must specify a clustering method when --pose_selection is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
 
@@ -97,6 +101,18 @@ for program in DOCKING_PROGRAMS:
     if f"bestpose_{program}" in args.pose_selection and program not in args.docking_programs:
         parser.error(f"Must specify {program} in --docking_programs when --pose_selection is set to bestpose_{program}")
 
+# Parse pocket coordinates
+def parse_pocket_coordinates(pocket_arg):
+    try:
+        pocket_str = pocket_arg.split('*')
+        pocket_coordinates = {}
+        for item in pocket_str:
+            key, value = item.split(':')
+            pocket_coordinates[key] = list(map(float, value.split(',')))
+    except Exception as e:
+        print(f"Error parsing pocket coordinates: {e}. Make sure the pocket coordinates are in the format 'center:1,2,3*size:1,2,3'")
+        pocket_coordinates = None
+    return pocket_coordinates
 
 # Main function to manage docking process
 def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
@@ -118,9 +134,9 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
         pocket_definition = get_pocket_RoG(Path(ref), prepared_receptor)
     elif pocket == 'Dogsitescorer':
         pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
-    
-    elif isinstance(eval(pocket), dict):
-        pocket_definition = eval(pocket)
+    else:
+        pocket_definition = parse_pocket_coordinates(pocket)
+        
     # Prepare the docking library if not already prepared
     if not os.path.isfile(w_dir / 'final_library.sdf'):
         prepare_library(docking_library, w_dir, idcolumn, conformers, protonation, software, ncpus)
