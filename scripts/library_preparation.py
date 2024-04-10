@@ -174,17 +174,7 @@ def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software
     printlog('Running GypsumDL in parallel...')
     n_workers = 3
     parallel_executor(gypsum_dl_run, split_files_sdfs, n_workers, output_dir=output_dir, cpus = math.ceil(ncpus//n_workers))
-    
-    # for file in tqdm(split_files_sdfs, desc='Running GypsumDL in parallel', unit='file'):
-    #     results_dir = output_dir / 'GypsumDL_results'
-    #     try:
-    #         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {file} -o {results_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
-    #         subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    #         os.rename(results_dir / 'gypsum_dl_success.sdf', results_dir / f'{file.stem}.sdf')
-    #     except Exception as e:
-    #         printlog('ERROR: Failed to generate protomers and conformers!')
-    #         printlog(e)
-    
+
     results_dfs = []
     
     for file in os.listdir(output_dir / 'GypsumDL_results'):
