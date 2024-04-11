@@ -139,7 +139,7 @@ def ensemble_consensus(receptors:list, selection_method : str, consensus_method 
         List of file paths to receptor files.
     selection_method : str
         The clustering metric used to generate the consensus clustering results.
-    method : str
+    consensus_method : str
         The clustering method used to generate the consensus clustering results.
     threshold : float or int
         The percentage of top compounds to select from each consensus clustering result.
@@ -154,7 +154,10 @@ def ensemble_consensus(receptors:list, selection_method : str, consensus_method 
     for receptor in receptors:
         w_dir = Path(receptor).parent / Path(receptor).stem
         # Read the consensus clustering results for the receptor
-        consensus_file = pd.read_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv')
+        if selection_method in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']+list(RESCORING_FUNCTIONS.keys()):
+            consensus_file = PandasTools.LoadSDF(str(w_dir / 'consensus' / f'{selection_method}_{consensus_method}_results.sdf'), molColName='Molecule', idName='ID')
+        else:
+            consensus_file = pd.read_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv')
         # Select the top n compounds based on the given threshold
         consensus_file_topn = consensus_file.head(math.ceil(consensus_file.shape[0] * (threshold/100)))
         # Append the top n compounds dataframe to the list
@@ -165,7 +168,22 @@ def ensemble_consensus(receptors:list, selection_method : str, consensus_method 
     for df in topn_dataframes[1:]:
         common_compounds.intersection_update(df['ID'])
     common_compounds_list = list(common_compounds)
-    # Create a dataframe with the common compounds and save it to a CSV file
-    common_compounds_df = pd.DataFrame(common_compounds_list, columns=['Common Compounds'])
-    common_compounds_df.to_csv(Path(receptors[0].parent / 'ensemble_results.csv'), index=False)
-    return list(common_compounds)
+    
+    common_compounds_df = pd.DataFrame()
+    
+    for receptor in receptors:
+        w_dir = Path(receptor).parent / Path(receptor).stem
+        # Read the consensus clustering results for the receptor
+        if selection_method in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']+list(RESCORING_FUNCTIONS.keys()):
+            consensus_file = PandasTools.LoadSDF(str(w_dir / 'consensus' / f'{selection_method}_{consensus_method}_results.sdf'), molColName='Molecule', idName='ID')
+        else:
+            consensus_file = pd.read_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv')
+        consensus_file = consensus_file[consensus_file['ID'].isin(common_compounds_list)]
+        consensus_file['Receptor'] = Path(receptor).stem
+        common_compounds_df = pd.concat([common_compounds_df, consensus_file], axis=0)
+    # Save the common compounds and CSV or SDF file
+    if selection_method in ['bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINAW', 'bestpose_QVINA2']+list(RESCORING_FUNCTIONS.keys()):
+        PandasTools.WriteSDF(common_compounds_df, str(Path(receptors[0]).parent / 'ensemble_results.sdf'), molColName='Molecule', idName='ID', properties=list(common_compounds_df.columns))
+    else:
+        common_compounds_df.to_csv(Path(receptors[0]).parent / 'ensemble_results.csv', index=False)
+    return common_compounds_df
