@@ -100,7 +100,7 @@ def docking(
                 )
             if (w_dir / program.lower()).exists() and not (w_dir / program.lower() / f"{program.lower()}_poses.sdf").exists():
                 fetch_function(w_dir, n_poses, software)
-    #shutil.rmtree(w_dir / "split_final_library", ignore_errors=True)
+    shutil.rmtree(w_dir / "split_final_library", ignore_errors=True)
 
 def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path, ncpus : int, bust_poses : bool):
     """
