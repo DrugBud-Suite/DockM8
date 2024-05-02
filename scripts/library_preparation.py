@@ -247,14 +247,8 @@ def cleanup(input_sdf: str, output_dir: Path) -> pd.DataFrame:
     # Load the successfully generated conformers from the GypsumDL process into a pandas DataFrame
     gypsum_df = PandasTools.LoadSDF(str(output_dir / 'gypsum_dl_success.sdf'), molColName='Molecule',idName='ID', removeHs=False)
     
-    # Sanitize all the molecules in the DataFrame
-    #for mol in gypsum_df['Molecule']:
-    #    AllChem.SanitizeMol(mol)
-    
-    # END: abpxx6d04wxr
-    
-    # Remove the first row of the DataFrame, which contains the original input molecule
-    final_df = gypsum_df.iloc[1:, :]
+    # Remove the row containing GypsumDL parameters from the DataFrame
+    final_df = gypsum_df[gypsum_df['Molecule'] != 'EMPTY MOLECULE DESCRIBING GYPSUM-DL PARAMETERS']
 
     # Select only the 'Molecule' and 'ID' columns from the DataFrame
     final_df = final_df[['Molecule', 'ID']]
