@@ -11,7 +11,7 @@ import streamlit as st
 
 from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.consensus_methods import CONSENSUS_METHODS
-from scripts.docking_functions import DOCKING_PROGRAMS
+from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
