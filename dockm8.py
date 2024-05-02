@@ -9,7 +9,7 @@ from pathlib import Path
 # Import modules for docking, scoring, protein and ligand preparation, etc.
 from scripts.clustering_functions import *
 from scripts.consensus_methods import *
-from scripts.docking_functions import *
+from scripts.docking.docking import *
 from scripts.dogsitescorer import *
 from scripts.get_pocket import *
 from scripts.library_preparation import *
