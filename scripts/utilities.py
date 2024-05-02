@@ -164,7 +164,25 @@ def split_sdf_single_str(dir, sdf_file):
             outfile.writelines(current_compound_lines)
     return split_files_folder
 
-
+def split_pdbqt_str(file):
+    models = []
+    current_model = []
+    with open(file, 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        current_model.append(line)
+        if line.startswith('ENDMDL'):
+            models.append(current_model)
+            current_model = []
+    for i, model in enumerate(models):
+        for line in model:
+            if line.startswith('MODEL'):
+                model_number = int(line.split()[-1])
+                break
+        output_filename = file.with_name(f"{file.stem}_QVINAW_{model_number}.pdbqt")
+        with open(output_filename, 'w') as output_file:
+            output_file.writelines(model)
+    os.remove(file)
 
 def Insert_row(row_number, df, row_value):
     """
@@ -335,7 +353,7 @@ def delete_files(folder_path: str, save_file: str) -> None:
             if not any(item.iterdir()) and item.name != save_file:
                 item.rmdir()
                 
-def parallel_executor(function, list_of_objects : list, ncpus : int, backend = 'concurrent_process', **kwargs):
+def parallel_executor(function, list_of_objects : list, ncpus : int, job_manager = 'concurrent_process', **kwargs):
     
     """
     Executes a function in parallel using multiple processes.
@@ -349,32 +367,32 @@ def parallel_executor(function, list_of_objects : list, ncpus : int, backend = '
     Returns:
         The result of the function execution.
     """
-    if backend == "concurrent_process":
+    if job_manager == "concurrent_process":
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
             results = [job.result() for job in tqdm(concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function}")]
     
-    if backend == "concurrent_process_silent":
+    if job_manager == "concurrent_process_silent":
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
             results = [job.result() for job in concurrent.futures.as_completed(jobs)]
     
-    if backend == "concurrent_thread":
+    if job_manager == "concurrent_thread":
         with concurrent.futures.ThreadPoolExecutor(max_workers=ncpus) as executor:
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
             results = [job.result() for job in tqdm(concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function}")]
     
-    if backend == 'joblib':
+    if job_manager == 'joblib':
         jobs = [delayed(function)(obj, **kwargs) for obj in list_of_objects]
         results = Parallel(n_jobs=ncpus)(tqdm(jobs, total=len(list_of_objects), desc=f"Running {function}"))
     
-    if backend == 'pebble_process':
+    if job_manager == 'pebble_process':
         print(kwargs)
         with pebble.ProcessPool(max_workers=ncpus) as executor:
             jobs = [executor.schedule(function, args=(obj,), kwargs = kwargs) for obj in list_of_objects]
             results = [job.result() for job in jobs]
             
-    if backend == 'pebble_thread':
+    if job_manager == 'pebble_thread':
         with pebble.ThreadPool(max_workers=ncpus) as executor:
             jobs = [executor.schedule(function, args=(obj,), kwargs = kwargs) for obj in list_of_objects]
             results = [job.result() for job in jobs]
@@ -393,13 +411,13 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
     
-def parallel_SDF_loader(sdf_path : Path, molcolName : str, idName : str, ncpus = os.cpu_count()-2, SMILES = None) -> pd.DataFrame:
+def parallel_SDF_loader(sdf_path : Path, molColName : str, idName : str, ncpus = os.cpu_count()-2, SMILES = None) -> pd.DataFrame:
     """
     Loads a SDF file in parallel using joblib library.
 
     Args:
         sdf_path (Path): The path to the SDF file.
-        molcolName (str): The name of the molecule column in the SDF file.
+        molColName (str): The name of the molecule column in the SDF file.
         idName (str): The name of the ID column in the SDF file.
         includeFingerprints (bool): Whether to include fingerprints in the loaded DataFrame.
         strictParsing (bool): Whether to use strict parsing when loading the SDF file.
@@ -423,11 +441,10 @@ def parallel_SDF_loader(sdf_path : Path, molcolName : str, idName : str, ncpus =
                 mol_props['Molecule'] = mol
             # Append the properties to the list
             data.append(mol_props)
-        # Create a DataFrame from the list of dictionaries
-        df = pd.DataFrame(data).drop(columns=['mol_cond'])
+        df = pd.DataFrame(data).drop(columns=['mol_cond'], errors='ignore')
         # Detect the columns that should be numeric
         for col in df.columns:
-            if col not in [idName, molcolName, 'ID', 'Pose ID']:
+            if col not in [idName, molColName, 'ID', 'Pose ID']:
                 df[col] = pd.to_numeric(df[col], errors='coerce', downcast='float')
     except Exception as e:
         printlog(f"Error occurred during loading of SDF file: {str(e)}")
