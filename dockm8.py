@@ -1,19 +1,18 @@
 # Import required libraries and scripts
 import argparse
+import json
 import math
 import os
 import warnings
-import json
 from pathlib import Path
 
 # Import modules for docking, scoring, protein and ligand preparation, etc.
 from scripts.clustering_functions import *
 from scripts.consensus_methods import *
 from scripts.docking.docking import *
-from scripts.dogsitescorer import *
-from scripts.get_pocket import *
 from scripts.library_preparation import *
 from scripts.performance_calculation import *
+from scripts.pocket_finding.main import pocket_finder
 from scripts.postprocessing import *
 from scripts.protein_preparation import *
 from scripts.rescoring_functions import *
@@ -79,13 +78,13 @@ if (args.pocket == 'Reference' or args.pocket == 'RoG') and not args.reffile:
 if any(metric in args.pose_selection for metric in CLUSTERING_METRICS.keys()) and (args.clustering_method == None or args.clustering_method == 'None'):
     parser.error("Must specify a clustering method when --pose_selection is set to 'RMSD', 'spyRMSD', 'espsim' or 'USRCAT'")
 
-if args.gen_decoys == True and not args.decoy_model:
+if args.gen_decoys and not args.decoy_model:
     parser.error("Must specify a decoy model when --gen_decoys is set to True")
 
-if args.gen_decoys == True and not args.n_decoys:
+if args.gen_decoys and not args.n_decoys:
     parser.error("Must specify the number of decoys to generate when --gen_decoys is set to True")
 
-if args.gen_decoys == True and not args.actives:
+if args.gen_decoys and not args.actives:
     parser.error("Must specify the path to the actives file when --gen_decoys is set to True")
 
 if args.gen_decoys and len(args.rescoring) > 8:
@@ -94,23 +93,9 @@ if args.gen_decoys and len(args.rescoring) > 8:
     print(f"WARNING : At least {possibilites} possible combinations will be tried for optimization, this may take a while.")
 
 # Validate pose selection method against docking programs
-
 for program in DOCKING_PROGRAMS:
     if f"bestpose_{program}" in args.pose_selection and program not in args.docking_programs:
         parser.error(f"Must specify {program} in --docking_programs when --pose_selection is set to bestpose_{program}")
-
-# Parse pocket coordinates
-def parse_pocket_coordinates(pocket_arg):
-    try:
-        pocket_str = pocket_arg.split('*')
-        pocket_coordinates = {}
-        for item in pocket_str:
-            key, value = item.split(':')
-            pocket_coordinates[key] = list(map(float, value.split(',')))
-    except Exception as e:
-        print(f"Error parsing pocket coordinates: {e}. Make sure the pocket coordinates are in the format 'center:1,2,3*size:1,2,3'")
-        pocket_coordinates = None
-    return pocket_coordinates
 
 # Main function to manage docking process
 def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_proteins, conformers, protonation, docking_programs, bust_poses, pose_selection, nposes, exhaustiveness, ncpus, clustering_method, rescoring, consensus):
@@ -120,20 +105,13 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
     (w_dir).mkdir(exist_ok=True)
     
     # Prepare the protein for docking (e.g., adding hydrogens)
-    if prepare_proteins == True:
+    if prepare_proteins:
         prepared_receptor = Path(prepare_protein_protoss(receptor))
     else:
         prepared_receptor = Path(receptor)
     
     # Determine the docking pocket
-    if pocket == 'Reference':
-        pocket_definition = get_pocket(Path(ref), prepared_receptor, 10)
-    elif pocket == 'RoG':
-        pocket_definition = get_pocket_RoG(Path(ref), prepared_receptor)
-    elif pocket == 'Dogsitescorer':
-        pocket_definition = binding_site_coordinates_dogsitescorer(prepared_receptor, w_dir, method='volume')
-    else:
-        pocket_definition = parse_pocket_coordinates(pocket)
+    pocket_definition = pocket_finder(pocket, w_dir, prepared_receptor, ref, 10)
     
     print("The pocket coordinates are:", pocket_definition)
         

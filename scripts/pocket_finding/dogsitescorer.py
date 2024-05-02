@@ -422,7 +422,7 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     return pocket_coordinates
 
 
-def binding_site_coordinates_dogsitescorer(pdbpath : Path, w_dir : Path, method='volume'):
+def find_pocket_dogsitescorer(pdbpath : Path, w_dir : Path, method='volume'):
     """
     Retrieves the binding site coordinates for a given PDB file using the DogSiteScorer method.
 
@@ -440,7 +440,6 @@ def binding_site_coordinates_dogsitescorer(pdbpath : Path, w_dir : Path, method=
     job_location = submit_dogsitescorer_job_with_pdbid(pdb_upload, 'A', '')
     # Get the metadata of the DoGSiteScorer job
     binding_site_df = get_dogsitescorer_metadata(job_location)
-    print(binding_site_df)
     # Sort the binding sites based on the given method
     best_binding_site = sort_binding_sites(binding_site_df, method)
     # Get the URL of the selected binding site
