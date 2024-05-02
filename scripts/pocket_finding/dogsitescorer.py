@@ -422,13 +422,12 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     return pocket_coordinates
 
 
-def find_pocket_dogsitescorer(pdbpath : Path, w_dir : Path, method='volume'):
+def find_pocket_dogsitescorer(pdbpath : Path, method='volume'):
     """
     Retrieves the binding site coordinates for a given PDB file using the DogSiteScorer method.
 
     Parameters:
     - pdbpath (Path): The path to the PDB file.
-    - w_dir (Path): The working directory path.
     - method (str): The method used to sort the binding sites. Default is 'volume'.
 
     Returns:
