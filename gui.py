@@ -127,6 +127,7 @@ pocket_mode = col1.selectbox(
     help="Reference Ligand: DockM8 will use the reference ligand to define the pocket. "
     + "Reference Ligand RoG: DockM8 will use the reference ligand radius of gyration. "
     + "DogSiteScorer: DockM8 will use the DogSiteScorer pocket finding algorithm to define the pocket."
+    + "P2Rank: DockM8 will use the P2Rank pocket finding algorithm to define the pocket."
     + "Custom: Define your own pocket center and size coordinates."
 )
 
@@ -138,14 +139,15 @@ if pocket_mode == "Reference" or pocket_mode == "RoG":
         value=reference_value,
         placeholder="Enter path(s) here",
     )
+# Custom pocket
 elif pocket_mode == "Custom" and mode == "Single":
     ccol1, ccol2, ccol3 = col1.columns(3)
     x_center = ccol1.number_input(label="X Center", value=0.0, help="Enter the X coordinate of the pocket center")
     y_center = ccol2.number_input(label="Y Center", value=0.0, help="Enter the Y coordinate of the pocket center")
     z_center = ccol3.number_input(label="Z Center", value=0.0, help="Enter the Z coordinate of the pocket center")
-    x_size = ccol1.number_input(label="X Size", value=20.0, help="Enter the size of the pocket in the X direction")
-    y_size = ccol2.number_input(label="Y Size", value=20.0, help="Enter the size of the pocket in the Y direction")
-    z_size = ccol3.number_input(label="Z Size", value=20.0, help="Enter the size of the pocket in the Z direction")
+    x_size = ccol1.number_input(label="X Size", value=20.0, help="Enter the size of the pocket in the X direction (in Angstroms)")
+    y_size = ccol2.number_input(label="Y Size", value=20.0, help="Enter the size of the pocket in the Y direction (in Angstroms)")
+    z_size = ccol3.number_input(label="Z Size", value=20.0, help="Enter the size of the pocket in the Z direction (in Angstroms)")
     pocket_coordinates = {"center": [x_center,y_center,z_center],
                           "size": [x_size,y_size,z_size]}
 elif pocket_mode == "Custom" and mode != "Single":
