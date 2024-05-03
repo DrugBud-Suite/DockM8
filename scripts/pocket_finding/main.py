@@ -2,9 +2,9 @@ import os
 import sys
 from pathlib import Path
 
-cwd = os.getcwd()
-dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
-sys.path.append(dockm8_path)
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.pocket_finding.default import find_pocket_default
 from scripts.pocket_finding.dogsitescorer import find_pocket_dogsitescorer

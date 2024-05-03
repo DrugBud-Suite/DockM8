@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 from rdkit.Chem import PandasTools
 
-cwd = os.getcwd()
-dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
-sys.path.append(dockm8_path)
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS

@@ -13,9 +13,9 @@ from rdkit import RDLogger
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
-cwd = os.getcwd()
-dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
-sys.path.append(dockm8_path)
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.utilities import (
     convert_molecules,

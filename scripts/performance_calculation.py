@@ -12,9 +12,9 @@ from rdkit.ML.Scoring import Scoring
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
-cwd = os.getcwd()
-dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
-sys.path.append(dockm8_path)
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.postprocessing import rank_scores, standardize_scores
