@@ -22,7 +22,7 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
         dict: A dictionary containing the pocket coordinates with keys 'center' and 'size'.
     """
     p2rank_path = software / "p2rank" / "prank"
-    print(p2rank_path)
+
     # Check if p2rank executable is available
     if not os.path.exists(p2rank_path):
         print("p2rank executable not found. Downloading...")
