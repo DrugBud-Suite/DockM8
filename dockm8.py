@@ -6,9 +6,9 @@ import sys
 import warnings
 from pathlib import Path
 
-cwd = os.getcwd()
-dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
-sys.path.append(dockm8_path)
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 # Import modules for docking, scoring, protein and ligand preparation, etc.
 from scripts.clustering_functions import *
