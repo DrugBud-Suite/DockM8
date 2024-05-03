@@ -1,12 +1,14 @@
-import os
+from pathlib import Path
 import sys
 import warnings
-from pathlib import Path
 
 import pytest
 
 # Ensure the scripts directory is accessible
-sys.path.append(os.path.abspath('..'))
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
+
 from scripts.pocket_finding.main import pocket_finder
 
 # Ignore deprecation warnings
@@ -15,10 +17,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
-    base_path = Path(__file__).parent.resolve()
-    ligand = base_path / 'test_files/1fvv_l.sdf'
-    receptor = base_path / 'test_files/1fvv_p.pdb'
-    software = base_path.parent / 'software'
+    ligand = dockm8_path / 'tests/test_files/1fvv_l.sdf'
+    receptor =dockm8_path / 'tests/test_files/1fvv_p.pdb'
+    software = dockm8_path / 'software'
     radius = 10
     return ligand, receptor, software, radius
 

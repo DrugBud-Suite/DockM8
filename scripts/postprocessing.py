@@ -1,9 +1,17 @@
-import warnings
 import math
+import os
+import sys
+import warnings
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from rdkit.Chem import PandasTools
+
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
+
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
 from scripts.utilities import printlog
@@ -128,7 +136,7 @@ def apply_consensus_methods(w_dir : str, selection_method : str, consensus_metho
                 consensus_dataframe.to_csv(Path(w_dir) / 'consensus' / f'{selection_method}_{consensus_method}_results.csv', index=False)
         return
 
-def ensemble_consensus(receptors:list, selection_method : str, consensus_method : str, threshold : float or int):
+def ensemble_consensus(receptors:list, selection_method : str, consensus_method : str, threshold : float):
     """
     Given a list of receptor file paths, this function reads the consensus clustering results for each receptor,
     selects the top n compounds based on a given threshold, and returns a list of common compounds across all receptors.

@@ -1,13 +1,19 @@
 import os
 import shutil
 import subprocess
+import sys
 import urllib.request
 from pathlib import Path
 
 import pandas as pd
 import requests
 
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
+
 from scripts.utilities import printlog
+
 
 def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
     """

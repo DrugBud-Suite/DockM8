@@ -1,4 +1,6 @@
 import io
+import os
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -7,6 +9,10 @@ from urllib.parse import urljoin
 import requests
 from Bio.PDB import PDBParser
 from Bio.PDB.PDBIO import PDBIO
+
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.utilities import printlog
 

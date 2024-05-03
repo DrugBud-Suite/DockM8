@@ -14,21 +14,22 @@ The function `select_best_pocket` is also defined which provides
 several methods for selecting the most suitable binding site.
 """
 
-# for creating file-like objects from strings (needed as input for some
-# functions)
 import io
-import re  # for filtering floats from a list of strings
-
-# for creating pauses during runtime (e.g. to wait for the response of API
-# requests)
+import os
+import re
+import sys
 import time
 import warnings
-from pathlib import Path  # for handling local paths
+from pathlib import Path
 
-import pandas as pd  # for creating dataframes and handling data
-import redo  # for retrying API queries if they fail
-import requests  # for communicating with web-service APIs
-from biopandas.pdb import PandasPdb  # for working with PDB files
+import pandas as pd
+import redo
+import requests
+from biopandas.pdb import PandasPdb
+
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.utilities import printlog
 

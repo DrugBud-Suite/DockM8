@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -9,6 +10,10 @@ from posebusters import PoseBusters
 from rdkit.Chem import PandasTools
 from yaml import safe_load
 
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
+
 from scripts.docking.gnina import fetch_gnina_poses, gnina_docking
 from scripts.docking.plants import fetch_plants_poses, plants_docking
 from scripts.docking.qvina2 import fetch_qvina2_poses, qvina2_docking
@@ -16,8 +21,9 @@ from scripts.docking.qvinaw import fetch_qvinaw_poses, qvinaw_docking
 from scripts.docking.smina import fetch_smina_poses, smina_docking
 from scripts.utilities import (
     parallel_executor,
+    parallel_SDF_loader,
     printlog,
-    split_sdf_str, parallel_SDF_loader
+    split_sdf_str,
 )
 
 warnings.filterwarnings("ignore", category=UserWarning)

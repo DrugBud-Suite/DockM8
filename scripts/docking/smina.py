@@ -1,11 +1,16 @@
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, Union
 
 import pandas as pd
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
+
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.utilities import (
     delete_files,
