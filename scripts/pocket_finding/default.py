@@ -1,10 +1,19 @@
 import os
+import sys
 from pathlib import Path
 
 from rdkit import Chem
 
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
+
+from scripts.pocket_finding.utils import (
+    get_ligand_coordinates,
+    process_protein_and_ligand,
+)
 from scripts.utilities import load_molecule, printlog
-from scripts.pocket_finding.utils import process_protein_and_ligand, get_ligand_coordinates
+
 
 def find_pocket_default(ligand_file: Path, protein_file: Path, radius: int):
     """

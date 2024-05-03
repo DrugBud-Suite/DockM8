@@ -1,8 +1,13 @@
 import os
+import sys
 from pathlib import Path
 
 from rdkit import Chem
 from rdkit.Chem import Descriptors3D
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
 
 from scripts.pocket_finding.utils import (
     get_ligand_coordinates,

@@ -3,7 +3,6 @@ import warnings
 import numpy as np
 import pandas as pd
 
-
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)

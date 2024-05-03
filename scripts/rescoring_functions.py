@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -11,6 +12,10 @@ from pandas import DataFrame
 from rdkit import RDLogger
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
 
 from scripts.utilities import (
     convert_molecules,

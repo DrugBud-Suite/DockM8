@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, Union
 
@@ -8,6 +9,10 @@ import pandas as pd
 from meeko import PDBQTMolecule, RDKitMolCreate
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
 
 from scripts.utilities import convert_molecules, delete_files, printlog, split_pdbqt_str
 

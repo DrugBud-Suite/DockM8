@@ -3,6 +3,7 @@ import math
 import os
 import shutil
 import subprocess
+import sys
 import warnings
 from pathlib import Path
 from subprocess import DEVNULL, STDOUT
@@ -12,6 +13,10 @@ from chembl_structure_pipeline import standardizer
 from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 from tqdm import tqdm
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
 
 from scripts.utilities import parallel_executor, printlog, split_sdf_str
 

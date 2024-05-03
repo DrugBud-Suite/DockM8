@@ -1,10 +1,18 @@
+import os
+import sys
 from pathlib import Path
-from scripts.utilities import printlog
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
+
 from scripts.pocket_finding.default import find_pocket_default
-from scripts.pocket_finding.radius_of_gyration import find_pocket_RoG
 from scripts.pocket_finding.dogsitescorer import find_pocket_dogsitescorer
 from scripts.pocket_finding.manual import parse_pocket_coordinates
 from scripts.pocket_finding.p2rank import find_pocket_p2rank
+from scripts.pocket_finding.radius_of_gyration import find_pocket_RoG
+from scripts.utilities import printlog
+
 
 def pocket_finder(mode: str, software: Path = None, receptor: Path = None, ligand: Path = None, radius: int = 10):
     # Determine the docking pocket

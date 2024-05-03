@@ -1,16 +1,20 @@
 # Import required libraries and scripts
 import argparse
-import json
 import math
 import os
+import sys
 import warnings
 from pathlib import Path
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
 
 # Import modules for docking, scoring, protein and ligand preparation, etc.
 from scripts.clustering_functions import *
 from scripts.consensus_methods import *
 from scripts.docking.docking import *
-from scripts.library_preparation import *
+from scripts.library_preparation.standardisation import *
 from scripts.performance_calculation import *
 from scripts.pocket_finding.main import pocket_finder
 from scripts.postprocessing import *

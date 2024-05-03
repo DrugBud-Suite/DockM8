@@ -1,4 +1,6 @@
 import itertools
+import os
+import sys
 import traceback
 import warnings
 from pathlib import Path
@@ -13,6 +15,10 @@ from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import StandardScaler
 from sklearn_extra.cluster import KMedoids
 from tqdm import tqdm
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
 
 from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS, rescore_docking

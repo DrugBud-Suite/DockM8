@@ -1,15 +1,20 @@
 import itertools
 import math
 import os
+import sys
 import warnings
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from rdkit.Chem import PandasTools
 from rdkit.ML.Scoring import Scoring
 from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
+
+cwd = os.getcwd()
+dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
+sys.path.append(dockm8_path)
 
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.postprocessing import rank_scores, standardize_scores
