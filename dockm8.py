@@ -5,6 +5,9 @@ import os
 import sys
 import warnings
 from pathlib import Path
+import time
+
+from rdkit.Chem import PandasTools
 
 cwd = Path.cwd()
 dockm8_path = cwd.parents[0] / "DockM8"
@@ -14,7 +17,7 @@ sys.path.append(str(dockm8_path))
 from scripts.clustering_functions import *
 from scripts.consensus_methods import *
 from scripts.docking.docking import *
-from scripts.library_preparation.standardisation import *
+from scripts.library_preparation.main import prepare_library
 from scripts.performance_calculation import *
 from scripts.pocket_finding.main import pocket_finder
 from scripts.postprocessing import *
@@ -45,9 +48,9 @@ parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the referen
 parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library .sdf file')
 parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
 parser.add_argument('--prepare_proteins', default=True, type=str2bool, help ='Whether or not to add hydrogens to the protein using Protoss (True for yes, False for no)')
-parser.add_argument('--conformers', default='RDKit', type=str, choices=['RDKit', 'MMFF', 'GypsumDL'], help ='Method to use for conformer generation (RDKit and MMFF are equivalent)')
-parser.add_argument('--protonation', required=True, type=str, choices=['GypsumDL', 'None'], help ='Method to use for compound protonation')
-parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=DOCKING_PROGRAMS, help ='Method(s) to use for docking')
+parser.add_argument('--conformers', default='RDKit', type=str, choices=['RDKit', 'MMFF', 'GypsumDL'], help ='Method to use for conformer generation (RDKit and MMFF are equivalent). Choices are "GypsumDL", "RDKit" or "MMFF"')
+parser.add_argument('--protonation', required=True, type=str, choices=['GypsumDL', 'None'], help ='Method to use for compound protonation. Choices are "GypsumDL" or "None"')
+parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=DOCKING_PROGRAMS, help ='Method(s) to use for docking. Choices are "SMINA", "GNINA", "PLANTS", "QVINA2", "QVINAW" or any combination thereof, separated by spaces')
 parser.add_argument('--bust_poses', default=False, type=str2bool, help ='Whether or not to remove problematic poses with PoseBusters (True for yes, False for no)')
 parser.add_argument('--pose_selection', required=True, type=str, nargs='+', choices=list(CLUSTERING_METRICS.keys())+['bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINA2', 'bestpose_QVINAW']+list(RESCORING_FUNCTIONS.keys()), help ='Method(s) to use for pose clustering')
 parser.add_argument('--nposes', default=10, type=int, help ='Number of poses to generate')
@@ -121,7 +124,7 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
         
     # Prepare the docking library if not already prepared
     if not os.path.isfile(w_dir / 'final_library.sdf'):
-        prepare_library(docking_library, w_dir, idcolumn, conformers, protonation, software, ncpus)
+        prepare_library(docking_library, w_dir, idcolumn, protonation, conformers, software, ncpus)
     
     # Perform the docking operation
     docking(w_dir, prepared_receptor, pocket_definition, software, docking_programs, exhaustiveness, nposes, ncpus, 'concurrent_process')
@@ -149,7 +152,7 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn, prepare_p
 
 def run_command(**kwargs):
     # Run DockM8 in decoy mode
-    if kwargs.get('gen_decoys') == True:
+    if kwargs.get('gen_decoys'):
         if kwargs.get('mode') == 'Single':
             print('DockM8 is running in single mode...')
             print('DockM8 is generating decoys...')
