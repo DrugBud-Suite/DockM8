@@ -10,9 +10,9 @@ from posebusters import PoseBusters
 from rdkit.Chem import PandasTools
 from yaml import safe_load
 
-cwd = os.getcwd()
-dockm8_path = cwd.split('DockM8')[0] + 'DockM8'
-sys.path.append(dockm8_path)
+cwd = Path.cwd()
+dockm8_path = cwd.parents[0] / "DockM8"
+sys.path.append(str(dockm8_path))
 
 from scripts.docking.gnina import fetch_gnina_poses, gnina_docking
 from scripts.docking.plants import fetch_plants_poses, plants_docking
