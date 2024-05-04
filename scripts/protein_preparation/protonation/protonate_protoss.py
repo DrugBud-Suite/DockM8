@@ -76,7 +76,6 @@ def protonate_protein_protoss(input_pdb_file: Path,
     Returns:
     Path: Path to the prepared protein file in PDB format.
     """
-    output_dir = output_dir or input_pdb_file.parent
     # Print log message
     printlog('Preparing protein with ProtoSS ...')
 
