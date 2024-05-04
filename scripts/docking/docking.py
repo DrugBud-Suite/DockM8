@@ -11,7 +11,7 @@ from rdkit.Chem import PandasTools
 from yaml import safe_load
 
 cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+dockm8_path = next((path for path in cwd.parents if path.name == "DockM8"), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.docking.gnina import fetch_gnina_poses, gnina_docking

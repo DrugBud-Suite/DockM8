@@ -6,7 +6,7 @@ from rdkit.Chem import PandasTools
 from scripts.library_preparation.main import prepare_library
 
 cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+dockm8_path = next((path for path in cwd.parents if path.name == "DockM8"), None)
 sys.path.append(str(dockm8_path))
 
 

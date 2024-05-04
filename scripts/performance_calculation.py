@@ -13,7 +13,7 @@ from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
 cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+dockm8_path = next((path for path in cwd.parents if path.name == "DockM8"), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS
