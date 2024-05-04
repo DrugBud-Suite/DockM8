@@ -10,8 +10,8 @@ from posebusters import PoseBusters
 from rdkit.Chem import PandasTools
 from yaml import safe_load
 
-cwd = Path.cwd()
-dockm8_path = next((path for path in cwd.parents if path.name == "DockM8"), None)
+# Search for 'DockM8' in parent directories
+dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.docking.gnina import fetch_gnina_poses, gnina_docking

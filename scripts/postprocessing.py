@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 from rdkit.Chem import PandasTools
 
-cwd = Path.cwd()
-dockm8_path = next((path for path in cwd.parents if path.name == "DockM8"), None)
+# Search for 'DockM8' in parent directories
+dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS
