@@ -128,7 +128,7 @@ else
 
     conda config --add channels conda-forge
 
-    conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pytest pdb-fixer -q -y
+    conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pytest pdbfixer -q -y
 
     echo -e """
     ###############################################################
