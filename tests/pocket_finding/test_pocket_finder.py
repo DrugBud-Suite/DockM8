@@ -4,10 +4,11 @@ import warnings
 
 import pytest
 
-# Ensure the scripts directory is accessible
-cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+# Search for 'DockM8' in parent directories
+dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
+
+print("DockM8 is in : "+str(dockm8_path))
 
 from scripts.pocket_finding.main import pocket_finder
 
@@ -27,7 +28,6 @@ def test_reference_mode(common_test_data):
     """Test pocket finding in reference mode."""
     ligand, receptor, software, radius = common_test_data
     pocket_definition = pocket_finder('Reference', receptor=receptor, ligand=ligand, radius=radius)
-    print(pocket_definition)
     expected_output = {'center': [-9.67, 207.73, 113.41], 'size': [20.0, 20.0, 20.0]}
     # Example assertion - customize based on expected structure
     assert pocket_definition == expected_output
@@ -36,7 +36,6 @@ def test_rog_mode(common_test_data):
     """Test pocket finding in radius of gyration (RoG) mode."""
     ligand, receptor, software, radius = common_test_data
     pocket_definition = pocket_finder('RoG', receptor=receptor, ligand=ligand)
-    print(pocket_definition)
     expected_output = {'center': [-9.67, 207.73, 113.41], 'size': [14.73, 14.73, 14.73]}
     assert pocket_definition == expected_output
 

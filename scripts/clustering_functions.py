@@ -15,8 +15,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn_extra.cluster import KMedoids
 from tqdm import tqdm
 
-cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+# Search for 'DockM8' in parent directories
+dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.clustering_metrics import CLUSTERING_METRICS

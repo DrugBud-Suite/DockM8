@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from rdkit.Chem import PandasTools
 
-cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+# Search for 'DockM8' in parent directories
+dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.library_preparation.protonation.protgen_GypsumDL import protonate_GypsumDL
@@ -36,3 +36,4 @@ def test_protonate_GypsumDL(common_test_data):
     assert not (output_dir / "GypsumDL_split").exists()
     assert not (output_dir / "gypsum_dl_success.sdf").exists()
     assert not (output_dir / "gypsum_dl_failed.smi").exists()
+    os.remove(output_file) if output_file.exists() else None

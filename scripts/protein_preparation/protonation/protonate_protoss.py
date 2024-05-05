@@ -1,5 +1,4 @@
 import io
-import os
 import sys
 import time
 import warnings
@@ -10,8 +9,8 @@ import requests
 from Bio.PDB import PDBParser
 from Bio.PDB.PDBIO import PDBIO
 
-cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+# Search for 'DockM8' in parent directories
+dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities import printlog
@@ -66,12 +65,13 @@ def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
     return job
 
 
-def prepare_protein_protoss(receptor : Path) -> Path :
+def protonate_protein_protoss(input_pdb_file: Path,
+    output_dir: Path = None) -> Path :
     """
     Prepares a protein using ProtoSS.
 
     Args:
-    receptor (Path): Path to the protein file in PDB format.
+    input_pdb_file (Path): Path to the protein file in PDB format.
 
     Returns:
     Path: Path to the prepared protein file in PDB format.
@@ -79,8 +79,8 @@ def prepare_protein_protoss(receptor : Path) -> Path :
     # Print log message
     printlog('Preparing protein with ProtoSS ...')
 
-    # Open the receptor protein file
-    with open(receptor) as upload_file:
+    # Open the input_pdb_file protein file
+    with open(input_pdb_file) as upload_file:
         # Create the query with the protein file
         query = {'protein_file': upload_file}
         # Submit the job to ProtoSS and get the job submission response
@@ -98,8 +98,8 @@ def prepare_protein_protoss(receptor : Path) -> Path :
     # Parse the protein structure from the StringIO object
     protein_structure = PDBParser().get_structure(protossed_protein['name'], protein_file)
     
-    # Create the output file path by replacing the extension of the receptor file
-    output_file = Path(str(receptor).replace('.pdb', '_protoss.pdb'))
+    # Create the output file path by replacing the extension of the input_pdb_file file
+    output_file = Path(str(input_pdb_file).replace('.pdb', '_protoss.pdb'))
 
     # Open the output file in write mode
     with output_file.open('w') as output_file_handle:

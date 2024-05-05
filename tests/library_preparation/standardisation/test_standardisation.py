@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 from rdkit.Chem import PandasTools
 
-cwd = Path.cwd()
-dockm8_path = cwd.parents[0] / "DockM8"
+# Search for 'DockM8' in parent directories
+dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
 from scripts.library_preparation.standardisation.standardise import standardize_library
@@ -46,3 +46,4 @@ def test_standardize_library(common_test_data):
 
     # Verify that the standardized library does not contain any duplicate compounds
     assert len(standardized_df.drop_duplicates(subset="ID")) == len(standardized_df)
+    os.remove(standardized_file) if standardized_file.exists() else None
