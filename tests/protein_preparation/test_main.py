@@ -9,7 +9,6 @@ sys.path.append(str(dockm8_path))
 
 from scripts.protein_preparation.main import prepare_protein
 from Bio.PDB import PDBParser
-import os
 
 @pytest.fixture
 def common_test_data():
