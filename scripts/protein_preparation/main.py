@@ -8,11 +8,15 @@ dockm8_path = next(
 )
 sys.path.append(str(dockm8_path))
 
-from scripts.protein_preparation.structure_assessment.edia import get_best_chain_edia
+from scripts.protein_preparation.fetching.fetch_alphafold import (
+    fetch_alphafold_structure,
+)
 from scripts.protein_preparation.fetching.fetch_pdb import fetch_pdb_structure
-from scripts.protein_preparation.fetching.fetch_alphafold import fetch_alphafold_structure
 from scripts.protein_preparation.fixing.pdb_fixer import fix_pdb_file
-from scripts.protein_preparation.protonation.protonate_protoss import protonate_protein_protoss
+from scripts.protein_preparation.protonation.protonate_protoss import (
+    protonate_protein_protoss,
+)
+from scripts.protein_preparation.structure_assessment.edia import get_best_chain_edia
 from scripts.utilities import printlog
 
 
@@ -49,23 +53,45 @@ def prepare_protein(
         Path: The path to the prepared protein structure.
     """
 
+    if not input_type:
+        if len(input) == 4 and input.isalnum():
+            input_type = "PDB"
+        elif len(input) == 6 and input.isalnum():
+            input_type = "Uniprot"
+        else:
+            # Check if the input is a valid path
+            if not Path(input).is_file():
+                raise ValueError("Input file is an invalid file path.")
+            else:
+                input_type = "File"
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Check if the input type is valid
     if select_best_chain and input_type.upper() != "PDB":
-        printlog("Selecting the best chain is only supported for PDB input. Turning of the best chain selection ...")
+        printlog(
+            "Selecting the best chain is only supported for PDB input. Turning of the best chain selection ..."
+        )
         select_best_chain = False
     # Check if protonation is required
-    if add_missing_hydrogens_pH is None or add_missing_hydrogens_pH == 0.0 and not protonate:
-        printlog("Protonating with Protoss or PDBFixer is required for reliable results. Setting protonate to True.")
+    if (
+        add_missing_hydrogens_pH is None
+        or add_missing_hydrogens_pH == 0.0
+        and not protonate
+    ):
+        printlog(
+            "Protonating with Protoss or PDBFixer is required for reliable results. Setting protonate to True."
+        )
         protonate = True
-        
+
     # Fetch the protein structure
     if input_type.upper() == "PDB":
         # Ensure the pdb code is in the right format (4 letters or digits)
         pdb_code = input.strip().upper()
         if len(pdb_code) != 4 or not pdb_code.isalnum():
-            raise ValueError("Invalid pdb code format. It should be 4 letters or digits.")
+            raise ValueError(
+                "Invalid pdb code format. It should be 4 letters or digits."
+            )
         if select_best_chain:
             # Get the best chain using EDIA
             step1_pdb = get_best_chain_edia(pdb_code, output_dir)
@@ -79,9 +105,16 @@ def prepare_protein(
     else:
         # Assume input is a file path
         step1_pdb = Path(input)
-    
+
     # Fix the protein structure
-    if fix_protein or fix_nonstandard_residues or fix_missing_residues or add_missing_hydrogens_pH is not None or remove_hetero or remove_water:
+    if (
+        fix_protein
+        or fix_nonstandard_residues
+        or fix_missing_residues
+        or add_missing_hydrogens_pH is not None
+        or remove_hetero
+        or remove_water
+    ):
         # Fix the PDB file
         step2_pdb = fix_pdb_file(
             step1_pdb,
@@ -99,9 +132,10 @@ def prepare_protein(
         final_pdb_file = protonate_protein_protoss(step2_pdb, output_dir)
     else:
         final_pdb_file = step2_pdb
+    
+    if step1_pdb != final_pdb_file:
+        step1_pdb.unlink()
+    if step2_pdb != final_pdb_file:
+        step2_pdb.unlink()
 
     return final_pdb_file
-
-prepare_protein("2o1x", "PDB", Path("/home/tony/DockM8/tests/test_files/prepare_protein_PDB_test"))
-prepare_protein("P00520", "Uniprot", Path("/home/tony/DockM8/tests/test_files/prepare_protein_Uniprot_test"))
-prepare_protein(Path("/home/tony/DockM8/tests/test_files/1fvv_p.pdb"), Path("/home/tony/DockM8/tests/test_files/prepare_protein_File_test"))
