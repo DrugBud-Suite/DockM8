@@ -46,3 +46,4 @@ def test_standardize_library(common_test_data):
 
     # Verify that the standardized library does not contain any duplicate compounds
     assert len(standardized_df.drop_duplicates(subset="ID")) == len(standardized_df)
+    os.remove(standardized_file) if standardized_file.exists() else None

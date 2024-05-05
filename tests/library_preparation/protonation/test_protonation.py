@@ -36,3 +36,4 @@ def test_protonate_GypsumDL(common_test_data):
     assert not (output_dir / "GypsumDL_split").exists()
     assert not (output_dir / "gypsum_dl_success.sdf").exists()
     assert not (output_dir / "gypsum_dl_failed.smi").exists()
+    os.remove(output_file) if output_file.exists() else None

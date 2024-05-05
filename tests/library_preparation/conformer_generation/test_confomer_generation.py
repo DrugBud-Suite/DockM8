@@ -50,6 +50,7 @@ def test_generate_conformers_GypsumDL(common_test_data):
     assert not (output_dir / "GypsumDL_split").exists()
     assert not (output_dir / "gypsum_dl_success.sdf").exists()
     assert not (output_dir / "gypsum_dl_failed.smi").exists()
+    os.remove(output_file) if output_file.exists() else None
 
 
 def test_generate_conformers_RDKit(common_test_data):
@@ -75,3 +76,4 @@ def test_generate_conformers_RDKit(common_test_data):
 
     # Check if the number of molecules in the input and output files are the same
     assert len(library_df) == len(output_df)
+    os.remove(output_file) if output_file.exists() else None
