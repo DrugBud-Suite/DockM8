@@ -21,8 +21,8 @@ from scripts.utilities import printlog
 
 
 def prepare_protein(
-    input: Path,
-    input_type: str = "File",
+    protein_file_or_code: Path,
+    type: str = "File",
     output_dir: Path = None,
     select_best_chain: bool = True,
     fix_protein: bool = True,
@@ -37,10 +37,10 @@ def prepare_protein(
     Prepare a protein structure by performing various modifications.
 
     Args:
-        input (str or Path): The input value. It can be a PDB code, Uniprot code, or file path.
-        input_type (str, optional): The type of input. Can be 'PDB', 'Uniprot', or 'File'. Default is 'File'.
-        output_dir (str or Path, optional): The directory where the prepared protein structure will be saved. If not provided, the same directory as the input file will be used.
-        select_best_chain (bool, optional): Whether to select the best chain from the input structure. Only applicable for PDB input. Default is True.
+        protein_file_or_code (str or Path): The protein_file_or_code value. It can be a PDB code, Uniprot code, or file path.
+        type (str, optional): The type of protein_file_or_code. Can be 'PDB', 'Uniprot', or 'File'. Default is 'File'.
+        output_dir (str or Path, optional): The directory where the prepared protein structure will be saved. If not provided, the same directory as the protein_file_or_code file will be used.
+        select_best_chain (bool, optional): Whether to select the best chain from the protein_file_or_code structure. Only applicable for PDB protein_file_or_code. Default is True.
         fix_protein (bool, optional): Whether to fix the protein structure. Default is True.
         fix_nonstandard_residues (bool, optional): Whether to fix nonstandard residues in the protein structure. Default is True.
         fix_missing_residues (bool, optional): Whether to fix missing residues in the protein structure. Default is True.
@@ -53,24 +53,24 @@ def prepare_protein(
         Path: The path to the prepared protein structure.
     """
 
-    if not input_type:
-        if len(input) == 4 and input.isalnum():
-            input_type = "PDB"
-        elif len(input) == 6 and input.isalnum():
-            input_type = "Uniprot"
+    if not type:
+        if len(protein_file_or_code) == 4 and protein_file_or_code.isalnum():
+            type = "PDB"
+        elif len(protein_file_or_code) == 6 and protein_file_or_code.isalnum():
+            type = "Uniprot"
         else:
-            # Check if the input is a valid path
-            if not Path(input).is_file():
-                raise ValueError("Input file is an invalid file path.")
+            # Check if the protein_file_or_code is a valid path
+            if not Path(protein_file_or_code).is_file():
+                raise ValueError("Protein_file_or_code file is an invalid file path.")
             else:
-                input_type = "File"
+                type = "File"
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check if the input type is valid
-    if select_best_chain and input_type.upper() != "PDB":
+    # Check if the protein_file_or_code type is valid
+    if select_best_chain and type.upper() != "PDB":
         printlog(
-            "Selecting the best chain is only supported for PDB input. Turning of the best chain selection ..."
+            "Selecting the best chain is only supported for PDB protein_file_or_code. Turning of the best chain selection ..."
         )
         select_best_chain = False
     # Check if protonation is required
@@ -85,9 +85,9 @@ def prepare_protein(
         protonate = True
 
     # Fetch the protein structure
-    if input_type.upper() == "PDB":
+    if type.upper() == "PDB":
         # Ensure the pdb code is in the right format (4 letters or digits)
-        pdb_code = input.strip().upper()
+        pdb_code = protein_file_or_code.strip().upper()
         if len(pdb_code) != 4 or not pdb_code.isalnum():
             raise ValueError(
                 "Invalid pdb code format. It should be 4 letters or digits."
@@ -97,14 +97,14 @@ def prepare_protein(
             step1_pdb = get_best_chain_edia(pdb_code, output_dir)
         else:
             # Get PDB structure
-            step1_pdb = fetch_pdb_structure(input, output_dir)
-    elif input_type.upper() == "UNIPROT":
+            step1_pdb = fetch_pdb_structure(protein_file_or_code, output_dir)
+    elif type.upper() == "UNIPROT":
         # Fetch the Uniprot structure
-        uniprot_code = input
+        uniprot_code = protein_file_or_code
         step1_pdb = fetch_alphafold_structure(uniprot_code, output_dir)
     else:
-        # Assume input is a file path
-        step1_pdb = Path(input)
+        # Assume protein_file_or_code is a file path
+        step1_pdb = Path(protein_file_or_code)
 
     # Fix the protein structure
     if (
@@ -132,10 +132,10 @@ def prepare_protein(
         final_pdb_file = protonate_protein_protoss(step2_pdb, output_dir)
     else:
         final_pdb_file = step2_pdb
-    
-    if step1_pdb != final_pdb_file:
+        
+    if step1_pdb != final_pdb_file and step1_pdb != protein_file_or_code:
         step1_pdb.unlink()
-    if step2_pdb != final_pdb_file:
+    if step2_pdb != final_pdb_file and step2_pdb != protein_file_or_code:
         step2_pdb.unlink()
 
     return final_pdb_file
