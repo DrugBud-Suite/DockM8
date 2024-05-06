@@ -604,3 +604,4 @@ software/p2rank/test_data/predictions/fpocket3/2ck3b_out/pockets/pocket15_atm.pd
 software/p2rank/test_data/predictions/fpocket3/2ck3b_out/pockets/pocket15_vert.pqr
 software/p2rank/test_data/predictions/fpocket3/2ck3b_out/pockets/pocket16_atm.pdb
 software/p2rank/test_data/predictions/fpocket3/2ck3b_out/pockets/pocket16_vert.pqr
+line_counter.py
