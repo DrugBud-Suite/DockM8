@@ -16,11 +16,13 @@ from scripts.library_preparation.conformer_generation.confgen_RDKit import (
 )
 from scripts.library_preparation.protonation.protgen_GypsumDL import protonate_GypsumDL
 from scripts.library_preparation.standardisation.standardise import standardize_library
-from scripts.utilities import printlog
+from scripts.utilities.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+PROTONATION_OPTIONS = ["GypsumDL", "None"]
+CONFORMER_OPTIONS = ["RDKit", "MMFF", "GypsumDL"]
 
 def prepare_library(
     input_sdf: str,
