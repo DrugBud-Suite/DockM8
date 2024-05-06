@@ -7,7 +7,7 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import PandasTools
 
-from scripts.utilities import convert_molecules, printlog
+from scripts.utilities.utilities import convert_molecules, printlog
 
 from ..DeepCoy.data.prepare_data import preprocess, read_file
 from ..DeepCoy.DeepCoy import DenseGGNNChemModel
