@@ -19,7 +19,7 @@ from scripts.docking.plants import fetch_plants_poses, plants_docking
 from scripts.docking.qvina2 import fetch_qvina2_poses, qvina2_docking
 from scripts.docking.qvinaw import fetch_qvinaw_poses, qvinaw_docking
 from scripts.docking.smina import fetch_smina_poses, smina_docking
-from scripts.utilities import (
+from scripts.utilities.utilities import (
     parallel_executor,
     parallel_SDF_loader,
     printlog,
@@ -40,7 +40,7 @@ DOCKING_PROGRAMS = {
     "QVINA2": [qvina2_docking, fetch_qvina2_poses],
 }
 
-def docking(
+def dockm8_docking(
     w_dir: Path,
     protein_file: Path,
     pocket_definition : dict,
