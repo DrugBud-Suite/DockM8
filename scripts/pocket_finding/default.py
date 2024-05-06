@@ -12,7 +12,7 @@ from scripts.pocket_finding.utils import (
     get_ligand_coordinates,
     process_protein_and_ligand,
 )
-from scripts.utilities import load_molecule, printlog
+from scripts.utilities.utilities import load_molecule, printlog
 
 
 def find_pocket_default(ligand_file: Path, protein_file: Path, radius: int):

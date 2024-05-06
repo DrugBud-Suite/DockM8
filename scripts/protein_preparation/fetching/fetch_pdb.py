@@ -10,7 +10,7 @@ dockm8_path = next(
 )
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities import printlog
+from scripts.utilities.utilities import printlog
 
 def fetch_pdb_structure(pdb_id: str, output_dir: Path):
     """

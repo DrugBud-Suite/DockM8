@@ -8,7 +8,7 @@ sys.path.append(str(dockm8_path))
 from openmm.app import PDBFile
 from pdbfixer import PDBFixer
 
-from scripts.utilities import printlog
+from scripts.utilities.utilities import printlog
 
 
 def fix_pdb_file(
