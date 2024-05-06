@@ -1,66 +1,72 @@
-# General settings for the script
+### DOCKM8 CONFIGURATION FILE ###
+
+# Default values are provided for all parameters for testing purposes, please adapt them to your needs
+
+## General configuration
 general:
-  software: None                                            # Path to the software folder required for operation
-  mode: "single"                                            # Mode of operation (options : single, ensemble, active_learning)       
-  ncpus: 0                                                  # Number of CPUs to allocate for the process. Default is 0 (all available CPUs)
-  
+  software: None                                                    # Path to the software folder required for operation
+  mode: "single"                                                    # Mode of operation (options : single, ensemble, active_learning)       
+  ncpus: 0                                                          # Number of CPUs to allocate for the process. Default is 0 (all available CPUs)
+
+## Decoy generation configuration
 decoy_generation:
-  gen_decoys: false                                         # Control whether decoys are generated (true) or not (false)
-  decoy_model: "DUDE"                                       # Model to use for decoy generation (DUDE, DEKOIS, DUDE_P)
-  n_decoys: 20                                              # Number of decoys to generate per active compound
-  actives: "/path/to/active/compounds.sdf"                  # Path to the file containing active compounds
+  gen_decoys: false                                                 # Control whether decoys are generated (true) or not (false)
+  decoy_model: "DUDE"                                               # Model to use for decoy generation (DUDE, DEKOIS, DUDE_P)
+  n_decoys: 20                                                      # Number of decoys to generate per active compound
+  actives: "/home/tony/DockM8/tests/test_files/CDK2_actives.sdf"    # Path to the file containing active compounds
 
-# Input file configuration
-receptor(s):                                                # List of paths to receptor files; include multiple rows when using ensemble mode
-    - "/path/to/protein/file"                               # Can also be a PDB code (will be downloaded from the PDB) or a UniProt ID (AlphaFold2 model will be used)
-reference_ligand(s):                                           # List of paths to reference ligand files; include multiple rows when using ensemble mode (order is important)
-    - "/path/to/reference/ligand/file"
-docking_library: "/path/to/docking/library.sdf"             # Path to the file containing the compounds to dock (SDF format)
+## Input file configuration
+receptor(s):                                                        # List of paths to receptor files; include multiple rows when using ensemble mode
+    - "/home/tony/DockM8/tests/test_files/1fvv_p.pdb"                                 # Can also be a PDB code (will be downloaded from the PDB) or a UniProt ID (AlphaFold2 model will be used)
+docking_library: "/home/tony/DockM8/tests/test_files/library.sdf"   # Path to the file containing the compounds to dock (SDF format)
 
-# Protein Preparation
+## Protein Preparation
 protein_preparation:
-  select_best_chain: true                                   # Control whether the best chain is selected (true) or not (false), only works when supplying a PDB code in the receptor section
-  fix_protein:
-    fix_nonstandard_residues: true                          # Whether to replace non-standard residues with standard ones
-    fix_missing_residues: true                              # Whether to add missing residues
-    remove_heteroatoms: true                                # Whether to remove heteroatoms (ligands, ions, etc.)
-    remove_water: true                                      # Whether to remove water molecules
-    add_hydrogens: 7.0                                      # Whether to add hydrogens to the protein; 7.0 is the default pH. Will be ignored if "protonation" is set to true
-  protonation: true                                         # Whether to protonate the protein using Protoss webserver
+  select_best_chain: true                                           # Control whether the best chain is selected (true) or not (false), only works when supplying a PDB code in the receptor section
+  fix_nonstandard_residues: true                                  # Whether to replace non-standard residues with standard ones
+  fix_missing_residues: true                                      # Whether to add missing residues
+  remove_heteroatoms: true                                        # Whether to remove heteroatoms (ligands, ions, etc.)
+  remove_water: true                                              # Whether to remove water molecules
+  add_hydrogens: 7.0                                              # Whether to add hydrogens to the protein; 7.0 is the default pH. Will be ignored if "protonation" is set to true
+  protonation: true                                                 # Whether to protonate the protein using Protoss webserver
 
-# Ligand Preparation
+## Ligand Preparation
 ligand_preparation:
-  protonation: "GypsumDL"                                   # Method used for ligand protonation. Options are : "GypsumDL", "None"
-  conformers: "RDKit"                                       # Method used for ligand conformer generation. Options are : "RDKit", "GypsumDL"
-  n_conformers: 1                                           # Number of conformers to generate per ligand. Default is 1
+  protonation: "GypsumDL"                                           # Method used for ligand protonation. Options are : "GypsumDL", "None"
+  conformers: "RDKit"                                               # Method used for ligand conformer generation. Options are : "RDKit", "GypsumDL"
+  n_conformers: 1                                                   # Number of conformers to generate per ligand. Default is 1
 
-# Pocket Detection
+## Pocket Detection
 pocket_detection:
-  method: "Reference"                                       # Method used for pocket detection. Options are : "Reference", "RoG", "Dogsitescorer", "P2Rank", "Manual"
-  reference_ligand: "/path/to/reference/ligand/file"        # Path to the reference ligand file used for pocket detection (only for "Reference" and "RoG" methods)
-  radius: 10                                                # Radius used for pocket detection (only for "Reference" method)
-  manual_pocket: "center:x,y,z*size:x,y,z"                  # Manual pocket definition (only for "Manual" method). Format is "center:x,y,z*size:x,y,z". Ensure that the size is in Angstroms
+  method: "Reference"                                               # Method used for pocket detection. Options are : "Reference", "RoG", "Dogsitescorer", "P2Rank", "Manual"
+  reference_ligand(s):                                              # List of paths to reference ligand files; include multiple rows when using ensemble mode (order is important). Only valid for "Reference" and "RoG" pocket detection method
+    - "/home/tony/DockM8/tests/test_files/1fvv_l.sdf"
+  radius: 10                                                        # Radius used for pocket detection (only for "Reference" method)
+  manual_pocket: "center:x,y,z*size:x,y,z"                          # Manual pocket definition (only for "Manual" method). Format is "center:x,y,z*size:x,y,z". Ensure that the size is in Angstroms
 
-# Docking configuration
+## Docking configuration
 docking:
-  docking_programs:                                         # List of methods used for docking (options : "SMINA", "GNINA", "QVINA2", "QVINAW", "PLANTS"). 
-    - "SMINA"                                               # Include multiple rows to use multiple docking engines
+  docking_programs:                                                 # List of methods used for docking (options : "SMINA", "GNINA", "QVINA2", "QVINAW", "PLANTS"). 
+    - "SMINA"                                                       # Include multiple rows to use multiple docking engines
     - "GNINA"
-  bust_poses: false                                         # Control whether problematic poses are removed. Can be slow for large datasets
-  nposes: 10                                                # Number of poses to generate per compound
-  exhaustiveness: 8                                         # Exhaustiveness of the docking; higher values increase accuracy and computation time. Only valid for Vina derivatives
+  bust_poses: false                                                 # Control whether problematic poses are removed. Can be slow for large datasets
+  nposes: 10                                                        # Number of poses to generate per compound
+  exhaustiveness: 8                                                 # Exhaustiveness of the docking; higher values increase accuracy and computation time. Only valid for Vina derivatives
 
-# Pose selection configuration
+## Pose selection configuration
 pose_selection:
-  pose_selection_method:                                    # Methods used for pose selection. Options are : "bestpose", "bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINA2", "bestpose_QVINAW"
-  - "bestpose"                                              # Other options are : "RMSD", "spyRMSD", "espsim", "USRCAT"
-  - "bestpose_GNINA"                                        # You can also use any of the bundled scoring functions to select the poses. See the "scoring" section for more details
-  clustering_method: "KMedoids"                             # Clustering method used for grouping similar poses. Options are : "KMedoids", "Aff_prop". Only valid for "RMSD", "spyRMSD", "espsim", "USRCAT" methods.
+  pose_selection_method:                                            # Methods used for pose selection. Options are : "bestpose", "bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINA2", "bestpose_QVINAW"
+  - "bestpose"                                                      # Other options are : "RMSD", "spyRMSD", "espsim", "USRCAT"
+  - "bestpose_GNINA"                                                # You can also use any of the bundled scoring functions to select the poses. See the "scoring" section for more details
+  clustering_method: "KMedoids"                                     # Clustering method used for grouping similar poses. Options are : "KMedoids", "Aff_prop". Only valid for "RMSD", "spyRMSD", "espsim", "USRCAT" methods.
 
-rescoring:                                                  # Scoring function used for rescoring the selected poses. Include multiple rows to use multiple scoring functions
-  - "CNN-Score"                                             # Options are : 'GNINA-Affinity', 'CNN-Score', 'CNN-Affinity', 'Vinardo', 'AD4', 'RFScoreVS', 'PLP', 'CHEMPLP', 
-  - "KORP-PL"                                               # 'NNScore', 'PLECScore', 'LinF9', 'AAScore', 'SCORCH', 'RTMScore', 'KORP-PL', 'ConvexPLR'
+## Scoring configuration
+rescoring:                                                          # Scoring function used for rescoring the selected poses. Include multiple rows to use multiple scoring functions
+  - "CNN-Score"                                                     # Options are : 'GNINA-Affinity', 'CNN-Score', 'CNN-Affinity', 'Vinardo', 'AD4', 'RFScoreVS', 'PLP', 'CHEMPLP', 
+  - "KORP-PL"                                                       # 'NNScore', 'PLECScore', 'LinF9', 'AAScore', 'SCORCH', 'RTMScore', 'KORP-PL', 'ConvexPLR'
 
-consensus: "ECR_best"                                       # Consensus method used to rank compounds. Options are "ECR_best", "ECR_avg", "avg_ECR", "RbV", "RbR", "Zscore_best", "Zscore_avg".
+## Consensus configuration
+consensus: "ECR_best"                                               # Consensus method used to rank compounds. Options are "ECR_best", "ECR_avg", "avg_ECR", "RbV", "RbR", "Zscore_best", "Zscore_avg".
 
-threshold: 0.01                                             # Threshold used for ensemble and active learning methods to make decisions. Only valid when using "ensemble" or "active_learning" mode.
+## Threshold configuration
+threshold: 0.01                                                     # Threshold used for ensemble and active learning methods to make decisions. Only valid when using "ensemble" or "active_learning" mode.
