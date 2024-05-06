@@ -28,15 +28,11 @@ def process_protein_and_ligand(protein_file, ligand_molecule, cutoff):
     )
     # Update the protein dataframe with the selected residues
     ppdb.df["ATOM"] = protein_cut
-    # Generate a random name for the pocket file
-    random_mol_name = str(randint(1, 1000000)).zfill(10)
-    pocket_file_name = "pocket_{}.pdb".format(random_mol_name)
+    # Generate the pocket file name
+    pocket_file_name = str(protein_file).replace(".pdb", "_pocket.pdb")
     # Save the updated protein dataframe as a pocket file
     ppdb.to_pdb(path=pocket_file_name, records=["ATOM"])
-    # Create a molecule object from the pocket file
-    protein_molecule = Chem.MolFromPDBFile(pocket_file_name, removeHs=False)
-    # Return the processed protein molecule and the pocket file name
-    return protein_molecule, pocket_file_name
+    return pocket_file_name
 
 
 def add_coordinates(dataframe):
