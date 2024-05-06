@@ -21,7 +21,7 @@ sys.path.append(str(dockm8_path))
 
 from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS, rescore_docking
-from scripts.utilities import printlog
+from scripts.utilities.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)

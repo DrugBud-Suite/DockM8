@@ -18,7 +18,7 @@ sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.postprocessing import rank_scores, standardize_scores
-from scripts.utilities import parallel_executor, printlog
+from scripts.utilities.utilities import parallel_executor, printlog
 
 warnings.filterwarnings("ignore")
 
