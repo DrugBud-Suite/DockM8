@@ -188,7 +188,6 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path, *a
                             includeFingerprints=False,
                             embedProps=False,
                             removeHs=False,
-                            strictParsing=True,
                         )
                         plants_scores = pd.read_csv(
                             str(file_path).replace("docked_ligands.mol2", "ranking.csv")

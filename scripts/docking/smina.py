@@ -9,7 +9,10 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
+dockm8_path = next(
+    (p / "DockM8" for p in Path(__file__).resolve().parents if (p / "DockM8").is_dir()),
+    None,
+)
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.utilities import (
@@ -18,7 +21,8 @@ from scripts.utilities.utilities import (
 )
 
 
-def smina_docking(split_file: Path,
+def smina_docking(
+    split_file: Path,
     w_dir: Path,
     protein_file: str,
     pocket_definition: Dict[str, list],
@@ -71,7 +75,9 @@ def smina_docking(split_file: Path,
     )
     try:
         # Execute the smina command
-        subprocess.call(smina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.call(
+            smina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        )
     except Exception as e:
         printlog(f"SMINA docking failed: {e}")
     return
@@ -102,7 +108,6 @@ def fetch_smina_poses(w_dir: Union[str, Path], n_poses: int, *args):
                         includeFingerprints=False,
                         embedProps=False,
                         removeHs=False,
-                        strictParsing=True,
                     )
                     smina_dataframes.append(df)
             smina_df = pd.concat(smina_dataframes)

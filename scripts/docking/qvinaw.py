@@ -157,7 +157,6 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
                         includeFingerprints=False,
                         embedProps=False,
                         removeHs=False,
-                        strictParsing=True,
                     )
                     qvinaw_dataframes.append(df)
             qvinaw_df = pd.concat(qvinaw_dataframes)

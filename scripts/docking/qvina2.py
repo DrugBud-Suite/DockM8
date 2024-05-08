@@ -153,7 +153,6 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
                         includeFingerprints=False,
                         embedProps=False,
                         removeHs=False,
-                        strictParsing=True,
                     )
                     qvina2_dataframes.append(df)
             qvina2_df = pd.concat(qvina2_dataframes)

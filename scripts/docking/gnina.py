@@ -103,7 +103,6 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
                         includeFingerprints=False,
                         embedProps=False,
                         removeHs=False,
-                        strictParsing=True,
                     )
                     gnina_dataframes.append(df)
             gnina_df = pd.concat(gnina_dataframes)
