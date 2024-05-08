@@ -50,9 +50,9 @@ def prepare_protein(
         Path: The path to the prepared protein structure.
     """
 
-    if len(protein_file_or_code) == 4 and protein_file_or_code.isalnum():
+    if len(str(protein_file_or_code)) == 4 and protein_file_or_code.isalnum():
         type = "PDB"
-    elif len(protein_file_or_code) == 6 and protein_file_or_code.isalnum():
+    elif len(str(protein_file_or_code)) == 6 and protein_file_or_code.isalnum():
         type = "Uniprot"
     else:
         # Check if the protein_file_or_code is a valid path
