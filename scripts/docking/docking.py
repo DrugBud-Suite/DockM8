@@ -65,6 +65,7 @@ def dockm8_docking(
         job_manager (str, optional): The job manager to use for parallel docking. Defaults to "concurrent_process".
     """
     if ncpus == 1:
+        printlog("Running docking using 1 CPU...")
         for program in docking_programs:
             docking_function, fetch_function = DOCKING_PROGRAMS[program]
             if not (w_dir / program.lower()).exists():
@@ -79,9 +80,10 @@ def dockm8_docking(
             if (w_dir / program.lower()).exists() and not (w_dir / program.lower() / f"{program.lower()}_poses.sdf").exists():
                 fetch_function(w_dir, n_poses, software)
     else:
+        printlog(f"Running docking using {ncpus} CPUs...")
         split_final_library_path = w_dir / "split_final_library"
         if not split_final_library_path.exists():
-            split_sdf_str(w_dir, w_dir / "final_library.sdf", ncpus)
+            split_final_library_path = split_sdf_str(w_dir, w_dir / "final_library.sdf", ncpus)
         else:
             printlog("Split final library folder already exists...")
         split_files_sdfs = [
@@ -91,7 +93,7 @@ def dockm8_docking(
         ]
         for program in docking_programs:
             docking_function, fetch_function = DOCKING_PROGRAMS[program]
-            if not (w_dir / program.lower()).exists():
+            if not (w_dir / program.lower()).exists() or not any((w_dir / program.lower()).iterdir()):
                 parallel_executor(
                     docking_function,
                     split_files_sdfs,
