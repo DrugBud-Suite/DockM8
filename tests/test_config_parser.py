@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 # Search for 'DockM8' in parent directories
 dockm8_path = next(
@@ -12,7 +11,7 @@ dockm8_path = next(
 )
 sys.path.append(str(dockm8_path))
 
-from config_parser import check_config
+from scripts.utilities.config_parser import check_config
 
 
 class DockM8Error(Exception):
