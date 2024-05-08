@@ -15,7 +15,6 @@ several methods for selecting the most suitable binding site.
 """
 
 import io
-import os
 import re
 import sys
 import time
