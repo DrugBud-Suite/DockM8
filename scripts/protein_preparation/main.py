@@ -49,87 +49,90 @@ def prepare_protein(
     Returns:
         Path: The path to the prepared protein structure.
     """
-
-    if len(str(protein_file_or_code)) == 4 and protein_file_or_code.isalnum():
-        type = "PDB"
-    elif len(str(protein_file_or_code)) == 6 and protein_file_or_code.isalnum():
-        type = "Uniprot"
-    else:
-        # Check if the protein_file_or_code is a valid path
-        if not Path(protein_file_or_code).is_file():
-            raise ValueError("Protein_file_or_code file is an invalid file path.")
+    prepared_receptor_path = output_dir / "prepared_receptor.pdb"
+    if not (prepared_receptor_path).exists():
+        if len(str(protein_file_or_code)) == 4 and protein_file_or_code.isalnum():
+            type = "PDB"
+        elif len(str(protein_file_or_code)) == 6 and protein_file_or_code.isalnum():
+            type = "Uniprot"
         else:
-            type = "File"
+            # Check if the protein_file_or_code is a valid path
+            if not Path(protein_file_or_code).is_file():
+                raise ValueError("Protein_file_or_code file is an invalid file path.")
+            else:
+                type = "File"
 
-    output_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check if the protein_file_or_code type is valid
-    if select_best_chain and type.upper() != "PDB":
-        printlog(
-            "Selecting the best chain is only supported for PDB protein_file_or_code. Turning of the best chain selection ..."
-        )
-        select_best_chain = False
-    # Check if protonation is required
-    if (
-        add_missing_hydrogens_pH is None
-        or add_missing_hydrogens_pH == 0.0
-        and not protonate
-    ):
-        printlog(
-            "Protonating with Protoss or PDBFixer is required for reliable results. Setting protonate to True."
-        )
-        protonate = True
-
-    # Fetch the protein structure
-    if type.upper() == "PDB":
-        # Ensure the pdb code is in the right format (4 letters or digits)
-        pdb_code = protein_file_or_code.strip().upper()
-        if len(pdb_code) != 4 or not pdb_code.isalnum():
-            raise ValueError(
-                "Invalid pdb code format. It should be 4 letters or digits."
+        # Check if the protein_file_or_code type is valid
+        if select_best_chain and type.upper() != "PDB":
+            printlog(
+                "Selecting the best chain is only supported for PDB protein_file_or_code. Turning of the best chain selection ..."
             )
-        if select_best_chain:
-            # Get the best chain using EDIA
-            step1_pdb = get_best_chain_edia(pdb_code, output_dir)
+            select_best_chain = False
+        # Check if protonation is required
+        if (
+            add_missing_hydrogens_pH is None
+            or add_missing_hydrogens_pH == 0.0
+            and not protonate
+        ):
+            printlog(
+                "Protonating with Protoss or PDBFixer is required for reliable results. Setting protonate to True."
+            )
+            protonate = True
+
+        # Fetch the protein structure
+        if type.upper() == "PDB":
+            # Ensure the pdb code is in the right format (4 letters or digits)
+            pdb_code = protein_file_or_code.strip().upper()
+            if len(pdb_code) != 4 or not pdb_code.isalnum():
+                raise ValueError(
+                    "Invalid pdb code format. It should be 4 letters or digits."
+                )
+            if select_best_chain:
+                # Get the best chain using EDIA
+                step1_pdb = get_best_chain_edia(pdb_code, output_dir)
+            else:
+                # Get PDB structure
+                step1_pdb = fetch_pdb_structure(protein_file_or_code, output_dir)
+        elif type.upper() == "UNIPROT":
+            # Fetch the Uniprot structure
+            uniprot_code = protein_file_or_code
+            step1_pdb = fetch_alphafold_structure(uniprot_code, output_dir)
         else:
-            # Get PDB structure
-            step1_pdb = fetch_pdb_structure(protein_file_or_code, output_dir)
-    elif type.upper() == "UNIPROT":
-        # Fetch the Uniprot structure
-        uniprot_code = protein_file_or_code
-        step1_pdb = fetch_alphafold_structure(uniprot_code, output_dir)
-    else:
-        # Assume protein_file_or_code is a file path
-        step1_pdb = Path(protein_file_or_code)
+            # Assume protein_file_or_code is a file path
+            step1_pdb = Path(protein_file_or_code)
 
-    # Fix the protein structure
-    if (fix_nonstandard_residues
-        or fix_missing_residues
-        or add_missing_hydrogens_pH is not None
-        or remove_hetero
-        or remove_water
-    ):
-        # Fix the PDB file
-        step2_pdb = fix_pdb_file(
-            step1_pdb,
-            output_dir,
-            fix_nonstandard_residues,
-            fix_missing_residues,
-            add_missing_hydrogens_pH,
-            remove_hetero,
-            remove_water,
-        )
-    else:
-        step2_pdb = step1_pdb
-    # Protonate the protein
-    if protonate:
-        final_pdb_file = protonate_protein_protoss(step2_pdb, output_dir)
-    else:
-        final_pdb_file = step2_pdb
-        
-    if step1_pdb != final_pdb_file and step1_pdb != protein_file_or_code:
-        step1_pdb.unlink()
-    if step2_pdb != final_pdb_file and step2_pdb != protein_file_or_code:
-        step2_pdb.unlink()
+        # Fix the protein structure
+        if (
+            fix_nonstandard_residues
+            or fix_missing_residues
+            or add_missing_hydrogens_pH is not None
+            or remove_hetero
+            or remove_water
+        ):
+            # Fix the PDB file
+            step2_pdb = fix_pdb_file(
+                step1_pdb,
+                output_dir,
+                fix_nonstandard_residues,
+                fix_missing_residues,
+                add_missing_hydrogens_pH,
+                remove_hetero,
+                remove_water,
+            )
+        else:
+            step2_pdb = step1_pdb
+        # Protonate the protein
+        if protonate:
+            step3_pdb = protonate_protein_protoss(step2_pdb, output_dir)
+        else:
+            step3_pdb = step2_pdb
 
-    return final_pdb_file
+        if step1_pdb != step3_pdb and step1_pdb != protein_file_or_code:
+            step1_pdb.unlink()
+        if step2_pdb != step3_pdb and step2_pdb != protein_file_or_code:
+            step2_pdb.unlink()
+
+        step3_pdb.rename(prepared_receptor_path)
+    return prepared_receptor_path
