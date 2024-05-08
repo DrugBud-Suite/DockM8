@@ -145,7 +145,6 @@ def check_config(config):
         pass
 
     for receptor in receptors:
-        print(receptor, type(receptor))
         if len(receptor) == 4 and receptor.isalnum() and not receptor.isdigit():
             printlog(
                 f"PDB ID detected: {receptor}, structure will be downloaded from the PDB."
