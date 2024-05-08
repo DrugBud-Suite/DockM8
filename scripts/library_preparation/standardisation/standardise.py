@@ -1,5 +1,5 @@
 import concurrent.futures
-import os
+import re
 import sys
 from pathlib import Path
 
@@ -10,7 +10,10 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
+dockm8_path = next(
+    (p / "DockM8" for p in Path(__file__).resolve().parents if (p / "DockM8").is_dir()),
+    None,
+)
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.utilities import printlog
@@ -42,7 +45,7 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
     try:
         df = PandasTools.LoadSDF(
             str(input_sdf),
-            idName=id_column,
+            idName="ID",
             molColName="Molecule",
             includeFingerprints=False,
             embedProps=True,
@@ -50,9 +53,19 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
             strictParsing=True,
             smilesName="SMILES",
         )
-        df.rename(columns={id_column: "ID"}, inplace=True)
-        df["ID"] = ["DOCKM8-" + str(id) if str(id).isdigit() else id for id in df["ID"]]
-        df["ID"] = df["ID"].str.replace("_", "-")
+        # Check if 'ID' column is empty or if all values are NaN
+        if df["ID"].isnull().all():
+            # Generate unique IDs if 'ID' column is empty
+            df["ID"] = ["DOCKM8-" + str(1 + i) for i in range(len(df))]
+        else:
+            # Process existing IDs
+            df["ID"] = (
+                df["ID"]
+                .astype(str)
+                .apply(lambda x: "DOCKM8-" + x if x.isdigit() else x)
+            )
+            # Remove special characters (keeping alphanumeric and dashes)
+            df["ID"] = df["ID"].apply(lambda x: re.sub(r"[^a-zA-Z0-9-]", "", x))
         n_cpds_start = len(df)
     except Exception as e:
         printlog(f"ERROR: Failed to Load library SDF file! {str(e)}")
