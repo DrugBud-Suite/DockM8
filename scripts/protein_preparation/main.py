@@ -72,9 +72,7 @@ def prepare_protein(
             select_best_chain = False
         # Check if protonation is required
         if (
-            add_missing_hydrogens_pH is None
-            or add_missing_hydrogens_pH == 0.0
-            and not protonate
+            add_missing_hydrogens_pH is None and not protonate
         ):
             printlog(
                 "Protonating with Protoss or PDBFixer is required for reliable results. Setting protonate to True."
