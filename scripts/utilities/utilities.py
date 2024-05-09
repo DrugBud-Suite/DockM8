@@ -40,7 +40,7 @@ def split_sdf(dir, sdf_file, ncpus):
                             molColName='Molecule',
                             idName='ID',
                             includeFingerprints=False,
-                            strictParsing=True)
+                            )
     compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
@@ -117,7 +117,7 @@ def split_sdf_single(dir, sdf_file):
                             molColName='Molecule',
                             idName='ID',
                             includeFingerprints=False,
-                            strictParsing=True)
+                            )
     for i, row in tqdm(df.iterrows(), total=len(df), desc='Splitting SDF file'):
         # Extract compound information from the row
         compound = row['Molecule']
@@ -430,7 +430,7 @@ def parallel_SDF_loader(sdf_path : Path, molColName : str, idName : str, ncpus =
         mols = [m for m in Chem.MultithreadedSDMolSupplier(sdf_path,
                                                         numWriterThreads=ncpus, 
                                                         removeHs=False, 
-                                                        strictParsing=True) if m is not None]
+                                                        ) if m is not None]
         data = []
         # Iterate over each molecule
         for mol in mols:

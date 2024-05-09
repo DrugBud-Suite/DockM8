@@ -50,7 +50,7 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
             includeFingerprints=False,
             embedProps=True,
             removeHs=True,
-            strictParsing=True,
+            
             smilesName="SMILES",
         )
         # Check if 'ID' column is empty or if all values are NaN

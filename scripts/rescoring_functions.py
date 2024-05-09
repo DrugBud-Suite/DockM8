@@ -80,7 +80,7 @@ def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     parallel_executor(gnina_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
     
     try:
-        gnina_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+        gnina_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, ) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
     except Exception as e:
         printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
         printlog(e)
@@ -161,7 +161,7 @@ def vinardo_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     parallel_executor(vinardo_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
     
     try:
-        vinardo_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+        vinardo_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, ) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
     except Exception as e:
         printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
         printlog(e)
@@ -233,7 +233,7 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     parallel_executor(AD4_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
     
     try:
-        AD4_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+        AD4_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, ) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
     except Exception as e:
         printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
         printlog(e)
@@ -893,7 +893,7 @@ def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
                                                 includeFingerprints=False,
                                                 embedProps=False,
                                                 removeHs=False,
-                                                strictParsing=True) for file in os.listdir(
+                                                ) for file in os.listdir(
                                                 rescoring_folder /
                                                 'LinF9_rescoring') if file.startswith('split') and file.endswith('_LinF9.sdf')
                             ]

@@ -127,7 +127,7 @@ def dockm8(
         idName="Pose ID",
         molColName="Molecule",
         includeFingerprints=False,
-        strictParsing=True,
+        
     )
     toc = time.perf_counter()
     print(f"Finished loading all poses SDF in {toc-tic:0.4f}!")
