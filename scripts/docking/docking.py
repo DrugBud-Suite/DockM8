@@ -19,7 +19,7 @@ from scripts.docking.plants import fetch_plants_poses, plants_docking
 from scripts.docking.qvina2 import fetch_qvina2_poses, qvina2_docking
 from scripts.docking.qvinaw import fetch_qvinaw_poses, qvinaw_docking
 from scripts.docking.smina import fetch_smina_poses, smina_docking
-from scripts.utilities import (
+from scripts.utilities.utilities import (
     parallel_executor,
     parallel_SDF_loader,
     printlog,
@@ -40,7 +40,7 @@ DOCKING_PROGRAMS = {
     "QVINA2": [qvina2_docking, fetch_qvina2_poses],
 }
 
-def docking(
+def dockm8_docking(
     w_dir: Path,
     protein_file: Path,
     pocket_definition : dict,
@@ -48,7 +48,7 @@ def docking(
     docking_programs: list,
     exhaustiveness: int,
     n_poses: int,
-    ncpus: int,
+    n_cpus: int,
     job_manager="concurrent_process",
 ):
     """Dock ligands into a protein binding site using one or more docking programs.
@@ -61,10 +61,11 @@ def docking(
         docking_programs (list): A list of docking programs to use.
         exhaustiveness (int): The exhaustiveness parameter for docking.
         n_poses (int): The number of poses to generate.
-        ncpus (int): The number of CPUs to use for parallel docking.
+        n_cpus (int): The number of CPUs to use for parallel docking.
         job_manager (str, optional): The job manager to use for parallel docking. Defaults to "concurrent_process".
     """
-    if ncpus == 1:
+    if n_cpus == 1:
+        printlog("Running docking using 1 CPU...")
         for program in docking_programs:
             docking_function, fetch_function = DOCKING_PROGRAMS[program]
             if not (w_dir / program.lower()).exists():
@@ -79,9 +80,10 @@ def docking(
             if (w_dir / program.lower()).exists() and not (w_dir / program.lower() / f"{program.lower()}_poses.sdf").exists():
                 fetch_function(w_dir, n_poses, software)
     else:
+        printlog(f"Running docking using {n_cpus} CPUs...")
         split_final_library_path = w_dir / "split_final_library"
         if not split_final_library_path.exists():
-            split_sdf_str(w_dir, w_dir / "final_library.sdf", ncpus)
+            split_final_library_path = split_sdf_str(w_dir, w_dir / "final_library.sdf", n_cpus)
         else:
             printlog("Split final library folder already exists...")
         split_files_sdfs = [
@@ -91,11 +93,11 @@ def docking(
         ]
         for program in docking_programs:
             docking_function, fetch_function = DOCKING_PROGRAMS[program]
-            if not (w_dir / program.lower()).exists():
+            if not (w_dir / program.lower()).exists() or not any((w_dir / program.lower()).iterdir()):
                 parallel_executor(
                     docking_function,
                     split_files_sdfs,
-                    ncpus,
+                    n_cpus,
                     job_manager,
                     w_dir=w_dir,
                     protein_file=protein_file,
@@ -108,7 +110,7 @@ def docking(
                 fetch_function(w_dir, n_poses, software)
     shutil.rmtree(w_dir / "split_final_library", ignore_errors=True)
 
-def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path, ncpus : int, bust_poses : bool):
+def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path, n_cpus : int, bust_poses : bool):
     """
     Concatenates all poses from the specified docking programs and checks them for quality using PoseBusters.
     
@@ -123,7 +125,7 @@ def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path,
     # Create an empty DataFrame to store all poses
     all_poses = pd.DataFrame()
     for program in docking_programs:
-        df = parallel_SDF_loader(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf", molColName='Molecule', idName='Pose ID', ncpus=ncpus)
+        df = parallel_SDF_loader(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf", molColName='Molecule', idName='Pose ID', n_cpus=n_cpus)
         all_poses = pd.concat([all_poses, df])
     if bust_poses:
         try:

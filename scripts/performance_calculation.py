@@ -18,7 +18,7 @@ sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.postprocessing import rank_scores, standardize_scores
-from scripts.utilities import parallel_executor, printlog
+from scripts.utilities.utilities import parallel_executor, printlog
 
 warnings.filterwarnings("ignore")
 
@@ -94,7 +94,7 @@ def calculate_performance_for_clustering_method(dir, w_dir, actives_df, percenta
         for length in tqdm(range(2, len(score_columns)), desc=f'{clustering_method}'):
             combinations = list(itertools.combinations(score_columns, length))
             # For each combination
-            results = parallel_executor(process_combination, combinations, ncpus = 50, backend = 'concurrent_process_silent', clustering_method = clustering_method, ranked_df = ranked_df, standardised_df = standardised_df, actives_df = actives_df, percentages = percentages)
+            results = parallel_executor(process_combination, combinations, n_cpus = 50, backend = 'concurrent_process_silent', clustering_method = clustering_method, ranked_df = ranked_df, standardised_df = standardised_df, actives_df = actives_df, percentages = percentages)
             for result in results:
                 result_list.append(result)
         return pd.concat(result_list, axis=0)
@@ -119,7 +119,7 @@ def calculate_performance(w_dir : Path, actives_library : Path, percentages : li
     actives_df['Activity'] = pd.to_numeric(actives_df['Activity'])
     # Calculate performance for each clustering method
     dirs = [dir for dir in os.listdir(w_dir) if dir.startswith('rescoring') and dir.endswith('clustered')]
-    results = parallel_executor(calculate_performance_for_clustering_method, dirs, ncpus = math.ceil(len(dirs)//2), backend = 'concurrent_process_silent', w_dir=w_dir, actives_df = actives_df, percentages=percentages)
+    results = parallel_executor(calculate_performance_for_clustering_method, dirs, n_cpus = math.ceil(len(dirs)//2), backend = 'concurrent_process_silent', w_dir=w_dir, actives_df = actives_df, percentages=percentages)
     all_results = pd.concat(results, ignore_index=True)
     (w_dir / 'performance').mkdir(parents=True, exist_ok=True)
     all_results.to_csv(Path(w_dir) / "performance" / 'performance.csv', index=False)

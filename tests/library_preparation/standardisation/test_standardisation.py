@@ -22,9 +22,9 @@ def common_test_data():
 def test_standardize_library(common_test_data):
     # Define the input parameters for the function
     library, output_dir, id_column = common_test_data
-    ncpus = int(os.cpu_count() * 0.9)
+    n_cpus = int(os.cpu_count() * 0.9)
     # Call the function
-    standardized_file = standardize_library(library, output_dir, id_column, ncpus)
+    standardized_file = standardize_library(library, output_dir, id_column, n_cpus)
     # Add your assertions here to verify the expected behavior of the function
 
     # Verify that the standardized library file exists

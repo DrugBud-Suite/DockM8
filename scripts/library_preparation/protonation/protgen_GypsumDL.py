@@ -14,14 +14,14 @@ from rdkit.Chem import PandasTools
 dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities import parallel_executor, printlog, split_sdf_str
+from scripts.utilities.utilities import parallel_executor, printlog, split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def protonate_GypsumDL(
-    input_sdf: Path, output_dir: Path, software: Path, ncpus: int
+    input_sdf: Path, output_dir: Path, software: Path, n_cpus: int
 ):
     """
     Generates protonation states using GypsumDL.
@@ -30,7 +30,7 @@ def protonate_GypsumDL(
         input_sdf (str): Path to the input SDF file.
         output_dir (str): Path to the output directory.
         software (str): Path to the GypsumDL software.
-        ncpus (int): Number of CPUs to use for the calculation.
+        n_cpus (int): Number of CPUs to use for the calculation.
 
     Raises:
         Exception: If failed to generate protomers.
@@ -85,7 +85,7 @@ def protonate_GypsumDL(
         split_files_sdfs,
         3,
         output_dir=output_dir,
-        cpus=math.ceil(ncpus // 3),
+        cpus=math.ceil(n_cpus // 3),
     )
 
     results_dfs = []
@@ -96,7 +96,7 @@ def protonate_GypsumDL(
                 str(output_dir / "GypsumDL_results" / file),
                 molColName="Molecule",
                 idName="ID",
-                removeHs=False,
+                
             )
             results_dfs.append(sdf_df)
 

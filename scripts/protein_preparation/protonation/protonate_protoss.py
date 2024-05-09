@@ -13,7 +13,7 @@ from Bio.PDB.PDBIO import PDBIO
 dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities import printlog
+from scripts.utilities.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -46,12 +46,12 @@ def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
 
     # Continuously poll the job until it is completed or maximum polls reached
     while status == 'pending' or status == 'running':
-        print(f'Job {job_id} is {status}')
+        printlog(f'Protoss job {job_id} is {status}')
         current_poll += 1
 
         # Check if maximum polls reached
         if current_poll >= max_polls:
-            print(f'Job {job_id} has not completed after {max_polls} polling requests and {poll_interval * max_polls} seconds')
+            printlog(f'Protoss job {job_id} has not completed after {max_polls} polling requests and {poll_interval * max_polls} seconds')
             return job
 
         # Wait for the specified interval before polling again
@@ -61,7 +61,7 @@ def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
         job = requests.get(poll_url + job_id + '/').json()
         status = job['status']
 
-    print(f'Job {job_id} completed with {status}')
+    printlog(f'Protoss job {job_id} completed with {status}')
     return job
 
 

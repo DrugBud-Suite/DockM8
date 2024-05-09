@@ -11,7 +11,7 @@ from tqdm import tqdm
 dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities import printlog
+from scripts.utilities.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -33,14 +33,14 @@ def conf_gen_RDKit(molecule):
         AllChem.SanitizeMol(molecule)  # Sanitize the molecule to ensure it is chemically valid
     return molecule
 
-def generate_conformers_RDKit(input_sdf: str, output_dir: str, ncpus: int) -> Path:
+def generate_conformers_RDKit(input_sdf: str, output_dir: str, n_cpus: int) -> Path:
     """
     Generates 3D conformers using RDKit.
 
     Args:
         input_sdf (str): Path to the input SDF file.
         output_dir (str): Path to the output directory.
-        ncpus (int): Number of CPUs to use for parallel processing.
+        n_cpus (int): Number of CPUs to use for parallel processing.
 
     Returns:
         output_file (Path): Path to the output SDF file containing the generated conformers.
@@ -53,10 +53,10 @@ def generate_conformers_RDKit(input_sdf: str, output_dir: str, ncpus: int) -> Pa
                                 idName='ID',
                                 molColName='Molecule',
                                 includeFingerprints=False,
-                                removeHs=False,
+                                
                                 smilesName='SMILES')
         # Generate conformers for each molecule in parallel using the conf_gen_RDKit function
-        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
             df['Molecule'] = list(tqdm(executor.map(conf_gen_RDKit, df['Molecule']), total=len(df['Molecule']), desc='Minimizing molecules', unit='mol'))
 
         # Write the conformers to the output SDF file using PandasTools.WriteSDF()

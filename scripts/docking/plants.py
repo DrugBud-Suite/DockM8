@@ -12,7 +12,7 @@ from tqdm import tqdm
 dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities import convert_molecules, delete_files, printlog
+from scripts.utilities.utilities import convert_molecules, delete_files, printlog
 
 
 def plants_docking(
@@ -185,10 +185,6 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path, *a
                             str(file_path.with_suffix(".sdf")),
                             idName="ID",
                             molColName="Molecule",
-                            includeFingerprints=False,
-                            embedProps=False,
-                            removeHs=False,
-                            strictParsing=True,
                         )
                         plants_scores = pd.read_csv(
                             str(file_path).replace("docked_ligands.mol2", "ranking.csv")

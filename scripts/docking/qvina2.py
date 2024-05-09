@@ -14,7 +14,7 @@ from tqdm import tqdm
 dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities import convert_molecules, delete_files, printlog, split_pdbqt_str
+from scripts.utilities.utilities import convert_molecules, delete_files, printlog, split_pdbqt_str
 
 
 def qvina2_docking(
@@ -150,10 +150,6 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
                         str(w_dir / "qvina2" / file),
                         idName="Pose ID",
                         molColName="Molecule",
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
-                        strictParsing=True,
                     )
                     qvina2_dataframes.append(df)
             qvina2_df = pd.concat(qvina2_dataframes)
