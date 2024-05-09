@@ -31,7 +31,8 @@ def prepare_library(
     protonation: str,
     conformers: str,
     software: Path,
-    ncpus: int,
+    n_cpus: int,
+    n_conformers: int = 1
 ):
     """
     Prepares a docking library for further analysis.
@@ -40,17 +41,17 @@ def prepare_library(
         input_sdf (str): The path to the input SDF file containing the docking library.
         id_column (str): The name of the column in the SDF file that contains the compound IDs.
         protonation (str): The method to use for protonation. Can be 'GypsumDL', or 'None' for no protonation.
-        ncpus (int): The number of CPUs to use for parallelization.
+        n_cpus (int): The number of CPUs to use for parallelization.
     """
     standardized_sdf = output_dir / "standardized_library.sdf"
 
     if not standardized_sdf.is_file():
-        standardize_library(input_sdf, output_dir, id_column, ncpus)
+        standardize_library(input_sdf, output_dir, id_column, n_cpus)
 
     if protonation == "GypsumDL":
         protonated_sdf = output_dir / "protonated_library.sdf"
         if not protonated_sdf.is_file():
-            protonate_GypsumDL(standardized_sdf, output_dir, software, ncpus)
+            protonate_GypsumDL(standardized_sdf, output_dir, software, n_cpus)
     elif protonation == "None":
         protonated_sdf = standardized_sdf
     else:
@@ -59,9 +60,9 @@ def prepare_library(
         )
 
     if conformers == "RDKit" or conformers == "MMFF":
-        generate_conformers_RDKit(protonated_sdf, output_dir, ncpus)
+        generate_conformers_RDKit(protonated_sdf, output_dir, n_cpus)
     elif conformers == "GypsumDL":
-        generate_conformers_GypsumDL(protonated_sdf, output_dir, software, ncpus, 1)
+        generate_conformers_GypsumDL(protonated_sdf, output_dir, software, n_cpus, n_conformers)
     else:
         raise ValueError(
             f'Invalid conformer method specified : {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".'
