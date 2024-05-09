@@ -17,13 +17,13 @@ def common_test_data():
     output_dir = dockm8_path / "tests/test_files/"
     id_column = "ID"
     software = dockm8_path / "software"
-    ncpus = int(os.cpu_count() * 0.9)
-    return library, output_dir, id_column, software, ncpus
+    n_cpus = int(os.cpu_count() * 0.9)
+    return library, output_dir, id_column, software, n_cpus
 
 def test_prepare_library_protonation(common_test_data):
     """Test library preparation with standardization."""
-    library, output_dir, id_column, software, ncpus = common_test_data
-    final_library = prepare_library(library, output_dir, id_column, "GypsumDL", "GypsumDL", software, ncpus)
+    library, output_dir, id_column, software, n_cpus = common_test_data
+    final_library = prepare_library(library, output_dir, id_column, "GypsumDL", "GypsumDL", software, n_cpus)
     expected_output = output_dir / "final_library.sdf"
     # Check if the final library file exists
     assert final_library == expected_output
@@ -36,8 +36,8 @@ def test_prepare_library_protonation(common_test_data):
 
 def test_prepare_library_no_protonation(common_test_data):
     """Test library preparation without protonation."""
-    library, output_dir, id_column, software, ncpus = common_test_data
-    final_library = prepare_library(library, output_dir, id_column, "None", "GypsumDL", software, ncpus)
+    library, output_dir, id_column, software, n_cpus = common_test_data
+    final_library = prepare_library(library, output_dir, id_column, "None", "GypsumDL", software, n_cpus)
     expected_output = output_dir / "final_library.sdf"
     # Check if the final library file exists
     assert final_library == expected_output
@@ -50,14 +50,14 @@ def test_prepare_library_no_protonation(common_test_data):
 
 def test_prepare_library_invalid_protonation(common_test_data):
     """Test library preparation with invalid protonation method."""
-    library, output_dir, id_column, software, ncpus = common_test_data
+    library, output_dir, id_column, software, n_cpus = common_test_data
     # Check if the function raises a ValueError for an invalid protonation method
     with pytest.raises(ValueError):
-        prepare_library(library, output_dir, id_column, "InvalidMethod", "GypsumDL", software, ncpus)
+        prepare_library(library, output_dir, id_column, "InvalidMethod", "GypsumDL", software, n_cpus)
 
 def test_prepare_library_invalid_conformers(common_test_data):
     """Test library preparation with invalid conformers method."""
-    library, output_dir, id_column, software, ncpus = common_test_data
+    library, output_dir, id_column, software, n_cpus = common_test_data
     # Check if the function raises a ValueError for an invalid conformers method
     with pytest.raises(ValueError):
-        prepare_library(library, output_dir, id_column, "GypsumDL", "InvalidMethod", software, ncpus)
+        prepare_library(library, output_dir, id_column, "GypsumDL", "InvalidMethod", software, n_cpus)

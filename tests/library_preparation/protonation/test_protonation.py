@@ -21,11 +21,11 @@ def common_test_data():
 
 def test_protonate_GypsumDL(common_test_data):
     library, output_dir, software = common_test_data
-    ncpus = int(os.cpu_count()*0.9)
+    n_cpus = int(os.cpu_count()*0.9)
     
     library_df = PandasTools.LoadSDF(str(library), molColName=None, idName='ID')
     
-    output_file = protonate_GypsumDL(library, output_dir, software, ncpus)
+    output_file = protonate_GypsumDL(library, output_dir, software, n_cpus)
     
     output_df = PandasTools.LoadSDF(str(output_file), molColName=None, idName='ID')
     

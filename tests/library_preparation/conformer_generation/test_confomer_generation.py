@@ -27,12 +27,12 @@ def common_test_data():
 def test_generate_conformers_GypsumDL(common_test_data):
     """Test generate_conformers_GypsumDL function."""
     library, output_dir, software = common_test_data
-    ncpus = int(os.cpu_count() * 0.9)
+    n_cpus = int(os.cpu_count() * 0.9)
 
     library_df = PandasTools.LoadSDF(str(library), molColName=None, idName="ID")
 
     # Call the function
-    output_file = generate_conformers_GypsumDL(library, output_dir, software, ncpus)
+    output_file = generate_conformers_GypsumDL(library, output_dir, software, n_cpus)
 
     output_df = PandasTools.LoadSDF(str(output_file), molColName=None, idName="ID")
 
@@ -56,12 +56,12 @@ def test_generate_conformers_GypsumDL(common_test_data):
 def test_generate_conformers_RDKit(common_test_data):
     """Test generate_conformers_RDKit function."""
     library, output_dir, software = common_test_data
-    ncpus = int(os.cpu_count() * 0.9)
+    n_cpus = int(os.cpu_count() * 0.9)
 
     library_df = PandasTools.LoadSDF(str(library), molColName=None, idName="ID")
 
     # Call the function
-    output_file = generate_conformers_RDKit(library, output_dir, ncpus)
+    output_file = generate_conformers_RDKit(library, output_dir, n_cpus)
 
     output_df = PandasTools.LoadSDF(str(output_file), molColName=None, idName="ID")
 

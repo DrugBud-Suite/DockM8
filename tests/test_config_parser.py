@@ -43,8 +43,8 @@ def test_check_config_valid(common_test_data):
     assert config["general"]["software"] == Path(str(dockm8_path) + "/software")
     assert "mode" in config["general"]
     assert config["general"]["mode"] == "single"
-    assert "ncpus" in config["general"]
-    assert config["general"]["ncpus"] == int(os.cpu_count() * 0.9)
+    assert "n_cpus" in config["general"]
+    assert config["general"]["n_cpus"] == int(os.cpu_count() * 0.9)
     assert "decoy_generation" in config
     assert "gen_decoys" in config["decoy_generation"]
     assert not config["decoy_generation"]["gen_decoys"]
@@ -103,8 +103,8 @@ def test_check_config_valid(common_test_data):
     assert "bust_poses" in config["docking"]
     if config["docking"]["bust_poses"]:
         assert config["docking"]["bust_poses"]
-    assert "nposes" in config["docking"]
-    assert config["docking"]["nposes"] == 10
+    assert "n_poses" in config["docking"]
+    assert config["docking"]["n_poses"] == 10
     assert "exhaustiveness" in config["docking"]
     assert config["docking"]["exhaustiveness"] == 8
     assert "pose_selection" in config
