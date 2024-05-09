@@ -40,7 +40,6 @@ parser.add_argument("--config", type=str, help="Path to the configuration file")
 
 config = check_config(Path(parser.parse_args().config))
 
-
 # Main function to manage docking process
 def dockm8(
     software: Path,
@@ -52,7 +51,7 @@ def dockm8(
     docking_library: Path,
     docking: dict,
     pose_selection: dict,
-    ncpus: int,
+    n_cpus: int,
     rescoring: list,
     consensus: str,
     threshold: float,
@@ -77,7 +76,7 @@ def dockm8(
 
     # Prepare the ligands for docking (e.g., adding hydrogens, generating conformers)
 
-    if not os.path.isfile(w_dir / "final_library.sdf"):
+    if not (w_dir / "final_library.sdf").exists():
         prepare_library(
             input_sdf=docking_library,
             output_dir=w_dir,
@@ -85,7 +84,8 @@ def dockm8(
             protonation=ligand_preparation["protonation"],
             conformers=ligand_preparation["conformers"],
             software=software,
-            ncpus=ncpus,
+            n_cpus=n_cpus,
+            n_conformers=ligand_preparation["n_conformers"]
         )
 
     # Determine the docking pocket
@@ -99,25 +99,26 @@ def dockm8(
     )
 
     # Perform the docking operation
-    dockm8_docking(
-        w_dir=w_dir,
-        protein_file=prepared_receptor,
-        pocket_definition=pocket_definition,
-        software=software,
-        docking_programs=docking["docking_programs"],
-        n_poses=docking["nposes"],
-        exhaustiveness=docking["exhaustiveness"],
-        ncpus=ncpus,
-    )
+    if not (w_dir / "allposes.sdf").exists():
+        dockm8_docking(
+            w_dir=w_dir,
+            protein_file=prepared_receptor,
+            pocket_definition=pocket_definition,
+            software=software,
+            docking_programs=docking["docking_programs"],
+            n_poses=docking["n_poses"],
+            exhaustiveness=docking["exhaustiveness"],
+            n_cpus=n_cpus,
+        )
 
-    # Concatenate all poses into a single file
-    concat_all_poses(
-        w_dir=w_dir,
-        docking_programs=docking["docking_programs"],
-        protein_file=prepared_receptor,
-        bust_poses=docking["bust_poses"],
-        ncpus=ncpus,
-    )
+        # Concatenate all poses into a single file
+        concat_all_poses(
+            w_dir=w_dir,
+            docking_programs=docking["docking_programs"],
+            protein_file=prepared_receptor,
+            bust_poses=docking["bust_poses"],
+            n_cpus=n_cpus,
+        )
 
     # Load all poses from SDF file and perform clustering
     print("Loading all poses SDF file...")
@@ -144,7 +145,7 @@ def dockm8(
                 pocket_definition=pocket_definition,
                 software=software,
                 all_poses=all_poses,
-                ncpus=ncpus,
+                n_cpus=n_cpus,
             )
 
     # Rescore poses for each selection method
@@ -156,7 +157,7 @@ def dockm8(
             software=software,
             clustered_sdf=w_dir / "clustering" / f"{method}_clustered.sdf",
             functions=rescoring,
-            ncpus=ncpus,
+            n_cpus=n_cpus,
         )
 
     # Apply consensus methods to the poses
@@ -172,6 +173,7 @@ def dockm8(
 
 
 def run_dockm8(config):
+    printlog("Starting DockM8 run...")
     software = config["general"]["software"]
     decoy_generation = config["decoy_generation"]
     if decoy_generation["gen_decoys"]:
@@ -194,7 +196,7 @@ def run_dockm8(config):
                 docking_library=decoy_library,
                 docking=config["docking"],
                 pose_selection=config["pose_selection"],
-                ncpus=config["general"]["ncpus"],
+                n_cpus=config["general"]["n_cpus"],
                 rescoring=config["rescoring"],
                 consensus=config["consensus"],
                 threshold=config["threshold"],
@@ -237,7 +239,7 @@ def run_dockm8(config):
                 docking_library=decoy_library,
                 docking=config["docking"],
                 pose_selection=config["pose_selection"],
-                ncpus=config["general"]["ncpus"],
+                n_cpus=config["general"]["n_cpus"],
                 rescoring=optimal_rescoring_functions,
                 consensus=optimal_conditions["consensus"],
                 threshold=config["threshold"],
@@ -262,7 +264,7 @@ def run_dockm8(config):
                 docking_library=decoy_library,
                 docking=config["docking"],
                 pose_selection=config["pose_selection"],
-                ncpus=config["general"]["ncpus"],
+                n_cpus=config["general"]["n_cpus"],
                 rescoring=config["rescoring"],
                 consensus=config["consensus"],
                 threshold=config["threshold"],
@@ -306,7 +308,7 @@ def run_dockm8(config):
                     docking_library=decoy_library,
                     docking=config["docking"],
                     pose_selection=config["pose_selection"],
-                    ncpus=config["general"]["ncpus"],
+                    n_cpus=config["general"]["n_cpus"],
                     rescoring=optimal_rescoring_functions,
                     consensus=optimal_conditions["consensus"],
                     threshold=config["threshold"],
@@ -326,7 +328,7 @@ def run_dockm8(config):
                 docking_library=config["docking_library"],
                 docking=config["docking"],
                 pose_selection=config["pose_selection"],
-                ncpus=config["general"]["ncpus"],
+                n_cpus=config["general"]["n_cpus"],
                 rescoring=config["rescoring"],
                 consensus=config["consensus"],
                 threshold=config["threshold"],
@@ -352,13 +354,12 @@ def run_dockm8(config):
                     docking_library=config["docking_library"],
                     docking=config["docking"],
                     pose_selection=config["pose_selection"],
-                    ncpus=config["general"]["ncpus"],
+                    n_cpus=config["general"]["n_cpus"],
                     rescoring=config["rescoring"],
                     consensus=config["consensus"],
                     threshold=config["threshold"],
                 )
             printlog("DockM8 has finished running in ensemble mode...")
     return
-
 
 run_dockm8(config)
