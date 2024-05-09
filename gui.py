@@ -1,33 +1,41 @@
 # Import necessary libraries
 import itertools
 import os
-import shlex
 import subprocess
 import sys
 import time
 import warnings
 from pathlib import Path
+
 import streamlit as st
 
 from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
+from scripts.pocket_finding.main import POCKET_DETECTION_OPTIONS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
+st.set_page_config(
+    page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide"
+)
 # Sidebar
 st.sidebar.image(image="./media/DockM8_white_horizontal.png", width=200)
 st.sidebar.title("DockM8")
 st.sidebar.subheader("Open-source consensus docking for everyone")
 st.sidebar.link_button("Github", url="https://github.com/DrugBud-Suite/DockM8")
-st.sidebar.link_button("Visit Website", url="https://drugbud-suite.github.io/dockm8-web/")
+st.sidebar.link_button(
+    "Visit Website", url="https://drugbud-suite.github.io/dockm8-web/"
+)
 st.sidebar.link_button("Publication", url="https://doi.org/your-doi")
 st.sidebar.link_button("Zenodo repository", url="https://doi.org/your-doi")
 
 # Logo
 st.columns(3)[1].image(image="./media/DockM8_white_vertical.png", width=400)
+
+# Setup config dictionnary
+config = {}
 
 # Setup
 CWD = os.getcwd()
@@ -48,7 +56,9 @@ if mode != "Single":
         value=1.0,
         help="Threshold for ensemble consensus (in %). DockM8 will only consider a ligand as a consensus hit if it is a top scorer for all the receptors.",
     )
-num_cpus = st.slider(
+else:
+    threshold = None
+n_cpus = st.slider(
     "Number of CPUs",
     min_value=1,
     max_value=os.cpu_count(),
@@ -69,22 +79,28 @@ gen_decoys = st.toggle(
 )
 
 if mode == "Single":
-    receptor_value = CWD + "/dockm8_testing/4kd1_p.pdb"
-    reference_value = CWD + "/dockm8_testing/4kd1_l.sdf"
-    library_value = CWD + "/dockm8_testing/library.sdf"
+    receptor_value = CWD + "/tests/test_files/1fvv_p.pdb"
+    reference_value = CWD + "/tests/test_files/1fvv_l.sdf"
+    library_value = CWD + "/tests/test_files/library.sdf"
 if mode == "Ensemble":
-    receptor_value = CWD + "/dockm8_testing/4kd1_p.pdb, " + CWD + "/dockm8_testing/1fvv_p.pdb"
-    reference_value = CWD + "/dockm8_testing/4kd1_l.sdf, " + CWD + "/dockm8_testing/1fvv_l.sdf"
-    library_value = CWD + "/dockm8_testing/library.sdf"
+    receptor_value = (
+        CWD + "/tests/test_files/4kd1_p.pdb, " + CWD + "/tests/test_files/1fvv_p.pdb"
+    )
+    reference_value = (
+        CWD + "/tests/test_files/4kd1_l.sdf, " + CWD + "/tests/test_files/1fvv_l.sdf"
+    )
+    library_value = CWD + "/tests/test_files/library.sdf"
 
 if gen_decoys:
     st.subheader("Decoy generation", divider="orange")
     # Active ligands
-    active_ligands = st.text_input(
+    actives = Path(st.text_input(
         label="Enter the path to the active ligands file (.sdf format)",
-        value = CWD + "/dockm8_testing/CDK2_actives.sdf",
+        value=CWD + "/tests/test_files/CDK2_actives.sdf",
         help="Choose an active ligands file (.sdf format)",
-    )
+    ))
+    if not actives.is_file():
+        st.error(f"Invalid file path: {actives}")
     # Number of decoys
     n_decoys = st.slider(
         label="Number of decoys",
@@ -100,92 +116,148 @@ if gen_decoys:
         options=("DUD-E", "DEKOIS", "DUD-E_phosphorus"),
         help="Select which Deepcoy decoy generation model you want to use ",
     )
-
-col1, col2 = st.columns(2)
+else:
+    actives = n_decoys = decoy_model = None
 
 # Receptor(s)
-col1.header("Receptor(s)", divider="orange")
-receptor_file = col1.text_input(
+st.header("Receptor(s)", divider="orange")
+receptors = st.text_input(
     label="File path(s) of one or more multiple receptor files (.pdb format), separated by commas",
-    help="Choose one or multiple receptor files (.pdb format)",
+    help="Choose one or multiple receptor files (.pdb format). Ensure there are no spaces in the file or directory names",
     value=receptor_value,
     placeholder="Enter path(s) here",
 )
+receptors = [Path(receptor.strip()) for receptor in receptors.split(",")]
+# Receptor files validation
+for file in receptors:
+    if not Path(file).is_file():
+        st.error(f"Invalid file path: {file}")
 
 # Prepare receptor
-prepare_receptor = col1.toggle(
-    label="Prepare receptor using Protoss",
+st.header("Receptor Preparation", divider="orange")
+select_best_chain = st.toggle(label="AutoSelect best chain", key="select_best_chain")
+fix_nonstandard_residues = st.toggle(
+    label="Fix non standard residues", key="fix_nonstandard_residues"
+)
+fix_missing_residues = st.toggle(
+    label="Fix mising residues", key="fix_missing_residues"
+)
+remove_heteroatoms = st.toggle(
+    label="Remove ligands and heteroatoms", key="remove_heteroatoms"
+)
+remove_water = st.toggle(label="Remove water", key="remove_water")
+st.subheader("Receptor Protonation", divider="orange")
+protonation = st.toggle(
+    label="Automatically protonate receptor using Protoss (untoggle to choose a specific pH)",
     value=True,
     help="Choose whether or not to use Protoss Web service to protonate the protein structure",
 )
+if not protonation:
+    add_hydrogens = st.number_input(
+        label="Add hydrogens with PDB Fixer at pH",
+        min_value=0.0,
+        max_value=14.0,
+        value=7.0,
+    )
+else:
+    add_hydrogens = None
 
 # Pocket finding
-col1.subheader("Pocket finding", divider="orange")
-pocket_mode = col1.selectbox(
+st.header("Binding Pocket definition", divider="orange")
+pocket_mode = st.selectbox(
     label="How should the pocket be defined?",
-    options=("Reference", "RoG", "Dogsitescorer", "Custom"),
+    options=POCKET_DETECTION_OPTIONS,
     help="Reference Ligand: DockM8 will use the reference ligand to define the pocket. "
-    + "Reference Ligand RoG: DockM8 will use the reference ligand radius of gyration. "
+    + "RoG: DockM8 will use the reference ligand radius of gyration. "
     + "DogSiteScorer: DockM8 will use the DogSiteScorer pocket finding algorithm to define the pocket."
     + "P2Rank: DockM8 will use the P2Rank pocket finding algorithm to define the pocket."
-    + "Custom: Define your own pocket center and size coordinates."
+    + "Manual: Define your own pocket center and size coordinates.",
 )
-
-# Reference ligand
-if pocket_mode == "Reference" or pocket_mode == "RoG":
-    reference_file = col1.text_input(
+if pocket_mode in ("Reference", "RoG"):
+    pocket_radius = st.number_input(
+        "Binding Site Radius", min_value=0.0, value=10.0, step=0.1
+    )
+    reference_files = st.text_input(
         label="File path(s) of one or more multiple reference ligand files (.sdf format), separated by commas",
         help="Choose one or multiple reference ligand files (.pdb format)",
         value=reference_value,
-        placeholder="Enter path(s) here",
     )
+    reference_files = [Path(file.strip()) for file in reference_files.split(",")]
+    # Reference files validation
+    for file in reference_files:
+        if not Path(file).is_file():
+            st.error(f"Invalid file path: {file}")
+    x_center = y_center = z_center = x_size = y_size = z_size = manual_pocket = None
 # Custom pocket
-elif pocket_mode == "Custom" and mode == "Single":
-    ccol1, ccol2, ccol3 = col1.columns(3)
-    x_center = ccol1.number_input(label="X Center", value=0.0, help="Enter the X coordinate of the pocket center")
-    y_center = ccol2.number_input(label="Y Center", value=0.0, help="Enter the Y coordinate of the pocket center")
-    z_center = ccol3.number_input(label="Z Center", value=0.0, help="Enter the Z coordinate of the pocket center")
-    x_size = ccol1.number_input(label="X Size", value=20.0, help="Enter the size of the pocket in the X direction (in Angstroms)")
-    y_size = ccol2.number_input(label="Y Size", value=20.0, help="Enter the size of the pocket in the Y direction (in Angstroms)")
-    z_size = ccol3.number_input(label="Z Size", value=20.0, help="Enter the size of the pocket in the Z direction (in Angstroms)")
-    pocket_coordinates = {"center": [x_center,y_center,z_center],
-                          "size": [x_size,y_size,z_size]}
-elif pocket_mode == "Custom" and mode != "Single":
-    col1.error("Custom pocket definition does not currently work in ensemble mode, please change the pocket definition mode")
+elif pocket_mode == "Manual" and mode == "Single":
+    col1, col2, col3 = st.columns(3)
+    x_center = col1.number_input(
+        label="X Center", value=0.0, help="Enter the X coordinate of the pocket center"
+    )
+    y_center = col2.number_input(
+        label="Y Center", value=0.0, help="Enter the Y coordinate of the pocket center"
+    )
+    z_center = col3.number_input(
+        label="Z Center", value=0.0, help="Enter the Z coordinate of the pocket center"
+    )
+    x_size = col1.number_input(
+        label="X Size",
+        value=20.0,
+        help="Enter the size of the pocket in the X direction (in Angstroms)",
+    )
+    y_size = col2.number_input(
+        label="Y Size",
+        value=20.0,
+        help="Enter the size of the pocket in the Y direction (in Angstroms)",
+    )
+    z_size = col3.number_input(
+        label="Z Size",
+        value=20.0,
+        help="Enter the size of the pocket in the Z direction (in Angstroms)",
+    )
+    manual_pocket = (
+        f"center:{x_center},{y_center},{z_center}*size:{x_size},{y_size},{z_size}"
+    )
+    pocket_radius = reference_files = None
+elif pocket_mode == "Manual" and mode != "Single":
+    st.error(
+        "Manual pocket definition does not currently work in ensemble mode, please change the pocket definition mode"
+    )
+else:
+    pocket_radius = reference_files = x_center = y_center = z_center = x_size = y_size = z_size = manual_pocket = None
+
 
 # Ligand library
-col2.header("Ligands", divider="orange")
-ligand_file = col2.text_input(
+st.header("Ligands", divider="orange")
+docking_library = st.text_input(
     label="Entre the path to the ligand library file (.sdf format)",
     value=library_value,
     help="Choose a ligand library file (.sdf format)",
 )
+if not Path(docking_library).is_file():
+    st.error(f"Invalid file path: {docking_library}")
 
-# ID column
-id_column = col2.text_input(
-    label="Choose the column name that contains the ID of the ligand",
-    value="ID",
-    help="Choose the column name that contains the ID of the ligand",
+# Ligand protonation
+st.subheader("Ligand protonation", divider="orange")
+ligand_protonation = st.selectbox(
+    label="How should the ligands be protonated?",
+    options=("None", "GypsumDL"),
+    index=1,
+    help="None: No protonation "
+    + "Gypsum-DL: DockM8 will use Gypsum-DL to protonate the ligands",
 )
 
 # Ligand conformers
-col2.subheader("Ligand conformers", divider="orange")
-ligand_conformers = col2.selectbox(
+st.subheader("Ligand conformers", divider="orange")
+ligand_conformers = st.selectbox(
     label="How should the conformers be generated?",
     options=["MMFF", "GypsumDL"],
     index=1,
     help="MMFF: DockM8 will use MMFF to prepare the ligand 3D conformers. "
     + "GypsumDL: DockM8 will use Gypsum-DL to prepare the ligand 3D conformers.",
 )
-
-# Ligand protonation
-col2.subheader("Ligand protonation", divider="orange")
-ligand_protonation = col2.selectbox(
-    label="How should the ligands be protonated?",
-    options=("None", "GypsumDL"),
-    index=1,
-    help="None: No protonation "
-    + "Gypsum-DL: DockM8 will use  Gypsum-DL to protonate the ligands",
+n_conformers = st.number_input(
+    "Number of conformers to generate.", min_value=1, max_value=100, step=1
 )
 
 # Docking programs
@@ -198,10 +270,13 @@ docking_programs = st.multiselect(
 )
 
 if "PLANTS" in docking_programs and not os.path.exists("/path/to/software/PLANTS"):
-    st.warning('PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php', icon=':warning:')
+    st.warning(
+        "PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php",
+        icon=":warning:",
+    )
 
 # Number of poses
-nposes = st.slider(
+n_poses = st.slider(
     label="Number of poses",
     min_value=1,
     max_value=100,
@@ -218,7 +293,7 @@ exhaustiveness = st.select_slider(
     help="Exhaustiveness of the docking, only applies to GNINA, SMINA, QVINA2 and QVINAW. Higher values can significantly increase the runtime.",
 )
 
-bust_poses = st.checkbox(
+bust_poses = st.toggle(
     label="Bust poses using PoseBusters : WARNING may take a long time to run",
     value=False,
     help="Bust poses using PoseBusters : Will remove any poses with clashes, non-flat aromatic rings etc. WARNING may take a long time to run",
@@ -297,56 +372,59 @@ if gen_decoys:
             f"WARNING: The combination of scoring functions and pose selection method you have selected will yield a large number of possible combinations ({num_possibilities}). This may take a long time to run."
         )
 
-command = (
-    f'{sys.executable} {CWD}/dockm8.py '
-    f'--software {software} '
-    f'--receptor {receptor_file} '
-    f'--docking_library {ligand_file} '
-    f'--idcolumn {id_column} '
-    f'--prepare_proteins {prepare_receptor} '
-    f'--conformers {ligand_conformers} '
-    f'--protonation {ligand_protonation} '
-    f'--docking_programs {" ".join(docking_programs)} '
-    f'--bust_poses {bust_poses} '
-    f'--pose_selection {" ".join(pose_selection)} '
-    f'--nposes {nposes} '
-    f'--exhaustiveness {exhaustiveness} '
-    f'--ncpus {num_cpus} '
-    f'--clustering_method {clustering_algorithm} '
-    f'--rescoring {" ".join(rescoring)} '
-    f'--consensus {consensus_method}'
-)
-# Add pocket-specific arguments
-if pocket_mode == "Custom":
-    pocket_str = '*'.join([f"{k}:{','.join(map(str, v))}" for k, v in pocket_coordinates.items()])
-    command += (f" --pocket {pocket_str}")
-elif pocket_mode == "Reference" or pocket_mode == "RoG":
-    command += (f" --pocket {pocket_mode}")
-    command += (f" --reffile {reference_file}")
-elif pocket_mode == "Dogsitescorer":
-    command += (f" --pocket {pocket_mode}")
-
-# Add mode-specific arguments
-if mode == "ensemble" or mode == "active_learning":
-    command += f" --mode {mode} --threshold {threshold}"
-else:
-    command += f" --mode {mode}"
-
-if gen_decoys:
-    command += (
-        " --gen_decoys True "
-        f"--decoy_model {decoy_model} "
-        f"--n_decoys {n_decoys} "
-        f"--actives {active_ligands} "
-    )
+config = {
+    "general": {
+        "software": software, 
+        "mode": mode.lower(), 
+        "n_cpus": n_cpus
+    },
+    "decoy_generation": {
+        "gen_decoys": gen_decoys,
+        "decoy_model": decoy_model,
+        "n_decoys": n_decoys,
+        "actives": actives,
+    },
+    "receptor(s)": [str(receptor) for receptor in receptors],
+    "docking_library": docking_library,
+    "protein_preparation": {
+        "select_best_chain": select_best_chain,
+        "fix_nonstandard_residues": fix_nonstandard_residues,
+        "fix_missing_residues": fix_missing_residues,
+        "remove_heteroatoms": remove_heteroatoms,
+        "remove_water": remove_water,
+        "add_hydrogens": add_hydrogens,
+        "protonation": protonation,
+    },
+    "ligand_preparation": {
+        "protonation": ligand_protonation,
+        "conformers": ligand_conformers,
+        "n_conformers": n_conformers,
+    },
+    "pocket_detection": {
+        "method": pocket_mode,
+        "reference_ligand(s)": [str(ligand) for ligand in reference_files] if reference_files is not None else None,
+        "radius": pocket_radius,
+        "manual_pocket": manual_pocket,
+    },
+    "docking": {
+        "docking_programs": docking_programs,
+        "bust_poses": bust_poses,
+        "n_poses": n_poses,
+        "exhaustiveness": exhaustiveness,
+    },
+    "pose_selection": {
+        "pose_selection_method": pose_selection,
+        "clustering_method": clustering_algorithm,
+    },
+    "rescoring": rescoring,
+    "consensus": consensus_method,
+    "threshold": threshold,
+}
 
 open("log.txt", "w").close()
 
-
-def run_dockm8(command_list):
-    print("Running")
-    subprocess.Popen(command_list)
-
+import datetime
+import yaml
 
 def read_log_file(file_path):
     with open(file_path, "r") as file:
@@ -354,10 +432,21 @@ def read_log_file(file_path):
     return content
 
 
+
 # Run the script file
 if st.button("Run DockM8"):
-    command_list = shlex.split(command)
-    run_dockm8(command_list)
+    # Generate the file name with date and time
+    now = datetime.datetime.now()
+    file_name = now.strftime("%Y-%m-%d_%H-%M") + "_dockm8_config.yml"
+
+    # Write the config to the YAML file
+    with open(file_name, "w") as f:
+        yaml.dump(config, f)
+
+    # Print the file path
+    st.write(f"Config file saved as: {file_name}. Starting DockM8 ...")
+    command = f"{sys.executable} {CWD}/dockm8.py --config {CWD + '/' + file_name}"
+    subprocess.Popen(command, shell=True)
 
 log_file_path = Path(CWD, "log.txt")
 
@@ -369,7 +458,7 @@ if log_file_path is not None:
     log_container.text_area("Log ", log_content, height=300)
     # Periodically check for changes in the log file
     while True:
-        time.sleep(1)  # Adjust the interval as needed
+        time.sleep(0.2)  # Adjust the interval as needed
         new_log_content = read_log_file(log_file_path)
         if new_log_content != log_content:
             # Update the contents of the existing text area

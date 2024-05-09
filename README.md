@@ -127,9 +127,9 @@ You can click the `localhost` link to access the GUI.
 - 'bestpose_PLANTS' : Takes the best pose from PLANTS docking program  
 - You can also use any of the scoring functions (see rescoring argument) and DockM8 will select the best pose for each compound according to the specified scoring function.
 
-`--nposes`: The number of poses to generate for each docking software. Default=10  
+`--n_poses`: The number of poses to generate for each docking software. Default=10  
 `--exhaustiveness`: The precision used if docking with SMINA/GNINA/QVINA. Default=8  
-`--ncpus`: The number of cpus to use for the workflow. Default behavior is to use 90% of the available cpus.  
+`--n_cpus`: The number of cpus to use for the workflow. Default behavior is to use 90% of the available cpus.  
 `--clustering_method`: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'. Must be set when using 'RMSD', 'spyRMSD', 'espsim', 'USRCAT' clustering metrics.  
 `--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'GNINA-Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'SCORCH', 'RTMScore', 'NNScore', 'PLECScore', 'KORP-PL', 'ConvexPLR'.  
 `--consensus`: Which consensus method to use. Must be one of 'ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'.  
