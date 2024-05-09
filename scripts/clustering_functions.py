@@ -167,7 +167,7 @@ def calculate_and_cluster(clustering_metric: str, clustering_method: str, df: pd
         return clustered_df
 
 
-def select_poses(selection_method : str, clustering_method : str, w_dir : Path, protein_file: Path, pocket_definition: dict, software: Path, all_poses : pd.DataFrame, ncpus : int):
+def select_poses(selection_method : str, clustering_method : str, w_dir : Path, protein_file: Path, pocket_definition: dict, software: Path, all_poses : pd.DataFrame, n_cpus : int):
     '''This function clusters all poses according to the metric selected using multiple CPU cores.
 
     Args:
@@ -176,7 +176,7 @@ def select_poses(selection_method : str, clustering_method : str, w_dir : Path, 
         w_dir (str): A string representing the working directory.
         protein_file (str): A string representing the file path of the reference protein structure.
         all_poses (pandas.DataFrame): A pandas DataFrame containing the input data for clustering.
-        ncpus (int): An integer representing the number of CPU cores to be used for clustering.
+        n_cpus (int): An integer representing the number of CPU cores to be used for clustering.
 
     Returns:
         None. The function writes the clustered poses to a SDF file.
@@ -209,7 +209,7 @@ def select_poses(selection_method : str, clustering_method : str, w_dir : Path, 
             # Perform clustering using multiple CPU cores
             clustered_dataframes = []
             
-            with pebble.ProcessPool(max_workers=ncpus) as executor:
+            with pebble.ProcessPool(max_workers=n_cpus) as executor:
                 jobs = []
                 for current_id in tqdm(id_list, desc=f'Submitting {selection_method} jobs...', unit='IDs'):
                     try:
@@ -235,7 +235,7 @@ def select_poses(selection_method : str, clustering_method : str, w_dir : Path, 
             clustered_poses = pd.concat(clustered_dataframes)
         elif selection_method in RESCORING_FUNCTIONS.keys():
             # Perform rescoring using the specified metric scoring function
-            clustered_poses = rescore_docking(w_dir, protein_file, pocket_definition, software, selection_method, ncpus)
+            clustered_poses = rescore_docking(w_dir, protein_file, pocket_definition, software, selection_method, n_cpus)
         else:
             raise ValueError(f'Invalid clustering metric: {selection_method}')
         # Clean up the Pose ID column
