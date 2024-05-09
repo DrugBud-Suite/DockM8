@@ -72,7 +72,7 @@ def gnina_docking(
     )
     try:
         # Execute the gnina command
-        subprocess.call(gnina_cmd, shell=True#, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
                         )
     except Exception as e:
         printlog(f"GNINA docking failed: {e}")
