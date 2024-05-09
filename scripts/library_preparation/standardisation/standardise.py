@@ -26,7 +26,7 @@ def standardize_molecule(molecule):
     return standardized_molecule
 
 
-def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus: int):
+def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, n_cpus: int):
     """
     Standardizes a docking library using the ChemBL Structure Pipeline.
 
@@ -34,7 +34,7 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
         input_sdf (Path): Path to the input SDF file containing the docking library.
         output_dir (Path): Directory where the standardized SDF file will be saved.
         id_column (str): Column name containing the compound IDs.
-        ncpus (int): Number of CPUs for parallel processing.
+        n_cpus (int): Number of CPUs for parallel processing.
 
     Raises:
         Exception: If there is an error loading, processing, or writing the SDF file.
@@ -80,10 +80,10 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
         raise
 
     # Standardize the molecules using ChemBL Structure Pipeline
-    if ncpus == 1:
+    if n_cpus == 1:
         df["Molecule"] = [standardize_molecule(mol) for mol in df["Molecule"]]
     else:
-        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
             df["Molecule"] = list(
                 tqdm(
                     executor.map(standardize_molecule, df["Molecule"]),
