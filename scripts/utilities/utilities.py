@@ -16,17 +16,22 @@ from rdkit import Chem
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
+dockm8_path = next(
+    (p / "DockM8" for p in Path(__file__).resolve().parents if (p / "DockM8").is_dir()),
+    None,
+)
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-def split_sdf(dir, sdf_file, ncpus):
+def split_sdf(dir, sdf_file, n_cpus):
     """
     Split an SDF file into multiple smaller SDF files, each containing a subset of the original compounds.
 
     Args:
         dir (str): The directory where the split SDF files will be saved.
         sdf_file (str): The path to the original SDF file to be split.
-        ncpus (int): The number of CPUs to use for the splitting process.
+        n_cpus (int): The number of CPUs to use for the splitting process.
 
     Returns:
         Path: The path to the directory containing the split SDF files.
@@ -41,7 +46,7 @@ def split_sdf(dir, sdf_file, ncpus):
                             idName='ID',
                             includeFingerprints=False,
                             )
-    compounds_per_core = math.ceil(len(df['ID']) / (ncpus * 2))
+    compounds_per_core = math.ceil(len(df['ID']) / (n_cpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
     for i in range(0, len(df), compounds_per_core):
@@ -58,7 +63,7 @@ def split_sdf(dir, sdf_file, ncpus):
     #printlog(f'Split docking library into {file_counter - 1} files each containing {compounds_per_core} compounds')
     return split_files_folder
 
-def split_sdf_str(dir, sdf_file, ncpus):
+def split_sdf_str(dir, sdf_file, n_cpus):
     sdf_file_name = Path(sdf_file).name.replace('.sdf', '')
     split_files_folder = Path(dir) / f'split_{sdf_file_name}'
     split_files_folder.mkdir(parents=True, exist_ok=True)
@@ -69,9 +74,9 @@ def split_sdf_str(dir, sdf_file, ncpus):
     total_compounds = sdf_lines.count("$$$$\n")
     
     if total_compounds > 100000:
-        n = max(1, math.ceil(total_compounds // ncpus // 8))
+        n = max(1, math.ceil(total_compounds // n_cpus // 8))
     else:
-        n = max(1, math.ceil(total_compounds // ncpus // 2))
+        n = max(1, math.ceil(total_compounds // n_cpus // 2))
 
     compound_count = 0
     file_index = 1
@@ -232,7 +237,7 @@ def printlog(message):
     timestamp = timestamp_generator()
     msg = str(timestamp) + ": " + str(message) + "\n"
     print(msg)
-    log_file_path = Path(__file__).resolve().parent / '../log.txt'
+    log_file_path = dockm8_path / 'log.txt'
     with open(log_file_path, 'a') as f_out:
         f_out.write(msg)
 
@@ -353,7 +358,7 @@ def delete_files(folder_path: str, save_file: str) -> None:
             if not any(item.iterdir()) and item.name != save_file:
                 item.rmdir()
                 
-def parallel_executor(function, list_of_objects : list, ncpus : int, job_manager = 'concurrent_process', **kwargs):
+def parallel_executor(function, list_of_objects : list, n_cpus : int, job_manager = 'concurrent_process', **kwargs):
     
     """
     Executes a function in parallel using multiple processes.
@@ -361,39 +366,39 @@ def parallel_executor(function, list_of_objects : list, ncpus : int, job_manager
     Args:
         function (function): The function to execute in parallel.
         split_files_sdfs (list): A list of input arguments to pass to the function.
-        ncpus (int): The number of CPUs to use for parallel execution.
+        n_cpus (int): The number of CPUs to use for parallel execution.
         **kwargs: Additional keyword arguments to pass to the function.
 
     Returns:
         The result of the function execution.
     """
     if job_manager == "concurrent_process":
-        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
             results = [job.result() for job in tqdm(concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function}")]
     
     if job_manager == "concurrent_process_silent":
-        with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
             results = [job.result() for job in concurrent.futures.as_completed(jobs)]
     
     if job_manager == "concurrent_thread":
-        with concurrent.futures.ThreadPoolExecutor(max_workers=ncpus) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=n_cpus) as executor:
             jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
             results = [job.result() for job in tqdm(concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function}")]
     
     if job_manager == 'joblib':
         jobs = [delayed(function)(obj, **kwargs) for obj in list_of_objects]
-        results = Parallel(n_jobs=ncpus)(tqdm(jobs, total=len(list_of_objects), desc=f"Running {function}"))
+        results = Parallel(n_jobs=n_cpus)(tqdm(jobs, total=len(list_of_objects), desc=f"Running {function}"))
     
     if job_manager == 'pebble_process':
         print(kwargs)
-        with pebble.ProcessPool(max_workers=ncpus) as executor:
+        with pebble.ProcessPool(max_workers=n_cpus) as executor:
             jobs = [executor.schedule(function, args=(obj,), kwargs = kwargs) for obj in list_of_objects]
             results = [job.result() for job in jobs]
             
     if job_manager == 'pebble_thread':
-        with pebble.ThreadPool(max_workers=ncpus) as executor:
+        with pebble.ThreadPool(max_workers=n_cpus) as executor:
             jobs = [executor.schedule(function, args=(obj,), kwargs = kwargs) for obj in list_of_objects]
             results = [job.result() for job in jobs]
     return results
@@ -411,7 +416,7 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
     
-def parallel_SDF_loader(sdf_path : Path, molColName : str, idName : str, ncpus = os.cpu_count()-2, SMILES = None) -> pd.DataFrame:
+def parallel_SDF_loader(sdf_path : Path, molColName : str, idName : str, n_cpus = os.cpu_count()-2, SMILES = None) -> pd.DataFrame:
     """
     Loads a SDF file in parallel using joblib library.
 
@@ -428,8 +433,7 @@ def parallel_SDF_loader(sdf_path : Path, molColName : str, idName : str, ncpus =
     try:
         # Load the molecules from the SDF file
         mols = [m for m in Chem.MultithreadedSDMolSupplier(sdf_path,
-                                                        numWriterThreads=ncpus, 
-                                                        removeHs=False, 
+                                                        numWriterThreads=n_cpus, 
                                                         ) if m is not None]
         data = []
         # Iterate over each molecule
