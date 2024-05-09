@@ -24,14 +24,17 @@ from scripts.utilities.utilities import printlog
 
 class DockM8Error(Exception):
     """Custom Error for DockM8 specific issues."""
-
-    pass
-
+    
+    def __init__(self, message):
+        printlog(message)  # Log the message when the exception is created
+        super().__init__(message)  # Call the superclass constructor with the message
 
 class DockM8Warning(Warning):
     """Custom warning for DockM8 specific issues."""
-
-    pass
+    
+    def __init__(self, message):
+        printlog(message)  # Log the message when the warning is created
+        super().__init__(message)  # Call the superclass constructor with the message
 
 
 def check_config(config):
@@ -47,18 +50,16 @@ def check_config(config):
 
     # Retrieve the software path from the configuration, defaulting to None if not found or if explicitly set to "None"
     software_path = general_config.get("software")
-    if (
-        software_path == "None"
-    ):  # Check if the string "None" is used in the configuration
+    if software_path == "None" or not software_path:
         software_path = dockm8_path / "software"
-
     # Check if the software path is a valid directory
-    if not isinstance(software_path, Path) or not os.path.isdir(software_path):
-        # Raise a custom error with a detailed message if the path is invalid
+    if not Path(software_path).is_dir():
         raise DockM8Error(
             f"DockM8 configuration error: Invalid software path ({software_path}) specified in the configuration file."
         )
-
+    else:
+        config["general"]["software"] = Path(software_path)
+    
     # Retrieve the mode from the configuration, defaulting to 'single' if not found
     mode = general_config.get("mode", "single")
     # Normalize and validate the mode to handle different case inputs and ensure it's one of the expected values
@@ -70,30 +71,30 @@ def check_config(config):
         )
 
     # Retrieve the number of CPUs to use from the configuration, defaulting to 0 if not found or improperly specified
-    ncpus = general_config.get("ncpus", 0)
+    n_cpus = general_config.get("n_cpus", 0)
     try:
-        # Attempt to convert ncpus to an integer and use a fallback if it's set to 0
-        config["general"]["ncpus"] = (
-            int(ncpus) if int(ncpus) != 0 else int(os.cpu_count() * 0.9)
+        # Attempt to convert n_cpus to an integer and use a fallback if it's set to 0
+        config["general"]["n_cpus"] = (
+            int(n_cpus) if int(n_cpus) != 0 else int(os.cpu_count() * 0.9)
         )
     except ValueError:
         raise DockM8Error(
-            f"DockM8 configuration error: Invalid ncpus value ({ncpus}) specified in the configuration file. It must be a valid integer."
+            f"DockM8 configuration error: Invalid n_cpus value ({n_cpus}) specified in the configuration file. It must be a valid integer."
         )
 
     decoy_config = config.get("decoy_generation", {})
-
     # Check if decoy generation is enabled and validate conditions
     if decoy_config.get(
         "gen_decoys", False
     ):  # Default to False if gen_decoys is not specified
         # Validate the active compounds path
         active_path = decoy_config.get("actives")
-        if not active_path or not os.path.isdir(Path(active_path)):
+        if not Path(active_path).is_dir():
             raise DockM8Error(
                 f"DockM8 configuration error: Invalid actives path ({active_path}) specified in the configuration file."
             )
-
+        else:
+            config["decoy_generation"]["actives"] = active_path
         # Validate the number of decoys to generate
         try:
             int(decoy_config.get("n_decoys"))
@@ -143,7 +144,6 @@ def check_config(config):
         ]  # Slice to keep only the first element as a list
     else:
         pass
-
     for receptor in receptors:
         if len(receptor) == 4 and receptor.isalnum() and not receptor.isdigit():
             printlog(
@@ -158,11 +158,22 @@ def check_config(config):
                 raise DockM8Error(
                     f"DockM8 configuration error: Invalid receptor file format ({receptor}) specified in the configuration file. Please use .pdb files."
                 )
-            if not os.path.isfile(Path(receptor)):
+            if not Path(receptor).is_file():
                 raise DockM8Error(
                     f"DockM8 configuration error: Invalid receptor path ({receptor}) specified in the configuration file."
                 )
-
+    config["receptor(s)"] = [Path(receptor) for receptor in receptors]
+    
+    # Check docking library configuration
+    docking_library = config.get("docking_library")
+    if not Path(docking_library).is_file():
+        raise DockM8Error(
+                    f"DockM8 configuration error: Invalid docking library path ({docking_library}) specified in the configuration file."
+                )
+    if not docking_library.endswith(".sdf"):
+        raise DockM8Error(
+                    f"DockM8 configuration error: Invalid docking library file format ({docking_library}) specified in the configuration file. Please use .sdf files."
+                )
     # Check protein preparation configuration
     protein_preparation = config.get("protein_preparation", {})
 
@@ -248,7 +259,7 @@ def check_config(config):
                 raise DockM8Error(
                     f"DockM8 configuration error: Invalid reference ligand file format ({reference_ligand}) specified in the configuration file. Please use .sdf files."
                 )
-            if not os.path.isfile(Path(reference_ligand)):
+            if not Path(reference_ligand).is_file():
                 raise DockM8Error(
                     f"DockM8 configuration error: Invalid reference ligand file path ({reference_ligand}) specified in the configuration file."
                 )
@@ -256,10 +267,12 @@ def check_config(config):
             DockM8Warning(
                 "DockM8 configuration warning: Multiple reference ligand files detected in single mode, only the first file will be used."
             )
-            config["pocket_detection"]["reference_ligand(s)"] = reference_ligands[
+            reference_ligands = reference_ligands[
                 :1
-            ]  # Reduce to the first one
-
+            ]  
+        config["pocket_detection"]["reference_ligand(s)"] = [Path(reference_ligand)
+        for reference_ligand in reference_ligands
+    ]
     # Validate radius for the "Reference" method
     if method == "Reference":
         radius = pocket_detection.get("radius")
@@ -298,11 +311,11 @@ def check_config(config):
             "DockM8 configuration error: 'bust_poses' in 'docking' section must be a boolean (true/false) value."
         )
 
-    # Validate 'nposes' to ensure it is an integer
-    nposes = docking.get("nposes")
-    if not isinstance(nposes, int):
+    # Validate 'n_poses' to ensure it is an integer
+    n_poses = docking.get("n_poses")
+    if not isinstance(n_poses, int):
         raise DockM8Error(
-            "DockM8 configuration error: 'nposes' in 'docking' section must be an integer value."
+            "DockM8 configuration error: 'n_poses' in 'docking' section must be an integer value."
         )
 
     # Validate 'exhaustiveness' to ensure it is an integer
@@ -407,18 +420,7 @@ def check_config(config):
             )
             config["threshold"] = 0.01  # Setting default threshold
 
-    printlog("DockM8 configuration was successfully validated. Starting DockM8...")
-
-    # Ensure all paths are return as pathlib.Path
-
-    config["general"]["software"] = Path(software_path)
-    config["decoy_generation"]["actives"] = Path(decoy_config.get("actives"))
-    config["receptor(s)"] = [Path(receptor) for receptor in receptors]
-    config["pocket_detection"]["reference_ligand(s)"] = [
-        Path(reference_ligand)
-        for reference_ligand in pocket_detection.get("reference_ligand(s)", [])
-    ]
-    config["docking_library"] = Path(config.get("docking_library"))
+    printlog("DockM8 configuration was successfully validated.")
 
     return config
 
