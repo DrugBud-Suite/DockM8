@@ -72,7 +72,8 @@ def gnina_docking(
     )
     try:
         # Execute the gnina command
-        subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.call(gnina_cmd, shell=True#, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+                        )
     except Exception as e:
         printlog(f"GNINA docking failed: {e}")
     return
@@ -100,9 +101,6 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
                         str(w_dir / "gnina" / file),
                         idName="ID",
                         molColName="Molecule",
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
                     )
                     gnina_dataframes.append(df)
             gnina_df = pd.concat(gnina_dataframes)
@@ -131,5 +129,5 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
         except Exception as e:
             printlog("ERROR: Failed to write combined GNINA poses SDF file!")
             printlog(e)
-        else:
-            delete_files(w_dir / "gnina", "gnina_poses.sdf")
+        #else:
+            #delete_files(w_dir / "gnina", "gnina_poses.sdf")

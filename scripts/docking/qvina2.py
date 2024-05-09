@@ -150,9 +150,6 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
                         str(w_dir / "qvina2" / file),
                         idName="Pose ID",
                         molColName="Molecule",
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
                     )
                     qvina2_dataframes.append(df)
             qvina2_df = pd.concat(qvina2_dataframes)

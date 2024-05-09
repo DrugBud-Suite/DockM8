@@ -105,9 +105,6 @@ def fetch_smina_poses(w_dir: Union[str, Path], n_poses: int, *args):
                         str(w_dir / "smina" / file),
                         idName="ID",
                         molColName="Molecule",
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
                     )
                     smina_dataframes.append(df)
             smina_df = pd.concat(smina_dataframes)

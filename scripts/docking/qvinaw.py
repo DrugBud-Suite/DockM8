@@ -154,9 +154,6 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
                         str(w_dir / "qvinaw" / file),
                         idName="Pose ID",
                         molColName="Molecule",
-                        includeFingerprints=False,
-                        embedProps=False,
-                        removeHs=False,
                     )
                     qvinaw_dataframes.append(df)
             qvinaw_df = pd.concat(qvinaw_dataframes)
