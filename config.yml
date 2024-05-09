@@ -6,7 +6,7 @@
 general:
   software: None                                                    # Path to the software folder required for operation
   mode: "single"                                                    # Mode of operation (options : single, ensemble, active_learning)       
-  ncpus: 0                                                          # Number of CPUs to allocate for the process. Default is 0 (all available CPUs)
+  n_cpus: 0                                                          # Number of CPUs to allocate for the process. Default is 0 (all available CPUs)
 
 ## Decoy generation configuration
 decoy_generation:
@@ -50,7 +50,7 @@ docking:
     - "SMINA"                                                       # Include multiple rows to use multiple docking engines
     - "GNINA"
   bust_poses: false                                                 # Control whether problematic poses are removed. Can be slow for large datasets
-  nposes: 10                                                        # Number of poses to generate per compound
+  n_poses: 10                                                        # Number of poses to generate per compound
   exhaustiveness: 8                                                 # Exhaustiveness of the docking; higher values increase accuracy and computation time. Only valid for Vina derivatives
 
 ## Pose selection configuration
