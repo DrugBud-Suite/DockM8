@@ -136,11 +136,13 @@ else
     ###############################################################
     """
 
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit terrace wandb roma omegaconf py3Dmol -q
 
     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
 
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
+
+    pip install pytorch_lightning==1.9.1
 
     echo -e """
     ###############################################################
@@ -209,6 +211,10 @@ if [[ ! -f $DOCKM8_FOLDER/software/qvina2.1 ]]; then
 fi
 
 if [[ ! -f $DOCKM8_FOLDER/software/PLANTS ]]; then
+    echo -e "\nPLANTS not found in software folder, if you want to use it, please see documentation for a link to register and download it!"
+fi
+
+if [[ ! -f $DOCKM8_FOLDER/software/plantain/inference.py ]]; then
     echo -e "\nPLANTS not found in software folder, if you want to use it, please see documentation for a link to register and download it!"
 fi
 
