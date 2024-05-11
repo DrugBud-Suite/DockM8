@@ -19,6 +19,8 @@ from scripts.docking.plants import fetch_plants_poses, plants_docking
 from scripts.docking.qvina2 import fetch_qvina2_poses, qvina2_docking
 from scripts.docking.qvinaw import fetch_qvinaw_poses, qvinaw_docking
 from scripts.docking.smina import fetch_smina_poses, smina_docking
+from scripts.docking.psovina import fetch_psovina_poses, psovina_docking
+from scripts.docking.vinaXB import fetch_vinaXB_poses, vinaXB_docking
 from scripts.utilities.utilities import (
     parallel_executor,
     parallel_SDF_loader,
@@ -38,6 +40,8 @@ DOCKING_PROGRAMS = {
     "PLANTS": [plants_docking, fetch_plants_poses],
     "QVINAW": [qvinaw_docking, fetch_qvinaw_poses],
     "QVINA2": [qvina2_docking, fetch_qvina2_poses],
+    "VINAXB": [vinaXB_docking, fetch_vinaXB_poses],
+    "PSOVINA": [psovina_docking, fetch_psovina_poses],
 }
 
 def dockm8_docking(
