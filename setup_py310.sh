@@ -215,7 +215,13 @@ if [[ ! -f $DOCKM8_FOLDER/software/PLANTS ]]; then
 fi
 
 if [[ ! -f $DOCKM8_FOLDER/software/plantain/inference.py ]]; then
-    echo -e "\nPLANTS not found in software folder, if you want to use it, please see documentation for a link to register and download it!"
+    echo -e "\nDownloading PLANTAIN!"
+    wget https://github.com/molecularmodelinglab/plantain/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
+    unzip main.zip
+    rm main.zip
+    mv plantain-main plantain
+    rm -rf ./plantain/analysis ./plantain/prior_work ./plantain/training ./plantain/validation ./plantain/baselines
+    rm ./plantain/create_env.sh ./plantain/dev_requirements.txt ./plantain/requirements.txt ./plantain/train.py 
 fi
 
 if [[ ! -f $DOCKM8_FOLDER/software/KORP-PL ]]; then
