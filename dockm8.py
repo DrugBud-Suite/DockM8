@@ -21,6 +21,7 @@ from scripts.clustering_functions import *
 from scripts.consensus_methods import *
 from scripts.docking.docking import dockm8_docking, concat_all_poses
 from scripts.library_preparation.main import prepare_library
+from scripts.docking_postprocessing.main import docking_postprocessing
 from scripts.performance_calculation import *
 from scripts.pocket_finding.main import pocket_finder
 from scripts.postprocessing import *
@@ -50,6 +51,7 @@ def dockm8(
     reference_ligand: Path,
     docking_library: Path,
     docking: dict,
+    post_docking: dict,
     pose_selection: dict,
     n_cpus: int,
     rescoring: list,
@@ -119,12 +121,22 @@ def dockm8(
             bust_poses=docking["bust_poses"],
             n_cpus=n_cpus,
         )
+    
+    processed_poses = docking_postprocessing(
+        input_sdf=w_dir / "allposes.sdf",
+        output_path=w_dir / "allposes_processed.sdf",
+        protein_file=prepared_receptor,
+        bust_poses=post_docking['bust_poses'],
+        strain_cutoff=post_docking['strain_cutoff'],
+        clash_cutoff=post_docking['clash_cutoff'],
+        n_cpus=n_cpus
+    )
 
     # Load all poses from SDF file and perform clustering
     print("Loading all poses SDF file...")
     tic = time.perf_counter()
     all_poses = PandasTools.LoadSDF(
-        str(w_dir / "allposes.sdf"),
+        str(processed_poses),
         idName="Pose ID",
         molColName="Molecule",
         includeFingerprints=False,
