@@ -214,12 +214,6 @@ if [[ ! -f $DOCKM8_FOLDER/software/psovina ]]; then
     chmod +x psovina
 fi
 
-if [[ ! -f $DOCKM8_FOLDER/software/vinaXB ]]; then
-    echo -e "\nDownloading VinaXB!"
-    wget https://github.com/sirimullalab/vinaXB/raw/master/linux/vinaXB --no-check-certificate -q --show-progress
-    chmod +x vinaXB
-fi
-
 if [[ ! -f $DOCKM8_FOLDER/software/PLANTS ]]; then
     echo -e "\nPLANTS not found in software folder, if you want to use it, please see documentation for a link to register and download it!"
 fi
