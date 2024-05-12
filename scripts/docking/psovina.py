@@ -42,7 +42,7 @@ def psovina_docking(
         Path: Path to the combined docking results file in .sdf format.
     """
     psovina_folder = w_dir / "psovina"
-    results_folder = psovina_folder / "docked"
+    results_folder = psovina_folder / Path(split_file).stem / "docked"
     if split_file:
         input_file = split_file
         pdbqt_folder = results_folder / Path(split_file).stem / "pdbqt_files"
@@ -61,19 +61,20 @@ def psovina_docking(
         print(e)
 
     protein_file_pdbqt = convert_molecules(
-        str(protein_file).replace(".pdb", "_pocket.pdb"),
-        str(protein_file).replace(".pdb", "_pocket.pdbqt"),
+        str(protein_file),
+        str(protein_file).replace(".pdb", ".pdbqt"),
         "pdb",
         "pdbqt",
     )
 
     # Dock each ligand using PSOVINA
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
+        output_file = results_folder / (pdbqt_file.stem + "_PSOVINA.pdbqt")
         psovina_cmd = (
             f"{software / 'psovina'}"
             f" --receptor {protein_file_pdbqt}"
             f" --ligand {pdbqt_file}"
-            f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}"
+            f" --out {output_file}"
             f" --center_x {pocket_definition['center'][0]}"
             f" --center_y {pocket_definition['center'][1]}"
             f" --center_z {pocket_definition['center'][2]}"
@@ -81,11 +82,11 @@ def psovina_docking(
             f" --size_y {pocket_definition['size'][1]}"
             f" --size_z {pocket_definition['size'][2]}"
             f" --exhaustiveness {exhaustiveness}"
-            " --cpu 1"
+            " --cpu 1 --seed 1"
             f" --num_modes {n_poses}"
         )
         subprocess.call(
-            psovina_cmd, shell=True#, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+            psovina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
 
     psovina_docking_results = psovina_folder / (Path(input_file).stem + "_psovina.sdf")
@@ -145,11 +146,7 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
         try:
             psovina_dataframes = []
             for file in tqdm(os.listdir(w_dir / "psovina"), desc="Loading PSOVINA poses"):
-                if (
-                    file.startswith("split")
-                    or file.startswith("final_library")
-                    and file.endswith(".sdf")
-                ):
+                if file.endswith(".sdf"):
                     df = PandasTools.LoadSDF(
                         str(w_dir / "psovina" / file),
                         idName="Pose ID",
@@ -157,6 +154,7 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
                     )
                     psovina_dataframes.append(df)
             psovina_df = pd.concat(psovina_dataframes)
+            psovina_df["ID"] = psovina_df["Pose ID"].apply(lambda x: x.split("_")[0])
         except Exception as e:
             printlog("ERROR: Failed to Load PSOVINA poses SDF file!")
             printlog(e)
