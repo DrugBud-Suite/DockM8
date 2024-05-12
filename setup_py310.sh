@@ -127,6 +127,8 @@ else
     conda activate $ENV_NAME
 
     conda config --add channels conda-forge
+    conda config --add channels schrodinger
+    conda config --add channels bioconda
 
     conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pytest pdbfixer -q -y
 
@@ -136,10 +138,8 @@ else
     ###############################################################
     """
 
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit -q
-
     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
-
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 
     echo -e """
@@ -206,6 +206,12 @@ if [[ ! -f $DOCKM8_FOLDER/software/qvina2.1 ]]; then
     echo -e "\nDownloading QVINA2!"
     wget https://github.com/QVina/qvina/raw/master/bin/qvina2.1 --no-check-certificate -q --show-progress
     chmod +x qvina2.1
+fi
+
+if [[ ! -f $DOCKM8_FOLDER/software/psovina ]]; then
+    echo -e "\nDownloading PSOVina!"
+    wget https://github.com/li-jin-xing/RDPSOVina/raw/master/binary/Ubuntu-15.04/psovina --no-check-certificate -q --show-progress
+    chmod +x psovina
 fi
 
 if [[ ! -f $DOCKM8_FOLDER/software/PLANTS ]]; then

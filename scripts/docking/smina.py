@@ -69,7 +69,7 @@ def smina_docking(
         + f' --size_y {pocket_definition["size"][1]}'
         + f' --size_z {pocket_definition["size"][2]}'
         + f" --exhaustiveness {exhaustiveness}"
-        + " --cpu 1"
+        + " --cpu 1 --seed 1"
         + f" --num_modes {n_poses}"
         + " --cnn_scoring none --no_gpu"
     )
