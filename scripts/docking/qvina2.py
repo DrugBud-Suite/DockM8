@@ -42,10 +42,10 @@ def qvina2_docking(
         Path: Path to the combined docking results file in .sdf format.
     """
     qvina2_folder = w_dir / "qvina2"
-    results_folder = qvina2_folder / "docked"
+    results_folder = qvina2_folder / Path(split_file).stem / "docked"
     if split_file:
         input_file = split_file
-        pdbqt_folder = results_folder / Path(split_file).stem / "pdbqt_files"
+        pdbqt_folder = qvina2_folder / Path(split_file).stem / "pdbqt_files"
     else:
         input_file = w_dir / "final_library.sdf"
         pdbqt_folder = qvina2_folder / "pdbqt_files"
@@ -61,19 +61,20 @@ def qvina2_docking(
         print(e)
 
     protein_file_pdbqt = convert_molecules(
-        str(protein_file).replace(".pdb", "_pocket.pdb"),
-        str(protein_file).replace(".pdb", "_pocket.pdbqt"),
+        str(protein_file),
+        str(protein_file).replace(".pdb", ".pdbqt"),
         "pdb",
         "pdbqt",
     )
 
     # Dock each ligand using QVINA2
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
+        output_file = results_folder / (pdbqt_file.stem + "_QVINA2.pdbqt")
         qvina2_cmd = (
             f"{software / 'qvina2.1'}"
             f" --receptor {protein_file_pdbqt}"
             f" --ligand {pdbqt_file}"
-            f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}"
+            f" --out {output_file}"
             f" --center_x {pocket_definition['center'][0]}"
             f" --center_y {pocket_definition['center'][1]}"
             f" --center_z {pocket_definition['center'][2]}"
@@ -81,7 +82,7 @@ def qvina2_docking(
             f" --size_y {pocket_definition['size'][1]}"
             f" --size_z {pocket_definition['size'][2]}"
             f" --exhaustiveness {exhaustiveness}"
-            " --cpu 1"
+            " --cpu 1 --seed 1"
             f" --num_modes {n_poses}"
         )
         subprocess.call(
@@ -153,6 +154,7 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
                     )
                     qvina2_dataframes.append(df)
             qvina2_df = pd.concat(qvina2_dataframes)
+            qvina2_df["ID"] = qvina2_df["Pose ID"].apply(lambda x: x.split("_")[0])
         except Exception as e:
             printlog("ERROR: Failed to Load QVINA2 poses SDF file!")
             printlog(e)
