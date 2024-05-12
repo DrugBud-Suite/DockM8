@@ -135,17 +135,19 @@ for file in receptors:
 
 # Prepare receptor
 st.header("Receptor Preparation", divider="orange")
-select_best_chain = st.toggle(label="AutoSelect best chain", key="select_best_chain")
+select_best_chain = st.toggle(
+    label="AutoSelect best chain", key="select_best_chain", value=False
+)
 fix_nonstandard_residues = st.toggle(
-    label="Fix non standard residues", key="fix_nonstandard_residues"
+    label="Fix non standard residues", key="fix_nonstandard_residues", value=True
 )
 fix_missing_residues = st.toggle(
-    label="Fix mising residues", key="fix_missing_residues"
+    label="Fix mising residues", key="fix_missing_residues", value=True
 )
 remove_heteroatoms = st.toggle(
-    label="Remove ligands and heteroatoms", key="remove_heteroatoms"
+    label="Remove ligands and heteroatoms", key="remove_heteroatoms", value=True
 )
-remove_water = st.toggle(label="Remove water", key="remove_water")
+remove_water = st.toggle(label="Remove water", key="remove_water", value=True)
 st.subheader("Receptor Protonation", divider="orange")
 protonation = st.toggle(
     label="Automatically protonate receptor using Protoss (untoggle to choose a specific pH)",
