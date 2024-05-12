@@ -129,8 +129,9 @@ else
     conda config --add channels conda-forge
     conda config --add channels schrodinger
     conda config --add channels bioconda
+    conda config --add channels mx
 
-    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pytest pdbfixer -q -y
+    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pytest pdbfixer reduce -q -y
 
     echo -e """
     ###############################################################
@@ -139,7 +140,7 @@ else
     """
 
     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 
     echo -e """
@@ -281,7 +282,13 @@ if [[ ! -d $DOCKM8_FOLDER/software/RTMScore-main ]]; then
     rm main.zip
     rm $DOCKM8_FOLDER/software/RTMScore-main/scripts -r
     rm $DOCKM8_FOLDER/software/RTMScore-main/121.jpg
+fi
 
+if [[ ! -d $DOCKM8_FOLDER/software/posecheck-main ]]; then
+    echo -e "\nDownloading PoseCheck!"
+    wget https://github.com/cch1999/posecheck/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
+    unzip -q main.zip 
+    rm main.zip
 fi
 
 cd $BASEDIR
