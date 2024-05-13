@@ -100,9 +100,11 @@ def test_check_config_valid(common_test_data):
     assert len(config["docking"]["docking_programs"]) == 2
     assert config["docking"]["docking_programs"][0] == "SMINA"
     assert config["docking"]["docking_programs"][1] == "GNINA"
-    assert "bust_poses" in config["docking"]
-    if config["docking"]["bust_poses"]:
-        assert config["docking"]["bust_poses"]
+
+    assert config["post_docking"]["clash_cutoff"] == 5
+    assert config["post_docking"]["strain_cutoff"] == 5000
+    assert config["post_docking"]["strain_cutoff"]
+    
     assert "n_poses" in config["docking"]
     assert config["docking"]["n_poses"] == 10
     assert "exhaustiveness" in config["docking"]

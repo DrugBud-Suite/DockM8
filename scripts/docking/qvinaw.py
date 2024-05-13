@@ -42,7 +42,7 @@ def qvinaw_docking(
         Path: Path to the combined docking results file in .sdf format.
     """
     qvinaw_folder = w_dir / "qvinaw"
-    results_folder = qvinaw_folder / "docked"
+    results_folder = qvinaw_folder / Path(split_file).stem / "docked"
     if split_file:
         input_file = split_file
         pdbqt_folder = results_folder / Path(split_file).stem / "pdbqt_files"
@@ -61,19 +61,20 @@ def qvinaw_docking(
         print(e)
 
     protein_file_pdbqt = convert_molecules(
-        str(protein_file).replace(".pdb", "_pocket.pdb"),
-        str(protein_file).replace(".pdb", "_pocket.pdbqt"),
+        str(protein_file),
+        str(protein_file).replace(".pdb", ".pdbqt"),
         "pdb",
         "pdbqt",
     )
 
     # Dock each ligand using QVINAW
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
+        output_file = results_folder / (pdbqt_file.stem + "_QVINAW.pdbqt")
         qvinaw_cmd = (
             f"{software / 'qvina-w'}"
             f" --receptor {protein_file_pdbqt}"
             f" --ligand {pdbqt_file}"
-            f" --out {str(pdbqt_file).replace('pdbqt_files', 'docked')}"
+            f" --out {output_file}"
             f" --center_x {pocket_definition['center'][0]}"
             f" --center_y {pocket_definition['center'][1]}"
             f" --center_z {pocket_definition['center'][2]}"
@@ -81,7 +82,7 @@ def qvinaw_docking(
             f" --size_y {pocket_definition['size'][1]}"
             f" --size_z {pocket_definition['size'][2]}"
             f" --exhaustiveness {exhaustiveness}"
-            " --cpu 1"
+            " --cpu 1 --seed 1"
             f" --num_modes {n_poses}"
         )
         subprocess.call(
@@ -157,6 +158,7 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
                     )
                     qvinaw_dataframes.append(df)
             qvinaw_df = pd.concat(qvinaw_dataframes)
+            qvinaw_df["ID"] = qvinaw_df["Pose ID"].apply(lambda x: x.split("_")[0])
         except Exception as e:
             printlog("ERROR: Failed to Load QVINAW poses SDF file!")
             printlog(e)

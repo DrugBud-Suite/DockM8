@@ -184,7 +184,7 @@ def split_pdbqt_str(file):
             if line.startswith('MODEL'):
                 model_number = int(line.split()[-1])
                 break
-        output_filename = file.with_name(f"{file.stem}_QVINAW_{model_number}.pdbqt")
+        output_filename = file.with_name(f"{file.stem}_{model_number}.pdbqt")
         with open(output_filename, 'w') as output_file:
             output_file.writelines(model)
     os.remove(file)
