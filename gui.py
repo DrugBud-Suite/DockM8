@@ -273,8 +273,7 @@ docking_programs = st.multiselect(
 
 if "PLANTS" in docking_programs and not os.path.exists("/path/to/software/PLANTS"):
     st.warning(
-        "PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php",
-        icon=":warning:",
+        "PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php"
     )
 
 # Number of poses
@@ -295,10 +294,41 @@ exhaustiveness = st.select_slider(
     help="Exhaustiveness of the docking, only applies to GNINA, SMINA, QVINA2 and QVINAW. Higher values can significantly increase the runtime.",
 )
 
+# Post docking
+st.header("Docking postprocessing", divider="orange")
+clash_cutoff_toggle = st.toggle(
+    label="Remove poses with clashes",
+    value=True,
+    help="Remove poses with clashes",
+    key="clash_cutoff_toggle"
+)
+if clash_cutoff_toggle:
+    clash_cutoff = st.number_input(
+        label="Remove poses with more than x clashes: (setting too low will remove to many poses, use default if unsure)",
+        min_value=0, max_value=100, value=5, step=1
+    )
+else:
+    clash_cutoff = None
+    
+strain_cutoff_toggle = st.toggle(
+    label="Remove poses with high strain",
+    value=True,
+    help="Remove poses with high strain",
+    key="strain_cutoff_toggle"
+)
+if strain_cutoff_toggle:
+    strain_cutoff = st.number_input(
+            label="Remove poses with higher than x strain energy (kcal/mol): (setting too low will remove to many poses, use default if unsure)",
+            min_value=100, max_value=100000, value=5000, step=100
+        )
+else:
+    clash_cutoff = None
+
 bust_poses = st.toggle(
-    label="Bust poses using PoseBusters : WARNING may take a long time to run",
-    value=False,
+    label="Bust poses using PoseBusters",
+    value=True,
     help="Bust poses using PoseBusters : Will remove any poses with clashes, non-flat aromatic rings etc. WARNING may take a long time to run",
+    key="bust_poses_toggle"
 )
 
 # Pose selection
@@ -410,9 +440,13 @@ config = {
     },
     "docking": {
         "docking_programs": docking_programs,
-        "bust_poses": bust_poses,
         "n_poses": n_poses,
         "exhaustiveness": exhaustiveness,
+    },
+    "post_docking": {
+        "clash_cutoff": clash_cutoff,
+        "strain_cutoff": strain_cutoff,
+        "bust_poses": bust_poses,
     },
     "pose_selection": {
         "pose_selection_method": pose_selection,
