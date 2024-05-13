@@ -48,10 +48,15 @@ pocket_detection:
 docking:
   docking_programs:                                                 # List of methods used for docking (options : "SMINA", "GNINA", "QVINA2", "QVINAW", "PLANTS"). 
     - "SMINA"                                                       # Include multiple rows to use multiple docking engines
-    - "GNINA"
-  bust_poses: false                                                 # Control whether problematic poses are removed. Can be slow for large datasets
+    - "GNINA"                                               # Control whether problematic poses are removed. Can be slow for large datasets
   n_poses: 10                                                        # Number of poses to generate per compound
   exhaustiveness: 8                                                 # Exhaustiveness of the docking; higher values increase accuracy and computation time. Only valid for Vina derivatives
+
+## Docking postprocessing
+post_docking:
+  clash_cutoff: 5
+  strain_cutoff: 5000
+  bust_poses: True
 
 ## Pose selection configuration
 pose_selection:
