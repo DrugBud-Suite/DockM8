@@ -21,7 +21,7 @@ from scripts.clustering_functions import *
 from scripts.consensus_methods import *
 from scripts.docking.docking import dockm8_docking, concat_all_poses
 from scripts.library_preparation.main import prepare_library
-from scripts.docking_postprocessing.main import docking_postprocessing
+from scripts.docking_postprocessing.docking_postprocessing import docking_postprocessing
 from scripts.performance_calculation import *
 from scripts.pocket_finding.main import pocket_finder
 from scripts.postprocessing import *

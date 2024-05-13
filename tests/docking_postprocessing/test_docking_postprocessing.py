@@ -12,14 +12,14 @@ dockm8_path = next(
 )
 sys.path.append(str(dockm8_path))
 
-from scripts.docking_postprocessing.main import docking_postprocessing
+from scripts.docking_postprocessing.docking_postprocessing import docking_postprocessing
 
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
-    input_sdf = Path(dockm8_path / "tests/test_files/example_poses_1fvv.sdf")
-    output_path = Path(dockm8_path / "tests/test_files/example_poses_1fvv_postprocessed.sdf")
-    protein_file = Path(dockm8_path / "tests/test_files/example_prepared_receptor_1fvv.pdb")
+    input_sdf = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_poses_1fvv.sdf")
+    output_path = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_poses_1fvv_postprocessed.sdf")
+    protein_file = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_prepared_receptor_1fvv.pdb")
     bust_poses = True
     strain_cutoff = 5
     clash_cutoff = 3
