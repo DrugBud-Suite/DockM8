@@ -304,13 +304,6 @@ def check_config(config):
                 f"DockM8 configuration error: Invalid docking program ({program}) specified in the configuration file. Must be one of {', '.join(list(DOCKING_PROGRAMS.keys()))}."
             )
 
-    # Validate 'bust_poses' to ensure it is a boolean
-    bust_poses = docking.get("bust_poses")
-    if not isinstance(bust_poses, bool):
-        raise DockM8Error(
-            "DockM8 configuration error: 'bust_poses' in 'docking' section must be a boolean (true/false) value."
-        )
-
     # Validate 'n_poses' to ensure it is an integer
     n_poses = docking.get("n_poses")
     if not isinstance(n_poses, int):
@@ -333,6 +326,24 @@ def check_config(config):
             "DockM8 configuration warning: exhaustiveness is not set and SMINA, GNINA, QVINA2, or QVINAW are in docking programs. Setting exhaustiveness to 8."
         )
         config["docking"]["exhaustiveness"] = 8
+
+    # Check Docking postprocessing settings
+    post_docking = config.get("post_docking", {})
+    clash_cutoff = post_docking.get("clash_cutoff")
+    if not isinstance(clash_cutoff, int):
+        raise DockM8Error(
+            "DockM8 configuration error: 'clash_cutoff' in 'post_docking' section must be a integer value."
+        )    
+    strain_cutoff = post_docking.get("strain_cutoff")
+    if not isinstance(strain_cutoff, int):
+        raise DockM8Error(
+            "DockM8 configuration error: 'strain_cutoff' in 'post_docking' section must be a integer value."
+        )
+    bust_poses = post_docking.get("bust_poses")
+    if not isinstance(bust_poses, bool):
+        raise DockM8Error(
+            "DockM8 configuration error: 'bust_poses' in 'post_docking' section must be a boolean (true/false) value."
+        )
 
     # Check pose selection configuration
     pose_selection = config.get("pose_selection", {})
