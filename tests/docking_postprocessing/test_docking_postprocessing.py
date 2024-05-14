@@ -29,7 +29,7 @@ def common_test_data():
 @pytest.fixture
 def cleanup(request):
     """Cleanup fixture to remove generated files after each test."""
-    output_dir = dockm8_path / "tests/test_files/"
+    output_dir = dockm8_path / "tests/test_files/docking_postprocessing/"
 
     def remove_created_files():
         for file in output_dir.iterdir():
