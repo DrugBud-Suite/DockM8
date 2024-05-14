@@ -26,7 +26,19 @@ def common_test_data():
     n_cpus = int(os.cpu_count()*0.9)
     return input_sdf, output_path, protein_file, bust_poses, strain_cutoff, clash_cutoff, n_cpus
 
-def test_docking_postprocessing(common_test_data):
+@pytest.fixture
+def cleanup(request):
+    """Cleanup fixture to remove generated files after each test."""
+    output_dir = dockm8_path / "tests/test_files/"
+
+    def remove_created_files():
+        for file in output_dir.iterdir():
+            if file.name in ["example_poses_1fvv_postprocessed.sdf"]:
+                file.unlink()
+
+    request.addfinalizer(remove_created_files)
+
+def test_docking_postprocessing(common_test_data, cleanup):
     """
     Test case for docking_postprocessing function.
 
@@ -44,7 +56,7 @@ def test_docking_postprocessing(common_test_data):
     assert len(output_data) == 14
     
 
-def test_docking_postprocessing_without_pose_busting(common_test_data):
+def test_docking_postprocessing_without_pose_busting(common_test_data, cleanup):
     """
     Test case for docking_postprocessing function without pose busting.
 
@@ -60,7 +72,7 @@ def test_docking_postprocessing_without_pose_busting(common_test_data):
     assert result == output_path
     assert output_path.exists()
 
-def test_docking_postprocessing_with_no_cutoffs(common_test_data):
+def test_docking_postprocessing_with_no_cutoffs(common_test_data, cleanup):
     """
     Test case for docking_postprocessing function with no strain or clash cutoffs.
 
@@ -76,11 +88,3 @@ def test_docking_postprocessing_with_no_cutoffs(common_test_data):
     result = docking_postprocessing(input_sdf, output_path, protein_file, bust_poses, strain_cutoff, clash_cutoff, n_cpus)
     assert result == output_path
     assert output_path.exists()
-    
-def remove_test_data(output_file):
-    if output_file.is_file():
-        output_file.unlink()
-    else:
-        pass
-
-remove_test_data(Path(dockm8_path / "tests/test_files/example_poses_1fvv_postprocessed.sdf"))

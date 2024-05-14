@@ -19,7 +19,19 @@ def common_test_data():
     id_column = "ID"
     return library, output_dir, id_column
 
-def test_standardize_library(common_test_data):
+@pytest.fixture
+def cleanup(request):
+    """Cleanup fixture to remove generated files after each test."""
+    output_dir = dockm8_path / "tests/test_files/library_preparation/"
+
+    def remove_created_files():
+        for file in output_dir.iterdir():
+            if file.name in ["standardized_library.sdf"]:
+                file.unlink()
+
+    request.addfinalizer(remove_created_files)
+
+def test_standardize_library(common_test_data, cleanup):
     # Define the input parameters for the function
     library, output_dir, id_column = common_test_data
     n_cpus = int(os.cpu_count() * 0.9)
@@ -46,4 +58,3 @@ def test_standardize_library(common_test_data):
 
     # Verify that the standardized library does not contain any duplicate compounds
     assert len(standardized_df.drop_duplicates(subset="ID")) == len(standardized_df)
-    os.remove(standardized_file) if standardized_file.exists() else None
