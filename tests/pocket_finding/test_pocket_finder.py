@@ -1,7 +1,7 @@
 from pathlib import Path
 import sys
 import warnings
-
+import os
 import pytest
 
 # Search for 'DockM8' in parent directories
@@ -59,3 +59,6 @@ def test_p2rank_mode(common_test_data):
     pocket_definition = pocket_finder('p2rank', software=software, receptor=receptor, radius=radius)
     expected_output = {'center': (-15.4301, 196.0235, 98.3675), 'size': [20.0, 20.0, 20.0]}
     assert pocket_definition == expected_output
+
+os.remove(dockm8_path / 'DockM8/tests/test_files/1fvv_p_pocket.pdb')
+
