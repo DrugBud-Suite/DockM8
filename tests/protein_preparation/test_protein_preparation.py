@@ -305,7 +305,7 @@ def remove_created_files(output_dir):
     """
     for file in output_dir.iterdir():
         print(file)
-        if file.name.endswith("_fixed.pdb") or file.name.endswith("_protoss.pdb") or "2O1X" in file.name:
+        if file.name.endswith("_fixed.pdb") or file.name.endswith("_protoss.pdb") or "2O1X" in file.name or "prepared_receptor.pdb" in file.name:
             file.unlink()
 
 output_dir = dockm8_path / 'tests/test_files'
