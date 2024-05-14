@@ -83,11 +83,11 @@ You can click the `localhost` link to access the GUI.
 `--receptor`: The path to the protein file (.pdb) or multiple paths (separated by spaces) if using ensemble mode.  
 `--pocket`: The method to use for pocket determination. Must be one of:
 
-- 'reference' : Uses reference ligand to define pocket.
+- 'Reference' : Uses reference ligand to define pocket.
 - 'RoG' (radius of gyration) : Uses reference ligand's radius of gyration to define pocket.  
-- 'dogsitescorer' :  Use the DogSiteScorer webserver to determine pocket coordinates, works on pocket volume by default although this can be changed in *dogsitescorer.py*.  
-
-`--reffile`: The path to the reference ligand to use for pocket determination. Must be provided if using 'reference' or 'RoG' pocket mode.  
+- 'Dogsitescorer' :  Use the DogSiteScorer webserver to determine pocket coordinates, works on pocket volume by default although this can be changed in *dogsitescorer.py*.  
+- A manual pocket can be defined by passing the center and size in the following format : `--pocket center:11.1,11.1,11.1*size:20,20,20`
+`--reffile`: The path to the reference ligand to use for pocket determination. Must be provided if using 'Reference' or 'RoG' pocket mode.  
 `--docking_library`: The path to the docking library file (.sdf format).  
 `--idcolumn`: The unique identifier column used in the docking library.  
 `--conformers`: The method to use for compound protonation. Must be one of:
