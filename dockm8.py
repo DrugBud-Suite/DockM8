@@ -23,7 +23,7 @@ from scripts.docking.docking import dockm8_docking, concat_all_poses
 from scripts.library_preparation.main import prepare_library
 from scripts.docking_postprocessing.docking_postprocessing import docking_postprocessing
 from scripts.performance_calculation import *
-from scripts.pocket_finding.main import pocket_finder
+from scripts.pocket_finding.pocket_finding import pocket_finder
 from scripts.postprocessing import *
 from scripts.protein_preparation.protein_preparation import prepare_protein
 from scripts.rescoring_functions import *

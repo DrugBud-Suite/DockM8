@@ -17,6 +17,18 @@ def common_test_data():
     output_dir = dockm8_path / 'tests/test_files'
     return input_pdb_file, output_dir
 
+@pytest.fixture
+def cleanup(request):
+    """Cleanup fixture to remove generated files after each test."""
+    output_dir = dockm8_path / "tests/test_files/"
+
+    def remove_created_files():
+        for file in output_dir.iterdir():
+            if file.name.endswith("_fixed.pdb") or file.name.endswith("_protoss.pdb") or "2O1X" in file.name or "prepared_receptor.pdb" in file.name:
+                file.unlink()
+
+    request.addfinalizer(remove_created_files)
+
 def test_prepare_protein_with_file_input(common_test_data):
     """
     Test case for preparing protein with file input.
@@ -292,21 +304,3 @@ def test_prepare_protein_without_protonate(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
-
-def remove_created_files(output_dir):
-    """
-    Function to remove all the created files.
-
-    Args:
-        output_dir: A tuple containing the input file and output directory.
-
-    Returns:
-        None
-    """
-    for file in output_dir.iterdir():
-        print(file)
-        if file.name.endswith("_fixed.pdb") or file.name.endswith("_protoss.pdb") or "2O1X" in file.name or "prepared_receptor.pdb" in file.name:
-            file.unlink()
-
-output_dir = dockm8_path / 'tests/test_files'
-remove_created_files(output_dir)
