@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from pathlib import Path
 import pytest
@@ -32,7 +33,7 @@ def test_prepare_library_protonation(common_test_data):
     input_df = PandasTools.LoadSDF(str(library), molColName=None, idName=id_column)
     final_library = PandasTools.LoadSDF(str(final_library), molColName=None, idName=id_column)
     assert len(input_df) == len(final_library)
-    os.remove(final_library) if final_library.exists() else None
+    shutil.rmtree(final_library, ignore_errors=True)
 
 def test_prepare_library_no_protonation(common_test_data):
     """Test library preparation without protonation."""
@@ -46,7 +47,7 @@ def test_prepare_library_no_protonation(common_test_data):
     input_df = PandasTools.LoadSDF(str(library), molColName=None, idName=id_column)
     final_library = PandasTools.LoadSDF(str(final_library), molColName=None, idName=id_column)
     assert len(input_df) == len(final_library)
-    os.remove(final_library) if final_library.exists() else None
+    shutil.rmtree(final_library, ignore_errors=True)
 
 def test_prepare_library_invalid_protonation(common_test_data):
     """Test library preparation with invalid protonation method."""
