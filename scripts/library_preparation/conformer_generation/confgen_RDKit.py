@@ -59,6 +59,20 @@ def generate_conformers_RDKit(input_sdf: str, output_dir: str, n_cpus: int) -> P
         with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
             df['Molecule'] = list(tqdm(executor.map(conf_gen_RDKit, df['Molecule']), total=len(df['Molecule']), desc='Minimizing molecules', unit='mol'))
 
+        # Remove molecules where conformer generation failed
+        df = df[df['Molecule'].notna()]
+
+        # Check if the number of compounds matches the input
+        input_mols = [mol for mol in Chem.SDMolSupplier(str(input_sdf)) if mol is not None]
+        if len(input_mols) != len(df):
+            printlog("Conformer generation for some compounds failed. Removing compounds from library.")
+            
+            input_ids = {mol.GetProp("_Name") for mol in input_mols if mol.HasProp("_Name")}
+            generated_ids = set(df["ID"])
+            missing_ids = input_ids - generated_ids
+            
+            df = df[df["ID"].isin(input_ids - missing_ids)]
+        
         # Write the conformers to the output SDF file using PandasTools.WriteSDF()
         output_file = output_dir / 'generated_conformers.sdf'
         PandasTools.WriteSDF(df, str(output_file), molColName='Molecule', idName='ID')
