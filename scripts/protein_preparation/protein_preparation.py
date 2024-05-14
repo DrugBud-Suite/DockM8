@@ -18,10 +18,11 @@ from scripts.protein_preparation.protonation.protonate_protoss import (
 )
 from scripts.protein_preparation.structure_assessment.edia import get_best_chain_edia
 from scripts.utilities.utilities import printlog
+import requests
 
 
 def prepare_protein(
-    protein_file_or_code: Path,
+    protein_file_or_code: str or Path,
     output_dir: Path = None,
     select_best_chain: bool = True,
     fix_protein: bool = True,
@@ -50,15 +51,26 @@ def prepare_protein(
         Path: The path to the prepared protein structure.
     """
     prepared_receptor_path = output_dir / "prepared_receptor.pdb"
+    printlog(f"Checking validity of receptor input: {protein_file_or_code}")
     if not (prepared_receptor_path).exists():
         if len(str(protein_file_or_code)) == 4 and protein_file_or_code.isalnum():
-            type = "PDB"
+            url = f"https://www.rcsb.org/structure/{protein_file_or_code}"
+            response = requests.head(url)
+            if response.status_code == 200:
+                type = "PDB"
+            else:
+                raise ValueError(f"The provided PDB code {protein_file_or_code} is invalid.")
         elif len(str(protein_file_or_code)) == 6 and protein_file_or_code.isalnum():
-            type = "Uniprot"
+            url = f"https://www.uniprot.org/uniprotkb/{protein_file_or_code}/entry"
+            response = requests.head(url)
+            if response.status_code == 200:
+                type = "Uniprot"
+            else:
+                raise ValueError(f"The provided Uniprot code {protein_file_or_code} is invalid.")
         else:
             # Check if the protein_file_or_code is a valid path
             if not Path(protein_file_or_code).is_file():
-                raise ValueError("Protein_file_or_code file is an invalid file path.")
+                raise ValueError(f"{protein_file_or_code} is an invalid file path.")
             else:
                 type = "File"
 
@@ -67,7 +79,7 @@ def prepare_protein(
         # Check if the protein_file_or_code type is valid
         if select_best_chain and type.upper() != "PDB":
             printlog(
-                "Selecting the best chain is only supported for PDB protein_file_or_code. Turning of the best chain selection ..."
+                "Selecting the best chain is only supported for PDB protein_file_or_code. Turning off the best chain selection ..."
             )
             select_best_chain = False
         # Check if protonation is required
