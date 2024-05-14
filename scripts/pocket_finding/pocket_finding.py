@@ -25,6 +25,6 @@ def pocket_finder(mode: str, software: Path = None, receptor: Path = None, ligan
     elif mode == 'p2rank':
         pocket_definition = find_pocket_p2rank(software, receptor, radius)
     elif mode == 'Manual':
-        pocket_definition = parse_pocket_coordinates(mode)
+        pocket_definition = parse_pocket_coordinates(manual_pocket)
     printlog(f'Pocket definition: {pocket_definition}')
     return pocket_definition
