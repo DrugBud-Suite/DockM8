@@ -14,8 +14,8 @@ from scripts.library_preparation.standardisation.standardise import standardize_
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
-    library = dockm8_path / "tests/test_files/library.sdf"
-    output_dir = dockm8_path / "tests/test_files/"
+    library = dockm8_path / "tests/test_files/library_preparation/library.sdf"
+    output_dir = dockm8_path / "tests/test_files/library_preparation/"
     id_column = "ID"
     return library, output_dir, id_column
 
