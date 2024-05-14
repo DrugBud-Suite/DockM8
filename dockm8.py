@@ -204,7 +204,7 @@ def run_dockm8(config):
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0],
+                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=decoy_library,
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -248,7 +248,7 @@ def run_dockm8(config):
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0],
+                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=decoy_library,
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -263,9 +263,12 @@ def run_dockm8(config):
             # Generate target and reference ligand dictionnary
             receptor_dict = {}
             for i, receptor in enumerate(config["receptor(s)"]):
-                receptor_dict[receptor] = config["pocket_detection"][
-                    "reference_ligand(s)"
-                ][i]
+                if config["pocket_detection"]["reference_ligand(s)"] is None:
+                    receptor_dict[receptor] = None
+                else:
+                    receptor_dict[receptor] = config["pocket_detection"][
+                        "reference_ligand(s)"
+                    ][i]
             # Run DockM8 on the decoy library
             printlog("Running DockM8 on the decoy library...")
             dockm8(
@@ -274,7 +277,7 @@ def run_dockm8(config):
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0],
+                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=decoy_library,
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -340,7 +343,7 @@ def run_dockm8(config):
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0],
+                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=config["docking_library"],
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -355,9 +358,12 @@ def run_dockm8(config):
             # Generate target and reference ligand dictionnary
             receptor_dict = {}
             for i, receptor in enumerate(config["receptor(s)"]):
-                receptor_dict[receptor] = config["pocket_detection"][
-                    "reference_ligand(s)"
-                ][i]
+                if config["pocket_detection"]["reference_ligand(s)"] is None:
+                    receptor_dict[receptor] = None
+                else:
+                    receptor_dict[receptor] = config["pocket_detection"][
+                        "reference_ligand(s)"
+                    ][i]
             # Run DockM8 in ensemble mode
             printlog("Running DockM8 in ensemble mode...")
             for receptor, ligand in receptor_dict.items():
