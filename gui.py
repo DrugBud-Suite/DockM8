@@ -13,7 +13,7 @@ from scripts.clustering_metrics import CLUSTERING_METRICS
 from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.rescoring_functions import RESCORING_FUNCTIONS
-from scripts.pocket_finding.main import POCKET_DETECTION_OPTIONS
+from scripts.pocket_finding.pocket_finding import POCKET_DETECTION_OPTIONS
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
