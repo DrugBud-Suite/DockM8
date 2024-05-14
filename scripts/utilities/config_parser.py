@@ -288,7 +288,7 @@ def check_config(config):
             raise DockM8Error(
                 "DockM8 configuration error: Manual pocket definition is required for 'Manual' pocket detection method."
             )
-        if not re.match(r"center:\d+,\d+,\d+\*size:\d+,\d+,\d+", manual_pocket):
+        if not re.match(r"center:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?\*size:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?", manual_pocket):
             raise DockM8Error(
                 "DockM8 configuration error: Invalid manual pocket definition format. Format should be 'center:x,y,z*size:x,y,z' where x, y, and z are numbers."
             )
@@ -330,12 +330,12 @@ def check_config(config):
     # Check Docking postprocessing settings
     post_docking = config.get("post_docking", {})
     clash_cutoff = post_docking.get("clash_cutoff")
-    if not isinstance(clash_cutoff, int):
+    if not (isinstance(clash_cutoff, int) or clash_cutoff is None):
         raise DockM8Error(
             "DockM8 configuration error: 'clash_cutoff' in 'post_docking' section must be a integer value."
         )    
     strain_cutoff = post_docking.get("strain_cutoff")
-    if not isinstance(strain_cutoff, int):
+    if not (isinstance(strain_cutoff, int) or strain_cutoff is None):
         raise DockM8Error(
             "DockM8 configuration error: 'strain_cutoff' in 'post_docking' section must be a integer value."
         )
