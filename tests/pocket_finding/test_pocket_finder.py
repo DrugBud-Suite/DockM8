@@ -10,7 +10,7 @@ sys.path.append(str(dockm8_path))
 
 print("DockM8 is in : "+str(dockm8_path))
 
-from scripts.pocket_finding.main import pocket_finder
+from scripts.pocket_finding.pocket_finding import pocket_finder
 
 # Ignore deprecation warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -48,8 +48,8 @@ def test_dogsitescorer_mode(common_test_data):
 
 def test_manual_mode():
     """Test pocket finding with manual coordinates."""
-    mode = 'center:-11,25.3,34.2*size:10,10,10'
-    pocket_definition = pocket_finder(mode)
+    manual_pocket = 'center:-11,25.3,34.2*size:10,10,10'
+    pocket_definition = pocket_finder("Manual", manual_pocket=manual_pocket)
     expected_output = {'center': [-11, 25.3, 34.2], 'size': [10, 10, 10]}
     assert pocket_definition == expected_output
 
