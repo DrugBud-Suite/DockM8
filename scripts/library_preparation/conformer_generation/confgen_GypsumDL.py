@@ -8,7 +8,8 @@ from pathlib import Path
 from subprocess import DEVNULL, STDOUT
 
 import pandas as pd
-from rdkit.Chem import PandasTools
+from rdkit import Chem
+from rdkit.Chem import PandasTools, AllChem
 
 # Search for 'DockM8' in parent directories
 dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
@@ -39,7 +40,6 @@ def generate_conformers_GypsumDL(
     printlog("Generating 3D conformers using GypsumDL...")
 
     # Splitting input SDF file into smaller files for parallel processing
-    printlog("Splitting input SDF file into smaller files for parallel processing...")
     split_files_folder = split_sdf_str(output_dir / "GypsumDL_split", input_sdf, 10)
     split_files_sdfs = [
         split_files_folder / f
@@ -77,8 +77,7 @@ def generate_conformers_GypsumDL(
             printlog(e)
         return
 
-    # Running GypsumDL in parallel
-    printlog("Running GypsumDL in parallel...")
+    # Running GypsumDL in parallel)
     parallel_executor(
         gypsum_dl_run,
         split_files_sdfs,
@@ -109,6 +108,31 @@ def generate_conformers_GypsumDL(
 
     # Select only the 'Molecule' and 'ID' columns from the DataFrame
     final_df = final_df[["Molecule", "ID"]]
+    
+    # Check if the number of compounds matches the input
+    input_mols = [mol for mol in Chem.SDMolSupplier(str(input_sdf)) if mol is not None]
+    if len(input_mols) != len(final_df):
+        printlog("Conformer generation for some compounds failed. Attempting to generate missing conformers using RDKit...")
+        
+        input_ids = {mol.GetProp("_Name") for mol in input_mols if mol.HasProp("_Name")}
+        final_ids = set(final_df["ID"])
+        missing_ids = input_ids - final_ids
+        
+        for mol in input_mols:
+            if mol.HasProp("_Name") and mol.GetProp("_Name") in missing_ids:
+                try:
+                    mol = Chem.AddHs(mol)
+                    AllChem.EmbedMolecule(mol, AllChem.ETKDG())
+                    AllChem.UFFOptimizeMolecule(mol)
+                    final_df = final_df.append(
+                        {"Molecule": mol, "ID": mol.GetProp("_Name")}, ignore_index=True
+                    )
+                except Exception as e:
+                    printlog(f"RDKit failed to generate conformer for {mol.GetProp('_Name')}. Removing compound from library.")
+                    missing_ids.remove(mol.GetProp("_Name"))
+        
+        # Remove compounds that still failed after RDKit attempt
+        final_df = final_df[final_df["ID"].isin(input_ids - missing_ids)]
 
     output_file = output_dir / "generated_conformers.sdf"
 
