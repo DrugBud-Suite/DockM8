@@ -27,7 +27,7 @@ from scripts.pocket_finding.main import pocket_finder
 from scripts.postprocessing import *
 from scripts.protein_preparation.protein_preparation import prepare_protein
 from scripts.rescoring_functions import *
-from scripts.utilities.utilities import *
+from scripts.utilities.utilities import printlog
 from software.DeepCoy.generate_decoys import generate_decoys
 
 # Suppress warnings to clean up output
