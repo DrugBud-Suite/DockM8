@@ -44,7 +44,6 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
     rescoring_folder = kwargs.get("rescoring_folder")
     software = kwargs.get("software")
     protein_file = kwargs.get("protein_file")
-    pocket_definition = kwargs.get("pocket_definition")
 
     split_files_folder = split_sdf_str(
         rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus
@@ -83,7 +82,6 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
         split_files_sdfs,
         n_cpus,
         protein_file=protein_file,
-        pocket_definition=pocket_definition,
     )
 
     try:

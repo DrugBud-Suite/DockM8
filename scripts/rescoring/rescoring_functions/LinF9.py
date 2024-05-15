@@ -47,7 +47,6 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     rescoring_folder = kwargs.get("rescoring_folder")
     software = kwargs.get("software")
     protein_file = kwargs.get("protein_file")
-    pocket_definition = kwargs.get("pocket_definition")
 
     tic = time.perf_counter()
     (rescoring_folder / f"{column_name}_rescoring").mkdir(parents=True, exist_ok=True)
@@ -84,7 +83,6 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
         split_files_sdfs,
         n_cpus,
         protein_file=protein_file,
-        pocket_definition=pocket_definition,
     )
 
     try:
