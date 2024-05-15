@@ -7,8 +7,8 @@ from rdkit.Chem import PandasTools
 from scripts.library_preparation.main import prepare_library
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
-dockm8_path = scripts_path.parent
+tests_path = next((p / 'tests' for p in Path(__file__).resolve().parents if (p / 'tests').is_dir()), None)
+dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
 

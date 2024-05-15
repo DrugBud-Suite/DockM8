@@ -5,8 +5,8 @@ import os
 import pytest
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
-dockm8_path = scripts_path.parent
+tests_path = next((p / 'tests' for p in Path(__file__).resolve().parents if (p / 'tests').is_dir()), None)
+dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
 print("DockM8 is in : "+str(dockm8_path))
