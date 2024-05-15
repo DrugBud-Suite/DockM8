@@ -13,7 +13,8 @@ from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-dockm8_path = next((p / 'DockM8' for p in Path(__file__).resolve().parents if (p / 'DockM8').is_dir()), None)
+scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS

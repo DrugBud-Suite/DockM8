@@ -68,8 +68,8 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
 
     global vinardo_rescoring_splitted
 
-    def vinardo_rescoring_splitted(split_file, protein_file, pocket_definition):
-        vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
+    def vinardo_rescoring_splitted(split_file, protein_file):
+        vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring--"
         results = (
             vinardo_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
         )
@@ -78,12 +78,6 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
             f" --receptor {protein_file}"
             f" --ligand {split_file}"
             f" --out {results}"
-            f" --center_x {pocket_definition['center'][0]}"
-            f" --center_y {pocket_definition['center'][1]}"
-            f" --center_z {pocket_definition['center'][2]}"
-            f" --size_x {pocket_definition['size'][0]}"
-            f" --size_y {pocket_definition['size'][1]}"
-            f" --size_z {pocket_definition['size'][2]}"
             " --score_only"
             " --scoring vinardo"
             " --cnn_scoring none"

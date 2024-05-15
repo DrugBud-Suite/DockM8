@@ -62,7 +62,7 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
 
     global AD4_rescoring_splitted
 
-    def AD4_rescoring_splitted(split_file, protein_file, pocket_definition):
+    def AD4_rescoring_splitted(split_file, protein_file):
         AD4_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
         results = AD4_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
         AD4_cmd = (
@@ -70,12 +70,6 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
             f" --receptor {protein_file}"
             f" --ligand {split_file}"
             f" --out {results}"
-            f" --center_x {pocket_definition['center'][0]}"
-            f" --center_y {pocket_definition['center'][1]}"
-            f" --center_z {pocket_definition['center'][2]}"
-            f" --size_x {pocket_definition['size'][0]}"
-            f" --size_y {pocket_definition['size'][1]}"
-            f" --size_z {pocket_definition['size'][2]}"
             " --score_only"
             " --scoring ad4_scoring"
             " --cnn_scoring none"
