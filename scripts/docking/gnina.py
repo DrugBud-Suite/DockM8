@@ -129,5 +129,5 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
         except Exception as e:
             printlog("ERROR: Failed to write combined GNINA poses SDF file!")
             printlog(e)
-        #else:
-            #delete_files(w_dir / "gnina", "gnina_poses.sdf")
+        else:
+            delete_files(w_dir / "gnina", "gnina_poses.sdf")
