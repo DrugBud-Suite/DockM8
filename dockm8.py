@@ -118,7 +118,6 @@ def dockm8(
             w_dir=w_dir,
             docking_programs=docking["docking_programs"],
             protein_file=prepared_receptor,
-            bust_poses=docking["bust_poses"],
             n_cpus=n_cpus,
         )
     

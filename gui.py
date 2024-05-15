@@ -322,7 +322,7 @@ if strain_cutoff_toggle:
             min_value=100, max_value=100000, value=5000, step=100
         )
 else:
-    clash_cutoff = None
+    strain_cutoff = None
 
 bust_poses = st.toggle(
     label="Bust poses using PoseBusters",

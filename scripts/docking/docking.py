@@ -116,7 +116,7 @@ def dockm8_docking(
         printlog(e)
     shutil.rmtree(w_dir / "split_final_library", ignore_errors=True)
 
-def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path, n_cpus : int, bust_poses : bool):
+def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path, n_cpus : int):
     """
     Concatenates all poses from the specified docking programs and checks them for quality using PoseBusters.
     
@@ -133,31 +133,6 @@ def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path,
     for program in docking_programs:
         df = parallel_SDF_loader(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf", molColName='Molecule', idName='Pose ID', n_cpus=n_cpus)
         all_poses = pd.concat([all_poses, df])
-    if bust_poses:
-        try:
-            tic = time.perf_counter()
-            printlog("Busting poses...")
-            # Initialize PoseBusters with the configuration file
-            buster = PoseBusters(config=safe_load(open('./scripts/posebusters_config.yml')))
-            # Add the protein file path as a column in all_poses DataFrame
-            all_poses['mol_cond'] = str(protein_file)
-            # Rename the 'Molecule' column to 'mol_pred'
-            all_poses = all_poses.rename(columns={'Molecule':'mol_pred'})
-            # Check the quality of poses using PoseBusters
-            df = buster.bust_table(all_poses)
-            # Remove rows where any of the specified columns is 'False'
-            cols_to_check = ['all_atoms_connected', 'bond_lengths', 'bond_angles', 'internal_steric_clash', 'aromatic_ring_flatness', 'double_bond_flatness', 'protein-ligand_maximum_distance']
-            df = df.loc[(df[cols_to_check] is not False).all(axis=1)]
-            df.reset_index(inplace=True)
-            # Filter the all_poses DataFrame based on the valid poses identified by PoseBusters
-            all_poses = all_poses[all_poses['Pose ID'].isin(df['molecule'])].rename(columns={'mol_pred':'Molecule'})  
-            toc = time.perf_counter()
-            printlog(f"PoseBusters checking completed in {toc - tic:.2f} seconds.")
-        except Exception as e:
-            printlog('ERROR: Failed to check poses with PoseBusters!')     
-            printlog(e)
-    else:
-        pass
     try:
         # Write the combined poses to an SDF file
         PandasTools.WriteSDF(all_poses,
