@@ -188,3 +188,6 @@ results/DUD-E_RESULTS/
 results/Lit-PCBA_RESULTS/
 results/3datasets_top_counts.ipynb
 results/split_analysis.ipynb
+tests/test_files/rescoring/rescoring_example_poses_1fvv/
+tests/test_files/1obv.pdb
+tests/test_files/P00520.pdb
