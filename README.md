@@ -10,7 +10,7 @@
 [![Open Issues](https://img.shields.io/github/issues/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
 
-**DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [**contribution guide**](https://gitlab.com/Tonylac77/DockM8/-/blob/main/CONTRIBUTING.md) for details.**
+**DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [**contribution guide**](https://github.com/DrugBud-Suite/DockM8/blob/main/CONTRIBUTING.md) for details.**
 
 DockM8 only runs on Linux systems. However, we have tested the installation on Windows Subsystem for Linux v2 and using VirtualBox virtual machines.
 
@@ -43,7 +43,6 @@ Please refer to the [**Usage Guide**](https://github.com/DrugBud-Suite/DockM8/bl
 ## Issues and bug reports
 
 Please you the issue system built into github to report issues. They will be resolved as soon as possible.
-
 
 ## Acknowledgements
 
