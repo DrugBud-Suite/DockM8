@@ -16,7 +16,7 @@ DockM8 only runs on Linux systems. However, we have tested the installation on W
 
 ## Automatic installation (Python 3.10 / Ubuntu 22.04)
 
-For automatic installation, download and run [**setup_py310.sh**](https://github.com/DrugBud-Suite/DockM8/blob/main/setup_py310.sh) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup.sh` and then `./setup_py310.sh`.
+For automatic installation, download and run [**setup_py310.sh**](https://github.com/DrugBud-Suite/DockM8/blob/main/setup_py310.sh) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup_py310.sh` and then `./setup_py310.sh`.
 
 ## Manual Installation (Python 3.10 / Ubuntu 22.04)
 
