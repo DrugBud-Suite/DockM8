@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.2
+- **Added**: setup script to release
+- **Changed**: None
+- **Deprecated**: None
+- **Removed**: None
+- **Fixed**: Links in PDF guides
+- **Security**: None
+
 ## v1.0.1
 - **Added**: None
 - **Changed**: None
