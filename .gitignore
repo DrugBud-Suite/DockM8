@@ -183,3 +183,8 @@ software/psovina
 software/vinaXB
 software/posecheck-main/
 software/posecheck/
+results/DEKOIS_RESULTS/
+results/DUD-E_RESULTS/
+results/Lit-PCBA_RESULTS/
+results/3datasets_top_counts.ipynb
+results/split_analysis.ipynb
