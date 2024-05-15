@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.0.1
+- **Added**: None
+- **Changed**: None
+- **Deprecated**: None
+- **Removed**: None
+- **Fixed**: Links in README file
+- **Security**: None
+
+## v1.0.0 - First release of DockM8
+- **Added**: Ability to define a manual pocket
+- **Changed**: None
+- **Deprecated**: None
+- **Removed**: None
+- **Fixed**: None
+- **Security**: None
+
 ## v0.2.3
 - **Added**: Output docking poses for pose selection methods
 - **Changed**: Improved ID handling for numeric or `_`-containing IDs and change License to GNU GPLv3
