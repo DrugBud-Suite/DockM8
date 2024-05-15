@@ -18,7 +18,7 @@ from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.library_preparation.main import CONFORMER_OPTIONS, PROTONATION_OPTIONS
 from scripts.pocket_finding.pocket_finding import POCKET_DETECTION_OPTIONS
-from scripts.rescoring_functions import RESCORING_FUNCTIONS
+from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.utilities import printlog
 
 

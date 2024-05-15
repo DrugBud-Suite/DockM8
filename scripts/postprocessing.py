@@ -14,7 +14,7 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.consensus_methods import CONSENSUS_METHODS
-from scripts.rescoring_functions import RESCORING_FUNCTIONS
+from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
