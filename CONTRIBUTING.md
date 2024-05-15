@@ -4,8 +4,8 @@ We welcome contributions from external contributors, and this document describes
 
 ## Getting Started
 
-1. Make sure you have a [GitHub](https://github.com/signup/free) or [GitLab](https://gitlab.com/users/sign_up) account.
-2. [Fork](https://help.github.com/articles/fork-a-repo/) this repository on GitLab.
+1. Make sure you have a [GitHub](https://github.com/signup/free) account.
+2. [Fork](https://help.github.com/articles/fork-a-repo/) this repository on Github.
 3. On your local machine, [clone](https://help.github.com/articles/cloning-a-repository/) your fork of the repository.
 
 ## Making Changes
