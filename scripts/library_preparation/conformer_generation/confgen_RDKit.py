@@ -28,7 +28,7 @@ def conf_gen_RDKit(molecule):
     """
     if not molecule.GetConformer().Is3D():
         molecule = Chem.AddHs(molecule)  # Add hydrogens to the molecule
-        AllChem.EmbedMolecule(molecule)  # Generate initial 3D coordinates for the molecule
+        AllChem.EmbedMolecule(molecule, AllChem.ETKDGv3())  # Generate initial 3D coordinates for the molecule
         AllChem.MMFFOptimizeMolecule(molecule)  # Optimize the 3D coordinates using the MMFF force field
         AllChem.SanitizeMol(molecule)  # Sanitize the molecule to ensure it is chemically valid
     return molecule
