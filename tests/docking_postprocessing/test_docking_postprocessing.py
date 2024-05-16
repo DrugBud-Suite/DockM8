@@ -15,6 +15,7 @@ from scripts.docking_postprocessing.docking_postprocessing import docking_postpr
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
+    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
     input_sdf = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_poses_1fvv.sdf")
     output_path = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_poses_1fvv_postprocessed.sdf")
     protein_file = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_prepared_receptor_1fvv.pdb")

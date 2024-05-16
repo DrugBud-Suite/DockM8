@@ -15,6 +15,7 @@ sys.path.append(str(dockm8_path))
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
+    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
     library = dockm8_path / "tests/test_files/library_preparation/library.sdf"
     output_dir = dockm8_path / "tests/test_files/library_preparation/"
     id_column = "ID"

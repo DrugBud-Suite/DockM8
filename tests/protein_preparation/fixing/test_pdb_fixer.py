@@ -16,6 +16,7 @@ from scripts.protein_preparation.fixing.pdb_fixer import fix_pdb_file
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
+    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
     input_pdb_file = dockm8_path / "tests/test_files/1fvv_p.pdb"
     output_dir = dockm8_path / "tests/test_files"
     return input_pdb_file, output_dir

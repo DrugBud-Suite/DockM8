@@ -19,6 +19,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
+    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
     ligand = dockm8_path / 'tests/test_files/pocket_finder/1fvv_l.sdf'
     receptor =dockm8_path / 'tests/test_files/pocket_finder/1fvv_p.pdb'
     software = dockm8_path / 'software'

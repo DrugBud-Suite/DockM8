@@ -16,6 +16,7 @@ from scripts.protein_preparation.utils import extract_chain
 
 @pytest.fixture
 def pdb_file():
+    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
     return dockm8_path / "tests/test_files/1fvv_p.pdb"
 
 

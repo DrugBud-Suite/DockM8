@@ -19,6 +19,7 @@ from scripts.protein_preparation.fetching.fetch_pdb import fetch_pdb_structure
 
 @pytest.fixture
 def common_test_data():
+    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
     valid_pdb_id = "1obv"
     invalid_pdb_id = "invalid_id"
     valid_uniprot_code = "P00520"
