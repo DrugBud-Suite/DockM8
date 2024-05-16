@@ -24,21 +24,20 @@ def test_data():
     dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
     w_dir = dockm8_path / "tests/test_files/rescoring"
     protein_file = dockm8_path / "tests/test_files/rescoring/example_prepared_receptor_1fvv.pdb"
-    pocket_definition = {"center": (0, 0, 0), "size": 10}
     software = dockm8_path / "software"
     clustered_sdf = dockm8_path / "tests/test_files/rescoring/example_poses_1fvv.sdf"
-    functions = [key for key in RESCORING_FUNCTIONS.keys() if key not in ["AAScore", "PLECScore"]]
+    functions = [key for key in RESCORING_FUNCTIONS.keys() if key not in ["AAScore", "PLECScore", "RFScoreVS"]]
     n_cpus = int(os.cpu_count() * 0.9)
-    return w_dir, protein_file, pocket_definition, software, clustered_sdf, functions, n_cpus
+    return w_dir, protein_file, software, clustered_sdf, functions, n_cpus
 
 def test_rescore_poses(test_data):
-    w_dir, protein_file, pocket_definition, software, clustered_sdf, functions, n_cpus = test_data
+    w_dir, protein_file, software, clustered_sdf, functions, n_cpus = test_data
     # Ensure that output directory is clean
     rescoring_folder = w_dir / f"rescoring_{clustered_sdf.stem}"
     if rescoring_folder.exists():
         delete_files(rescoring_folder, None)
 
-    rescore_poses(w_dir, protein_file, pocket_definition, software, clustered_sdf, functions, n_cpus)
+    rescore_poses(w_dir, protein_file, software, clustered_sdf, functions, n_cpus)
 
     # Check the presence of output files
     for function in functions:
