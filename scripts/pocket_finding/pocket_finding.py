@@ -12,6 +12,7 @@ from scripts.pocket_finding.manual import parse_pocket_coordinates
 from scripts.pocket_finding.p2rank import find_pocket_p2rank
 from scripts.pocket_finding.radius_of_gyration import find_pocket_RoG
 from scripts.utilities.utilities import printlog
+from scripts.utilities.pocket_extraction import extract_pocket
 
 POCKET_DETECTION_OPTIONS = ['Reference', 'RoG', 'Dogsitescorer', 'p2rank', 'Manual']
 
@@ -28,4 +29,11 @@ def pocket_finder(mode: str, software: Path = None, receptor: Path = None, ligan
     elif mode == 'Manual':
         pocket_definition = parse_pocket_coordinates(manual_pocket)
     printlog(f'Pocket definition: {pocket_definition}')
+    # Extract the pocket from the receptor
+    pocket_path = extract_pocket(pocket_definition, receptor)    
     return pocket_definition
+
+pocket_finder('Reference', 
+              receptor=Path('/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/docking_postprocessing/example_prepared_receptor_1fvv.pdb'), 
+              ligand=Path('/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/pocket_finder/1fvv_l.sdf'), 
+              radius=10)
