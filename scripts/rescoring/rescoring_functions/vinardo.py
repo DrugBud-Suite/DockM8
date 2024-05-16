@@ -80,8 +80,7 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
             " --cnn_scoring none"
         )
         try:
-            subprocess.call(vinardo_cmd, shell=True#, stdout=DEVNULL, stderr=STDOUT
-                            )
+            subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         except Exception as e:
             printlog(f"{column_name} rescoring failed: " + e)
         return
