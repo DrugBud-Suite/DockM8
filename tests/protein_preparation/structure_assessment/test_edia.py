@@ -26,6 +26,7 @@ def test_get_best_chain_edia(common_test_data):
     pdb_code, output_dir = common_test_data
     output_path = get_best_chain_edia(pdb_code, output_dir)
     expected_chain_path = output_dir / f"{pdb_code}_A.pdb"
+    fetched_file = output_dir / f"{pdb_code}.pdb"
     assert output_path.is_file()
     assert output_path == expected_chain_path
     # Verify that the extracted chain file is not empty
@@ -34,6 +35,7 @@ def test_get_best_chain_edia(common_test_data):
     structure = parser.get_structure("structure", output_path)
     assert structure is not None
     os.unlink(output_path) if os.path.exists(output_path) else None
+    os.unlink(fetched_file) if os.path.exists(fetched_file) else None
 
 
 def test_get_best_chain_edia_invalid_pdb_code(common_test_data):
@@ -42,3 +44,4 @@ def test_get_best_chain_edia_invalid_pdb_code(common_test_data):
     pdb_code = "invalid"
     with pytest.raises(Exception):
         get_best_chain_edia(pdb_code, output_dir)
+
