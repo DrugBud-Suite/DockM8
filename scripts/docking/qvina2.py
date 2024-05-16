@@ -11,22 +11,18 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.utilities import convert_molecules, delete_files, printlog, split_pdbqt_str
 
 
-def qvina2_docking(
-    split_file: Path,
-    w_dir: Path,
-    protein_file: Path,
-    pocket_definition: Dict[str, list],
-    software: Path,
-    exhaustiveness: int,
-    n_poses: int
-):
+def qvina2_docking(split_file: Path, w_dir: Path, protein_file: Path,
+                   pocket_definition: Dict[str, list], software: Path,
+                   exhaustiveness: int, n_poses: int):
     """
     Perform docking using the QVINA2 software for either a library of molecules or split files.
 
@@ -71,41 +67,42 @@ def qvina2_docking(
     # Dock each ligand using QVINA2
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
         output_file = results_folder / (pdbqt_file.stem + "_QVINA2.pdbqt")
-        qvina2_cmd = (
-            f"{software / 'qvina2.1'}"
-            f" --receptor {protein_file_pdbqt}"
-            f" --ligand {pdbqt_file}"
-            f" --out {output_file}"
-            f" --center_x {pocket_definition['center'][0]}"
-            f" --center_y {pocket_definition['center'][1]}"
-            f" --center_z {pocket_definition['center'][2]}"
-            f" --size_x {pocket_definition['size'][0]}"
-            f" --size_y {pocket_definition['size'][1]}"
-            f" --size_z {pocket_definition['size'][2]}"
-            f" --exhaustiveness {exhaustiveness}"
-            " --cpu 1 --seed 1"
-            f" --num_modes {n_poses}"
-        )
-        subprocess.call(
-            qvina2_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-        )
+        qvina2_cmd = (f"{software / 'qvina2.1'}"
+                      f" --receptor {protein_file_pdbqt}"
+                      f" --ligand {pdbqt_file}"
+                      f" --out {output_file}"
+                      f" --center_x {pocket_definition['center'][0]}"
+                      f" --center_y {pocket_definition['center'][1]}"
+                      f" --center_z {pocket_definition['center'][2]}"
+                      f" --size_x {pocket_definition['size'][0]}"
+                      f" --size_y {pocket_definition['size'][1]}"
+                      f" --size_z {pocket_definition['size'][2]}"
+                      f" --exhaustiveness {exhaustiveness}"
+                      " --cpu 1 --seed 1"
+                      f" --num_modes {n_poses}")
+        subprocess.call(qvina2_cmd,
+                        shell=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT)
 
-    qvina2_docking_results = qvina2_folder / (Path(input_file).stem + "_qvina2.sdf")
+    qvina2_docking_results = qvina2_folder / (Path(input_file).stem +
+                                              "_qvina2.sdf")
     # Process the docked poses
     try:
         for file in results_folder.glob("*.pdbqt"):
             split_pdbqt_str(file)
-        qvina2_poses = pd.DataFrame(columns=["Pose ID", "Molecule", "QVINA2_Affinity"])
+        qvina2_poses = pd.DataFrame(
+            columns=["Pose ID", "Molecule", "QVINA2_Affinity"])
         for pose_file in results_folder.glob("*.pdbqt"):
-            pdbqt_mol = PDBQTMolecule.from_file(
-                pose_file, name=pose_file.stem, skip_typing=True
-            )
+            pdbqt_mol = PDBQTMolecule.from_file(pose_file,
+                                                name=pose_file.stem,
+                                                skip_typing=True)
             rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
             # Extracting QVINA2_Affinity from the file
             with open(pose_file) as file:
-                affinity = next(
-                    line.split()[3] for line in file if "REMARK VINA RESULT:" in line
-                )
+                affinity = next(line.split()[3]
+                                for line in file
+                                if "REMARK VINA RESULT:" in line)
             # Use loc to append a new row to the DataFrame
             qvina2_poses.loc[qvina2_poses.shape[0]] = {
                 "Pose ID": pose_file.stem,
@@ -127,6 +124,7 @@ def qvina2_docking(
         shutil.rmtree(qvina2_folder / Path(input_file).stem, ignore_errors=True)
     return qvina2_docking_results
 
+
 def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
     """
     Fetches QVINA2 poses from the specified directory and combines them into a single SDF file.
@@ -137,17 +135,15 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
     Returns:
         Path: The path to the combined QVINA2 poses SDF file.
     """
-    if (w_dir / "qvina2").is_dir() and not (
-        w_dir / "qvina2" / "qvina2_poses.sdf"
-    ).is_file():
+    if (w_dir / "qvina2").is_dir() and not (w_dir / "qvina2" /
+                                            "qvina2_poses.sdf").is_file():
         try:
             qvina2_dataframes = []
-            for file in tqdm(os.listdir(w_dir / "qvina2"), desc="Loading QVINA2 poses"):
-                if (
-                    file.startswith("split")
-                    or file.startswith("final_library")
-                    and file.endswith(".sdf")
-                ):
+            for file in tqdm(os.listdir(w_dir / "qvina2"),
+                             desc="Loading QVINA2 poses"):
+                if (file.startswith("split") or
+                        file.startswith("final_library") and
+                        file.endswith(".sdf")):
                     df = PandasTools.LoadSDF(
                         str(w_dir / "qvina2" / file),
                         idName="Pose ID",
@@ -155,7 +151,8 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
                     )
                     qvina2_dataframes.append(df)
             qvina2_df = pd.concat(qvina2_dataframes)
-            qvina2_df["ID"] = qvina2_df["Pose ID"].apply(lambda x: x.split("_")[0])
+            qvina2_df["ID"] = qvina2_df["Pose ID"].apply(
+                lambda x: x.split("_")[0])
         except Exception as e:
             printlog("ERROR: Failed to Load QVINA2 poses SDF file!")
             printlog(e)

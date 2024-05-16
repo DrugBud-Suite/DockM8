@@ -11,7 +11,9 @@ from rdkit.Chem import PandasTools
 from yaml import safe_load
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -43,10 +45,11 @@ DOCKING_PROGRAMS = {
     "PSOVINA": [psovina_docking, fetch_psovina_poses],
 }
 
+
 def dockm8_docking(
     w_dir: Path,
     protein_file: Path,
-    pocket_definition : dict,
+    pocket_definition: dict,
     software: Path,
     docking_programs: list,
     exhaustiveness: int,
@@ -73,21 +76,19 @@ def dockm8_docking(
             for program in docking_programs:
                 docking_function, fetch_function = DOCKING_PROGRAMS[program]
                 if not (w_dir / program.lower()).exists():
-                    docking_function(None,
-                        w_dir,
-                        protein_file,
-                        pocket_definition,
-                        software,
-                        exhaustiveness,
-                        n_poses
-                    )
-                if (w_dir / program.lower()).exists() and not (w_dir / program.lower() / f"{program.lower()}_poses.sdf").exists():
+                    docking_function(None, w_dir, protein_file,
+                                     pocket_definition, software,
+                                     exhaustiveness, n_poses)
+                if (w_dir / program.lower()
+                   ).exists() and not (w_dir / program.lower() /
+                                       f"{program.lower()}_poses.sdf").exists():
                     fetch_function(w_dir, n_poses, software)
         else:
             printlog(f"Running docking using {n_cpus} CPUs...")
             split_final_library_path = w_dir / "split_final_library"
             if not split_final_library_path.exists():
-                split_final_library_path = split_sdf_str(w_dir, w_dir / "final_library.sdf", n_cpus)
+                split_final_library_path = split_sdf_str(
+                    w_dir, w_dir / "final_library.sdf", n_cpus)
             else:
                 printlog("Split final library folder already exists...")
             split_files_sdfs = [
@@ -97,7 +98,8 @@ def dockm8_docking(
             ]
             for program in docking_programs:
                 docking_function, fetch_function = DOCKING_PROGRAMS[program]
-                if not (w_dir / program.lower()).exists() or not any((w_dir / program.lower()).iterdir()):
+                if not (w_dir / program.lower()).exists() or not any(
+                    (w_dir / program.lower()).iterdir()):
                     parallel_executor(
                         docking_function,
                         split_files_sdfs,
@@ -110,14 +112,18 @@ def dockm8_docking(
                         exhaustiveness=exhaustiveness,
                         n_poses=n_poses,
                     )
-                if (w_dir / program.lower()).exists() and not (w_dir / program.lower() / f"{program.lower()}_poses.sdf").exists():
+                if (w_dir / program.lower()
+                   ).exists() and not (w_dir / program.lower() /
+                                       f"{program.lower()}_poses.sdf").exists():
                     fetch_function(w_dir, n_poses, software)
     except Exception as e:
         printlog("ERROR: Docking failed!")
         printlog(e)
     shutil.rmtree(w_dir / "split_final_library", ignore_errors=True)
 
-def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path, n_cpus : int):
+
+def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path,
+                     n_cpus: int):
     """
     Concatenates all poses from the specified docking programs and checks them for quality using PoseBusters.
     
@@ -132,17 +138,21 @@ def concat_all_poses(w_dir : Path, docking_programs : list, protein_file : Path,
     # Create an empty DataFrame to store all poses
     all_poses = pd.DataFrame()
     for program in docking_programs:
-        df = parallel_SDF_loader(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf", molColName='Molecule', idName='Pose ID', n_cpus=n_cpus)
+        df = parallel_SDF_loader(
+            f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf",
+            molColName='Molecule',
+            idName='Pose ID',
+            n_cpus=n_cpus)
         all_poses = pd.concat([all_poses, df])
     try:
         # Write the combined poses to an SDF file
         PandasTools.WriteSDF(all_poses,
-                            f"{w_dir}/allposes.sdf",
-                            molColName='Molecule',
-                            idName='Pose ID',
-                            properties=list(all_poses.columns))
+                             f"{w_dir}/allposes.sdf",
+                             molColName='Molecule',
+                             idName='Pose ID',
+                             properties=list(all_poses.columns))
         printlog('All poses succesfully checked and combined!')
     except Exception as e:
-        printlog('ERROR: Failed to write all_poses SDF file!')        
+        printlog('ERROR: Failed to write all_poses SDF file!')
         printlog(e)
     return

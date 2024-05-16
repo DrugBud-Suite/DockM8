@@ -4,11 +4,14 @@ from pathlib import Path
 import requests
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.utilities import printlog
+
 
 def fetch_pdb_structure(pdb_id: str, output_dir: Path):
     """
@@ -36,4 +39,3 @@ def fetch_pdb_structure(pdb_id: str, output_dir: Path):
         return output_path
     else:
         raise Exception(f"Failed to fetch PDB file {pdb_id}.")
-    

@@ -1,3 +1,6 @@
+[tool.yapf]
+based_on_style = "google"
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -25,7 +28,7 @@ exclude = [
 ]
 
 # Same as Black.
-line-length = 88
+line-length = 120
 indent-width = 4
 
 # Assume Python 3.10
@@ -68,13 +71,6 @@ docstring-code-format = false
 # Set the line length limit used when formatting code snippets in
 # docstrings.
 docstring-code-line-length = "dynamic"
-
-[tool.ruff.lint.pydocstyle]
-convention = "pep257"
-
-[tool.ruff.lint.pycodestyle]
-# In order to be able to format for 88 char in ruff format
-max-line-length = 200
 
 [tool.ruff.lint.isort]
 force-single-line = true

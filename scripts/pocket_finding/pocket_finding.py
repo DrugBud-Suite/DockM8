@@ -2,7 +2,9 @@ import sys
 from pathlib import Path
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -14,9 +16,17 @@ from scripts.pocket_finding.radius_of_gyration import find_pocket_RoG
 from scripts.utilities.utilities import printlog
 from scripts.utilities.pocket_extraction import extract_pocket
 
-POCKET_DETECTION_OPTIONS = ['Reference', 'RoG', 'Dogsitescorer', 'p2rank', 'Manual']
+POCKET_DETECTION_OPTIONS = [
+    'Reference', 'RoG', 'Dogsitescorer', 'p2rank', 'Manual'
+]
 
-def pocket_finder(mode: str, software: Path = None, receptor: Path = None, ligand: Path = None, radius: int = 10, manual_pocket: str = None):
+
+def pocket_finder(mode: str,
+                  software: Path = None,
+                  receptor: Path = None,
+                  ligand: Path = None,
+                  radius: int = 10,
+                  manual_pocket: str = None):
     # Determine the docking pocket
     if mode == 'Reference':
         pocket_definition = find_pocket_default(ligand, receptor, radius)
@@ -30,10 +40,16 @@ def pocket_finder(mode: str, software: Path = None, receptor: Path = None, ligan
         pocket_definition = parse_pocket_coordinates(manual_pocket)
     printlog(f'Pocket definition: {pocket_definition}')
     # Extract the pocket from the receptor
-    pocket_path = extract_pocket(pocket_definition, receptor)    
+    pocket_path = extract_pocket(pocket_definition, receptor)
     return pocket_definition
 
-pocket_finder('Reference', 
-              receptor=Path('/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/docking_postprocessing/example_prepared_receptor_1fvv.pdb'), 
-              ligand=Path('/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/pocket_finder/1fvv_l.sdf'), 
-              radius=10)
+
+pocket_finder(
+    'Reference',
+    receptor=Path(
+        '/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/docking_postprocessing/example_prepared_receptor_1fvv.pdb'
+    ),
+    ligand=Path(
+        '/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/pocket_finder/1fvv_l.sdf'
+    ),
+    radius=10)

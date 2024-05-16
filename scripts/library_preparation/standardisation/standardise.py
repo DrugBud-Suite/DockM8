@@ -10,7 +10,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -24,7 +26,8 @@ def standardize_molecule(molecule):
     return standardized_molecule
 
 
-def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, n_cpus: int):
+def standardize_library(input_sdf: Path, output_dir: Path, id_column: str,
+                        n_cpus: int):
     """
     Standardizes a docking library using the ChemBL Structure Pipeline.
 
@@ -48,7 +51,6 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, n_cpu
             includeFingerprints=False,
             embedProps=True,
             removeHs=True,
-            
             smilesName="SMILES",
         )
         # Check if 'ID' column is empty or if all values are NaN
@@ -57,11 +59,8 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, n_cpu
             df["ID"] = ["DOCKM8-" + str(1 + i) for i in range(len(df))]
         else:
             # Process existing IDs
-            df["ID"] = (
-                df["ID"]
-                .astype(str)
-                .apply(lambda x: "DOCKM8-" + x if x.isdigit() else x)
-            )
+            df["ID"] = (df["ID"].astype(str).apply(lambda x: "DOCKM8-" + x
+                                                   if x.isdigit() else x))
             # Remove special characters (keeping alphanumeric and dashes)
             df["ID"] = df["ID"].apply(lambda x: re.sub(r"[^a-zA-Z0-9-]", "", x))
         n_cpds_start = len(df)
@@ -74,25 +73,27 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, n_cpu
         df.drop(columns="Molecule", inplace=True)
         df["Molecule"] = [Chem.MolFromSmiles(smiles) for smiles in df["SMILES"]]
     except Exception as e:
-        printlog(f"ERROR: Failed to convert SMILES to RDKit molecules! {str(e)}")
+        printlog(
+            f"ERROR: Failed to convert SMILES to RDKit molecules! {str(e)}")
         raise
 
     # Standardize the molecules using ChemBL Structure Pipeline
     if n_cpus == 1:
         df["Molecule"] = [standardize_molecule(mol) for mol in df["Molecule"]]
     else:
-        with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=n_cpus) as executor:
             df["Molecule"] = list(
                 tqdm(
                     executor.map(standardize_molecule, df["Molecule"]),
                     total=len(df["Molecule"]),
                     desc="Standardizing molecules",
                     unit="mol",
-                )
-            )
+                ))
 
     # Clean up the dataframe and calculate the number of compounds lost during standardization
-    df[["Molecule", "flag"]] = pd.DataFrame(df["Molecule"].tolist(), index=df.index)
+    df[["Molecule", "flag"]] = pd.DataFrame(df["Molecule"].tolist(),
+                                            index=df.index)
     df.drop(columns="flag", inplace=True)
     df = df.loc[:, ~df.columns.duplicated()].copy()
     n_cpds_end = len(df)
@@ -103,10 +104,13 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, n_cpu
     # Write the standardized library to an SDF file
     output_file = output_dir / "standardized_library.sdf"
     try:
-        PandasTools.WriteSDF(
-            df, str(output_file), molColName="Molecule", idName="ID", allNumeric=True
-        )
+        PandasTools.WriteSDF(df,
+                             str(output_file),
+                             molColName="Molecule",
+                             idName="ID",
+                             allNumeric=True)
     except Exception as e:
-        printlog(f"ERROR: Failed to write standardized library SDF file! {str(e)}")
+        printlog(
+            f"ERROR: Failed to write standardized library SDF file! {str(e)}")
         raise
     return output_file

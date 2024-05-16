@@ -9,7 +9,9 @@ import pandas as pd
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -45,10 +47,10 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     protein_file = kwargs.get("protein_file")
 
     tic = time.perf_counter()
-    (rescoring_folder / f"{column_name}_rescoring").mkdir(parents=True, exist_ok=True)
+    (rescoring_folder / f"{column_name}_rescoring").mkdir(parents=True,
+                                                          exist_ok=True)
     split_files_folder = split_sdf_str(
-        (rescoring_folder / f"{column_name}_rescoring"), sdf, n_cpus
-    )
+        (rescoring_folder / f"{column_name}_rescoring"), sdf, n_cpus)
     split_files_sdfs = [
         Path(split_files_folder) / f
         for f in os.listdir(split_files_folder)
@@ -57,19 +59,17 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     global KORPL_rescoring_splitted
 
     def KORPL_rescoring_splitted(split_file, protein_file):
-        df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
+        df = PandasTools.LoadSDF(str(split_file),
+                                 idName="Pose ID",
+                                 molColName=None)
         df = df[["Pose ID"]]
-        korpl_command = (
-            f"{software}/KORP-PL"
-            + " --receptor "
-            + str(protein_file)
-            + " --ligand "
-            + str(split_file)
-            + " --sdf"
-        )
-        process = subprocess.Popen(
-            korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )
+        korpl_command = (f"{software}/KORP-PL" + " --receptor " +
+                         str(protein_file) + " --ligand " + str(split_file) +
+                         " --sdf")
+        process = subprocess.Popen(korpl_command,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   shell=True)
         stdout, stderr = process.communicate()
         energies = []
         output = stdout.decode().splitlines()
@@ -79,17 +79,15 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
                 energy = round(float(parts[1].split("=")[1]), 2)
                 energies.append(energy)
         df[column_name] = energies
-        output_csv = str(
-            rescoring_folder
-            / f"{column_name}_rescoring"
-            / (str(split_file.stem) + "_scores.csv")
-        )
+        output_csv = str(rescoring_folder / f"{column_name}_rescoring" /
+                         (str(split_file.stem) + "_scores.csv"))
         df.to_csv(output_csv, index=False)
         return
 
-    parallel_executor(
-        KORPL_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file
-    )
+    parallel_executor(KORPL_rescoring_splitted,
+                      split_files_sdfs,
+                      n_cpus,
+                      protein_file=protein_file)
 
     print("Combining KORPL scores")
     scores_folder = rescoring_folder / f"{column_name}_rescoring"
@@ -102,14 +100,12 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     else:
         # Read and concatenate the CSV files into a single DataFrame
         combined_scores_df = pd.concat(
-            [pd.read_csv(file) for file in score_files], ignore_index=True
-        )
+            [pd.read_csv(file) for file in score_files], ignore_index=True)
         # Save the combined scores to a single CSV file
         KORP_PL_rescoring_results = scores_folder / f"{column_name}_scores.csv"
         combined_scores_df.to_csv(KORP_PL_rescoring_results, index=False)
-    delete_files(
-        rescoring_folder / f"{column_name}_rescoring", f"{column_name}_scores.csv"
-    )
+    delete_files(rescoring_folder / f"{column_name}_rescoring",
+                 f"{column_name}_scores.csv")
     toc = time.perf_counter()
     printlog(f"Rescoring with KORPL complete in {toc-tic:0.4f}!")
     return KORP_PL_rescoring_results

@@ -10,7 +10,9 @@ from Bio.PDB import PDBParser
 from Bio.PDB.PDBIO import PDBIO
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -26,6 +28,7 @@ PROTEINS = urljoin(PROTEINS_PLUS_URL, 'molecule_handler/proteins/')
 LIGANDS = urljoin(PROTEINS_PLUS_URL, 'molecule_handler/ligands/')
 PROTOSS = urljoin(PROTEINS_PLUS_URL, 'protoss/')
 PROTOSS_JOBS = urljoin(PROTEINS_PLUS_URL, 'protoss/jobs/')
+
 
 def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
     """
@@ -52,7 +55,9 @@ def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
 
         # Check if maximum polls reached
         if current_poll >= max_polls:
-            printlog(f'Protoss job {job_id} has not completed after {max_polls} polling requests and {poll_interval * max_polls} seconds')
+            printlog(
+                f'Protoss job {job_id} has not completed after {max_polls} polling requests and {poll_interval * max_polls} seconds'
+            )
             return job
 
         # Wait for the specified interval before polling again
@@ -67,7 +72,7 @@ def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
 
 
 def protonate_protein_protoss(input_pdb_file: Path,
-    output_dir: Path = None) -> Path :
+                              output_dir: Path = None) -> Path:
     """
     Prepares a protein using ProtoSS.
 
@@ -91,14 +96,16 @@ def protonate_protein_protoss(input_pdb_file: Path,
     protoss_job = poll_job(job_submission['job_id'], PROTOSS_JOBS)
 
     # Get the output protein information from the job
-    protossed_protein = requests.get(PROTEINS + protoss_job['output_protein'] + '/').json()
+    protossed_protein = requests.get(PROTEINS + protoss_job['output_protein'] +
+                                     '/').json()
 
     # Create a StringIO object with the protein file string
     protein_file = io.StringIO(protossed_protein['file_string'])
 
     # Parse the protein structure from the StringIO object
-    protein_structure = PDBParser().get_structure(protossed_protein['name'], protein_file)
-    
+    protein_structure = PDBParser().get_structure(protossed_protein['name'],
+                                                  protein_file)
+
     # Create the output file path by replacing the extension of the input_pdb_file file
     output_file = Path(str(input_pdb_file).replace('.pdb', '_protoss.pdb'))
 
@@ -110,7 +117,6 @@ def protonate_protein_protoss(input_pdb_file: Path,
         pdbio.set_structure(protein_structure)
         # Save the protein structure to the output file
         pdbio.save(output_file_handle)
-    
+
     # Return the path to the prepared protein file
     return output_file
-

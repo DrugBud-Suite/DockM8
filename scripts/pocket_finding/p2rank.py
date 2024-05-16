@@ -9,7 +9,9 @@ import pandas as pd
 import requests
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -59,11 +61,9 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
         os.unlink(tarball_path)
         # Find the folder in the software directory that starts with "p2rank"
         p2rank_folder = next(
-            (
-                software / folder
-                for folder in os.listdir(software)
-                if folder.startswith("p2rank")
-            ),
+            (software / folder
+             for folder in os.listdir(software)
+             if folder.startswith("p2rank")),
             None,
         )
         os.rename(p2rank_folder, software / "p2rank")
@@ -79,9 +79,10 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
     p2rank_command = (
         f'{software / "p2rank" / "prank"} predict -f {receptor} -o {output_dir}'
     )
-    subprocess.run(
-        p2rank_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-    )
+    subprocess.run(p2rank_command,
+                   shell=True,
+                   stdout=subprocess.DEVNULL,
+                   stderr=subprocess.DEVNULL)
 
     # Load the predictions file
     predictions_file = output_dir / f"{receptor.name}_predictions.csv"
@@ -91,7 +92,9 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
 
     pocket_coordinates = {
         "center": [df["center_x"][0], df["center_y"][0], df["center_z"][0]],
-        "size": [float(radius) * 2, float(radius) * 2, float(radius) * 2]
+        "size": [float(radius) * 2,
+                 float(radius) * 2,
+                 float(radius) * 2]
     }
     # Remove the output directory
     shutil.rmtree(output_dir)

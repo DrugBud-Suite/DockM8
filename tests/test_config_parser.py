@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests' for p in Path(__file__).resolve().parents if (p / 'tests').is_dir()), None)
+tests_path = next((p / 'tests'
+                   for p in Path(__file__).resolve().parents
+                   if (p / 'tests').is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -50,8 +52,7 @@ def test_check_config_valid(common_test_data):
     assert isinstance(config["receptor(s)"], list)
     assert len(config["receptor(s)"]) == 1
     assert config["receptor(s)"][0] == Path(
-        str(dockm8_path) + "/tests/test_files/1fvv_p.pdb"
-    )
+        str(dockm8_path) + "/tests/test_files/1fvv_p.pdb")
     assert "protein_preparation" in config
     assert "select_best_chain" in config["protein_preparation"]
     if config["protein_preparation"]["select_best_chain"]:
@@ -88,8 +89,7 @@ def test_check_config_valid(common_test_data):
     assert isinstance(config["pocket_detection"]["reference_ligand(s)"], list)
     assert len(config["pocket_detection"]["reference_ligand(s)"]) == 1
     assert config["pocket_detection"]["reference_ligand(s)"][0] == Path(
-        str(dockm8_path) + "/tests/test_files/1fvv_l.sdf"
-    )
+        str(dockm8_path) + "/tests/test_files/1fvv_l.sdf")
     assert "radius" in config["pocket_detection"]
     assert config["pocket_detection"]["radius"] == 10
     assert "docking" in config
@@ -102,7 +102,7 @@ def test_check_config_valid(common_test_data):
     assert config["post_docking"]["clash_cutoff"] == 5
     assert config["post_docking"]["strain_cutoff"] == 5000
     assert config["post_docking"]["strain_cutoff"]
-    
+
     assert "n_poses" in config["docking"]
     assert config["docking"]["n_poses"] == 10
     assert "exhaustiveness" in config["docking"]
@@ -112,7 +112,8 @@ def test_check_config_valid(common_test_data):
     assert isinstance(config["pose_selection"]["pose_selection_method"], list)
     assert len(config["pose_selection"]["pose_selection_method"]) == 2
     assert config["pose_selection"]["pose_selection_method"][0] == "bestpose"
-    assert config["pose_selection"]["pose_selection_method"][1] == "bestpose_GNINA"
+    assert config["pose_selection"]["pose_selection_method"][
+        1] == "bestpose_GNINA"
     assert "clustering_method" in config["pose_selection"]
     assert config["pose_selection"]["clustering_method"] == "KMedoids"
     assert "rescoring" in config

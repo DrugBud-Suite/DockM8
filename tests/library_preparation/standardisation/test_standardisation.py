@@ -6,11 +6,14 @@ import pytest
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests' for p in Path(__file__).resolve().parents if (p / 'tests').is_dir()), None)
+tests_path = next((p / 'tests'
+                   for p in Path(__file__).resolve().parents
+                   if (p / 'tests').is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.library_preparation.standardisation.standardise import standardize_library
+
 
 @pytest.fixture
 def common_test_data():
@@ -19,6 +22,7 @@ def common_test_data():
     output_dir = dockm8_path / "tests/test_files/library_preparation/"
     id_column = "ID"
     return library, output_dir, id_column
+
 
 @pytest.fixture
 def cleanup(request):
@@ -32,12 +36,14 @@ def cleanup(request):
 
     request.addfinalizer(remove_created_files)
 
+
 def test_standardize_library(common_test_data, cleanup):
     # Define the input parameters for the function
     library, output_dir, id_column = common_test_data
     n_cpus = int(os.cpu_count() * 0.9)
     # Call the function
-    standardized_file = standardize_library(library, output_dir, id_column, n_cpus)
+    standardized_file = standardize_library(library, output_dir, id_column,
+                                            n_cpus)
     # Add your assertions here to verify the expected behavior of the function
 
     # Verify that the standardized library file exists
@@ -53,9 +59,14 @@ def test_standardize_library(common_test_data, cleanup):
         assert False, f"Failed to load standardized library SDF file: {str(e)}"
 
     # Verify that the number of compounds in the standardized library is the same as the input library
-    input_df = PandasTools.LoadSDF(str(library), molColName=None, idName=id_column)
-    standardized_df = PandasTools.LoadSDF(str(standardized_file), molColName=None, idName=id_column)
+    input_df = PandasTools.LoadSDF(str(library),
+                                   molColName=None,
+                                   idName=id_column)
+    standardized_df = PandasTools.LoadSDF(str(standardized_file),
+                                          molColName=None,
+                                          idName=id_column)
     assert len(input_df) == len(standardized_df)
 
     # Verify that the standardized library does not contain any duplicate compounds
-    assert len(standardized_df.drop_duplicates(subset="ID")) == len(standardized_df)
+    assert len(
+        standardized_df.drop_duplicates(subset="ID")) == len(standardized_df)

@@ -12,6 +12,7 @@ from spyrmsd import molecule, rmsd
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+
 def simpleRMSD_calc(*args):
     '''
     Calculates the root mean square deviation (RMSD) metric between two molecules.
@@ -24,20 +25,26 @@ def simpleRMSD_calc(*args):
     '''
     # Find the maximum common substructure (MCS) between the reference and target molecules
     mcs = rdFMCS.FindMCS([args[0], args[1]])
-    
+
     # Get the atom map for the reference and target molecules
     ref_atoms = args[0].GetSubstructMatch(Chem.MolFromSmarts(mcs.smartsString))
-    target_atoms = args[1].GetSubstructMatch(Chem.MolFromSmarts(mcs.smartsString))
-    
+    target_atoms = args[1].GetSubstructMatch(
+        Chem.MolFromSmarts(mcs.smartsString))
+
     # Generate the atom map by zipping the atom indices from the reference and target molecules
     atom_map = list(zip(ref_atoms, target_atoms))
-    
+
     # Calculate the distances between corresponding atoms in the two molecules
-    distances = [np.linalg.norm(np.array(args[0].GetConformer().GetAtomPosition(ref)) - np.array(args[1].GetConformer().GetAtomPosition(target))) for ref, target in atom_map]
-    
+    distances = [
+        np.linalg.norm(
+            np.array(args[0].GetConformer().GetAtomPosition(ref)) -
+            np.array(args[1].GetConformer().GetAtomPosition(target)))
+        for ref, target in atom_map
+    ]
+
     # Apply the RMSD formula
     rmsd = np.sqrt(np.mean(np.square(distances)))
-    
+
     return round(rmsd, 3)
 
 
@@ -68,7 +75,8 @@ def spyRMSD_calc(*args):
     anum_test = spyrmsd_jmol.atomicnums
     adj_test = spyrmsd_jmol.adjacency_matrix
 
-    spyRMSD = rmsd.symmrmsd(coords_ref, coords_test, anum_ref, anum_test, adj_ref, adj_test)
+    spyRMSD = rmsd.symmrmsd(coords_ref, coords_test, anum_ref, anum_test,
+                            adj_ref, adj_test)
 
     return round(spyRMSD, 3)
 
@@ -103,7 +111,8 @@ def SPLIF_calc(molecule1: str, molecule2: str, pocket_file: str) -> float:
 
     # Calculate the Simple Interaction Fingerprint (SIF) for the two molecules
     mol_fp = oddt.fingerprints.SimpleInteractionFingerprint(splif_mol, protein)
-    jmol_fp = oddt.fingerprints.SimpleInteractionFingerprint(splif_jmol, protein)
+    jmol_fp = oddt.fingerprints.SimpleInteractionFingerprint(
+        splif_jmol, protein)
 
     # Calculate the Tanimoto similarity between the two SIFs
     SPLIF_sim = oddt.fingerprints.tanimoto(mol_fp, jmol_fp)
@@ -136,14 +145,27 @@ def USRCAT_calc(*args):
     # Round the similarity score to 3 decimal places
     return round(usr_sim, 3)
 
+
 CLUSTERING_METRICS = {
-    'RMSD':     {'function': simpleRMSD_calc},
-    'spyRMSD':  {'function': spyRMSD_calc},
-    'espsim':   {'function': espsim_calc},
-    'USRCAT':   {'function': USRCAT_calc},
-    '3DScore':   {'function': None},
-    }
+    'RMSD': {
+        'function': simpleRMSD_calc
+    },
+    'spyRMSD': {
+        'function': spyRMSD_calc
+    },
+    'espsim': {
+        'function': espsim_calc
+    },
+    'USRCAT': {
+        'function': USRCAT_calc
+    },
+    '3DScore': {
+        'function': None
+    },
+}
 
 BROKEN_CLUSTERING_METRICS = {
-    'SPLIF':    {'function': SPLIF_calc},
+    'SPLIF': {
+        'function': SPLIF_calc
+    },
 }

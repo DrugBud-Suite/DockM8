@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def add_coordinates(dataframe):
     """
     Add coordinates column to the given dataframe.
@@ -11,9 +12,9 @@ def add_coordinates(dataframe):
     pandas.DataFrame: The dataframe with the coordinates column added.
     """
     dataframe["coordinates"] = dataframe.apply(
-        lambda row: [row["x_coord"], row["y_coord"], row["z_coord"]], axis=1
-    )
+        lambda row: [row["x_coord"], row["y_coord"], row["z_coord"]], axis=1)
     return dataframe
+
 
 def get_ligand_coordinates(ligand_molecule):
     """
@@ -27,5 +28,6 @@ def get_ligand_coordinates(ligand_molecule):
     """
     ligand_conformer = ligand_molecule.GetConformers()[0]
     coordinates = ligand_conformer.GetPositions()
-    dataframe = pd.DataFrame(coordinates, columns=["x_coord", "y_coord", "z_coord"])
+    dataframe = pd.DataFrame(coordinates,
+                             columns=["x_coord", "y_coord", "z_coord"])
     return add_coordinates(dataframe)

@@ -7,7 +7,9 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -43,18 +45,10 @@ def oddt_plecscore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     plecscore_rescoring_folder.mkdir(parents=True, exist_ok=True)
     pickle_path = f"{software}/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle"
     results = plecscore_rescoring_folder / "rescored_PLECnn.sdf"
-    plecscore_rescoring_command = (
-        "oddt_cli "
-        + str(sdf)
-        + " --receptor "
-        + str(protein_file)
-        + " -n "
-        + str(n_cpus)
-        + " --score_file "
-        + str(pickle_path)
-        + " -O "
-        + str(results)
-    )
+    plecscore_rescoring_command = ("oddt_cli " + str(sdf) + " --receptor " +
+                                   str(protein_file) + " -n " + str(n_cpus) +
+                                   " --score_file " + str(pickle_path) +
+                                   " -O " + str(results))
     subprocess.call(plecscore_rescoring_command, shell=True)
     PLECScore_results_df = PandasTools.LoadSDF(
         str(results),
@@ -63,13 +57,11 @@ def oddt_plecscore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
         includeFingerprints=False,
         removeHs=False,
     )
-    PLECScore_results_df.rename(
-        columns={"PLECnn_p5_l1_s65536": column_name}, inplace=True
-    )
+    PLECScore_results_df.rename(columns={"PLECnn_p5_l1_s65536": column_name},
+                                inplace=True)
     PLECScore_results_df = PLECScore_results_df[["Pose ID", column_name]]
-    PLECScore_rescoring_results = (
-        plecscore_rescoring_folder / f"{column_name}_scores.csv"
-    )
+    PLECScore_rescoring_results = (plecscore_rescoring_folder /
+                                   f"{column_name}_scores.csv")
     PLECScore_results_df.to_csv(PLECScore_rescoring_results, index=False)
     toc = time.perf_counter()
     printlog(f"Rescoring with PLECScore complete in {toc-tic:0.4f}!")

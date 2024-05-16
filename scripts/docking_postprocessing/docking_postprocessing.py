@@ -5,7 +5,9 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -43,26 +45,32 @@ def docking_postprocessing(
         Path: Path to the postprocessed SDF file.
     """
     printlog("Postprocessing docking results...")
-    sdf_dataframe = parallel_SDF_loader(
-        input_sdf, molColName="Molecule", idName="Pose ID", n_cpus=n_cpus
-    )
+    sdf_dataframe = parallel_SDF_loader(input_sdf,
+                                        molColName="Molecule",
+                                        idName="Pose ID",
+                                        n_cpus=n_cpus)
     starting_length = len(sdf_dataframe)
     if (strain_cutoff is not None) and (clash_cutoff is not None):
-        checked_poses = pose_checker(
-            sdf_dataframe, protein_file, clash_cutoff, strain_cutoff, n_cpus
-        )
+        checked_poses = pose_checker(sdf_dataframe, protein_file, clash_cutoff,
+                                     strain_cutoff, n_cpus)
         sdf_dataframe = checked_poses
         step1_length = len(sdf_dataframe)
-        printlog(f"Removed {starting_length - step1_length} poses during PoseChecker postprocessing.")
+        printlog(
+            f"Removed {starting_length - step1_length} poses during PoseChecker postprocessing."
+        )
     else:
         step1_length = starting_length
     if bust_poses:
         sdf_dataframe = pose_buster(sdf_dataframe, protein_file, n_cpus)
         step2_length = len(sdf_dataframe)
         if step1_length:
-            printlog(f"Removed {step1_length - step2_length} poses during PoseBusters postprocessing.")
+            printlog(
+                f"Removed {step1_length - step2_length} poses during PoseBusters postprocessing."
+            )
         else:
-            printlog(f"Removed {starting_length - step2_length} poses during PoseBusters postprocessing.")
+            printlog(
+                f"Removed {starting_length - step2_length} poses during PoseBusters postprocessing."
+            )
     PandasTools.WriteSDF(
         sdf_dataframe,
         str(output_path),

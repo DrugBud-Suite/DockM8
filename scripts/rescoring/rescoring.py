@@ -10,7 +10,9 @@ from rdkit import RDLogger
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -29,8 +31,7 @@ from scripts.rescoring.rescoring_functions.RTMScore import RTMScore_rescoring
 from scripts.rescoring.rescoring_functions.SCORCH import SCORCH_rescoring
 from scripts.rescoring.rescoring_functions.vinardo import vinardo_rescoring
 from scripts.utilities.utilities import (
-    printlog,
-)
+    printlog,)
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -38,23 +39,103 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 #add new scoring functions here!
 # Dict key: (function, column_name, min or max ordering, min value for scaled standardisation, max value for scaled standardisation)
 RESCORING_FUNCTIONS = {
-    'GNINA-Affinity':   {'function': gnina_rescoring,         'column_name': 'GNINA-Affinity', 'best_value': 'min', 'range': (100, -100)},
-    'CNN-Score':        {'function': gnina_rescoring,         'column_name': 'CNN-Score',      'best_value': 'max', 'range': (0, 1)},
-    'CNN-Affinity':     {'function': gnina_rescoring,         'column_name': 'CNN-Affinity',   'best_value': 'max', 'range': (0, 20)},
-    'Vinardo':          {'function': vinardo_rescoring,       'column_name': 'Vinardo',        'best_value': 'min', 'range': (200, 20)},
-    'AD4':              {'function': AD4_rescoring,           'column_name': 'AD4',            'best_value': 'min', 'range': (100, -100)},
-    'RFScoreVS':        {'function': rfscorevs_rescoring,     'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
+    'GNINA-Affinity': {
+        'function': gnina_rescoring,
+        'column_name': 'GNINA-Affinity',
+        'best_value': 'min',
+        'range': (100, -100)
+    },
+    'CNN-Score': {
+        'function': gnina_rescoring,
+        'column_name': 'CNN-Score',
+        'best_value': 'max',
+        'range': (0, 1)
+    },
+    'CNN-Affinity': {
+        'function': gnina_rescoring,
+        'column_name': 'CNN-Affinity',
+        'best_value': 'max',
+        'range': (0, 20)
+    },
+    'Vinardo': {
+        'function': vinardo_rescoring,
+        'column_name': 'Vinardo',
+        'best_value': 'min',
+        'range': (200, 20)
+    },
+    'AD4': {
+        'function': AD4_rescoring,
+        'column_name': 'AD4',
+        'best_value': 'min',
+        'range': (100, -100)
+    },
+    'RFScoreVS': {
+        'function': rfscorevs_rescoring,
+        'column_name': 'RFScoreVS',
+        'best_value': 'max',
+        'range': (5, 10)
+    },
     #'RFScoreVS2':       {'function': rfscorevs_rescoring2,    'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
-    'PLP':              {'function': plp_rescoring,           'column_name': 'PLP',            'best_value': 'min', 'range': (200, -200)},
-    'CHEMPLP':          {'function': chemplp_rescoring,       'column_name': 'CHEMPLP',        'best_value': 'min', 'range': (200, -200)},
-    'NNScore':          {'function': oddt_nnscore_rescoring,  'column_name': 'NNScore',        'best_value': 'max', 'range': (0, 20)},
-    'PLECScore':        {'function': oddt_plecscore_rescoring,'column_name': 'PLECScore',      'best_value': 'max', 'range': (0, 20)},
-    'LinF9':            {'function': LinF9_rescoring,         'column_name': 'LinF9',          'best_value': 'min', 'range': (100, -100)},
-    'AAScore':          {'function': AAScore_rescoring,       'column_name': 'AAScore',        'best_value': 'max', 'range': (100, -100)},
-    'SCORCH':           {'function': SCORCH_rescoring,        'column_name': 'SCORCH',         'best_value': 'max', 'range': (0, 1)},
-    'RTMScore':         {'function': RTMScore_rescoring,      'column_name': 'RTMScore',       'best_value': 'max', 'range': (0, 100)},
-    'KORP-PL':          {'function': KORPL_rescoring,         'column_name': 'KORP-PL',        'best_value': 'min', 'range': (200, -1000)},
-    'ConvexPLR':        {'function': ConvexPLR_rescoring,     'column_name': 'ConvexPLR',      'best_value': 'max', 'range': (-10, 10)}
+    'PLP': {
+        'function': plp_rescoring,
+        'column_name': 'PLP',
+        'best_value': 'min',
+        'range': (200, -200)
+    },
+    'CHEMPLP': {
+        'function': chemplp_rescoring,
+        'column_name': 'CHEMPLP',
+        'best_value': 'min',
+        'range': (200, -200)
+    },
+    'NNScore': {
+        'function': oddt_nnscore_rescoring,
+        'column_name': 'NNScore',
+        'best_value': 'max',
+        'range': (0, 20)
+    },
+    'PLECScore': {
+        'function': oddt_plecscore_rescoring,
+        'column_name': 'PLECScore',
+        'best_value': 'max',
+        'range': (0, 20)
+    },
+    'LinF9': {
+        'function': LinF9_rescoring,
+        'column_name': 'LinF9',
+        'best_value': 'min',
+        'range': (100, -100)
+    },
+    'AAScore': {
+        'function': AAScore_rescoring,
+        'column_name': 'AAScore',
+        'best_value': 'max',
+        'range': (100, -100)
+    },
+    'SCORCH': {
+        'function': SCORCH_rescoring,
+        'column_name': 'SCORCH',
+        'best_value': 'max',
+        'range': (0, 1)
+    },
+    'RTMScore': {
+        'function': RTMScore_rescoring,
+        'column_name': 'RTMScore',
+        'best_value': 'max',
+        'range': (0, 100)
+    },
+    'KORP-PL': {
+        'function': KORPL_rescoring,
+        'column_name': 'KORP-PL',
+        'best_value': 'min',
+        'range': (200, -1000)
+    },
+    'ConvexPLR': {
+        'function': ConvexPLR_rescoring,
+        'column_name': 'ConvexPLR',
+        'best_value': 'max',
+        'range': (-10, 10)
+    }
 }
 
 
@@ -92,9 +173,8 @@ def rescore_poses(
     skipped_functions = []
     for function in functions:
         function_info = RESCORING_FUNCTIONS.get(function)
-        if not (
-            rescoring_folder / f"{function}_rescoring" / f"{function}_scores.csv"
-        ).is_file():
+        if not (rescoring_folder / f"{function}_rescoring" /
+                f"{function}_scores.csv").is_file():
             try:
                 function_info["function"](
                     clustered_sdf,
@@ -114,7 +194,8 @@ def rescore_poses(
 
     score_files = [f"{function}_scores.csv" for function in functions]
     csv_files = [
-        file for file in (rescoring_folder.rglob("*.csv")) if file.name in score_files
+        file for file in (rescoring_folder.rglob("*.csv"))
+        if file.name in score_files
     ]
     csv_dfs = []
     for file in csv_files:
@@ -136,7 +217,8 @@ def rescore_poses(
         if c == "Pose ID":
             pass
         if combined_dfs[c].dtypes is not float:
-            combined_dfs[c] = combined_dfs[c].apply(pd.to_numeric, errors="coerce")
+            combined_dfs[c] = combined_dfs[c].apply(pd.to_numeric,
+                                                    errors="coerce")
         else:
             pass
     combined_dfs.to_csv(rescoring_folder / "allposes_rescored.csv", index=False)
@@ -192,18 +274,18 @@ def rescore_docking(
     if "Unnamed: 0" in score_df.columns:
         score_df = score_df.drop(columns=["Unnamed: 0"])
 
-    score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
-    score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
+    score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(
+        int)
+    score_df["Docking_program"] = score_df["Pose ID"].str.split(
+        "_").str[1].astype(str)
     score_df["ID"] = score_df["Pose ID"].str.split("_").str[0].astype(str)
 
     if function_info["best_value"] == "min":
         best_pose_indices = score_df.groupby("ID")[
-            function_info["column_name"]
-        ].idxmin()
+            function_info["column_name"]].idxmin()
     else:
         best_pose_indices = score_df.groupby("ID")[
-            function_info["column_name"]
-        ].idxmax()
+            function_info["column_name"]].idxmax()
 
     if os.path.exists(score_file):
         os.remove(score_file)

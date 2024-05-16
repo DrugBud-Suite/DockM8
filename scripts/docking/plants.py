@@ -9,7 +9,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -72,8 +74,7 @@ def plants_docking(
     # Run PLANTS docking
     try:
         plants_docking_command = f'{software / "PLANTS"} --mode screen ' + str(
-            plants_docking_config_path
-        )
+            plants_docking_config_path)
         subprocess.call(
             plants_docking_command,
             shell=True,
@@ -157,7 +158,8 @@ def generate_plants_config(
     return config_lines
 
 
-def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path, *args):
+def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path,
+                       *args):
     """
     Fetches PLANTS docking poses from the specified directory and converts them to an SDF file.
 
@@ -169,37 +171,41 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path, *a
     Returns:
         None
     """
-    if (w_dir / "plants").is_dir() and not (
-        w_dir / "plants" / "plants_poses.sdf"
-    ).is_file():
+    if (w_dir / "plants").is_dir() and not (w_dir / "plants" /
+                                            "plants_poses.sdf").is_file():
         plants_dataframes = []
         results_folders = [folder for folder in os.listdir(w_dir / "plants")]
-        for folder in tqdm(results_folders, desc="Fetching PLANTS docking poses"):
+        for folder in tqdm(results_folders,
+                           desc="Fetching PLANTS docking poses"):
             if folder.startswith("results"):
                 file_path = w_dir / "plants" / folder / "docked_ligands.mol2"
                 if file_path.is_file():
                     try:
-                        convert_molecules(
-                            file_path, file_path.with_suffix(".sdf"), "mol2", "sdf"
-                        )
+                        convert_molecules(file_path,
+                                          file_path.with_suffix(".sdf"), "mol2",
+                                          "sdf")
                         plants_poses = PandasTools.LoadSDF(
                             str(file_path.with_suffix(".sdf")),
                             idName="ID",
                             molColName="Molecule",
                         )
                         plants_scores = pd.read_csv(
-                            str(file_path).replace("docked_ligands.mol2", "ranking.csv")
-                        ).rename(
-                            columns={"LIGAND_ENTRY": "ID", "TOTAL_SCORE": "CHEMPLP"}
-                        )[["ID", "CHEMPLP"]]
-                        plants_df = pd.merge(plants_scores, plants_poses, on="ID")
+                            str(file_path).replace(
+                                "docked_ligands.mol2",
+                                "ranking.csv")).rename(columns={
+                                    "LIGAND_ENTRY": "ID",
+                                    "TOTAL_SCORE": "CHEMPLP"
+                                })[["ID", "CHEMPLP"]]
+                        plants_df = pd.merge(plants_scores,
+                                             plants_poses,
+                                             on="ID")
                         plants_df["ID"] = plants_df["ID"].str.split("_").str[0]
                         list_ = [*range(1, int(n_poses) + 1, 1)]
                         ser = list_ * (len(plants_df) // len(list_))
                         plants_df["Pose ID"] = [
                             f'{row["ID"]}_PLANTS_{num}'
                             for num, (_, row) in zip(
-                                ser + list_[: len(plants_df) - len(ser)],
+                                ser + list_[:len(plants_df) - len(ser)],
                                 plants_df.iterrows(),
                             )
                         ]

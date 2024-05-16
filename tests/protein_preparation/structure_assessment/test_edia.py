@@ -6,7 +6,9 @@ import pytest
 from Bio.PDB import PDBParser
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests' for p in Path(__file__).resolve().parents if (p / 'tests').is_dir()), None)
+tests_path = next((p / 'tests'
+                   for p in Path(__file__).resolve().parents
+                   if (p / 'tests').is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -44,4 +46,3 @@ def test_get_best_chain_edia_invalid_pdb_code(common_test_data):
     pdb_code = "invalid"
     with pytest.raises(Exception):
         get_best_chain_edia(pdb_code, output_dir)
-

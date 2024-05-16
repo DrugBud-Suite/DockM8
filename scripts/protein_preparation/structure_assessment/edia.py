@@ -6,7 +6,9 @@ import pandas as pd
 import requests
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -45,7 +47,9 @@ def submit_edia_job(pdb_code):
         printlog(f"Submitting EDIA job for PDB code {pdb_code}")
         url = EDIA_API_Consts.BASE_URL
         data = EDIA_API_Consts.get_post_data(pdb_code)
-        response = requests.post(url, json=data, headers=EDIA_API_Consts.HEADERS)
+        response = requests.post(url,
+                                 json=data,
+                                 headers=EDIA_API_Consts.HEADERS)
         response.raise_for_status()
         response_data = response.json()
         return response_data["location"]
@@ -115,7 +119,8 @@ def get_best_chain_edia(pdb_code: str, output_dir: Path):
         scores_csv.unlink()
 
         best_chain = average_scores.idxmax()
-        printlog(f"Best EDIA scoring chain for PDB code {pdb_code}: {best_chain}")
+        printlog(
+            f"Best EDIA scoring chain for PDB code {pdb_code}: {best_chain}")
 
         pdb_file = fetch_pdb_structure(pdb_code, output_dir)
 

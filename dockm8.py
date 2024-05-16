@@ -9,7 +9,9 @@ import time
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -38,6 +40,7 @@ parser = argparse.ArgumentParser(description="Parse required arguments")
 parser.add_argument("--config", type=str, help="Path to the configuration file")
 
 config = check_config(Path(parser.parse_args().config))
+
 
 # Main function to manage docking process
 def dockm8(
@@ -77,16 +80,14 @@ def dockm8(
     # Prepare the ligands for docking (e.g., adding hydrogens, generating conformers)
 
     if not (w_dir / "final_library.sdf").exists():
-        prepare_library(
-            input_sdf=docking_library,
-            output_dir=w_dir,
-            id_column="ID",
-            protonation=ligand_preparation["protonation"],
-            conformers=ligand_preparation["conformers"],
-            software=software,
-            n_cpus=n_cpus,
-            n_conformers=ligand_preparation["n_conformers"]
-        )
+        prepare_library(input_sdf=docking_library,
+                        output_dir=w_dir,
+                        id_column="ID",
+                        protonation=ligand_preparation["protonation"],
+                        conformers=ligand_preparation["conformers"],
+                        software=software,
+                        n_cpus=n_cpus,
+                        n_conformers=ligand_preparation["n_conformers"])
 
     # Determine the docking pocket
     pocket_definition = pocket_finder(
@@ -118,7 +119,7 @@ def dockm8(
             protein_file=prepared_receptor,
             n_cpus=n_cpus,
         )
-    
+
     processed_poses = docking_postprocessing(
         input_sdf=w_dir / "allposes.sdf",
         output_path=w_dir / "allposes_processed.sdf",
@@ -126,8 +127,7 @@ def dockm8(
         bust_poses=post_docking['bust_poses'],
         strain_cutoff=post_docking['strain_cutoff'],
         clash_cutoff=post_docking['clash_cutoff'],
-        n_cpus=n_cpus
-    )
+        n_cpus=n_cpus)
 
     # Load all poses from SDF file and perform clustering
     print("Loading all poses SDF file...")
@@ -137,7 +137,6 @@ def dockm8(
         idName="Pose ID",
         molColName="Molecule",
         includeFingerprints=False,
-        
     )
     toc = time.perf_counter()
     print(f"Finished loading all poses SDF in {toc-tic:0.4f}!")
@@ -201,7 +200,9 @@ def run_dockm8(config):
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
+                reference_ligand=config["pocket_detection"]
+                ["reference_ligand(s)"][0]
+                if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=decoy_library,
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -212,40 +213,43 @@ def run_dockm8(config):
                 threshold=config["threshold"],
             )
             # Calculate performance metrics
-            performance = calculate_performance(
-                decoy_library.parent, decoy_library, [10, 5, 2, 1, 0.5]
-            )
+            performance = calculate_performance(decoy_library.parent,
+                                                decoy_library,
+                                                [10, 5, 2, 1, 0.5])
             # Determine optimal conditions
-            optimal_conditions = (
-                performance.sort_values(by="EF1", ascending=False).iloc[0].to_dict()
-            )
+            optimal_conditions = (performance.sort_values(
+                by="EF1", ascending=False).iloc[0].to_dict())
             if optimal_conditions["clustering"] == "bestpose":
                 pass
             if "_" in optimal_conditions["clustering"]:
                 config["docking"]["docking_programs"] = list(
-                    optimal_conditions["clustering"].split("_")[1]
-                )
+                    optimal_conditions["clustering"].split("_")[1])
             else:
                 pass
-            optimal_rescoring_functions = list(optimal_conditions["scoring"].split("_"))
-            config["pose_selection"]["pose_selection_method"] = optimal_conditions[
-                "clustering"
-            ]
+            optimal_rescoring_functions = list(
+                optimal_conditions["scoring"].split("_"))
+            config["pose_selection"][
+                "pose_selection_method"] = optimal_conditions["clustering"]
             # Save optimal conditions to a file
             with open(
-                config["receptor(s)"][0].parent / "DeepCoy" / "optimal_conditions.txt",
-                "w",
+                    config["receptor(s)"][0].parent / "DeepCoy" /
+                    "optimal_conditions.txt",
+                    "w",
             ) as file:
                 file.write(str(optimal_conditions))
             # Run DockM8 on the docking library using the optimal conditions
-            printlog("Running DockM8 on the docking library using optimal conditions...")
+            printlog(
+                "Running DockM8 on the docking library using optimal conditions..."
+            )
             dockm8(
                 software=software,
                 receptor=config["receptor(s)"][0],
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
+                reference_ligand=config["pocket_detection"]
+                ["reference_ligand(s)"][0]
+                if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=decoy_library,
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -264,8 +268,7 @@ def run_dockm8(config):
                     receptor_dict[receptor] = None
                 else:
                     receptor_dict[receptor] = config["pocket_detection"][
-                        "reference_ligand(s)"
-                    ][i]
+                        "reference_ligand(s)"][i]
             # Run DockM8 on the decoy library
             printlog("Running DockM8 on the decoy library...")
             dockm8(
@@ -274,7 +277,9 @@ def run_dockm8(config):
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
+                reference_ligand=config["pocket_detection"]
+                ["reference_ligand(s)"][0]
+                if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=decoy_library,
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -285,33 +290,34 @@ def run_dockm8(config):
                 threshold=config["threshold"],
             )
             # Calculate performance metrics
-            performance = calculate_performance(
-                decoy_library.parent, decoy_library, [10, 5, 2, 1, 0.5]
-            )
+            performance = calculate_performance(decoy_library.parent,
+                                                decoy_library,
+                                                [10, 5, 2, 1, 0.5])
             # Determine optimal conditions
-            optimal_conditions = (
-                performance.sort_values(by="EF1", ascending=False).iloc[0].to_dict()
-            )
+            optimal_conditions = (performance.sort_values(
+                by="EF1", ascending=False).iloc[0].to_dict())
             if optimal_conditions["clustering"] == "bestpose":
                 pass
             if "_" in optimal_conditions["clustering"]:
                 config["docking"]["docking_programs"] = list(
-                    optimal_conditions["clustering"].split("_")[1]
-                )
+                    optimal_conditions["clustering"].split("_")[1])
             else:
                 pass
-            optimal_rescoring_functions = list(optimal_conditions["scoring"].split("_"))
-            config["pose_selection"]["pose_selection_method"] = optimal_conditions[
-                "clustering"
-            ]
+            optimal_rescoring_functions = list(
+                optimal_conditions["scoring"].split("_"))
+            config["pose_selection"][
+                "pose_selection_method"] = optimal_conditions["clustering"]
             # Save optimal conditions to a file
             with open(
-                config["receptor(s)"][0].parent / "DeepCoy" / "optimal_conditions.txt",
-                "w",
+                    config["receptor(s)"][0].parent / "DeepCoy" /
+                    "optimal_conditions.txt",
+                    "w",
             ) as file:
                 file.write(str(optimal_conditions))
             # Run DockM8 on the docking library using the optimal conditions
-            printlog("Running DockM8 on the docking library using optimal conditions...")
+            printlog(
+                "Running DockM8 on the docking library using optimal conditions..."
+            )
             for receptor, ligand in receptor_dict.items():
                 dockm8(
                     software=software,
@@ -340,7 +346,9 @@ def run_dockm8(config):
                 prepare_proteins=config["protein_preparation"],
                 ligand_preparation=config["ligand_preparation"],
                 pocket_detection=config["pocket_detection"],
-                reference_ligand=config["pocket_detection"]["reference_ligand(s)"][0] if config["pocket_detection"]["reference_ligand(s)"] else None,
+                reference_ligand=config["pocket_detection"]
+                ["reference_ligand(s)"][0]
+                if config["pocket_detection"]["reference_ligand(s)"] else None,
                 docking_library=config["docking_library"],
                 docking=config["docking"],
                 post_docking=config["post_docking"],
@@ -359,8 +367,7 @@ def run_dockm8(config):
                     receptor_dict[receptor] = None
                 else:
                     receptor_dict[receptor] = config["pocket_detection"][
-                        "reference_ligand(s)"
-                    ][i]
+                        "reference_ligand(s)"][i]
             # Run DockM8 in ensemble mode
             printlog("Running DockM8 in ensemble mode...")
             for receptor, ligand in receptor_dict.items():
@@ -382,5 +389,6 @@ def run_dockm8(config):
                 )
             printlog("DockM8 has finished running in ensemble mode...")
     return
+
 
 run_dockm8(config)

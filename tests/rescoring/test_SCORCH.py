@@ -8,7 +8,9 @@ import pytest
 
 # Search for 'DockM8' in parent directories
 tests_path = next(
-    (p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()),
+    (p / "tests"
+     for p in Path(__file__).resolve().parents
+     if (p / "tests").is_dir()),
     None,
 )
 dockm8_path = tests_path.parent
@@ -19,7 +21,9 @@ from scripts.rescoring.rescoring_functions.SCORCH import SCORCH_rescoring
 
 @pytest.fixture
 def test_data():
-    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
+    dockm8_path = next((p / "tests"
+                        for p in Path(__file__).resolve().parents
+                        if (p / "tests").is_dir()), None).parent
     w_dir = dockm8_path / "tests/test_files/rescoring"
     protein_file = dockm8_path / "tests/test_files/rescoring/example_prepared_receptor_1fvv.pdb"
     software = dockm8_path / "software"
@@ -35,11 +39,11 @@ def test_SCORCH_rescoring(test_data):
     rescoring_folder = w_dir / f"rescoring_{clustered_sdf.stem}"
 
     # Call the function
-    result_file = SCORCH_rescoring(clustered_sdf, 
-                                   n_cpus, 
-                                   column_name, 
-                                   rescoring_folder=rescoring_folder, 
-                                   software=software, 
+    result_file = SCORCH_rescoring(clustered_sdf,
+                                   n_cpus,
+                                   column_name,
+                                   rescoring_folder=rescoring_folder,
+                                   software=software,
                                    protein_file=protein_file)
 
     # Assert the result

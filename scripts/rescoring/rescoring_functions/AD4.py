@@ -11,7 +11,9 @@ from pandas import DataFrame
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -26,7 +28,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFrame:
+def AD4_rescoring(sdf: str, n_cpus: int, column_name: str,
+                  **kwargs) -> DataFrame:
     """
     Performs rescoring of poses using the AutoDock4 (AD4) scoring function.
 
@@ -46,8 +49,7 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
     protein_file = kwargs.get("protein_file")
 
     split_files_folder = split_sdf_str(
-        rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus
-    )
+        rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus)
     split_files_sdfs = [
         split_files_folder / f
         for f in os.listdir(split_files_folder)
@@ -62,15 +64,13 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
     def AD4_rescoring_splitted(split_file, protein_file):
         AD4_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
         results = AD4_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
-        AD4_cmd = (
-            f"{software}/gnina"
-            f" --receptor {protein_file}"
-            f" --ligand {split_file}"
-            f" --out {results}"
-            " --score_only"
-            " --scoring ad4_scoring"
-            " --cnn_scoring none"
-        )
+        AD4_cmd = (f"{software}/gnina"
+                   f" --receptor {protein_file}"
+                   f" --ligand {split_file}"
+                   f" --out {results}"
+                   " --score_only"
+                   " --scoring ad4_scoring"
+                   " --cnn_scoring none")
         try:
             subprocess.call(AD4_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
         except Exception as e:
@@ -93,7 +93,8 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
                 includeFingerprints=False,
                 embedProps=False,
             )
-            for file in os.listdir(rescoring_folder / f"{column_name}_rescoring")
+            for file in os.listdir(rescoring_folder /
+                                   f"{column_name}_rescoring")
             if file.startswith("split") and file.endswith(".sdf")
         ]
     except Exception as e:
@@ -105,9 +106,8 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFram
         printlog(f"ERROR: Could not combine {column_name} rescored poses")
         printlog(e)
 
-    AD4_rescoring_results.rename(
-        columns={"minimizedAffinity": column_name}, inplace=True
-    )
+    AD4_rescoring_results.rename(columns={"minimizedAffinity": column_name},
+                                 inplace=True)
     AD4_rescoring_results = AD4_rescoring_results[["Pose ID", column_name]]
     AD4_scores_file = AD4_rescoring_folder / f"{column_name}_scores.csv"
     AD4_rescoring_results.to_csv(AD4_scores_file, index=False)

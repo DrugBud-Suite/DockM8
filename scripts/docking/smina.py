@@ -9,7 +9,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -49,33 +51,28 @@ def smina_docking(
     if split_file:
         input_file = split_file
         results_path = (
-            smina_folder / f"{os.path.basename(split_file).split('.')[0]}_smina.sdf"
-        )
+            smina_folder /
+            f"{os.path.basename(split_file).split('.')[0]}_smina.sdf")
     else:
         input_file = w_dir / "final_library.sdf"
         results_path = smina_folder / "docked.sdf"
     # Construct the smina command
-    smina_cmd = (
-        f'{software / "gnina"}'
-        + f" --receptor {protein_file}"
-        + f" --ligand {input_file}"
-        + f" --out {results_path}"
-        + f' --center_x {pocket_definition["center"][0]}'
-        + f' --center_y {pocket_definition["center"][1]}'
-        + f' --center_z {pocket_definition["center"][2]}'
-        + f' --size_x {pocket_definition["size"][0]}'
-        + f' --size_y {pocket_definition["size"][1]}'
-        + f' --size_z {pocket_definition["size"][2]}'
-        + f" --exhaustiveness {exhaustiveness}"
-        + " --cpu 1 --seed 1"
-        + f" --num_modes {n_poses}"
-        + " --cnn_scoring none --no_gpu"
-    )
+    smina_cmd = (f'{software / "gnina"}' + f" --receptor {protein_file}" +
+                 f" --ligand {input_file}" + f" --out {results_path}" +
+                 f' --center_x {pocket_definition["center"][0]}' +
+                 f' --center_y {pocket_definition["center"][1]}' +
+                 f' --center_z {pocket_definition["center"][2]}' +
+                 f' --size_x {pocket_definition["size"][0]}' +
+                 f' --size_y {pocket_definition["size"][1]}' +
+                 f' --size_z {pocket_definition["size"][2]}' +
+                 f" --exhaustiveness {exhaustiveness}" + " --cpu 1 --seed 1" +
+                 f" --num_modes {n_poses}" + " --cnn_scoring none --no_gpu")
     try:
         # Execute the smina command
-        subprocess.call(
-            smina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-        )
+        subprocess.call(smina_cmd,
+                        shell=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT)
     except Exception as e:
         printlog(f"SMINA docking failed: {e}")
     return
@@ -92,12 +89,12 @@ def fetch_smina_poses(w_dir: Union[str, Path], n_poses: int, *args):
     Returns:
         None
     """
-    if (w_dir / "smina").is_dir() and not (
-        w_dir / "smina" / "smina_poses.sdf"
-    ).is_file():
+    if (w_dir / "smina").is_dir() and not (w_dir / "smina" /
+                                           "smina_poses.sdf").is_file():
         try:
             smina_dataframes = []
-            for file in tqdm(os.listdir(w_dir / "smina"), desc="Loading SMINA poses"):
+            for file in tqdm(os.listdir(w_dir / "smina"),
+                             desc="Loading SMINA poses"):
                 if file.startswith("split"):
                     df = PandasTools.LoadSDF(
                         str(w_dir / "smina" / file),
@@ -109,14 +106,11 @@ def fetch_smina_poses(w_dir: Union[str, Path], n_poses: int, *args):
             list_ = [*range(1, int(n_poses) + 1, 1)]
             ser = list_ * (len(smina_df) // len(list_))
             smina_df["Pose ID"] = [
-                f'{row["ID"]}_SMINA_{num}'
-                for num, (_, row) in zip(
-                    ser + list_[: len(smina_df) - len(ser)], smina_df.iterrows()
-                )
+                f'{row["ID"]}_SMINA_{num}' for num, (_, row) in zip(
+                    ser + list_[:len(smina_df) - len(ser)], smina_df.iterrows())
             ]
-            smina_df.rename(
-                columns={"minimizedAffinity": "SMINA_Affinity"}, inplace=True
-            )
+            smina_df.rename(columns={"minimizedAffinity": "SMINA_Affinity"},
+                            inplace=True)
         except Exception as e:
             printlog("ERROR: Failed to Load SMINA poses SDF file!")
             printlog(e)

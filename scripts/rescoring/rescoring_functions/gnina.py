@@ -10,7 +10,9 @@ import pandas as pd
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -45,8 +47,7 @@ def gnina_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     protein_file = kwargs.get("protein_file")
     cnn = "crossdock_default2018"
     split_files_folder = split_sdf_str(
-        rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus
-    )
+        rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus)
     split_files_sdfs = [
         split_files_folder / f
         for f in os.listdir(split_files_folder)
@@ -58,18 +59,18 @@ def gnina_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     def gnina_rescoring_splitted(split_file, protein_file):
         gnina_folder = rescoring_folder / f"{column_name}_rescoring"
         results = gnina_folder / f"{Path(split_file).stem}_{column_name}.sdf"
-        gnina_cmd = (
-            f'{software}/gnina'
-            f' --receptor {protein_file}'
-            f' --ligand {split_file}'
-            f' --out {results}'
-
-            ' --cpu 1'
-            ' --score_only'
-            f' --cnn {cnn} --no_gpu'
-        )
+        gnina_cmd = (f'{software}/gnina'
+                     f' --receptor {protein_file}'
+                     f' --ligand {split_file}'
+                     f' --out {results}'
+                     ' --cpu 1'
+                     ' --score_only'
+                     f' --cnn {cnn} --no_gpu')
         try:
-            subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            subprocess.call(gnina_cmd,
+                            shell=True,
+                            stdout=DEVNULL,
+                            stderr=STDOUT)
         except Exception as e:
             printlog(f"{column_name} rescoring failed: " + e)
         return
@@ -90,7 +91,8 @@ def gnina_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
                 includeFingerprints=False,
                 embedProps=False,
             )
-            for file in os.listdir(rescoring_folder / f"{column_name}_rescoring")
+            for file in os.listdir(rescoring_folder /
+                                   f"{column_name}_rescoring")
             if file.startswith("split") and file.endswith(".sdf")
         ]
     except Exception as e:
@@ -110,13 +112,11 @@ def gnina_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
         inplace=True,
     )
     gnina_rescoring_results = gnina_rescoring_results[["Pose ID", column_name]]
-    gnina_scores_path = (
-        rescoring_folder / f"{column_name}_rescoring" / f"{column_name}_scores.csv"
-    )
+    gnina_scores_path = (rescoring_folder / f"{column_name}_rescoring" /
+                         f"{column_name}_scores.csv")
     gnina_rescoring_results.to_csv(gnina_scores_path, index=False)
-    delete_files(
-        rescoring_folder / f"{column_name}_rescoring", f"{column_name}_scores.csv"
-    )
+    delete_files(rescoring_folder / f"{column_name}_rescoring",
+                 f"{column_name}_scores.csv")
     toc = time.perf_counter()
     printlog(f"Rescoring with {column_name} complete in {toc - tic:0.4f}!")
     return gnina_rescoring_results

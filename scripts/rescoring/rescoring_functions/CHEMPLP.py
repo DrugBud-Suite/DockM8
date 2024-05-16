@@ -8,7 +8,9 @@ from subprocess import DEVNULL, STDOUT
 import pandas as pd
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -31,9 +33,8 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 
     plants_search_speed = "speed1"
     ants = "20"
-    chemplp_rescoring_folder = (
-        kwargs.get("rescoring_folder") / f"{column_name}_rescoring"
-    )
+    chemplp_rescoring_folder = (kwargs.get("rescoring_folder") /
+                                f"{column_name}_rescoring")
     chemplp_rescoring_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = chemplp_rescoring_folder / "protein.mol2"
@@ -83,8 +84,7 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     ]
     # Write config file
     chemplp_rescoring_config_path_config = (
-        chemplp_rescoring_config_path_txt.with_suffix(".config")
-    )
+        chemplp_rescoring_config_path_txt.with_suffix(".config"))
     with chemplp_rescoring_config_path_config.open("w") as configwriter:
         configwriter.writelines(chemplp_config)
 
@@ -92,9 +92,10 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     chemplp_rescoring_command = (
         f"{software}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}"
     )
-    subprocess.call(
-        chemplp_rescoring_command, shell=True, stdout=DEVNULL, stderr=STDOUT
-    )
+    subprocess.call(chemplp_rescoring_command,
+                    shell=True,
+                    stdout=DEVNULL,
+                    stderr=STDOUT)
 
     # Fetch results
     results_csv_location = chemplp_rescoring_folder / "results" / "ranking.csv"
@@ -102,18 +103,19 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     chemplp_results.rename(columns={"TOTAL_SCORE": column_name}, inplace=True)
     for i, row in chemplp_results.iterrows():
         split = row["LIGAND_ENTRY"].split("_")
-        chemplp_results.loc[i, ["Pose ID"]] = f"{split[0]}_{split[1]}_{split[2]}"
+        chemplp_results.loc[i,
+                            ["Pose ID"]] = f"{split[0]}_{split[1]}_{split[2]}"
     chemplp_rescoring_results = chemplp_results[["Pose ID", column_name]]
     chemplp_rescoring_results.to_csv(
-        rescoring_folder / f"{column_name}_rescoring" / f"{column_name}_scores.csv",
+        rescoring_folder / f"{column_name}_rescoring" /
+        f"{column_name}_scores.csv",
         index=False,
     )
 
     # Remove files
     plants_ligands_mol2.unlink()
-    delete_files(
-        rescoring_folder / f"{column_name}_rescoring", f"{column_name}_scores.csv"
-    )
+    delete_files(rescoring_folder / f"{column_name}_rescoring",
+                 f"{column_name}_scores.csv")
 
     toc = time.perf_counter()
     printlog(f"Rescoring with CHEMPLP complete in {toc-tic:0.4f}!")

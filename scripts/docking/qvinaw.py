@@ -11,7 +11,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -71,41 +73,42 @@ def qvinaw_docking(
     # Dock each ligand using QVINAW
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
         output_file = results_folder / (pdbqt_file.stem + "_QVINAW.pdbqt")
-        qvinaw_cmd = (
-            f"{software / 'qvina-w'}"
-            f" --receptor {protein_file_pdbqt}"
-            f" --ligand {pdbqt_file}"
-            f" --out {output_file}"
-            f" --center_x {pocket_definition['center'][0]}"
-            f" --center_y {pocket_definition['center'][1]}"
-            f" --center_z {pocket_definition['center'][2]}"
-            f" --size_x {pocket_definition['size'][0]}"
-            f" --size_y {pocket_definition['size'][1]}"
-            f" --size_z {pocket_definition['size'][2]}"
-            f" --exhaustiveness {exhaustiveness}"
-            " --cpu 1 --seed 1"
-            f" --num_modes {n_poses}"
-        )
-        subprocess.call(
-            qvinaw_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-        )
+        qvinaw_cmd = (f"{software / 'qvina-w'}"
+                      f" --receptor {protein_file_pdbqt}"
+                      f" --ligand {pdbqt_file}"
+                      f" --out {output_file}"
+                      f" --center_x {pocket_definition['center'][0]}"
+                      f" --center_y {pocket_definition['center'][1]}"
+                      f" --center_z {pocket_definition['center'][2]}"
+                      f" --size_x {pocket_definition['size'][0]}"
+                      f" --size_y {pocket_definition['size'][1]}"
+                      f" --size_z {pocket_definition['size'][2]}"
+                      f" --exhaustiveness {exhaustiveness}"
+                      " --cpu 1 --seed 1"
+                      f" --num_modes {n_poses}")
+        subprocess.call(qvinaw_cmd,
+                        shell=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT)
 
-    qvinaw_docking_results = qvinaw_folder / (Path(input_file).stem + "_qvinaw.sdf")
+    qvinaw_docking_results = qvinaw_folder / (Path(input_file).stem +
+                                              "_qvinaw.sdf")
     # Process the docked poses
     try:
         for file in results_folder.glob("*.pdbqt"):
             split_pdbqt_str(file)
-        qvinaw_poses = pd.DataFrame(columns=["Pose ID", "Molecule", "QVINAW_Affinity"])
+        qvinaw_poses = pd.DataFrame(
+            columns=["Pose ID", "Molecule", "QVINAW_Affinity"])
         for pose_file in results_folder.glob("*.pdbqt"):
-            pdbqt_mol = PDBQTMolecule.from_file(
-                pose_file, name=pose_file.stem, skip_typing=True
-            )
+            pdbqt_mol = PDBQTMolecule.from_file(pose_file,
+                                                name=pose_file.stem,
+                                                skip_typing=True)
             rdkit_mol = RDKitMolCreate.from_pdbqt_mol(pdbqt_mol)
             # Extracting QVINAW_Affinity from the file
             with open(pose_file) as file:
-                affinity = next(
-                    line.split()[3] for line in file if "REMARK VINA RESULT:" in line
-                )
+                affinity = next(line.split()[3]
+                                for line in file
+                                if "REMARK VINA RESULT:" in line)
             # Use loc to append a new row to the DataFrame
             qvinaw_poses.loc[qvinaw_poses.shape[0]] = {
                 "Pose ID": pose_file.stem,
@@ -141,17 +144,15 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
     Raises:
         Exception: If there is an error loading or writing the QVINAW poses SDF file.
     """
-    if (w_dir / "qvinaw").is_dir() and not (
-        w_dir / "qvinaw" / "qvinaw_poses.sdf"
-    ).is_file():
+    if (w_dir / "qvinaw").is_dir() and not (w_dir / "qvinaw" /
+                                            "qvinaw_poses.sdf").is_file():
         try:
             qvinaw_dataframes = []
-            for file in tqdm(os.listdir(w_dir / "qvinaw"), desc="Loading QVINAW poses"):
-                if (
-                    file.startswith("split")
-                    or file.startswith("final_library")
-                    and file.endswith(".sdf")
-                ):
+            for file in tqdm(os.listdir(w_dir / "qvinaw"),
+                             desc="Loading QVINAW poses"):
+                if (file.startswith("split") or
+                        file.startswith("final_library") and
+                        file.endswith(".sdf")):
                     df = PandasTools.LoadSDF(
                         str(w_dir / "qvinaw" / file),
                         idName="Pose ID",
@@ -159,7 +160,8 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
                     )
                     qvinaw_dataframes.append(df)
             qvinaw_df = pd.concat(qvinaw_dataframes)
-            qvinaw_df["ID"] = qvinaw_df["Pose ID"].apply(lambda x: x.split("_")[0])
+            qvinaw_df["ID"] = qvinaw_df["Pose ID"].apply(
+                lambda x: x.split("_")[0])
         except Exception as e:
             printlog("ERROR: Failed to Load QVINAW poses SDF file!")
             printlog(e)

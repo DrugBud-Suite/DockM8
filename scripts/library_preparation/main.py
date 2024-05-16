@@ -5,16 +5,16 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.library_preparation.conformer_generation.confgen_GypsumDL import (
-    generate_conformers_GypsumDL,
-)
+    generate_conformers_GypsumDL,)
 from scripts.library_preparation.conformer_generation.confgen_RDKit import (
-    generate_conformers_RDKit,
-)
+    generate_conformers_RDKit,)
 from scripts.library_preparation.protonation.protgen_GypsumDL import protonate_GypsumDL
 from scripts.library_preparation.standardisation.standardise import standardize_library
 from scripts.utilities.utilities import printlog
@@ -25,16 +25,15 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 PROTONATION_OPTIONS = ["GypsumDL", "None"]
 CONFORMER_OPTIONS = ["RDKit", "MMFF", "GypsumDL"]
 
-def prepare_library(
-    input_sdf: str,
-    output_dir: Path,
-    id_column: str,
-    protonation: str,
-    conformers: str,
-    software: Path,
-    n_cpus: int,
-    n_conformers: int = 1
-):
+
+def prepare_library(input_sdf: str,
+                    output_dir: Path,
+                    id_column: str,
+                    protonation: str,
+                    conformers: str,
+                    software: Path,
+                    n_cpus: int,
+                    n_conformers: int = 1):
     """
     Prepares a docking library for further analysis.
 
@@ -63,17 +62,24 @@ def prepare_library(
     if conformers == "RDKit" or conformers == "MMFF":
         generate_conformers_RDKit(protonated_sdf, output_dir, n_cpus)
     elif conformers == "GypsumDL":
-        generate_conformers_GypsumDL(protonated_sdf, output_dir, software, n_cpus, n_conformers)
+        generate_conformers_GypsumDL(protonated_sdf, output_dir, software,
+                                     n_cpus, n_conformers)
     else:
         raise ValueError(
             f'Invalid conformer method specified : {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".'
         )
 
     printlog("Cleaning up files...")
-    
-    final_library_df = PandasTools.LoadSDF(str(output_dir / "generated_conformers.sdf"), molColName="Molecule", idName="ID")
+
+    final_library_df = PandasTools.LoadSDF(str(output_dir /
+                                               "generated_conformers.sdf"),
+                                           molColName="Molecule",
+                                           idName="ID")
     final_library_df[["Molecule", "ID"]]
-    PandasTools.WriteSDF(final_library_df, str(output_dir / "final_library.sdf"), molColName="Molecule", idName="ID")
+    PandasTools.WriteSDF(final_library_df,
+                         str(output_dir / "final_library.sdf"),
+                         molColName="Molecule",
+                         idName="ID")
 
     # Delete the temporary files generated during the library preparation process
     (output_dir / "standardized_library.sdf").unlink(missing_ok=True)

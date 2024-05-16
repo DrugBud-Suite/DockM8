@@ -14,7 +14,8 @@ from ..DeepCoy.DeepCoy import DenseGGNNChemModel
 from ..DeepCoy.evaluation.select_and_evaluate_decoys import select_and_evaluate_decoys
 
 
-def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) -> Path:
+def generate_decoys(input_sdf: Path, n_decoys: int, model: str,
+                    software: Path) -> Path:
     """
     Generate decoys based on a given input molecule file.
 
@@ -32,9 +33,10 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
     DeepCoy_folder = (input_sdf.parent / 'DeepCoy')
     DeepCoy_folder.mkdir(parents=True, exist_ok=True)
     if not os.path.exists(DeepCoy_folder / 'actives.smi'):
-        try: 
+        try:
             #Convert to SMILES
-            convert_molecules(input_sdf, DeepCoy_folder / 'actives.smi', 'sdf', 'smi')
+            convert_molecules(input_sdf, DeepCoy_folder / 'actives.smi', 'sdf',
+                              'smi')
             #Remove IDs from SMILES file
             with open(DeepCoy_folder / 'actives.smi', 'r') as f:
                 lines = f.readlines()
@@ -46,14 +48,16 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
             printlog('Error converting library to SMILES for decoy generation')
     if not os.path.exists(DeepCoy_folder / 'molecules_actives.json'):
         try:
-            preprocess(read_file(DeepCoy_folder / 'actives.smi'), "zinc", 'actives', str(DeepCoy_folder) + "/")
+            preprocess(read_file(DeepCoy_folder / 'actives.smi'), "zinc",
+                       'actives',
+                       str(DeepCoy_folder) + "/")
         except Exception as e:
             printlog(e)
             printlog('Error preprocessing library for decoy generation')
     if not os.path.exists(DeepCoy_folder / 'decoys.smi'):
         try:
             os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-            
+
             # Arguments for DeepCoy
             args = defaultdict(None)
             args['--dataset'] = 'zinc'
@@ -64,13 +68,17 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
                                 "valid_file": "{DeepCoy_folder / "molecules_actives.json"}", \
                                 "output_name": "{DeepCoy_folder / "decoys.smi"}", \
                                 "use_subgraph_freqs": false}}'
+
             args['--freeze-graph-model'] = False
             if model == 'DUDE':
-                args['--restore'] = f'{software}/models/DeepCoy_DUDE_model_e09.pickle'
+                args[
+                    '--restore'] = f'{software}/models/DeepCoy_DUDE_model_e09.pickle'
             elif model == 'DEKOIS':
-                args['--restore'] = f'{software}/models/DeepCoy_DEKOIS_model_e10.pickle'
+                args[
+                    '--restore'] = f'{software}/models/DeepCoy_DEKOIS_model_e10.pickle'
             elif model == 'DUDE_P':
-                args['--restore'] = f'{software}/models/DeepCoy_DUDE_phosphorus_model_e10.pickle'
+                args[
+                    '--restore'] = f'{software}/models/DeepCoy_DUDE_phosphorus_model_e10.pickle'
             else:
                 raise ValueError('DeepCoy Model not recognized!')
 
@@ -91,13 +99,14 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
             os.remove(file)
     if not os.path.exists(DeepCoy_folder / 'decoys-selected.smi'):
         try:
-            results = select_and_evaluate_decoys('/decoys.smi', 
-                                                file_loc=str(DeepCoy_folder), 
-                                                output_loc=str(DeepCoy_folder)+'/', 
-                                                dataset="ALL", 
-                                                num_cand_dec_per_act=n_decoys*2, 
-                                                num_dec_per_act=n_decoys)
-            
+            results = select_and_evaluate_decoys(
+                '/decoys.smi',
+                file_loc=str(DeepCoy_folder),
+                output_loc=str(DeepCoy_folder) + '/',
+                dataset="ALL",
+                num_cand_dec_per_act=n_decoys * 2,
+                num_dec_per_act=n_decoys)
+
             printlog("DOE score: \t\t\t%.3f" % results[8])
             printlog("Average Doppelganger score: \t%.3f" % results[10])
             printlog("Max Doppelganger score: \t%.3f" % results[11])
@@ -118,15 +127,25 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
         actives_df = pd.DataFrame()
         actives_df['Molecule'] = actives_mols
         actives_df['Activity'] = 1
-        actives_df['ID'] = ['Active-' + str(i) for i in range(1, len(actives_df) + 1)]
+        actives_df['ID'] = [
+            'Active-' + str(i) for i in range(1,
+                                              len(actives_df) + 1)
+        ]
         decoys_df = pd.DataFrame()
         decoys_df['Molecule'] = decoys_mols
         decoys_df['Activity'] = 0
-        decoys_df['ID'] = ['Decoy-' + str(i) for i in range(1, len(decoys_df) + 1)]
+        decoys_df['ID'] = [
+            'Decoy-' + str(i) for i in range(1,
+                                             len(decoys_df) + 1)
+        ]
         output_df = pd.concat([actives_df, decoys_df], ignore_index=True)
 
         # Save the dataframe as an SDF file
-        PandasTools.WriteSDF(output_df, str(DeepCoy_folder / 'test_set.sdf'), molColName='Molecule', idName='ID', properties=list(output_df.columns))
+        PandasTools.WriteSDF(output_df,
+                             str(DeepCoy_folder / 'test_set.sdf'),
+                             molColName='Molecule',
+                             idName='ID',
+                             properties=list(output_df.columns))
     toc = time.perf_counter()
     printlog(f'Finished generating decoys in {toc-tic:0.4f}!...')
     return DeepCoy_folder / 'test_set.sdf'

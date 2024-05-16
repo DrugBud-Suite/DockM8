@@ -2,18 +2,18 @@ import sys
 from pathlib import Path
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.protein_preparation.fetching.fetch_alphafold import (
-    fetch_alphafold_structure,
-)
+    fetch_alphafold_structure,)
 from scripts.protein_preparation.fetching.fetch_pdb import fetch_pdb_structure
 from scripts.protein_preparation.fixing.pdb_fixer import fix_pdb_file
 from scripts.protein_preparation.protonation.protonate_protoss import (
-    protonate_protein_protoss,
-)
+    protonate_protein_protoss,)
 from scripts.protein_preparation.structure_assessment.edia import get_best_chain_edia
 from scripts.utilities.utilities import printlog
 import requests
@@ -51,24 +51,30 @@ def prepare_protein(
     prepared_receptor_path = output_dir / "prepared_receptor.pdb"
     printlog(f"Checking validity of receptor input: {protein_file_or_code}")
     if not (prepared_receptor_path).exists():
-        if len(str(protein_file_or_code)) == 4 and protein_file_or_code.isalnum():
+        if len(str(
+                protein_file_or_code)) == 4 and protein_file_or_code.isalnum():
             url = f"https://www.rcsb.org/structure/{protein_file_or_code}"
             response = requests.head(url)
             if response.status_code == 200:
                 type = "PDB"
             else:
-                raise ValueError(f"The provided PDB code {protein_file_or_code} is invalid.")
-        elif len(str(protein_file_or_code)) == 6 and protein_file_or_code.isalnum():
+                raise ValueError(
+                    f"The provided PDB code {protein_file_or_code} is invalid.")
+        elif len(str(
+                protein_file_or_code)) == 6 and protein_file_or_code.isalnum():
             url = f"https://www.uniprot.org/uniprotkb/{protein_file_or_code}/entry"
             response = requests.head(url)
             if response.status_code == 200:
                 type = "Uniprot"
             else:
-                raise ValueError(f"The provided Uniprot code {protein_file_or_code} is invalid.")
+                raise ValueError(
+                    f"The provided Uniprot code {protein_file_or_code} is invalid."
+                )
         else:
             # Check if the protein_file_or_code is a valid path
             if not Path(protein_file_or_code).is_file():
-                raise ValueError(f"{protein_file_or_code} is an invalid file path.")
+                raise ValueError(
+                    f"{protein_file_or_code} is an invalid file path.")
             else:
                 type = "File"
 
@@ -81,9 +87,7 @@ def prepare_protein(
             )
             select_best_chain = False
         # Check if protonation is required
-        if (
-            add_missing_hydrogens_pH is None and not protonate
-        ):
+        if (add_missing_hydrogens_pH is None and not protonate):
             printlog(
                 "Protonating with Protoss or PDBFixer is required for reliable results. Setting protonate to True."
             )
@@ -102,7 +106,8 @@ def prepare_protein(
                 step1_pdb = get_best_chain_edia(pdb_code, output_dir)
             else:
                 # Get PDB structure
-                step1_pdb = fetch_pdb_structure(protein_file_or_code, output_dir)
+                step1_pdb = fetch_pdb_structure(protein_file_or_code,
+                                                output_dir)
         elif type.upper() == "UNIPROT":
             # Fetch the Uniprot structure
             uniprot_code = protein_file_or_code
@@ -112,13 +117,9 @@ def prepare_protein(
             step1_pdb = Path(protein_file_or_code)
 
         # Fix the protein structure
-        if (
-            fix_nonstandard_residues
-            or fix_missing_residues
-            or add_missing_hydrogens_pH is not None
-            or remove_hetero
-            or remove_water
-        ):
+        if (fix_nonstandard_residues or fix_missing_residues or
+                add_missing_hydrogens_pH is not None or remove_hetero or
+                remove_water):
             # Fix the PDB file
             step2_pdb = fix_pdb_file(
                 step1_pdb,

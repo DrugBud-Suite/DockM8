@@ -7,7 +7,9 @@ from pathlib import Path
 import yaml
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -22,17 +24,20 @@ from scripts.utilities.utilities import printlog
 
 class DockM8Error(Exception):
     """Custom Error for DockM8 specific issues."""
-    
+
     def __init__(self, message):
         printlog(message)  # Log the message when the exception is created
-        super().__init__(message)  # Call the superclass constructor with the message
+        super().__init__(
+            message)  # Call the superclass constructor with the message
+
 
 class DockM8Warning(Warning):
     """Custom warning for DockM8 specific issues."""
-    
+
     def __init__(self, message):
         printlog(message)  # Log the message when the warning is created
-        super().__init__(message)  # Call the superclass constructor with the message
+        super().__init__(
+            message)  # Call the superclass constructor with the message
 
 
 def check_config(config):
@@ -57,24 +62,21 @@ def check_config(config):
         )
     else:
         config["general"]["software"] = Path(software_path)
-    
+
     # Retrieve the mode from the configuration, defaulting to 'single' if not found
     mode = general_config.get("mode", "single")
     # Normalize and validate the mode to handle different case inputs and ensure it's one of the expected values
     if mode.lower() not in ["single", "ensemble", "active_learning"]:
         raise DockM8Error(
-            "DockM8 configuration error: Invalid mode ({}) specified in the configuration file.".format(
-                mode
-            )
-        )
+            "DockM8 configuration error: Invalid mode ({}) specified in the configuration file."
+            .format(mode))
 
     # Retrieve the number of CPUs to use from the configuration, defaulting to 0 if not found or improperly specified
     n_cpus = general_config.get("n_cpus", 0)
     try:
         # Attempt to convert n_cpus to an integer and use a fallback if it's set to 0
-        config["general"]["n_cpus"] = (
-            int(n_cpus) if int(n_cpus) != 0 else int(os.cpu_count() * 0.9)
-        )
+        config["general"]["n_cpus"] = (int(n_cpus) if int(n_cpus) != 0 else int(
+            os.cpu_count() * 0.9))
     except ValueError:
         raise DockM8Error(
             f"DockM8 configuration error: Invalid n_cpus value ({n_cpus}) specified in the configuration file. It must be a valid integer."
@@ -83,8 +85,8 @@ def check_config(config):
     decoy_config = config.get("decoy_generation", {})
     # Check if decoy generation is enabled and validate conditions
     if decoy_config.get(
-        "gen_decoys", False
-    ):  # Default to False if gen_decoys is not specified
+            "gen_decoys",
+            False):  # Default to False if gen_decoys is not specified
         # Validate the active compounds path
         active_path = decoy_config.get("actives")
         if not Path(active_path).is_dir():
@@ -114,15 +116,10 @@ def check_config(config):
             # Calculating the number of possible combinations for warnings
             try:
                 pose_selection_methods = len(
-                    config.get("pose_selection", {}).get("methods", [])
-                )
+                    config.get("pose_selection", {}).get("methods", []))
                 docking_methods = len(config.get("docking", []))
-                possibilities = (
-                    math.factorial(len(rescoring_config))
-                    * pose_selection_methods
-                    * docking_methods
-                    * 7
-                )
+                possibilities = (math.factorial(len(rescoring_config)) *
+                                 pose_selection_methods * docking_methods * 7)
                 DockM8Warning(
                     f"At least {possibilities} possible combinations will be tried for optimization, this may take a while."
                 )
@@ -137,9 +134,9 @@ def check_config(config):
             DockM8Warning(
                 "DockM8 configuration warning: Multiple receptor files detected in single mode, only the first file will be used."
             )
-        config["receptor(s)"] = receptors[
-            :1
-        ]  # Slice to keep only the first element as a list
+        config[
+            "receptor(s)"] = receptors[:
+                                       1]  # Slice to keep only the first element as a list
     else:
         pass
     for receptor in receptors:
@@ -147,7 +144,8 @@ def check_config(config):
             printlog(
                 f"PDB ID detected: {receptor}, structure will be downloaded from the PDB."
             )
-        elif len(receptor) == 6 and receptor.isalnum() and not receptor.isdigit():
+        elif len(receptor) == 6 and receptor.isalnum(
+        ) and not receptor.isdigit():
             printlog(
                 f"Uniprot ID detected: {receptor}, AlphaFold structure will be downloaded from the database."
             )
@@ -161,17 +159,17 @@ def check_config(config):
                     f"DockM8 configuration error: Invalid receptor path ({receptor}) specified in the configuration file."
                 )
     config["receptor(s)"] = [Path(receptor) for receptor in receptors]
-    
+
     # Check docking library configuration
     docking_library = config.get("docking_library")
     if not Path(docking_library).is_file():
         raise DockM8Error(
-                    f"DockM8 configuration error: Invalid docking library path ({docking_library}) specified in the configuration file."
-                )
+            f"DockM8 configuration error: Invalid docking library path ({docking_library}) specified in the configuration file."
+        )
     if not docking_library.endswith(".sdf"):
         raise DockM8Error(
-                    f"DockM8 configuration error: Invalid docking library file format ({docking_library}) specified in the configuration file. Please use .sdf files."
-                )
+            f"DockM8 configuration error: Invalid docking library file format ({docking_library}) specified in the configuration file. Please use .sdf files."
+        )
     # Check protein preparation configuration
     protein_preparation = config.get("protein_preparation", {})
 
@@ -204,7 +202,8 @@ def check_config(config):
         )
 
     # Logically, it's also important to confirm 'add_hydrogens' is a valid numeric type if set
-    if add_hydrogens is not None and not isinstance(add_hydrogens, (int, float)):
+    if add_hydrogens is not None and not isinstance(add_hydrogens,
+                                                    (int, float)):
         raise DockM8Error(
             f"DockM8 configuration error: 'add_hydrogens' value ({add_hydrogens}) must be a numeric type."
         )
@@ -265,12 +264,10 @@ def check_config(config):
             DockM8Warning(
                 "DockM8 configuration warning: Multiple reference ligand files detected in single mode, only the first file will be used."
             )
-            reference_ligands = reference_ligands[
-                :1
-            ]  
-        config["pocket_detection"]["reference_ligand(s)"] = [Path(reference_ligand)
-        for reference_ligand in reference_ligands
-    ]
+            reference_ligands = reference_ligands[:1]
+        config["pocket_detection"]["reference_ligand(s)"] = [
+            Path(reference_ligand) for reference_ligand in reference_ligands
+        ]
     # Validate radius for the "Reference" method
     if method == "Reference":
         radius = pocket_detection.get("radius")
@@ -286,7 +283,9 @@ def check_config(config):
             raise DockM8Error(
                 "DockM8 configuration error: Manual pocket definition is required for 'Manual' pocket detection method."
             )
-        if not re.match(r"center:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?\*size:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?", manual_pocket):
+        if not re.match(
+                r"center:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?\*size:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?",
+                manual_pocket):
             raise DockM8Error(
                 "DockM8 configuration error: Invalid manual pocket definition format. Format should be 'center:x,y,z*size:x,y,z' where x, y, and z are numbers."
             )
@@ -317,9 +316,8 @@ def check_config(config):
         )
     # Check if exhaustiveness is not set and SMINA, GNINA, QVINA2, or QVINAW are not in docking programs
     if "exhaustiveness" not in docking and any(
-        program in docking_programs
-        for program in ["SMINA", "GNINA", "QVINA2", "QVINAW"]
-    ):
+            program in docking_programs
+            for program in ["SMINA", "GNINA", "QVINA2", "QVINAW"]):
         DockM8Warning(
             "DockM8 configuration warning: exhaustiveness is not set and SMINA, GNINA, QVINA2, or QVINAW are in docking programs. Setting exhaustiveness to 8."
         )
@@ -331,7 +329,7 @@ def check_config(config):
     if not (isinstance(clash_cutoff, int) or clash_cutoff is None):
         raise DockM8Error(
             "DockM8 configuration error: 'clash_cutoff' in 'post_docking' section must be a integer value."
-        )    
+        )
     strain_cutoff = post_docking.get("strain_cutoff")
     if not (isinstance(strain_cutoff, int) or strain_cutoff is None):
         raise DockM8Error(
@@ -348,18 +346,14 @@ def check_config(config):
     methods = pose_selection.get("method", [])
     docking_programs = config.get("docking", {}).get("docking_programs", [])
 
-    valid_methods = (
-        list(CLUSTERING_METRICS.keys())
-        + [
-            "bestpose",
-            "bestpose_GNINA",
-            "bestpose_SMINA",
-            "bestpose_PLANTS",
-            "bestpose_QVINA2",
-            "bestpose_QVINAW",
-        ]
-        + list(RESCORING_FUNCTIONS.keys())
-    )
+    valid_methods = (list(CLUSTERING_METRICS.keys()) + [
+        "bestpose",
+        "bestpose_GNINA",
+        "bestpose_SMINA",
+        "bestpose_PLANTS",
+        "bestpose_QVINA2",
+        "bestpose_QVINAW",
+    ] + list(RESCORING_FUNCTIONS.keys()))
 
     # Validate each method in pose selection
     for method in methods:
@@ -378,8 +372,10 @@ def check_config(config):
             config["pose_selection"]["method"] = methods.remove(bestpose_key)
             # Ensure there's always at least one method in the list
             if not methods:
-                config["pose_selection"]["method"] = methods.append(bestpose_key)
-                config["docking"]["docking_programs"] = docking_programs.append(program)
+                config["pose_selection"]["method"] = methods.append(
+                    bestpose_key)
+                config["docking"]["docking_programs"] = docking_programs.append(
+                    program)
                 DockM8Warning(
                     f"DockM8 configuration warning: Restored {bestpose_key} as a pose selection method and added {program} to the list of docking programs."
                 )
@@ -392,10 +388,8 @@ def check_config(config):
         )
 
     # Check if clustering metrics are used without a specified clustering method
-    if (
-        any(method in CLUSTERING_METRICS for method in methods)
-        and not clustering_method
-    ):
+    if (any(method in CLUSTERING_METRICS for method in methods) and
+            not clustering_method):
         DockM8Warning(
             "DockM8 configuration warning: 'clustering_method' is not set for clustering metrics, defaulting to 'KMedoids'."
         )
@@ -419,8 +413,7 @@ def check_config(config):
         )
 
     threshold = config.get(
-        "threshold", None
-    )  # None is a placeholder if threshold is not set
+        "threshold", None)  # None is a placeholder if threshold is not set
     # Check threshold for ensemble and active learning modes
     if mode in ["ensemble", "active_learning"]:
         if threshold is None:

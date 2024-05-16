@@ -6,7 +6,9 @@ import pytest
 from Bio.PDB import PDBParser
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests' for p in Path(__file__).resolve().parents if (p / 'tests').is_dir()), None)
+tests_path = next((p / 'tests'
+                   for p in Path(__file__).resolve().parents
+                   if (p / 'tests').is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -16,7 +18,9 @@ from scripts.protein_preparation.fixing.pdb_fixer import fix_pdb_file
 @pytest.fixture
 def common_test_data():
     """Set up common test data."""
-    dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
+    dockm8_path = next((p / "tests"
+                        for p in Path(__file__).resolve().parents
+                        if (p / "tests").is_dir()), None).parent
     input_pdb_file = dockm8_path / "tests/test_files/1fvv_p.pdb"
     output_dir = dockm8_path / "tests/test_files"
     return input_pdb_file, output_dir
@@ -33,7 +37,6 @@ def test_fix_pdb_file_default(common_test_data):
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
     os.unlink(output_path) if os.path.exists(output_path) else None
-
 
 
 def test_fix_pdb_file_custom_options(common_test_data):
@@ -58,7 +61,6 @@ def test_fix_pdb_file_custom_options(common_test_data):
     os.unlink(output_path) if os.path.exists(output_path) else None
 
 
-
 def test_fix_pdb_file_no_output_dir(common_test_data):
     """Test fixing a PDB file without specifying an output directory."""
     input_pdb_file, output_dir = common_test_data
@@ -71,4 +73,3 @@ def test_fix_pdb_file_no_output_dir(common_test_data):
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
     os.unlink(output_path) if os.path.exists(output_path) else None
-

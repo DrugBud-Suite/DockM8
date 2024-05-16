@@ -25,6 +25,8 @@ def parse_pocket_coordinates(pocket_arg):
             key, value = item.split(':')
             pocket_coordinates[key] = list(map(float, value.split(',')))
     except Exception as e:
-        print(f"Error parsing pocket coordinates: {e}. Make sure the pocket coordinates are in the format 'center:1,2,3*size:1,2,3'")
+        print(
+            f"Error parsing pocket coordinates: {e}. Make sure the pocket coordinates are in the format 'center:1,2,3*size:1,2,3'"
+        )
         pocket_coordinates = None
     return pocket_coordinates

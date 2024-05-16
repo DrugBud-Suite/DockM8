@@ -2,15 +2,15 @@ import os
 import sys
 from pathlib import Path
 
-
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next((p / 'scripts'
+                     for p in Path(__file__).resolve().parents
+                     if (p / 'scripts').is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.pocket_finding.utils import (
-    get_ligand_coordinates,
-)
+    get_ligand_coordinates,)
 from scripts.utilities.utilities import load_molecule, printlog
 
 
@@ -44,6 +44,8 @@ def find_pocket_default(ligand_file: Path, protein_file: Path, radius: int):
     # Create a dictionary with the pocket coordinates and size
     pocket_coordinates = {
         "center": [center_x, center_y, center_z],
-        "size": [float(radius) * 2, float(radius) * 2, float(radius) * 2],
+        "size": [float(radius) * 2,
+                 float(radius) * 2,
+                 float(radius) * 2],
     }
     return pocket_coordinates
