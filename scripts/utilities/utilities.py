@@ -5,6 +5,7 @@ import math
 import os
 import warnings
 from pathlib import Path
+import sys
 
 import openbabel
 import pandas as pd
@@ -16,10 +17,13 @@ from rdkit import Chem
 from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
-dockm8_path = next(
-    (p / "DockM8" for p in Path(__file__).resolve().parents if (p / "DockM8").is_dir()),
+# Search for 'DockM8' in parent directories
+scripts_path = next(
+    (p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()),
     None,
 )
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
