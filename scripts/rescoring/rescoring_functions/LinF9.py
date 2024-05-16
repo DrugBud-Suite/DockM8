@@ -61,7 +61,7 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 
     global LinF9_rescoring_splitted
 
-    def LinF9_rescoring_splitted(split_file, protein_file, pocket_definition):
+    def LinF9_rescoring_splitted(split_file, protein_file):
         LinF9_folder = rescoring_folder / "LinF9_rescoring"
         results = LinF9_folder / f"{split_file.stem}_LinF9.sdf"
         LinF9_cmd = (
