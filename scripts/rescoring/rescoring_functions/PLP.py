@@ -46,7 +46,6 @@ def plp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     rescoring_folder = kwargs.get("rescoring_folder")
     software = kwargs.get("software")
     protein_file = kwargs.get("protein_file")
-    pocket_definition = kwargs.get("pocket_definition")
 
     tic = time.perf_counter()
 
@@ -90,14 +89,6 @@ def plp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
         "# write single mol2 files (e.g. for RMSD calculation)\n",
         "write_multi_mol2 1\n",
         "# binding site definition\n",
-        "bindingsite_center "
-        + str(pocket_definition["center"][0])
-        + " "
-        + str(pocket_definition["center"][1])
-        + " "
-        + str(pocket_definition["center"][2])
-        + "\n",
-        "bindingsite_radius " + str(pocket_definition["size"][0] / 2) + "\n",
         "# cluster algorithm\n",
         "cluster_structures 10\n",
         "cluster_rmsd 2.0\n",

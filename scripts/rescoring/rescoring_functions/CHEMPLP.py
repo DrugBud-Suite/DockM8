@@ -70,16 +70,6 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
         "# write single mol2 files (e.g. for RMSD calculation)\n",
         "write_multi_mol2 1\n",
         "# binding site definition\n",
-        "bindingsite_center "
-        + str(kwargs.get("pocket_definition")["center"][0])
-        + " "
-        + str(kwargs.get("pocket_definition")["center"][1])
-        + " "
-        + str(kwargs.get("pocket_definition")["center"][2])
-        + "\n",
-        "bindingsite_radius "
-        + str(kwargs.get("pocket_definition")["size"][0] / 2)
-        + "\n",
         "# cluster algorithm\n",
         "cluster_structures 10\n",
         "cluster_rmsd 2.0\n",
