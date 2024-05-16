@@ -90,7 +90,7 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
     df.columns = df.columns.str.replace(' ', '')
 
     pocket_coordinates = {
-        "center": (df["center_x"][0], df["center_y"][0], df["center_z"][0]),
+        "center": [df["center_x"][0], df["center_y"][0], df["center_z"][0]],
         "size": [float(radius) * 2, float(radius) * 2, float(radius) * 2]
     }
     # Remove the output directory
