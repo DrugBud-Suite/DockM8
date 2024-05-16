@@ -149,7 +149,6 @@ def rescore_poses(
 def rescore_docking(
     w_dir: Path,
     protein_file: Path,
-    pocket_definition: dict,
     software: Path,
     function: str,
     n_cpus: int,
@@ -183,7 +182,6 @@ def rescore_docking(
         n_cpus,
         function_info["column_name"],
         protein_file=protein_file,
-        pocket_definition=pocket_definition,
         software=software,
         rescoring_folder=w_dir,
     )
