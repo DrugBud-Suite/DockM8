@@ -1,94 +1,127 @@
-[tool.yapf]
-based_on_style = "google"
-
 [tool.ruff]
-# Exclude a variety of commonly ignored directories.
+# List of directories to exclude from linting.
 exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".git-rewrite",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
+    ".bzr",                  # Bazaar version control system directory
+    ".direnv",               # direnv environment management directory
+    ".eggs",                 # Python Eggs cache directory
+    ".git",                  # Git version control system directory
+    ".git-rewrite",          # Git rewrite history directory
+    ".hg",                   # Mercurial version control system directory
+    ".mypy_cache",           # mypy type checking cache directory
+    ".nox",                  # nox testing tool directory
+    ".pants.d",              # Pants build tool cache directory
+    ".pytype",               # pytype type checking cache directory
+    ".ruff_cache",           # Ruff linter cache directory
+    ".svn",                  # Subversion version control system directory
+    ".tox",                  # tox testing tool directory
+    ".venv",                 # Python virtual environment directory
+    "__pypackages__",        # PEP 582 local packages directory
+    "_build",                # Build output directory
+    "buck-out",              # Buck build tool output directory
+    "build",                 # General build output directory
+    "dist",                  # Distribution output directory
+    "node_modules",          # Node.js packages directory
+    "venv",                  # Another common virtual environment directory
 ]
 
-# Same as Black.
-line-length = 120
+# Maximum allowed line length for code.
+line-length = 120             # Updated to match Google style guide
+
+# Number of spaces per indentation level.
 indent-width = 4
 
-# Assume Python 3.10
+# Target Python version for linting and formatting.
 target-version = "py310"
 
 [tool.ruff.lint]
-# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
-# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
-# McCabe complexity (`C901`) by default.
+# List of rules to ignore during linting.
+ignore = [                  # Ignoring "from module import *" used; unable to detect undefined names
+    "E402",                  # Ignoring module level import not at top of file
+]
 
-ignore = [
-    "F403", 
-    "E402",]
-
-# Allow fix for all enabled rules (when `--fix`) is provided.
+# List of rules that can be auto-fixed.
 fixable = ["ALL"]
+
+# List of rules that cannot be auto-fixed.
 unfixable = []
 
-# Allow unused variables when underscore-prefixed.
+# Regular expression for variable names that can be ignored if unused.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.format]
-# Like Black, use double quotes for strings.
-quote-style = "double"
+# Style for string quotes.
+quote-style = "single"
 
-# Like Black, indent with spaces, rather than tabs.
+# Style for indentation.
 indent-style = "space"
 
-# Like Black, respect magic trailing commas.
+# Option to skip adding a trailing comma automatically.
 skip-magic-trailing-comma = false
 
-# Like Black, automatically detect the appropriate line ending.
+# Option to automatically detect the appropriate line ending (LF/CRLF).
 line-ending = "auto"
 
-# Enable auto-formatting of code examples in docstrings. Markdown,
-# reStructuredText code/literal blocks and doctests are all supported.
-
+# Option to enable auto-formatting of code examples in docstrings.
 docstring-code-format = false
 
-# Set the line length limit used when formatting code snippets in
-# docstrings.
+# Set the line length limit used when formatting code snippets in docstrings.
 docstring-code-line-length = "dynamic"
 
+[tool.ruff.lint.pydocstyle]
+# Convention to use for pydocstyle (PEP 257) linting.
+convention = "pep257"
+
+[tool.ruff.lint.pycodestyle]
+# Maximum line length for pycodestyle linting.
+max-line-length = 120
+
 [tool.ruff.lint.isort]
+# Option to force each import to be on a single line.
 force-single-line = true
+
+# Option to combine 'as' imports on the same line.
 combine-as-imports = true
+
+# Option to sort imports within sections.
 force-sort-within-sections = true
+
+# Option to not order imports by type.
 order-by-type = false
+
+# List of known local folders to be used in import sorting.
 known-local-folder = ["pytest", "_pytest"]
+
+# Number of lines to insert after the imports.
 lines-after-imports = 2
 
 [tool.pytest.ini_options]
+# Directories to look for tests.
 testpaths = ["tests", "integration"]
+
+# Additional command line options for pytest.
 addopts = "-v -ra -q"
+
+# Enable logging to the console.
 log_cli = true
+
+# Set the logging level for console output.
 log_cli_level = "INFO"
+
+# Format for log messages.
 log_format = "%(asctime)s %(levelname)s %(message)s"
+
+# Date format for log messages.
 log_date_format = "%Y-%m-%d %H:%M:%S"
+
+# Minimum pytest version required.
 minversion = "6.0"
+
+# Warnings to ignore during tests.
 filterwarnings = "ignore"
 
-# Specify a custom directory for pytest cache
+# Custom directory for pytest cache.
 cache_dir = ".pytest_cache"
+
+[tool.yapf]
+# Base style for yapf formatting.
+based_on_style = "google"
