@@ -1,22 +1,30 @@
+from pathlib import Path
 import subprocess
+from subprocess import DEVNULL
+from subprocess import STDOUT
 import sys
 import time
 import warnings
-from pathlib import Path
-from subprocess import DEVNULL, STDOUT
 
 import pandas as pd
 
+
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts' for p in Path(__file__).resolve().parents if (p / 'scripts').is_dir()), None)
+scripts_path = next(
+    (
+        p / "scripts"
+        for p in Path(__file__).resolve().parents
+        if (p / "scripts").is_dir()
+    ),
+    None,
+)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    convert_molecules,
-    delete_files,
-    printlog,
-)
+from scripts.utilities.utilities import convert_molecules
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.utilities import printlog
+
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
