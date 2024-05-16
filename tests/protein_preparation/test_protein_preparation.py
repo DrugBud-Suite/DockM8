@@ -15,21 +15,9 @@ from Bio.PDB import PDBParser
 def common_test_data():
     """Set up common test data."""
     dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
-    input_pdb_file = dockm8_path / 'tests/test_files/1fvv_p.pdb'
-    output_dir = dockm8_path / 'tests/test_files'
+    input_pdb_file = dockm8_path / 'tests/test_files/protein_preparation/1fvv_p.pdb'
+    output_dir = dockm8_path / 'tests/test_files/protein_preparation'
     return input_pdb_file, output_dir
-
-@pytest.fixture
-def cleanup(request):
-    """Cleanup fixture to remove generated files after each test."""
-    output_dir = dockm8_path / "tests/test_files/"
-
-    def remove_created_files():
-        for file in output_dir.iterdir():
-            if file.name.endswith("_fixed.pdb") or file.name.endswith("_protoss.pdb") or "2O1X" in file.name or "prepared_receptor.pdb" in file.name:
-                file.unlink()
-
-    request.addfinalizer(remove_created_files)
 
 def test_prepare_protein_with_file_input(common_test_data):
     """
@@ -52,6 +40,7 @@ def test_prepare_protein_with_file_input(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_with_pdb_input(common_test_data):
@@ -73,6 +62,8 @@ def test_prepare_protein_with_pdb_input(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
+    os.unlink(output_dir / "2O1X.pdb") if os.path.exists(output_dir / "2O1X.pdb") else None
 
 
 def test_prepare_protein_with_uniprot_input(common_test_data):
@@ -97,6 +88,7 @@ def test_prepare_protein_with_uniprot_input(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_with_invalid_input(common_test_data):
@@ -150,6 +142,8 @@ def test_prepare_protein_with_select_best_chain(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
+    os.unlink(output_dir / "2O1X.pdb") if os.path.exists(output_dir / "2O1X.pdb") else None
 
 
 def test_prepare_protein_without_fix_protein(common_test_data):
@@ -174,6 +168,7 @@ def test_prepare_protein_without_fix_protein(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_without_fix_nonstandard_residues(common_test_data):
@@ -195,6 +190,7 @@ def test_prepare_protein_without_fix_nonstandard_residues(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_without_fix_missing_residues(common_test_data):
@@ -216,6 +212,7 @@ def test_prepare_protein_without_fix_missing_residues(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_without_add_missing_hydrogens_pH(common_test_data):
@@ -240,6 +237,7 @@ def test_prepare_protein_without_add_missing_hydrogens_pH(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_without_remove_hetero(common_test_data):
@@ -261,6 +259,7 @@ def test_prepare_protein_without_remove_hetero(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_without_remove_water(common_test_data):
@@ -285,6 +284,7 @@ def test_prepare_protein_without_remove_water(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
 
 
 def test_prepare_protein_without_protonate(common_test_data):
@@ -306,3 +306,4 @@ def test_prepare_protein_without_protonate(common_test_data):
     parser = PDBParser()
     structure = parser.get_structure("protein", str(output_path))
     assert structure is not None
+    os.unlink(output_path) if os.path.exists(output_path) else None
