@@ -7,12 +7,9 @@ from pandas import DataFrame
 import pytest
 
 # Search for 'DockM8' in parent directories
-tests_path = next(
-    (p / "tests"
-     for p in Path(__file__).resolve().parents
-     if (p / "tests").is_dir()),
-    None,
-)
+tests_path = next((p / "tests"
+                   for p in Path(__file__).resolve().parents
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -31,8 +28,7 @@ def test_data():
     clustered_sdf = dockm8_path / "tests/test_files/rescoring/example_poses_1fvv.sdf"
     functions = [
         key for key in RESCORING_FUNCTIONS.keys()
-        if key not in ["CHEMPLP", "PLP", "PLECScore"]
-    ]
+        if key not in ["CHEMPLP", "PLP", "PLECScore"]]
     n_cpus = int(os.cpu_count() * 0.9)
     return w_dir, protein_file, software, clustered_sdf, functions, n_cpus
 
@@ -43,12 +39,14 @@ def test_vinardo_rescoring(test_data):
     column_name = "Vinardo"
     rescoring_folder = w_dir / f"rescoring_{clustered_sdf.stem}"
     # Call the function
-    result = vinardo_rescoring(clustered_sdf,
-                               n_cpus,
-                               column_name,
-                               rescoring_folder=rescoring_folder,
-                               software=software,
-                               protein_file=protein_file)
+    result = vinardo_rescoring(
+        clustered_sdf,
+        n_cpus,
+        column_name,
+        rescoring_folder=rescoring_folder,
+        software=software,
+        protein_file=protein_file,
+    )
 
     # Assert the result
     assert isinstance(result, DataFrame)

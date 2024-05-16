@@ -9,18 +9,13 @@ import pandas as pd
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    delete_files,
-    parallel_executor,
-    printlog,
-    split_sdf_str,
-)
+from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -54,8 +49,7 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     split_files_sdfs = [
         Path(split_files_folder) / f
         for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")
-    ]
+        if f.endswith(".sdf")]
     global KORPL_rescoring_splitted
 
     def KORPL_rescoring_splitted(split_file, protein_file):

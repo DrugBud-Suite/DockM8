@@ -6,14 +6,13 @@ import pytest
 from Bio.PDB import PDBParser
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests'
+tests_path = next((p / "tests"
                    for p in Path(__file__).resolve().parents
-                   if (p / 'tests').is_dir()), None)
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.protein_preparation.protonation.protonate_protoss import (
-    protonate_protein_protoss,)
+from scripts.protein_preparation.protonation.protonate_protoss import protonate_protein_protoss
 
 
 @pytest.fixture
@@ -34,8 +33,7 @@ def test_protonate_protein_protoss(common_test_data):
     # Check if the prepared protein file exists
     assert output_path.is_file()
     # Verify that the prepared protein file has the correct extension
-    assert (output_path.name ==
-            f"{input_pdb_file.stem}_protoss{input_pdb_file.suffix}")
+    assert output_path.name == f"{input_pdb_file.stem}_protoss{input_pdb_file.suffix}"
     # Verify that the prepared protein file is not empty
     assert output_path.stat().st_size > 0
     # Verify that the prepared protein file is in the correct directory

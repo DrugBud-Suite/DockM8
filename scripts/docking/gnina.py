@@ -9,16 +9,13 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    delete_files,
-    printlog,
-)
+from scripts.utilities.utilities import delete_files, printlog
 
 
 def gnina_docking(
@@ -50,9 +47,7 @@ def gnina_docking(
     gnina_folder.mkdir(parents=True, exist_ok=True)
     if split_file:
         input_file = split_file
-        results_path = (
-            gnina_folder /
-            f"{os.path.basename(split_file).split('.')[0]}_gnina.sdf")
+        results_path = gnina_folder / f"{os.path.basename(split_file).split('.')[0]}_gnina.sdf"
     else:
         input_file = w_dir / "final_library.sdf"
         results_path = gnina_folder / "docked.sdf"
@@ -97,19 +92,18 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
             for file in tqdm(os.listdir(w_dir / "gnina"),
                              desc="Loading GNINA poses"):
                 if file.startswith("split"):
-                    df = PandasTools.LoadSDF(
-                        str(w_dir / "gnina" / file),
-                        idName="ID",
-                        molColName="Molecule",
-                    )
+                    df = PandasTools.LoadSDF(str(w_dir / "gnina" / file),
+                                             idName="ID",
+                                             molColName="Molecule")
                     gnina_dataframes.append(df)
             gnina_df = pd.concat(gnina_dataframes)
             list_ = [*range(1, int(n_poses) + 1, 1)]
             ser = list_ * (len(gnina_df) // len(list_))
             gnina_df["Pose ID"] = [
-                f'{row["ID"]}_GNINA_{num}' for num, (_, row) in zip(
-                    ser + list_[:len(gnina_df) - len(ser)], gnina_df.iterrows())
-            ]
+                f'{row["ID"]}_GNINA_{num}'
+                for num, (_, row) in zip(ser +
+                                         list_[:len(gnina_df) -
+                                               len(ser)], gnina_df.iterrows())]
             gnina_df.rename(columns={"minimizedAffinity": "GNINA_Affinity"},
                             inplace=True)
         except Exception as e:

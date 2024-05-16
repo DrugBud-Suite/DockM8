@@ -7,12 +7,9 @@ from pandas import DataFrame
 import pytest
 
 # Search for 'DockM8' in parent directories
-tests_path = next(
-    (p / "tests"
-     for p in Path(__file__).resolve().parents
-     if (p / "tests").is_dir()),
-    None,
-)
+tests_path = next((p / "tests"
+                   for p in Path(__file__).resolve().parents
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -40,13 +37,15 @@ def test_LinF9_rescoring(test_data):
     pocket_definition = dockm8_path / "tests/test_files/rescoring/example_pocket_definition.pdb"
 
     # Call the function
-    result = LinF9_rescoring(clustered_sdf,
-                             n_cpus,
-                             column_name,
-                             rescoring_folder=rescoring_folder,
-                             software=software,
-                             protein_file=protein_file,
-                             pocket_definition=pocket_definition)
+    result = LinF9_rescoring(
+        clustered_sdf,
+        n_cpus,
+        column_name,
+        rescoring_folder=rescoring_folder,
+        software=software,
+        protein_file=protein_file,
+        pocket_definition=pocket_definition,
+    )
 
     # Assert the result
     assert isinstance(result, DataFrame)

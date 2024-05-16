@@ -27,9 +27,9 @@ import requests
 from biopandas.pdb import PandasPdb
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -57,27 +57,23 @@ class APIConsts:
             "status": "status_code",
             "status_codes": {
                 "accepted": "accepted",
-                "denied": "bad_request"
-            },
+                "denied": "bad_request"},
             "message": "message",
-            "url_of_id": "location",
-        }
+            "url_of_id": "location",}
         RESPONSE_MSG_FETCH_ID = {"message": "message", "id": "id"}
 
     class SubmitJob:
         URL = "https://proteins.plus/api/dogsite_rest"
         QUERY_HEADERS = {
             "Content-type": "application/json",
-            "Accept": "application/json",
-        }
+            "Accept": "application/json"}
 
         RESPONSE_MSG = {"url_of_job": "location"}
 
         RESPONSE_MSG_FETCH_BINDING_SITES = {
             "result_table": "result_table",
             "pockets_pdb_files": "residues",
-            "pockets_ccp4_files": "pockets",
-        }
+            "pockets_ccp4_files": "pockets",}
 
 
 @redo.retriable(attempts=30, sleeptime=1, sleepscale=1.1, max_sleeptime=20)
@@ -86,7 +82,7 @@ def _send_request_get_results(request_type,
                               url,
                               task="Fetching results from DoGSiteScorer API",
                               **kwargs):
-    '''
+    """
     Send a request and get the keyword values from json response.
 
     Parameters
@@ -108,7 +104,7 @@ def _send_request_get_results(request_type,
     -------
     list
         List of values in the json response corresponding to the input list of keys.
-    '''
+    """
 
     request_function = getattr(requests, request_type)
     response = request_function(url, **kwargs)
@@ -146,9 +142,11 @@ def upload_pdb_file(filepath: Path):
     with open(filepath.with_suffix(".pdb"), "rb") as f:
         # Post API query and get the response
         url_of_id = _send_request_get_results(
-            "post", [APIConsts.FileUpload.RESPONSE_MSG["url_of_id"]],
+            "post",
+            [APIConsts.FileUpload.RESPONSE_MSG["url_of_id"]],
             APIConsts.FileUpload.URL,
-            files={APIConsts.FileUpload.REQUEST_MSG: f})[0]
+            files={APIConsts.FileUpload.REQUEST_MSG: f},
+        )[0]
 
     protein_id = _send_request_get_results(
         "get", [APIConsts.FileUpload.RESPONSE_MSG_FETCH_ID["id"]], url_of_id)[0]
@@ -195,10 +193,21 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
     result_table_df = pd.read_csv(io.StringIO(result_table),
                                   sep="\t").set_index("name")
     result_table_df = result_table_df[[
-        "lig_cov", "poc_cov", "lig_name", "volume", "enclosure", "surface",
-        "depth", "surf/vol", "accept", "donor", "hydrophobic_interactions",
-        "hydrophobicity", "metal", "simpleScore", "drugScore"
-    ]]
+        "lig_cov",
+        "poc_cov",
+        "lig_name",
+        "volume",
+        "enclosure",
+        "surface",
+        "depth",
+        "surf/vol",
+        "accept",
+        "donor",
+        "hydrophobic_interactions",
+        "hydrophobicity",
+        "metal",
+        "simpleScore",
+        "drugScore",]]
     return result_table_df
 
 
@@ -240,12 +249,10 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
                     ligand,  # if name is specified, ligand coverage is calculated
                 "chain":
                     chain_id,  # if chain is specified, calculation is only performed on this chain
-            }
-        },
+            }},
         headers={
             "Content-type": "application/json",
-            "Accept": "application/json"
-        },
+            "Accept": "application/json"},
     )
 
     r.raise_for_status()
@@ -266,14 +273,14 @@ def sort_binding_sites(dataframe, method):
     pandas.DataFrame: The sorted dataframe.
 
     """
-    if method == 'drugScore':
-        printlog('Sorting binding sites by drug score')
+    if method == "drugScore":
+        printlog("Sorting binding sites by drug score")
         dataframe = dataframe.sort_values(by=["drugScore"], ascending=False)
-    elif method == 'volume':
-        printlog('Sorting binding sites by volume')
+    elif method == "volume":
+        printlog("Sorting binding sites by volume")
         dataframe = dataframe.sort_values(by=["volume"], ascending=False)
     else:
-        printlog('Sorting binding sites by {}'.format(method))
+        printlog("Sorting binding sites by {}".format(method))
         dataframe = dataframe.sort_values(by=method, ascending=False)
     best_pocket_name = dataframe.iloc[0, :].name
     return best_pocket_name
@@ -381,8 +388,8 @@ def save_binding_site_to_file(pdbpath: Path, binding_site_url):
     response_file_content = response.content
 
     # Set the output path for the PDB file
-    output_path = pdbpath.with_suffix('.pdb').with_name(pdbpath.stem +
-                                                        '_pocket.pdb')
+    output_path = pdbpath.with_suffix(".pdb").with_name(pdbpath.stem +
+                                                        "_pocket.pdb")
 
     # Write the response content to the output file
     with open(output_path, "wb") as f:
@@ -429,17 +436,15 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
     coordinates = [
         float(element)
         for element in coordinates_data_as_list
-        if re.compile(r'\d+(?:\.\d*)').match(element)
-    ]
+        if re.compile(r"\d+(?:\.\d*)").match(element)]
     # Create a dictionary with the pocket coordinates
     pocket_coordinates = {
         "center": coordinates[:3],
-        "size": [coordinates[-1] for dim in range(3)],
-    }
+        "size": [coordinates[-1] for dim in range(3)]}
     return pocket_coordinates
 
 
-def find_pocket_dogsitescorer(pdbpath: Path, method='volume'):
+def find_pocket_dogsitescorer(pdbpath: Path, method="volume"):
     """
     Retrieves the binding site coordinates for a given PDB file using the DogSiteScorer method.
 
@@ -453,7 +458,7 @@ def find_pocket_dogsitescorer(pdbpath: Path, method='volume'):
     # Upload the PDB file
     pdb_upload = upload_pdb_file(pdbpath)
     # Submit the DoGSiteScorer job with the PDB ID
-    job_location = submit_dogsitescorer_job_with_pdbid(pdb_upload, 'A', '')
+    job_location = submit_dogsitescorer_job_with_pdbid(pdb_upload, "A", "")
     # Get the metadata of the DoGSiteScorer job
     binding_site_df = get_dogsitescorer_metadata(job_location)
     # Sort the binding sites based on the given method
@@ -464,5 +469,5 @@ def find_pocket_dogsitescorer(pdbpath: Path, method='volume'):
     save_binding_site_to_file(pdbpath, pocket_url)
     # Calculate the pocket coordinates from the saved PDB file
     pocket_coordinates = calculate_pocket_coordinates_from_pocket_pdb_file(
-        str(pdbpath).replace('.pdb', '_pocket.pdb'))
+        str(pdbpath).replace(".pdb", "_pocket.pdb"))
     return pocket_coordinates

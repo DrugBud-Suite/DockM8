@@ -8,17 +8,13 @@ from subprocess import DEVNULL, STDOUT
 import pandas as pd
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    convert_molecules,
-    delete_files,
-    printlog,
-)
+from scripts.utilities.utilities import convert_molecules, delete_files, printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -33,8 +29,8 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 
     plants_search_speed = "speed1"
     ants = "20"
-    chemplp_rescoring_folder = (kwargs.get("rescoring_folder") /
-                                f"{column_name}_rescoring")
+    chemplp_rescoring_folder = kwargs.get(
+        "rescoring_folder") / f"{column_name}_rescoring"
     chemplp_rescoring_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = chemplp_rescoring_folder / "protein.mol2"
@@ -80,18 +76,15 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
         "write_protein_conformations 1\n",
         "write_protein_splitted 1\n",
         "write_merged_protein 0\n",
-        "####\n",
-    ]
+        "####\n",]
     # Write config file
-    chemplp_rescoring_config_path_config = (
-        chemplp_rescoring_config_path_txt.with_suffix(".config"))
+    chemplp_rescoring_config_path_config = chemplp_rescoring_config_path_txt.with_suffix(
+        ".config")
     with chemplp_rescoring_config_path_config.open("w") as configwriter:
         configwriter.writelines(chemplp_config)
 
     # Run PLANTS docking
-    chemplp_rescoring_command = (
-        f"{software}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}"
-    )
+    chemplp_rescoring_command = f"{software}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}"
     subprocess.call(chemplp_rescoring_command,
                     shell=True,
                     stdout=DEVNULL,
@@ -106,11 +99,10 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
         chemplp_results.loc[i,
                             ["Pose ID"]] = f"{split[0]}_{split[1]}_{split[2]}"
     chemplp_rescoring_results = chemplp_results[["Pose ID", column_name]]
-    chemplp_rescoring_results.to_csv(
-        rescoring_folder / f"{column_name}_rescoring" /
-        f"{column_name}_scores.csv",
-        index=False,
-    )
+    chemplp_rescoring_results.to_csv(rescoring_folder /
+                                     f"{column_name}_rescoring" /
+                                     f"{column_name}_scores.csv",
+                                     index=False)
 
     # Remove files
     plants_ligands_mol2.unlink()

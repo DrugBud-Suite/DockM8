@@ -6,9 +6,9 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests'
+tests_path = next((p / "tests"
                    for p in Path(__file__).resolve().parents
-                   if (p / 'tests').is_dir()), None)
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 

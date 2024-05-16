@@ -11,18 +11,13 @@ from pandas import DataFrame
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    delete_files,
-    parallel_executor,
-    printlog,
-    split_sdf_str,
-)
+from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -59,8 +54,7 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str,
     split_files_sdfs = [
         split_files_folder / f
         for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")
-    ]
+        if f.endswith(".sdf")]
 
     vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
     vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
@@ -69,8 +63,7 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str,
 
     def vinardo_rescoring_splitted(split_file, protein_file):
         vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
-        results = (vinardo_rescoring_folder /
-                   f"{Path(split_file).stem}_{column_name}.sdf")
+        results = vinardo_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
         vinardo_cmd = (f"{software}/gnina"
                        f" --receptor {protein_file}"
                        f" --ligand {split_file}"
@@ -87,12 +80,10 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str,
             printlog(f"{column_name} rescoring failed: " + e)
         return
 
-    parallel_executor(
-        vinardo_rescoring_splitted,
-        split_files_sdfs,
-        n_cpus,
-        protein_file=protein_file,
-    )
+    parallel_executor(vinardo_rescoring_splitted,
+                      split_files_sdfs,
+                      n_cpus,
+                      protein_file=protein_file)
 
     try:
         vinardo_dataframes = [
@@ -105,8 +96,7 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str,
             )
             for file in os.listdir(rescoring_folder /
                                    f"{column_name}_rescoring")
-            if file.startswith("split") and file.endswith(".sdf")
-        ]
+            if file.startswith("split") and file.endswith(".sdf")]
     except Exception as e:
         printlog(f"ERROR: Failed to Load {column_name} rescoring SDF file!")
         printlog(e)
@@ -118,8 +108,7 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str,
     vinardo_rescoring_results.rename(columns={"minimizedAffinity": column_name},
                                      inplace=True)
     vinardo_rescoring_results = vinardo_rescoring_results[[
-        "Pose ID", column_name
-    ]]
+        "Pose ID", column_name]]
     vinardo_scores_path = vinardo_rescoring_folder / f"{column_name}_scores.csv"
     vinardo_rescoring_results.to_csv(vinardo_scores_path, index=False)
     delete_files(vinardo_rescoring_folder, f"{column_name}_scores.csv")

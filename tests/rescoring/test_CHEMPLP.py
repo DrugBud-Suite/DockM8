@@ -7,12 +7,9 @@ from pandas import DataFrame
 import pytest
 
 # Search for 'DockM8' in parent directories
-tests_path = next(
-    (p / "tests"
-     for p in Path(__file__).resolve().parents
-     if (p / "tests").is_dir()),
-    None,
-)
+tests_path = next((p / "tests"
+                   for p in Path(__file__).resolve().parents
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -40,13 +37,15 @@ def test_chemplp_rescoring(test_data):
     rescoring_folder = w_dir / f"rescoring_{clustered_sdf.stem}"
 
     # Call the function
-    result = chemplp_rescoring(clustered_sdf,
-                               n_cpus,
-                               column_name,
-                               rescoring_folder=rescoring_folder,
-                               software=software,
-                               protein_file=protein_file,
-                               pocket_definition=pocket_definition)
+    result = chemplp_rescoring(
+        clustered_sdf,
+        n_cpus,
+        column_name,
+        rescoring_folder=rescoring_folder,
+        software=software,
+        protein_file=protein_file,
+        pocket_definition=pocket_definition,
+    )
 
     # Assert the result
     assert isinstance(result, DataFrame)

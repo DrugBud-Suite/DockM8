@@ -10,18 +10,13 @@ import pandas as pd
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    delete_files,
-    parallel_executor,
-    printlog,
-    split_sdf_str,
-)
+from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -58,8 +53,7 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     split_files_sdfs = [
         Path(split_files_folder) / f
         for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")
-    ]
+        if f.endswith(".sdf")]
 
     global LinF9_rescoring_splitted
 
@@ -79,12 +73,10 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
             printlog(f"LinF9 rescoring failed: {e}")
         return
 
-    parallel_executor(
-        LinF9_rescoring_splitted,
-        split_files_sdfs,
-        n_cpus,
-        protein_file=protein_file,
-    )
+    parallel_executor(LinF9_rescoring_splitted,
+                      split_files_sdfs,
+                      n_cpus,
+                      protein_file=protein_file)
 
     try:
         LinF9_dataframes = [
@@ -96,8 +88,7 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
                 embedProps=False,
             )
             for file in os.listdir(rescoring_folder / "LinF9_rescoring")
-            if file.startswith("split") and file.endswith("_LinF9.sdf")
-        ]
+            if file.startswith("split") and file.endswith("_LinF9.sdf")]
     except Exception as e:
         printlog("ERROR: Failed to Load LinF9 rescoring SDF file!")
         printlog(e)

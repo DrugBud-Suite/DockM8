@@ -9,9 +9,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -61,13 +61,10 @@ def plants_docking(
 
     # Generate PLANTS config file
     plants_docking_config_path = plants_folder / f"{split_file.stem}.config"
-    plants_config = generate_plants_config(
-        plants_protein_mol2,
-        plants_ligands_mol2,
-        pocket_definition,
-        n_poses,
-        results_dir,
-    )
+    plants_config = generate_plants_config(plants_protein_mol2,
+                                           plants_ligands_mol2,
+                                           pocket_definition, n_poses,
+                                           results_dir)
     with plants_docking_config_path.open("w") as config_writer:
         config_writer.writelines(plants_config)
 
@@ -75,12 +72,10 @@ def plants_docking(
     try:
         plants_docking_command = f'{software / "PLANTS"} --mode screen ' + str(
             plants_docking_config_path)
-        subprocess.call(
-            plants_docking_command,
-            shell=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
+        subprocess.call(plants_docking_command,
+                        shell=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.STDOUT)
     except Exception as e:
         printlog("ERROR: PLANTS docking command failed...")
         printlog(e)
@@ -96,13 +91,9 @@ def plants_docking(
     return
 
 
-def generate_plants_config(
-    protein_mol2: Path,
-    ligands_mol2: Path,
-    pocket_definition: dict,
-    n_poses: int,
-    output_dir: Path,
-):
+def generate_plants_config(protein_mol2: Path, ligands_mol2: Path,
+                           pocket_definition: dict, n_poses: int,
+                           output_dir: Path):
     """
     Helper function to generate PLANTS configuration.
 
@@ -153,8 +144,7 @@ def generate_plants_config(
         "write_protein_conformations 0\n",
         "write_protein_splitted 0\n",
         "write_merged_protein 0\n",
-        "####\n",
-    ]
+        "####\n",]
     return config_lines
 
 
@@ -187,15 +177,14 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path,
                         plants_poses = PandasTools.LoadSDF(
                             str(file_path.with_suffix(".sdf")),
                             idName="ID",
-                            molColName="Molecule",
-                        )
+                            molColName="Molecule")
                         plants_scores = pd.read_csv(
                             str(file_path).replace(
                                 "docked_ligands.mol2",
                                 "ranking.csv")).rename(columns={
                                     "LIGAND_ENTRY": "ID",
-                                    "TOTAL_SCORE": "CHEMPLP"
-                                })[["ID", "CHEMPLP"]]
+                                    "TOTAL_SCORE": "CHEMPLP"})[[
+                                        "ID", "CHEMPLP"]]
                         plants_df = pd.merge(plants_scores,
                                              plants_poses,
                                              on="ID")
@@ -203,12 +192,9 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path,
                         list_ = [*range(1, int(n_poses) + 1, 1)]
                         ser = list_ * (len(plants_df) // len(list_))
                         plants_df["Pose ID"] = [
-                            f'{row["ID"]}_PLANTS_{num}'
-                            for num, (_, row) in zip(
-                                ser + list_[:len(plants_df) - len(ser)],
-                                plants_df.iterrows(),
-                            )
-                        ]
+                            f'{row["ID"]}_PLANTS_{num}' for num, (_, row) in
+                            zip(ser + list_[:len(plants_df) -
+                                            len(ser)], plants_df.iterrows())]
                         plants_dataframes.append(plants_df)
                     except Exception as e:
                         printlog(

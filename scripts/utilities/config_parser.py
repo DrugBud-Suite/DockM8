@@ -7,9 +7,9 @@ from pathlib import Path
 import yaml
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -75,8 +75,8 @@ def check_config(config):
     n_cpus = general_config.get("n_cpus", 0)
     try:
         # Attempt to convert n_cpus to an integer and use a fallback if it's set to 0
-        config["general"]["n_cpus"] = (int(n_cpus) if int(n_cpus) != 0 else int(
-            os.cpu_count() * 0.9))
+        config["general"]["n_cpus"] = int(n_cpus) if int(n_cpus) != 0 else int(
+            os.cpu_count() * 0.9)
     except ValueError:
         raise DockM8Error(
             f"DockM8 configuration error: Invalid n_cpus value ({n_cpus}) specified in the configuration file. It must be a valid integer."
@@ -118,8 +118,9 @@ def check_config(config):
                 pose_selection_methods = len(
                     config.get("pose_selection", {}).get("methods", []))
                 docking_methods = len(config.get("docking", []))
-                possibilities = (math.factorial(len(rescoring_config)) *
-                                 pose_selection_methods * docking_methods * 7)
+                possibilities = math.factorial(
+                    len(rescoring_config
+                       )) * pose_selection_methods * docking_methods * 7
                 DockM8Warning(
                     f"At least {possibilities} possible combinations will be tried for optimization, this may take a while."
                 )
@@ -180,8 +181,7 @@ def check_config(config):
         "fix_missing_residues",
         "remove_heteroatoms",
         "remove_water",
-        "protonation",
-    ]
+        "protonation",]
 
     # Check each condition for boolean type
     for condition in conditions:
@@ -266,8 +266,7 @@ def check_config(config):
             )
             reference_ligands = reference_ligands[:1]
         config["pocket_detection"]["reference_ligand(s)"] = [
-            Path(reference_ligand) for reference_ligand in reference_ligands
-        ]
+            Path(reference_ligand) for reference_ligand in reference_ligands]
     # Validate radius for the "Reference" method
     if method == "Reference":
         radius = pocket_detection.get("radius")
@@ -285,7 +284,8 @@ def check_config(config):
             )
         if not re.match(
                 r"center:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?\*size:-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?",
-                manual_pocket):
+                manual_pocket,
+        ):
             raise DockM8Error(
                 "DockM8 configuration error: Invalid manual pocket definition format. Format should be 'center:x,y,z*size:x,y,z' where x, y, and z are numbers."
             )
@@ -347,13 +347,9 @@ def check_config(config):
     docking_programs = config.get("docking", {}).get("docking_programs", [])
 
     valid_methods = (list(CLUSTERING_METRICS.keys()) + [
-        "bestpose",
-        "bestpose_GNINA",
-        "bestpose_SMINA",
-        "bestpose_PLANTS",
-        "bestpose_QVINA2",
-        "bestpose_QVINAW",
-    ] + list(RESCORING_FUNCTIONS.keys()))
+        "bestpose", "bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS",
+        "bestpose_QVINA2", "bestpose_QVINAW"] +
+                     list(RESCORING_FUNCTIONS.keys()))
 
     # Validate each method in pose selection
     for method in methods:
@@ -388,8 +384,8 @@ def check_config(config):
         )
 
     # Check if clustering metrics are used without a specified clustering method
-    if (any(method in CLUSTERING_METRICS for method in methods) and
-            not clustering_method):
+    if any(method in CLUSTERING_METRICS
+           for method in methods) and not clustering_method:
         DockM8Warning(
             "DockM8 configuration warning: 'clustering_method' is not set for clustering metrics, defaulting to 'KMedoids'."
         )

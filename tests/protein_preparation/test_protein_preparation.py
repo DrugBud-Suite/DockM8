@@ -4,9 +4,9 @@ import os
 import sys
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests'
+tests_path = next((p / "tests"
                    for p in Path(__file__).resolve().parents
-                   if (p / 'tests').is_dir()), None)
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -20,8 +20,8 @@ def common_test_data():
     dockm8_path = next((p / "tests"
                         for p in Path(__file__).resolve().parents
                         if (p / "tests").is_dir()), None).parent
-    input_pdb_file = dockm8_path / 'tests/test_files/protein_preparation/1fvv_p.pdb'
-    output_dir = dockm8_path / 'tests/test_files/protein_preparation'
+    input_pdb_file = dockm8_path / "tests/test_files/protein_preparation/1fvv_p.pdb"
+    output_dir = dockm8_path / "tests/test_files/protein_preparation"
     return input_pdb_file, output_dir
 
 

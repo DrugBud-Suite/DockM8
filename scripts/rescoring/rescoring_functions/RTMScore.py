@@ -10,18 +10,13 @@ import pandas as pd
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    delete_files,
-    parallel_executor,
-    printlog,
-    split_sdf_str,
-)
+from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -117,8 +112,7 @@ def RTMScore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     split_files_sdfs = [
         split_files_folder / f
         for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")
-    ]
+        if f.endswith(".sdf")]
 
     (rescoring_folder / f"{column_name}_rescoring").mkdir(parents=True,
                                                           exist_ok=True)
@@ -149,8 +143,7 @@ def RTMScore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
                 df = pd.read_csv(rescoring_folder / "RTMScore_rescoring" / file)
                 df = df.rename(columns={
                     "id": "Pose ID",
-                    "score": f"{column_name}"
-                })
+                    "score": f"{column_name}"})
                 df["Pose ID"] = df["Pose ID"].str.rsplit("-", n=1).str[0]
                 score_dfs.append(df)
         RTMScore_rescoring_results = pd.concat(score_dfs)
@@ -202,8 +195,7 @@ def RTMScore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
     split_files_sdfs = [
         split_files_folder / f
         for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")
-    ]
+        if f.endswith(".sdf")]
 
     (rescoring_folder / f"{column_name}_rescoring").mkdir(parents=True,
                                                           exist_ok=True)
@@ -230,8 +222,7 @@ def RTMScore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
                 df = pd.read_csv(rescoring_folder / "RTMScore_rescoring" / file)
                 df = df.rename(columns={
                     "id": "Pose ID",
-                    "score": f"{column_name}"
-                })
+                    "score": f"{column_name}"})
                 df["Pose ID"] = df["Pose ID"].str.rsplit("-", n=1).str[0]
                 score_dfs.append(df)
         RTMScore_rescoring_results = pd.concat(score_dfs)

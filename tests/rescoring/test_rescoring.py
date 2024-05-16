@@ -7,12 +7,9 @@ import pandas as pd
 import pytest
 
 # Search for 'DockM8' in parent directories
-tests_path = next(
-    (p / "tests"
-     for p in Path(__file__).resolve().parents
-     if (p / "tests").is_dir()),
-    None,
-)
+tests_path = next((p / "tests"
+                   for p in Path(__file__).resolve().parents
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -32,8 +29,7 @@ def test_data():
     clustered_sdf = dockm8_path / "tests/test_files/rescoring/example_poses_1fvv.sdf"
     functions = [
         key for key in RESCORING_FUNCTIONS.keys()
-        if key not in ["AAScore", "PLECScore", "RFScoreVS"]
-    ]
+        if key not in ["AAScore", "PLECScore", "RFScoreVS"]]
     n_cpus = int(os.cpu_count() * 0.9)
     return w_dir, protein_file, software, clustered_sdf, functions, n_cpus
 
@@ -63,7 +59,6 @@ def test_rescore_poses(test_data):
 
     # Check if columns in the combined CSV match the expected format
     expected_columns = ["Pose ID"] + [
-        RESCORING_FUNCTIONS[func]['column_name'] for func in functions
-    ]
+        RESCORING_FUNCTIONS[func]["column_name"] for func in functions]
     assert all(column in combined_scores.columns for column in expected_columns
               ), "Missing expected columns in all poses rescored output"

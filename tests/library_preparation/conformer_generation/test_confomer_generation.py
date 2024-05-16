@@ -5,16 +5,14 @@ import pytest
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests'
+tests_path = next((p / "tests"
                    for p in Path(__file__).resolve().parents
-                   if (p / 'tests').is_dir()), None)
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.library_preparation.conformer_generation.confgen_GypsumDL import (
-    generate_conformers_GypsumDL,)
-from scripts.library_preparation.conformer_generation.confgen_RDKit import (
-    generate_conformers_RDKit,)
+from scripts.library_preparation.conformer_generation.confgen_GypsumDL import generate_conformers_GypsumDL
+from scripts.library_preparation.conformer_generation.confgen_RDKit import generate_conformers_RDKit
 
 
 @pytest.fixture
@@ -38,8 +36,7 @@ def cleanup(request):
         for file in output_dir.iterdir():
             if file.name in [
                     "final_library.sdf", "protonated_library.sdf",
-                    "standardized_library.sdf"
-            ]:
+                    "standardized_library.sdf"]:
                 file.unlink()
 
     request.addfinalizer(remove_created_files)

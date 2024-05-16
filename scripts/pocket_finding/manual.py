@@ -19,11 +19,11 @@ def parse_pocket_coordinates(pocket_arg):
 
     """
     try:
-        pocket_str = pocket_arg.split('*')
+        pocket_str = pocket_arg.split("*")
         pocket_coordinates = {}
         for item in pocket_str:
-            key, value = item.split(':')
-            pocket_coordinates[key] = list(map(float, value.split(',')))
+            key, value = item.split(":")
+            pocket_coordinates[key] = list(map(float, value.split(",")))
     except Exception as e:
         print(
             f"Error parsing pocket coordinates: {e}. Make sure the pocket coordinates are in the format 'center:1,2,3*size:1,2,3'"

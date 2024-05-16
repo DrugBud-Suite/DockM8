@@ -11,9 +11,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -65,10 +65,7 @@ def qvinaw_docking(
 
     protein_file_pdbqt = convert_molecules(
         str(protein_file),
-        str(protein_file).replace(".pdb", ".pdbqt"),
-        "pdb",
-        "pdbqt",
-    )
+        str(protein_file).replace(".pdb", ".pdbqt"), "pdb", "pdbqt")
 
     # Dock each ligand using QVINAW
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
@@ -114,8 +111,7 @@ def qvinaw_docking(
                 "Pose ID": pose_file.stem,
                 "Molecule": rdkit_mol[0],
                 "QVINAW_Affinity": affinity,
-                "ID": pose_file.stem.split("_")[0],
-            }
+                "ID": pose_file.stem.split("_")[0],}
         PandasTools.WriteSDF(
             qvinaw_poses,
             str(qvinaw_docking_results),
@@ -150,14 +146,11 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
             qvinaw_dataframes = []
             for file in tqdm(os.listdir(w_dir / "qvinaw"),
                              desc="Loading QVINAW poses"):
-                if (file.startswith("split") or
-                        file.startswith("final_library") and
-                        file.endswith(".sdf")):
-                    df = PandasTools.LoadSDF(
-                        str(w_dir / "qvinaw" / file),
-                        idName="Pose ID",
-                        molColName="Molecule",
-                    )
+                if file.startswith("split") or file.startswith(
+                        "final_library") and file.endswith(".sdf"):
+                    df = PandasTools.LoadSDF(str(w_dir / "qvinaw" / file),
+                                             idName="Pose ID",
+                                             molColName="Molecule")
                     qvinaw_dataframes.append(df)
             qvinaw_df = pd.concat(qvinaw_dataframes)
             qvinaw_df["ID"] = qvinaw_df["Pose ID"].apply(

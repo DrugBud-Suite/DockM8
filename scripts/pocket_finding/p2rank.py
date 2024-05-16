@@ -9,9 +9,9 @@ import pandas as pd
 import requests
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -60,12 +60,9 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
         subprocess.run(["tar", "-xzf", tarball_path, "-C", software])
         os.unlink(tarball_path)
         # Find the folder in the software directory that starts with "p2rank"
-        p2rank_folder = next(
-            (software / folder
-             for folder in os.listdir(software)
-             if folder.startswith("p2rank")),
-            None,
-        )
+        p2rank_folder = next((software / folder
+                              for folder in os.listdir(software)
+                              if folder.startswith("p2rank")), None)
         os.rename(p2rank_folder, software / "p2rank")
 
         printlog("p2rank executable downloaded and installed successfully.")
@@ -76,9 +73,7 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
     os.makedirs(output_dir, exist_ok=True)
 
     # Run p2rank with the receptor and output directory
-    p2rank_command = (
-        f'{software / "p2rank" / "prank"} predict -f {receptor} -o {output_dir}'
-    )
+    p2rank_command = f'{software / "p2rank" / "prank"} predict -f {receptor} -o {output_dir}'
     subprocess.run(p2rank_command,
                    shell=True,
                    stdout=subprocess.DEVNULL,
@@ -88,14 +83,13 @@ def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
     predictions_file = output_dir / f"{receptor.name}_predictions.csv"
     df = pd.read_csv(predictions_file)
     # Rename columns to remove spaces
-    df.columns = df.columns.str.replace(' ', '')
+    df.columns = df.columns.str.replace(" ", "")
 
     pocket_coordinates = {
         "center": [df["center_x"][0], df["center_y"][0], df["center_z"][0]],
         "size": [float(radius) * 2,
                  float(radius) * 2,
-                 float(radius) * 2]
-    }
+                 float(radius) * 2],}
     # Remove the output directory
     shutil.rmtree(output_dir)
     return pocket_coordinates

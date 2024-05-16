@@ -7,12 +7,9 @@ from pandas import DataFrame
 import pytest
 
 # Search for 'DockM8' in parent directories
-tests_path = next(
-    (p / "tests"
-     for p in Path(__file__).resolve().parents
-     if (p / "tests").is_dir()),
-    None,
-)
+tests_path = next((p / "tests"
+                   for p in Path(__file__).resolve().parents
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -21,16 +18,11 @@ from scripts.rescoring.rescoring_functions.gnina import gnina_rescoring
 
 @pytest.fixture
 def test_data():
-    dockm8_path = next(
-        (p / "tests"
-         for p in Path(__file__).resolve().parents
-         if (p / "tests").is_dir()),
-        None,
-    ).parent
+    dockm8_path = next((p / "tests"
+                        for p in Path(__file__).resolve().parents
+                        if (p / "tests").is_dir()), None).parent
     w_dir = dockm8_path / "tests/test_files/rescoring"
-    protein_file = (
-        dockm8_path /
-        "tests/test_files/rescoring/example_prepared_receptor_1fvv.pdb")
+    protein_file = dockm8_path / "tests/test_files/rescoring/example_prepared_receptor_1fvv.pdb"
     software = dockm8_path / "software"
     clustered_sdf = dockm8_path / "tests/test_files/rescoring/example_poses_1fvv.sdf"
     n_cpus = int(os.cpu_count() * 0.9)

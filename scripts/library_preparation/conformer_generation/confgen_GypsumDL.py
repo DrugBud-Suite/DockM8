@@ -12,9 +12,9 @@ from rdkit import Chem
 from rdkit.Chem import PandasTools, AllChem
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -50,8 +50,7 @@ def generate_conformers_GypsumDL(input_sdf: Path,
     split_files_sdfs = [
         split_files_folder / f
         for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")
-    ]
+        if f.endswith(".sdf")]
 
     global gypsum_dl_run
 
@@ -84,24 +83,21 @@ def generate_conformers_GypsumDL(input_sdf: Path,
         return
 
     # Running GypsumDL in parallel)
-    parallel_executor(
-        gypsum_dl_run,
-        split_files_sdfs,
-        3,
-        output_dir=output_dir,
-        cpus=math.ceil(n_cpus // 3),
-    )
+    parallel_executor(gypsum_dl_run,
+                      split_files_sdfs,
+                      3,
+                      output_dir=output_dir,
+                      cpus=math.ceil(n_cpus // 3))
 
     results_dfs = []
 
     # Loading generated conformers from output directory
     for file in os.listdir(output_dir / "GypsumDL_results"):
         if file.endswith(".sdf"):
-            sdf_df = PandasTools.LoadSDF(
-                str(output_dir / "GypsumDL_results" / file),
-                molColName="Molecule",
-                idName="ID",
-            )
+            sdf_df = PandasTools.LoadSDF(str(output_dir / "GypsumDL_results" /
+                                             file),
+                                         molColName="Molecule",
+                                         idName="ID")
             results_dfs.append(sdf_df)
 
     combined_df = pd.concat(results_dfs)
@@ -115,16 +111,14 @@ def generate_conformers_GypsumDL(input_sdf: Path,
 
     # Check if the number of compounds matches the input
     input_mols = [
-        mol for mol in Chem.SDMolSupplier(str(input_sdf)) if mol is not None
-    ]
+        mol for mol in Chem.SDMolSupplier(str(input_sdf)) if mol is not None]
     if len(input_mols) != len(final_df):
         printlog(
             "Conformer generation for some compounds failed. Attempting to generate missing conformers using RDKit..."
         )
 
         input_ids = {
-            mol.GetProp("_Name") for mol in input_mols if mol.HasProp("_Name")
-        }
+            mol.GetProp("_Name") for mol in input_mols if mol.HasProp("_Name")}
         final_ids = set(final_df["ID"])
         missing_ids = input_ids - final_ids
 
@@ -137,8 +131,7 @@ def generate_conformers_GypsumDL(input_sdf: Path,
                     final_df = final_df.append(
                         {
                             "Molecule": mol,
-                            "ID": mol.GetProp("_Name")
-                        },
+                            "ID": mol.GetProp("_Name")},
                         ignore_index=True)
                 except Exception as e:
                     printlog(
@@ -152,12 +145,10 @@ def generate_conformers_GypsumDL(input_sdf: Path,
     output_file = output_dir / "generated_conformers.sdf"
 
     # Writing final conformers to output file
-    PandasTools.WriteSDF(
-        final_df,
-        str(output_file),
-        molColName="Molecule",
-        idName="ID",
-    )
+    PandasTools.WriteSDF(final_df,
+                         str(output_file),
+                         molColName="Molecule",
+                         idName="ID")
 
     # Cleaning up temporary directories and files
     shutil.rmtree(output_dir / "GypsumDL_results")

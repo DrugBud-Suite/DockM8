@@ -9,9 +9,9 @@ import pandas as pd
 from yaml import safe_load
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -35,7 +35,7 @@ def process_chunk(data_chunk, config_path, protein_file):
         [data_chunk.reset_index(drop=True),
          busted_df.reset_index(drop=True)],
         axis=1)
-    combined_df = combined_df.rename(columns={'mol_pred': 'Molecule'})
+    combined_df = combined_df.rename(columns={"mol_pred": "Molecule"})
     cols_to_check = [
         "all_atoms_connected",
         "bond_lengths",
@@ -43,8 +43,7 @@ def process_chunk(data_chunk, config_path, protein_file):
         "internal_steric_clash",
         "aromatic_ring_flatness",
         "double_bond_flatness",
-        "protein-ligand_maximum_distance",
-    ]
+        "protein-ligand_maximum_distance",]
 
     # Filter rows based on conditions, but keep all columns
     valid_indices = combined_df[cols_to_check].all(axis=1)
@@ -58,9 +57,9 @@ def pose_buster(dataframe: pd.DataFrame,
                 n_cpus: int = os.cpu_count()):
     tic = time.perf_counter()
     printlog("Busting poses...")
-    config_path = (
-        str(dockm8_path) +
-        "/scripts/docking_postprocessing/posebusters/posebusters_config.yml")
+    config_path = str(
+        dockm8_path
+    ) + "/scripts/docking_postprocessing/posebusters/posebusters_config.yml"
 
     # Splitting DataFrame into chunks for parallel processing
     chunks = np.array_split(dataframe, len(dataframe))
@@ -68,8 +67,7 @@ def pose_buster(dataframe: pd.DataFrame,
     with ProcessPoolExecutor(max_workers=n_cpus) as executor:
         futures = [
             executor.submit(process_chunk, chunk, config_path, protein_file)
-            for chunk in chunks
-        ]
+            for chunk in chunks]
         for future in futures:
             results.append(future.result())
     # Concatenate all processed chunks

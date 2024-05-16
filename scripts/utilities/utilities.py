@@ -20,12 +20,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next(
-    (p / "scripts"
-     for p in Path(__file__).resolve().parents
-     if (p / "scripts").is_dir()),
-    None,
-)
+scripts_path = next((p / "scripts"
+                     for p in Path(__file__).resolve().parents
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -50,12 +47,10 @@ def split_sdf(dir, sdf_file, n_cpus):
     split_files_folder.mkdir(parents=True, exist_ok=True)
     for file in split_files_folder.iterdir():
         file.unlink()
-    df = PandasTools.LoadSDF(
-        str(sdf_file),
-        molColName="Molecule",
-        idName="ID",
-        includeFingerprints=False,
-    )
+    df = PandasTools.LoadSDF(str(sdf_file),
+                             molColName="Molecule",
+                             idName="ID",
+                             includeFingerprints=False)
     compounds_per_core = math.ceil(len(df["ID"]) / (n_cpus * 2))
     used_ids = set()  # keep track of used 'ID' values
     file_counter = 1
@@ -130,12 +125,10 @@ def split_sdf_single(dir, sdf_file):
     split_files_folder.mkdir(exist_ok=True)
     for file in split_files_folder.iterdir():
         file.unlink()
-    df = PandasTools.LoadSDF(
-        str(sdf_file),
-        molColName="Molecule",
-        idName="ID",
-        includeFingerprints=False,
-    )
+    df = PandasTools.LoadSDF(str(sdf_file),
+                             molColName="Molecule",
+                             idName="ID",
+                             includeFingerprints=False)
     for i, row in tqdm(df.iterrows(), total=len(df), desc="Splitting SDF file"):
         # Extract compound information from the row
         compound = row["Molecule"]
@@ -143,8 +136,7 @@ def split_sdf_single(dir, sdf_file):
         # Create a new DataFrame with a single compound
         compound_df = pd.DataFrame({
             "Molecule": [compound],
-            "ID": [compound_id]
-        })
+            "ID": [compound_id]})
         # Output file path
         output_file = split_files_folder / f"split_{i + 1}.sdf"
         # Write the single compound DataFrame to an SDF file
@@ -300,13 +292,10 @@ def convert_molecules(input_file: Path, output_file: Path, input_format: str,
                                                       "torsions",
                                                       "Active",
                                                       "ENDROOT",
-                                                      "ROOT",
-                                                  ])
-                ]
+                                                      "ROOT",])]
                 lines = [
                     line.replace(line, "TER\n")
-                    if line.startswith("TORSDOF") else line for line in lines
-                ]
+                    if line.startswith("TORSDOF") else line for line in lines]
                 with open(output_file, "w") as file:
                     file.writelines(lines)
         except Exception as e:
@@ -403,13 +392,11 @@ def delete_files(folder_path: str, save_file: str) -> None:
                 item.rmdir()
 
 
-def parallel_executor(
-    function,
-    list_of_objects: list,
-    n_cpus: int,
-    job_manager="concurrent_process",
-    **kwargs,
-):
+def parallel_executor(function,
+                      list_of_objects: list,
+                      n_cpus: int,
+                      job_manager="concurrent_process",
+                      **kwargs):
     """
     Executes a function in parallel using multiple processes.
 
@@ -427,41 +414,33 @@ def parallel_executor(
                 max_workers=n_cpus) as executor:
             jobs = [
                 executor.submit(function, obj, **kwargs)
-                for obj in list_of_objects
-            ]
+                for obj in list_of_objects]
             results = [
-                job.result() for job in tqdm(
-                    concurrent.futures.as_completed(jobs),
-                    total=len(list_of_objects),
-                    desc=f"Running {function}",
-                )
-            ]
+                job.result()
+                for job in tqdm(concurrent.futures.as_completed(jobs),
+                                total=len(list_of_objects),
+                                desc=f"Running {function}")]
 
     if job_manager == "concurrent_process_silent":
         with concurrent.futures.ProcessPoolExecutor(
                 max_workers=n_cpus) as executor:
             jobs = [
                 executor.submit(function, obj, **kwargs)
-                for obj in list_of_objects
-            ]
+                for obj in list_of_objects]
             results = [
-                job.result() for job in concurrent.futures.as_completed(jobs)
-            ]
+                job.result() for job in concurrent.futures.as_completed(jobs)]
 
     if job_manager == "concurrent_thread":
         with concurrent.futures.ThreadPoolExecutor(
                 max_workers=n_cpus) as executor:
             jobs = [
                 executor.submit(function, obj, **kwargs)
-                for obj in list_of_objects
-            ]
+                for obj in list_of_objects]
             results = [
-                job.result() for job in tqdm(
-                    concurrent.futures.as_completed(jobs),
-                    total=len(list_of_objects),
-                    desc=f"Running {function}",
-                )
-            ]
+                job.result()
+                for job in tqdm(concurrent.futures.as_completed(jobs),
+                                total=len(list_of_objects),
+                                desc=f"Running {function}")]
 
     if job_manager == "joblib":
         jobs = [delayed(function)(obj, **kwargs) for obj in list_of_objects]
@@ -474,16 +453,14 @@ def parallel_executor(
         with pebble.ProcessPool(max_workers=n_cpus) as executor:
             jobs = [
                 executor.schedule(function, args=(obj,), kwargs=kwargs)
-                for obj in list_of_objects
-            ]
+                for obj in list_of_objects]
             results = [job.result() for job in jobs]
 
     if job_manager == "pebble_thread":
         with pebble.ThreadPool(max_workers=n_cpus) as executor:
             jobs = [
                 executor.schedule(function, args=(obj,), kwargs=kwargs)
-                for obj in list_of_objects
-            ]
+                for obj in list_of_objects]
             results = [job.result() for job in jobs]
     return results
 
@@ -523,11 +500,9 @@ def parallel_SDF_loader(sdf_path: Path,
     try:
         # Load the molecules from the SDF file
         mols = [
-            m for m in Chem.MultithreadedSDMolSupplier(
-                sdf_path,
-                numWriterThreads=n_cpus,
-            ) if m is not None
-        ]
+            m for m in Chem.MultithreadedSDMolSupplier(sdf_path,
+                                                       numWriterThreads=n_cpus)
+            if m is not None]
         data = []
         # Iterate over each molecule
         for mol in mols:

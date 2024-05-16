@@ -8,9 +8,9 @@ pd.options.mode.chained_assignment = None
 import warnings
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -18,7 +18,7 @@ from scripts.utilities.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
 def extract_pocket(pocket_definition, protein_file: Path):
@@ -42,25 +42,25 @@ def extract_pocket(pocket_definition, protein_file: Path):
                 "size": [size_x, size_y, size_z]
             }
     """
-    center_x, center_y, center_z = pocket_definition['center']
-    size_x, size_y, size_z = pocket_definition['size']
+    center_x, center_y, center_z = pocket_definition["center"]
+    size_x, size_y, size_z = pocket_definition["size"]
     radius = size_x  # Assuming the size is twice the radius
 
     print(
-        f'Extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}'
+        f"Extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}"
     )
 
-    output_file = protein_file.with_name(protein_file.stem + '_pocket.pdb')
+    output_file = protein_file.with_name(protein_file.stem + "_pocket.pdb")
 
     if not output_file.exists():
-        process_protein(protein_file, pocket_definition['center'], radius,
+        process_protein(protein_file, pocket_definition["center"], radius,
                         output_file)
         print(
-            f'Finished extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}'
+            f"Finished extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}"
         )
     else:
         printlog(
-            f'Pocket already extracted from {protein_file.stem} using provided pocket definition: {pocket_definition}'
+            f"Pocket already extracted from {protein_file.stem} using provided pocket definition: {pocket_definition}"
         )
 
     return output_file
@@ -80,14 +80,14 @@ def process_protein(protein_file, center_coordinates, cutoff, output_file):
     # Read the protein file using PandasPdb
     ppdb = PandasPdb()
     ppdb.read_pdb(str(protein_file))
-    protein_dataframe = ppdb.df['ATOM']
+    protein_dataframe = ppdb.df["ATOM"]
     # Select residues within the cutoff distance from the center coordinates
     protein_cut = select_cutoff_residues(protein_dataframe, center_coordinates,
                                          cutoff)
     # Update the protein dataframe with the selected residues
-    ppdb.df['ATOM'] = protein_cut
+    ppdb.df["ATOM"] = protein_cut
     # Save the updated protein dataframe as a pocket file
-    ppdb.to_pdb(path=output_file, records=['ATOM'])
+    ppdb.to_pdb(path=output_file, records=["ATOM"])
 
 
 def select_cutoff_residues(protein_dataframe, center_coordinates, cutoff):
@@ -104,13 +104,14 @@ def select_cutoff_residues(protein_dataframe, center_coordinates, cutoff):
     """
     center_x, center_y, center_z = center_coordinates
     # Calculate the distance from each residue to the center coordinates
-    protein_dataframe['distance'] = protein_dataframe.apply(
+    protein_dataframe["distance"] = protein_dataframe.apply(
         lambda row: calculate_distance([
-            row['x_coord'], row['y_coord'], row['z_coord']
-        ], [center_x, center_y, center_z]),
-        axis=1)
+            row["x_coord"], row["y_coord"], row["z_coord"]], [
+                center_x, center_y, center_z]),
+        axis=1,
+    )
     # Select residues within the cutoff distance
-    residues_within_cutoff = protein_dataframe[protein_dataframe['distance'] <
+    residues_within_cutoff = protein_dataframe[protein_dataframe["distance"] <
                                                cutoff]
     return residues_within_cutoff
 

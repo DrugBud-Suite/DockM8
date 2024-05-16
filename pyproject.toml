@@ -50,13 +50,13 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.format]
 # Style for string quotes.
-quote-style = "single"
+quote-style = "double"
 
 # Style for indentation.
 indent-style = "space"
 
 # Option to skip adding a trailing comma automatically.
-skip-magic-trailing-comma = false
+skip-magic-trailing-comma = true
 
 # Option to automatically detect the appropriate line ending (LF/CRLF).
 line-ending = "auto"
@@ -125,3 +125,4 @@ cache_dir = ".pytest_cache"
 [tool.yapf]
 # Base style for yapf formatting.
 based_on_style = "google"
+split_before_closing_bracket = false

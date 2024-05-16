@@ -10,18 +10,13 @@ import pandas as pd
 from pandas import DataFrame
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import (
-    delete_files,
-    parallel_executor,
-    printlog,
-    split_sdf_str,
-)
+from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -70,14 +65,15 @@ def AAScore_rescoring(sdf: str, n_cpus: int, column_name: str,
         split_files_sdfs = [
             Path(split_files_folder) / f
             for f in os.listdir(split_files_folder)
-            if f.endswith(".sdf")
-        ]
+            if f.endswith(".sdf")]
         global AAScore_rescoring_splitted
 
         def AAScore_rescoring_splitted(split_file):
             AAScore_folder = rescoring_folder / "AAScore_rescoring"
             results = AAScore_folder / f"{split_file.stem}_AAScore.csv"
-            AAScore_cmd = f"python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {split_file} --Out {results}"
+            AAScore_cmd = (
+                f"python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {split_file} --Out {results}"
+            )
             try:
                 subprocess.call(AAScore_cmd,
                                 shell=True,
@@ -97,8 +93,7 @@ def AAScore_rescoring(sdf: str, n_cpus: int, column_name: str,
                     names=["Pose ID", column_name],
                 )
                 for file in os.listdir(rescoring_folder / "AAScore_rescoring")
-                if file.startswith("split") and file.endswith(".csv")
-            ]
+                if file.startswith("split") and file.endswith(".csv")]
         except Exception as e:
             printlog("ERROR: Failed to Load AAScore rescoring SDF file!")
             printlog(e)

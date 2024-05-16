@@ -9,9 +9,9 @@ import time
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -80,14 +80,16 @@ def dockm8(
     # Prepare the ligands for docking (e.g., adding hydrogens, generating conformers)
 
     if not (w_dir / "final_library.sdf").exists():
-        prepare_library(input_sdf=docking_library,
-                        output_dir=w_dir,
-                        id_column="ID",
-                        protonation=ligand_preparation["protonation"],
-                        conformers=ligand_preparation["conformers"],
-                        software=software,
-                        n_cpus=n_cpus,
-                        n_conformers=ligand_preparation["n_conformers"])
+        prepare_library(
+            input_sdf=docking_library,
+            output_dir=w_dir,
+            id_column="ID",
+            protonation=ligand_preparation["protonation"],
+            conformers=ligand_preparation["conformers"],
+            software=software,
+            n_cpus=n_cpus,
+            n_conformers=ligand_preparation["n_conformers"],
+        )
 
     # Determine the docking pocket
     pocket_definition = pocket_finder(
@@ -113,31 +115,28 @@ def dockm8(
         )
 
         # Concatenate all poses into a single file
-        concat_all_poses(
-            w_dir=w_dir,
-            docking_programs=docking["docking_programs"],
-            protein_file=prepared_receptor,
-            n_cpus=n_cpus,
-        )
+        concat_all_poses(w_dir=w_dir,
+                         docking_programs=docking["docking_programs"],
+                         protein_file=prepared_receptor,
+                         n_cpus=n_cpus)
 
     processed_poses = docking_postprocessing(
         input_sdf=w_dir / "allposes.sdf",
         output_path=w_dir / "allposes_processed.sdf",
         protein_file=prepared_receptor,
-        bust_poses=post_docking['bust_poses'],
-        strain_cutoff=post_docking['strain_cutoff'],
-        clash_cutoff=post_docking['clash_cutoff'],
-        n_cpus=n_cpus)
+        bust_poses=post_docking["bust_poses"],
+        strain_cutoff=post_docking["strain_cutoff"],
+        clash_cutoff=post_docking["clash_cutoff"],
+        n_cpus=n_cpus,
+    )
 
     # Load all poses from SDF file and perform clustering
     print("Loading all poses SDF file...")
     tic = time.perf_counter()
-    all_poses = PandasTools.LoadSDF(
-        str(processed_poses),
-        idName="Pose ID",
-        molColName="Molecule",
-        includeFingerprints=False,
-    )
+    all_poses = PandasTools.LoadSDF(str(processed_poses),
+                                    idName="Pose ID",
+                                    molColName="Molecule",
+                                    includeFingerprints=False)
     toc = time.perf_counter()
     print(f"Finished loading all poses SDF in {toc-tic:0.4f}!")
 
@@ -217,8 +216,8 @@ def run_dockm8(config):
                                                 decoy_library,
                                                 [10, 5, 2, 1, 0.5])
             # Determine optimal conditions
-            optimal_conditions = (performance.sort_values(
-                by="EF1", ascending=False).iloc[0].to_dict())
+            optimal_conditions = performance.sort_values(
+                by="EF1", ascending=False).iloc[0].to_dict()
             if optimal_conditions["clustering"] == "bestpose":
                 pass
             if "_" in optimal_conditions["clustering"]:
@@ -233,9 +232,7 @@ def run_dockm8(config):
             # Save optimal conditions to a file
             with open(
                     config["receptor(s)"][0].parent / "DeepCoy" /
-                    "optimal_conditions.txt",
-                    "w",
-            ) as file:
+                    "optimal_conditions.txt", "w") as file:
                 file.write(str(optimal_conditions))
             # Run DockM8 on the docking library using the optimal conditions
             printlog(
@@ -294,8 +291,8 @@ def run_dockm8(config):
                                                 decoy_library,
                                                 [10, 5, 2, 1, 0.5])
             # Determine optimal conditions
-            optimal_conditions = (performance.sort_values(
-                by="EF1", ascending=False).iloc[0].to_dict())
+            optimal_conditions = performance.sort_values(
+                by="EF1", ascending=False).iloc[0].to_dict()
             if optimal_conditions["clustering"] == "bestpose":
                 pass
             if "_" in optimal_conditions["clustering"]:
@@ -310,9 +307,7 @@ def run_dockm8(config):
             # Save optimal conditions to a file
             with open(
                     config["receptor(s)"][0].parent / "DeepCoy" /
-                    "optimal_conditions.txt",
-                    "w",
-            ) as file:
+                    "optimal_conditions.txt", "w") as file:
                 file.write(str(optimal_conditions))
             # Run DockM8 on the docking library using the optimal conditions
             printlog(

@@ -7,9 +7,9 @@ from rdkit.Chem import PandasTools
 from scripts.library_preparation.main import prepare_library
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / 'tests'
+tests_path = next((p / "tests"
                    for p in Path(__file__).resolve().parents
-                   if (p / 'tests').is_dir()), None)
+                   if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -37,8 +37,7 @@ def cleanup(request):
         for file in output_dir.iterdir():
             if file.name in [
                     "final_library.sdf", "protonated_library.sdf",
-                    "standardized_library.sdf"
-            ]:
+                    "standardized_library.sdf"]:
                 file.unlink()
 
     request.addfinalizer(remove_created_files)

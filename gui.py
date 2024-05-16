@@ -87,10 +87,8 @@ if mode == "Single":
     reference_value = CWD + "/tests/test_files/1fvv_l.sdf"
     library_value = CWD + "/tests/test_files/library.sdf"
 if mode == "Ensemble":
-    receptor_value = (CWD + "/tests/test_files/4kd1_p.pdb, " + CWD +
-                      "/tests/test_files/1fvv_p.pdb")
-    reference_value = (CWD + "/tests/test_files/4kd1_l.sdf, " + CWD +
-                       "/tests/test_files/1fvv_l.sdf")
+    receptor_value = CWD + "/tests/test_files/4kd1_p.pdb, " + CWD + "/tests/test_files/1fvv_p.pdb"
+    reference_value = CWD + "/tests/test_files/4kd1_l.sdf, " + CWD + "/tests/test_files/1fvv_l.sdf"
     library_value = CWD + "/tests/test_files/library.sdf"
 
 if gen_decoys:
@@ -162,12 +160,10 @@ protonation = st.toggle(
     "Choose whether or not to use Protoss Web service to protonate the protein structure",
 )
 if not protonation:
-    add_hydrogens = st.number_input(
-        label="Add hydrogens with PDB Fixer at pH",
-        min_value=0.0,
-        max_value=14.0,
-        value=7.0,
-    )
+    add_hydrogens = st.number_input(label="Add hydrogens with PDB Fixer at pH",
+                                    min_value=0.0,
+                                    max_value=14.0,
+                                    value=7.0)
 else:
     add_hydrogens = None
 
@@ -196,8 +192,7 @@ if pocket_mode in ("Reference", "RoG"):
         value=reference_value,
     )
     reference_files = [
-        Path(file.strip()) for file in reference_files.split(",")
-    ]
+        Path(file.strip()) for file in reference_files.split(",")]
     # Reference files validation
     for file in reference_files:
         if not Path(file).is_file():
@@ -221,21 +216,16 @@ elif pocket_mode == "Manual" and mode == "Single":
     x_size = col1.number_input(
         label="X Size",
         value=20.0,
-        help="Enter the size of the pocket in the X direction (in Angstroms)",
-    )
+        help="Enter the size of the pocket in the X direction (in Angstroms)")
     y_size = col2.number_input(
         label="Y Size",
         value=20.0,
-        help="Enter the size of the pocket in the Y direction (in Angstroms)",
-    )
+        help="Enter the size of the pocket in the Y direction (in Angstroms)")
     z_size = col3.number_input(
         label="Z Size",
         value=20.0,
-        help="Enter the size of the pocket in the Z direction (in Angstroms)",
-    )
-    manual_pocket = (
-        f"center:{x_center},{y_center},{z_center}*size:{x_size},{y_size},{z_size}"
-    )
+        help="Enter the size of the pocket in the Z direction (in Angstroms)")
+    manual_pocket = f"center:{x_center},{y_center},{z_center}*size:{x_size},{y_size},{z_size}"
     pocket_radius = reference_files = None
 elif pocket_mode == "Manual" and mode != "Single":
     st.error(
@@ -326,7 +316,8 @@ if clash_cutoff_toggle:
         min_value=0,
         max_value=100,
         value=5,
-        step=1)
+        step=1,
+    )
 else:
     clash_cutoff = None
 
@@ -341,7 +332,8 @@ if strain_cutoff_toggle:
         min_value=100,
         max_value=100000,
         value=5000,
-        step=100)
+        step=100,
+    )
 else:
     strain_cutoff = None
 
@@ -350,7 +342,8 @@ bust_poses = st.toggle(
     value=True,
     help=
     "Bust poses using PoseBusters : Will remove any poses with clashes, non-flat aromatic rings etc. WARNING may take a long time to run",
-    key="bust_poses_toggle")
+    key="bust_poses_toggle",
+)
 
 # Pose selection
 st.header("Pose Selection", divider="orange")
@@ -358,13 +351,9 @@ pose_selection = st.multiselect(
     label="Choose the pose selection method you want to use",
     default=["KORP-PL"],
     options=list(CLUSTERING_METRICS.keys()) + [
-        "bestpose",
-        "bestpose_GNINA",
-        "bestpose_SMINA",
-        "bestpose_PLANTS",
-        "bestpose_QVINA2",
-        "bestpose_QVINAW",
-    ] + list(RESCORING_FUNCTIONS.keys()),
+        "bestpose", "bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS",
+        "bestpose_QVINA2", "bestpose_QVINAW"] +
+    list(RESCORING_FUNCTIONS.keys()),
     help="The method(s) to use for pose clustering. Must be one or more of:\n" +
     "- RMSD : Cluster compounds on RMSD matrix of poses \n" +
     "- spyRMSD : Cluster compounds on symmetry-corrected RMSD matrix of poses\n"
@@ -415,8 +404,8 @@ if gen_decoys:
     for length in range(2, len(rescoring)):
         combinations = list(itertools.combinations(rescoring, length))
         total_combinations += len(combinations)
-    num_possibilities = (len(CONSENSUS_METHODS.keys()) * len(pose_selection) *
-                         (len(rescoring) + total_combinations))
+    num_possibilities = len(CONSENSUS_METHODS.keys()) * len(pose_selection) * (
+        len(rescoring) + total_combinations)
     if num_possibilities > 10000:
         st.warning(
             f"WARNING: The combination of scoring functions and pose selection method you have selected will yield a large number of possible combinations ({num_possibilities}). This may take a long time to run."
@@ -426,14 +415,12 @@ config = {
     "general": {
         "software": software,
         "mode": mode.lower(),
-        "n_cpus": n_cpus
-    },
+        "n_cpus": n_cpus},
     "decoy_generation": {
         "gen_decoys": gen_decoys,
         "decoy_model": decoy_model,
         "n_decoys": n_decoys,
-        "actives": actives,
-    },
+        "actives": actives,},
     "receptor(s)": [str(receptor) for receptor in receptors],
     "docking_library": docking_library,
     "protein_preparation": {
@@ -443,13 +430,11 @@ config = {
         "remove_heteroatoms": remove_heteroatoms,
         "remove_water": remove_water,
         "add_hydrogens": add_hydrogens,
-        "protonation": protonation,
-    },
+        "protonation": protonation,},
     "ligand_preparation": {
         "protonation": ligand_protonation,
         "conformers": ligand_conformers,
-        "n_conformers": n_conformers,
-    },
+        "n_conformers": n_conformers,},
     "pocket_detection": {
         "method":
             pocket_mode,
@@ -458,26 +443,21 @@ config = {
         "radius":
             pocket_radius,
         "manual_pocket":
-            manual_pocket,
-    },
+            manual_pocket,},
     "docking": {
         "docking_programs": docking_programs,
         "n_poses": n_poses,
-        "exhaustiveness": exhaustiveness,
-    },
+        "exhaustiveness": exhaustiveness},
     "post_docking": {
         "clash_cutoff": clash_cutoff,
         "strain_cutoff": strain_cutoff,
-        "bust_poses": bust_poses,
-    },
+        "bust_poses": bust_poses},
     "pose_selection": {
         "pose_selection_method": pose_selection,
-        "clustering_method": clustering_algorithm,
-    },
+        "clustering_method": clustering_algorithm},
     "rescoring": rescoring,
     "consensus": consensus_method,
-    "threshold": threshold,
-}
+    "threshold": threshold,}
 
 open("log.txt", "w").close()
 

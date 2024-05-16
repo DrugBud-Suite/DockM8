@@ -12,8 +12,8 @@ def generate_mask(valences, adj_mat, color, real_n_vertices, node_in_focus,
     edge_type_mask = []
     edge_mask = []
     for neighbor in range(real_n_vertices):
-        if neighbor != node_in_focus and color[neighbor] < 2 and \
-            not check_adjacent_sparse(adj_mat, node_in_focus, neighbor)[0]:
+        if (neighbor != node_in_focus and color[neighbor] < 2 and
+                not check_adjacent_sparse(adj_mat, node_in_focus, neighbor)[0]):
             min_valence = min(valences[node_in_focus], valences[neighbor], 3)
             # Check whether two cycles have more than two overlap edges here
             # the neighbor color = 1 and there are left valences and
@@ -74,12 +74,30 @@ def genereate_incremental_adj(last_adj, node_in_focus, neighbor, edge_type):
     return new_adj
 
 
-def update_one_step(overlapped_edge_features, distance_to_others, node_sequence,
-                    node_in_focus, neighbor, edge_type, edge_type_masks,
-                    valences, incremental_adj_mat, color, real_n_vertices,
-                    graph, edge_type_labels, local_stop, edge_masks,
-                    edge_labels, local_stop_label, params, check_overlap_edge,
-                    new_mol, up_to_date_adj_mat, keep_prob):
+def update_one_step(
+    overlapped_edge_features,
+    distance_to_others,
+    node_sequence,
+    node_in_focus,
+    neighbor,
+    edge_type,
+    edge_type_masks,
+    valences,
+    incremental_adj_mat,
+    color,
+    real_n_vertices,
+    graph,
+    edge_type_labels,
+    local_stop,
+    edge_masks,
+    edge_labels,
+    local_stop_label,
+    params,
+    check_overlap_edge,
+    new_mol,
+    up_to_date_adj_mat,
+    keep_prob,
+):
     # check whether to keep this transition or not
     if params["sample_transition"] and random.random() > keep_prob:
         return
@@ -109,8 +127,7 @@ def update_one_step(overlapped_edge_features, distance_to_others, node_sequence,
     distances = [
         (start, node,
          params["truncate_distance"]) if d > params["truncate_distance"] else
-        (start, node, d) for start, node, d in distances
-    ]
+        (start, node, d) for start, node, d in distances]
     distance_to_others.append(distances)
     # Calculate the overlapped edge mask
     overlapped_edge_features.append(
@@ -169,7 +186,7 @@ def construct_incremental_graph(dataset,
     # local stop labels
     local_stop = []
     # record the incremental molecule
-    new_mol = Chem.MolFromSmiles('')
+    new_mol = Chem.MolFromSmiles("")
     new_mol = Chem.rdchem.RWMol(new_mol)
     # Add atoms
     add_atoms(new_mol,
@@ -191,20 +208,36 @@ def construct_incremental_graph(dataset,
         for neighbor, edge_type in current_adj_list:
             # Add this edge if the color of neighbor node is not 2
             if color[neighbor] < 2:
-                update_one_step(overlapped_edge_features, distance_to_others,
-                                node_sequence, node_in_focus, neighbor,
-                                edge_type, edge_type_masks, valences,
-                                incremental_adj_mat, color, real_n_vertices,
-                                graph, edge_type_labels, local_stop, edge_masks,
-                                edge_labels, False, params,
-                                params["check_overlap_edge"], new_mol,
-                                up_to_date_adj_mat, keep_prob)
+                update_one_step(
+                    overlapped_edge_features,
+                    distance_to_others,
+                    node_sequence,
+                    node_in_focus,
+                    neighbor,
+                    edge_type,
+                    edge_type_masks,
+                    valences,
+                    incremental_adj_mat,
+                    color,
+                    real_n_vertices,
+                    graph,
+                    edge_type_labels,
+                    local_stop,
+                    edge_masks,
+                    edge_labels,
+                    False,
+                    params,
+                    params["check_overlap_edge"],
+                    new_mol,
+                    up_to_date_adj_mat,
+                    keep_prob,
+                )
                 # Add the edge and obtain a new adj mat
                 up_to_date_adj_mat = genereate_incremental_adj(
                     up_to_date_adj_mat, node_in_focus, neighbor, edge_type)
                 # suppose the edge is selected and update valences after adding the
-                valences[node_in_focus] -= (edge_type + 1)
-                valences[neighbor] -= (edge_type + 1)
+                valences[node_in_focus] -= edge_type + 1
+                valences[neighbor] -= edge_type + 1
                 # update the incremental mol
                 new_mol.AddBond(int(node_in_focus), int(neighbor),
                                 number_to_bond[edge_type])
@@ -213,19 +246,46 @@ def construct_incremental_graph(dataset,
                 queue.append(neighbor)
                 color[neighbor] = 1
         # local stop here. We move on to another node for exploration or stop completely
-        update_one_step(overlapped_edge_features, distance_to_others,
-                        node_sequence, node_in_focus, None, None,
-                        edge_type_masks, valences, incremental_adj_mat, color,
-                        real_n_vertices, graph, edge_type_labels, local_stop,
-                        edge_masks, edge_labels, True, params,
-                        params["check_overlap_edge"], new_mol,
-                        up_to_date_adj_mat, keep_prob)
+        update_one_step(
+            overlapped_edge_features,
+            distance_to_others,
+            node_sequence,
+            node_in_focus,
+            None,
+            None,
+            edge_type_masks,
+            valences,
+            incremental_adj_mat,
+            color,
+            real_n_vertices,
+            graph,
+            edge_type_labels,
+            local_stop,
+            edge_masks,
+            edge_labels,
+            True,
+            params,
+            params["check_overlap_edge"],
+            new_mol,
+            up_to_date_adj_mat,
+            keep_prob,
+        )
         color[node_in_focus] = 2
 
-    return incremental_adj_mat, distance_to_others, node_sequence, edge_type_masks, edge_type_labels, local_stop, edge_masks, edge_labels, overlapped_edge_features
+    return (
+        incremental_adj_mat,
+        distance_to_others,
+        node_sequence,
+        edge_type_masks,
+        edge_type_labels,
+        local_stop,
+        edge_masks,
+        edge_labels,
+        overlapped_edge_features,
+    )
 
 
-#freq_dict = pickle.load(open("./freq_dict_zinc_250k_smarts_parallel.pkl",'rb'))
+# freq_dict = pickle.load(open("./freq_dict_zinc_250k_smarts_parallel.pkl",'rb'))
 # Generate the frequences based on the valences and adjacent matrix so far
 # For a (node_in_focus, neighbor, edge_type) to be valid, neighbor's color < 2 and
 # there is no edge so far between node_in_focus and neighbor and it satisfy the valence constraint
@@ -235,8 +295,8 @@ def generate_frequencies(valences, adj_mat, color, real_n_vertices,
     transition_frequences = []
     transition_frequences_edge = []
     for neighbor in range(real_n_vertices):
-        if neighbor != node_in_focus and color[neighbor] < 2 and \
-            not check_adjacent_sparse(adj_mat, node_in_focus, neighbor)[0]:
+        if (neighbor != node_in_focus and color[neighbor] < 2 and
+                not check_adjacent_sparse(adj_mat, node_in_focus, neighbor)[0]):
             min_valence = min(valences[node_in_focus], valences[neighbor], 3)
             # Check whether two cycles have more than two overlap edges here
             # the neighbor color = 1 and there are left valences and
@@ -278,24 +338,43 @@ def generate_frequencies(valences, adj_mat, color, real_n_vertices,
                 else:
                     score += 0
                     transition_frequences_edge.append((neighbor, v, 0))
-                score /= (min_valence + 1)
+                score /= min_valence + 1
                 new_mol.RemoveBond(int(node_in_focus), int(neighbor))
             transition_frequences.append((neighbor, score))
             # there might be an edge between node in focus and neighbor
             if min_valence > 0:
-                #edge_mask.append((node_in_focus, neighbor))
+                # edge_mask.append((node_in_focus, neighbor))
                 continue
     return transition_frequences, transition_frequences_edge
 
 
-def update_one_step_freqs(overlapped_edge_features, distance_to_others,
-                          node_sequence, node_in_focus, neighbor, edge_type,
-                          edge_type_masks, valences, incremental_adj_mat, color,
-                          real_n_vertices, graph, edge_type_labels, local_stop,
-                          edge_masks, edge_labels, local_stop_label, params,
-                          check_overlap_edge, new_mol, up_to_date_adj_mat,
-                          keep_prob, new_compound_frequences,
-                          new_compound_frequences_edge, freq_dict):
+def update_one_step_freqs(
+    overlapped_edge_features,
+    distance_to_others,
+    node_sequence,
+    node_in_focus,
+    neighbor,
+    edge_type,
+    edge_type_masks,
+    valences,
+    incremental_adj_mat,
+    color,
+    real_n_vertices,
+    graph,
+    edge_type_labels,
+    local_stop,
+    edge_masks,
+    edge_labels,
+    local_stop_label,
+    params,
+    check_overlap_edge,
+    new_mol,
+    up_to_date_adj_mat,
+    keep_prob,
+    new_compound_frequences,
+    new_compound_frequences_edge,
+    freq_dict,
+):
     # check whether to keep this transition or not
     if params["sample_transition"] and random.random() > keep_prob:
         return
@@ -331,8 +410,7 @@ def update_one_step_freqs(overlapped_edge_features, distance_to_others,
     distances = [
         (start, node,
          params["truncate_distance"]) if d > params["truncate_distance"] else
-        (start, node, d) for start, node, d in distances
-    ]
+        (start, node, d) for start, node, d in distances]
     distance_to_others.append(distances)
     # Calculate the overlapped edge mask
     overlapped_edge_features.append(
@@ -395,7 +473,7 @@ def construct_incremental_graph_freqs(dataset,
     new_compound_frequences = []
     new_compound_frequences_edge = []
     # record the incremental molecule
-    new_mol = Chem.MolFromSmiles('')
+    new_mol = Chem.MolFromSmiles("")
     new_mol = Chem.rdchem.RWMol(new_mol)
     # Add atoms
     add_atoms(new_mol,
@@ -418,20 +496,38 @@ def construct_incremental_graph_freqs(dataset,
             # Add this edge if the color of neighbor node is not 2
             if color[neighbor] < 2:
                 update_one_step_freqs(
-                    overlapped_edge_features, distance_to_others, node_sequence,
-                    node_in_focus, neighbor, edge_type, edge_type_masks,
-                    valences, incremental_adj_mat, color, real_n_vertices,
-                    graph, edge_type_labels, local_stop, edge_masks,
-                    edge_labels, False, params, params["check_overlap_edge"],
-                    new_mol, up_to_date_adj_mat, keep_prob,
-                    new_compound_frequences, new_compound_frequences_edge,
-                    freq_dict)
+                    overlapped_edge_features,
+                    distance_to_others,
+                    node_sequence,
+                    node_in_focus,
+                    neighbor,
+                    edge_type,
+                    edge_type_masks,
+                    valences,
+                    incremental_adj_mat,
+                    color,
+                    real_n_vertices,
+                    graph,
+                    edge_type_labels,
+                    local_stop,
+                    edge_masks,
+                    edge_labels,
+                    False,
+                    params,
+                    params["check_overlap_edge"],
+                    new_mol,
+                    up_to_date_adj_mat,
+                    keep_prob,
+                    new_compound_frequences,
+                    new_compound_frequences_edge,
+                    freq_dict,
+                )
                 # Add the edge and obtain a new adj mat
                 up_to_date_adj_mat = genereate_incremental_adj(
                     up_to_date_adj_mat, node_in_focus, neighbor, edge_type)
                 # suppose the edge is selected and update valences after adding the
-                valences[node_in_focus] -= (edge_type + 1)
-                valences[neighbor] -= (edge_type + 1)
+                valences[node_in_focus] -= edge_type + 1
+                valences[neighbor] -= edge_type + 1
                 # update the incremental mol
                 new_mol.AddBond(int(node_in_focus), int(neighbor),
                                 number_to_bond[edge_type])
@@ -440,15 +536,45 @@ def construct_incremental_graph_freqs(dataset,
                 queue.append(neighbor)
                 color[neighbor] = 1
         # local stop here. We move on to another node for exploration or stop completely
-        update_one_step_freqs(overlapped_edge_features, distance_to_others,
-                              node_sequence, node_in_focus, None, None,
-                              edge_type_masks, valences, incremental_adj_mat,
-                              color, real_n_vertices, graph, edge_type_labels,
-                              local_stop, edge_masks, edge_labels, True, params,
-                              params["check_overlap_edge"], new_mol,
-                              up_to_date_adj_mat, keep_prob,
-                              new_compound_frequences,
-                              new_compound_frequences_edge, freq_dict)
+        update_one_step_freqs(
+            overlapped_edge_features,
+            distance_to_others,
+            node_sequence,
+            node_in_focus,
+            None,
+            None,
+            edge_type_masks,
+            valences,
+            incremental_adj_mat,
+            color,
+            real_n_vertices,
+            graph,
+            edge_type_labels,
+            local_stop,
+            edge_masks,
+            edge_labels,
+            True,
+            params,
+            params["check_overlap_edge"],
+            new_mol,
+            up_to_date_adj_mat,
+            keep_prob,
+            new_compound_frequences,
+            new_compound_frequences_edge,
+            freq_dict,
+        )
         color[node_in_focus] = 2
 
-    return incremental_adj_mat, distance_to_others, node_sequence, edge_type_masks, edge_type_labels, local_stop, edge_masks, edge_labels, overlapped_edge_features, new_compound_frequences, new_compound_frequences_edge
+    return (
+        incremental_adj_mat,
+        distance_to_others,
+        node_sequence,
+        edge_type_masks,
+        edge_type_labels,
+        local_stop,
+        edge_masks,
+        edge_labels,
+        overlapped_edge_features,
+        new_compound_frequences,
+        new_compound_frequences_edge,
+    )

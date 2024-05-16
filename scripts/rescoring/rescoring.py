@@ -10,9 +10,9 @@ from rdkit import RDLogger
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -30,123 +30,100 @@ from scripts.rescoring.rescoring_functions.RFScoreVS import rfscorevs_rescoring
 from scripts.rescoring.rescoring_functions.RTMScore import RTMScore_rescoring
 from scripts.rescoring.rescoring_functions.SCORCH import SCORCH_rescoring
 from scripts.rescoring.rescoring_functions.vinardo import vinardo_rescoring
-from scripts.utilities.utilities import (
-    printlog,)
+from scripts.utilities.utilities import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-#add new scoring functions here!
+# add new scoring functions here!
 # Dict key: (function, column_name, min or max ordering, min value for scaled standardisation, max value for scaled standardisation)
 RESCORING_FUNCTIONS = {
-    'GNINA-Affinity': {
-        'function': gnina_rescoring,
-        'column_name': 'GNINA-Affinity',
-        'best_value': 'min',
-        'range': (100, -100)
-    },
-    'CNN-Score': {
-        'function': gnina_rescoring,
-        'column_name': 'CNN-Score',
-        'best_value': 'max',
-        'range': (0, 1)
-    },
-    'CNN-Affinity': {
-        'function': gnina_rescoring,
-        'column_name': 'CNN-Affinity',
-        'best_value': 'max',
-        'range': (0, 20)
-    },
-    'Vinardo': {
-        'function': vinardo_rescoring,
-        'column_name': 'Vinardo',
-        'best_value': 'min',
-        'range': (200, 20)
-    },
-    'AD4': {
-        'function': AD4_rescoring,
-        'column_name': 'AD4',
-        'best_value': 'min',
-        'range': (100, -100)
-    },
-    'RFScoreVS': {
-        'function': rfscorevs_rescoring,
-        'column_name': 'RFScoreVS',
-        'best_value': 'max',
-        'range': (5, 10)
-    },
+    "GNINA-Affinity": {
+        "function": gnina_rescoring,
+        "column_name": "GNINA-Affinity",
+        "best_value": "min",
+        "range": (100, -100),},
+    "CNN-Score": {
+        "function": gnina_rescoring,
+        "column_name": "CNN-Score",
+        "best_value": "max",
+        "range": (0, 1)},
+    "CNN-Affinity": {
+        "function": gnina_rescoring,
+        "column_name": "CNN-Affinity",
+        "best_value": "max",
+        "range": (0, 20)},
+    "Vinardo": {
+        "function": vinardo_rescoring,
+        "column_name": "Vinardo",
+        "best_value": "min",
+        "range": (200, 20)},
+    "AD4": {
+        "function": AD4_rescoring,
+        "column_name": "AD4",
+        "best_value": "min",
+        "range": (100, -100)},
+    "RFScoreVS": {
+        "function": rfscorevs_rescoring,
+        "column_name": "RFScoreVS",
+        "best_value": "max",
+        "range": (5, 10)},
     #'RFScoreVS2':       {'function': rfscorevs_rescoring2,    'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
-    'PLP': {
-        'function': plp_rescoring,
-        'column_name': 'PLP',
-        'best_value': 'min',
-        'range': (200, -200)
-    },
-    'CHEMPLP': {
-        'function': chemplp_rescoring,
-        'column_name': 'CHEMPLP',
-        'best_value': 'min',
-        'range': (200, -200)
-    },
-    'NNScore': {
-        'function': oddt_nnscore_rescoring,
-        'column_name': 'NNScore',
-        'best_value': 'max',
-        'range': (0, 20)
-    },
-    'PLECScore': {
-        'function': oddt_plecscore_rescoring,
-        'column_name': 'PLECScore',
-        'best_value': 'max',
-        'range': (0, 20)
-    },
-    'LinF9': {
-        'function': LinF9_rescoring,
-        'column_name': 'LinF9',
-        'best_value': 'min',
-        'range': (100, -100)
-    },
-    'AAScore': {
-        'function': AAScore_rescoring,
-        'column_name': 'AAScore',
-        'best_value': 'max',
-        'range': (100, -100)
-    },
-    'SCORCH': {
-        'function': SCORCH_rescoring,
-        'column_name': 'SCORCH',
-        'best_value': 'max',
-        'range': (0, 1)
-    },
-    'RTMScore': {
-        'function': RTMScore_rescoring,
-        'column_name': 'RTMScore',
-        'best_value': 'max',
-        'range': (0, 100)
-    },
-    'KORP-PL': {
-        'function': KORPL_rescoring,
-        'column_name': 'KORP-PL',
-        'best_value': 'min',
-        'range': (200, -1000)
-    },
-    'ConvexPLR': {
-        'function': ConvexPLR_rescoring,
-        'column_name': 'ConvexPLR',
-        'best_value': 'max',
-        'range': (-10, 10)
-    }
-}
+    "PLP": {
+        "function": plp_rescoring,
+        "column_name": "PLP",
+        "best_value": "min",
+        "range": (200, -200)},
+    "CHEMPLP": {
+        "function": chemplp_rescoring,
+        "column_name": "CHEMPLP",
+        "best_value": "min",
+        "range": (200, -200)},
+    "NNScore": {
+        "function": oddt_nnscore_rescoring,
+        "column_name": "NNScore",
+        "best_value": "max",
+        "range": (0, 20)},
+    "PLECScore": {
+        "function": oddt_plecscore_rescoring,
+        "column_name": "PLECScore",
+        "best_value": "max",
+        "range": (0, 20),},
+    "LinF9": {
+        "function": LinF9_rescoring,
+        "column_name": "LinF9",
+        "best_value": "min",
+        "range": (100, -100)},
+    "AAScore": {
+        "function": AAScore_rescoring,
+        "column_name": "AAScore",
+        "best_value": "max",
+        "range": (100, -100)},
+    "SCORCH": {
+        "function": SCORCH_rescoring,
+        "column_name": "SCORCH",
+        "best_value": "max",
+        "range": (0, 1)},
+    "RTMScore": {
+        "function": RTMScore_rescoring,
+        "column_name": "RTMScore",
+        "best_value": "max",
+        "range": (0, 100)},
+    "KORP-PL": {
+        "function": KORPL_rescoring,
+        "column_name": "KORP-PL",
+        "best_value": "min",
+        "range": (200, -1000)},
+    "ConvexPLR": {
+        "function": ConvexPLR_rescoring,
+        "column_name": "ConvexPLR",
+        "best_value": "max",
+        "range": (-10, 10)},}
 
 
-def rescore_poses(
-    w_dir: Path,
-    protein_file: Path,
-    software: Path,
-    clustered_sdf: Path,
-    functions: List[str],
-    n_cpus: int,
-) -> None:
+def rescore_poses(w_dir: Path, protein_file: Path, software: Path,
+                  clustered_sdf: Path, functions: List[str],
+                  n_cpus: int) -> None:
     """
     Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into
     smaller files, and then runs the specified software on each of these files in parallel. The results are then combined into a single
@@ -195,8 +172,7 @@ def rescore_poses(
     score_files = [f"{function}_scores.csv" for function in functions]
     csv_files = [
         file for file in (rescoring_folder.rglob("*.csv"))
-        if file.name in score_files
-    ]
+        if file.name in score_files]
     csv_dfs = []
     for file in csv_files:
         df = pd.read_csv(file)
@@ -228,13 +204,8 @@ def rescore_poses(
     return
 
 
-def rescore_docking(
-    w_dir: Path,
-    protein_file: Path,
-    software: Path,
-    function: str,
-    n_cpus: int,
-) -> None:
+def rescore_docking(w_dir: Path, protein_file: Path, software: Path,
+                    function: str, n_cpus: int) -> None:
     """
     Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into
     smaller files, and then runs the specified software on each of these files in parallel. The results are then combined into a single

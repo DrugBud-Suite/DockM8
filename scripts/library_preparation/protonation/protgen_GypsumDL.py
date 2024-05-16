@@ -12,9 +12,9 @@ from rdkit import Chem
 from rdkit.Chem import AllChem, PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -45,8 +45,7 @@ def protonate_GypsumDL(input_sdf: Path, output_dir: Path, software: Path,
     split_files_sdfs = [
         split_files_folder / f
         for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")
-    ]
+        if f.endswith(".sdf")]
 
     global gypsum_dl_run
 
@@ -80,23 +79,20 @@ def protonate_GypsumDL(input_sdf: Path, output_dir: Path, software: Path,
             printlog(e)
         return
 
-    parallel_executor(
-        gypsum_dl_run,
-        split_files_sdfs,
-        3,
-        output_dir=output_dir,
-        cpus=math.ceil(n_cpus // 3),
-    )
+    parallel_executor(gypsum_dl_run,
+                      split_files_sdfs,
+                      3,
+                      output_dir=output_dir,
+                      cpus=math.ceil(n_cpus // 3))
 
     results_dfs = []
 
     for file in os.listdir(output_dir / "GypsumDL_results"):
         if file.endswith(".sdf"):
-            sdf_df = PandasTools.LoadSDF(
-                str(output_dir / "GypsumDL_results" / file),
-                molColName="Molecule",
-                idName="ID",
-            )
+            sdf_df = PandasTools.LoadSDF(str(output_dir / "GypsumDL_results" /
+                                             file),
+                                         molColName="Molecule",
+                                         idName="ID")
             results_dfs.append(sdf_df)
 
     final_df = pd.concat(results_dfs)
@@ -127,18 +123,16 @@ def protonate_GypsumDL(input_sdf: Path, output_dir: Path, software: Path,
         missing_compounds = input_df[input_df["ID"].isin(missing_ids)]
         final_df = pd.concat([final_df, missing_compounds])
 
-    output_file = output_dir / 'protonated_library.sdf'
+    output_file = output_dir / "protonated_library.sdf"
 
-    PandasTools.WriteSDF(
-        final_df,
-        str(output_file),
-        molColName="Molecule",
-        idName="ID",
-    )
+    PandasTools.WriteSDF(final_df,
+                         str(output_file),
+                         molColName="Molecule",
+                         idName="ID")
     shutil.rmtree(output_dir / "GypsumDL_results", ignore_errors=True)
     shutil.rmtree(output_dir / "GypsumDL_split", ignore_errors=True)
 
-    (output_dir / 'gypsum_dl_success.sdf').unlink(missing_ok=True)
-    (output_dir / 'gypsum_dl_failed.smi').unlink(missing_ok=True)
+    (output_dir / "gypsum_dl_success.sdf").unlink(missing_ok=True)
+    (output_dir / "gypsum_dl_failed.smi").unlink(missing_ok=True)
 
     return output_file

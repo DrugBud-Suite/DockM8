@@ -11,9 +11,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -65,10 +65,7 @@ def psovina_docking(
 
     protein_file_pdbqt = convert_molecules(
         str(protein_file),
-        str(protein_file).replace(".pdb", ".pdbqt"),
-        "pdb",
-        "pdbqt",
-    )
+        str(protein_file).replace(".pdb", ".pdbqt"), "pdb", "pdbqt")
 
     # Dock each ligand using PSOVINA
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
@@ -114,8 +111,7 @@ def psovina_docking(
                 "Pose ID": pose_file.stem,
                 "Molecule": rdkit_mol[0],
                 "PSOVINA_Affinity": affinity,
-                "ID": pose_file.stem.split("_")[0],
-            }
+                "ID": pose_file.stem.split("_")[0],}
         PandasTools.WriteSDF(
             psovina_poses,
             str(psovina_docking_results),
@@ -152,11 +148,9 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
             for file in tqdm(os.listdir(w_dir / "psovina"),
                              desc="Loading PSOVINA poses"):
                 if file.endswith(".sdf"):
-                    df = PandasTools.LoadSDF(
-                        str(w_dir / "psovina" / file),
-                        idName="Pose ID",
-                        molColName="Molecule",
-                    )
+                    df = PandasTools.LoadSDF(str(w_dir / "psovina" / file),
+                                             idName="Pose ID",
+                                             molColName="Molecule")
                     psovina_dataframes.append(df)
             psovina_df = pd.concat(psovina_dataframes)
             psovina_df["ID"] = psovina_df["Pose ID"].apply(

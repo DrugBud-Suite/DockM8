@@ -33,30 +33,30 @@ from docopt import docopt
 
 
 # Worker function
-def select_and_evaluate_decoys(f,
-                               file_loc='./',
-                               output_loc='./',
-                               dataset='dude',
-                               num_cand_dec_per_act=100,
-                               num_dec_per_act=50,
-                               max_idx_cmpd=10000,
-                               min_active_size=10):
+def select_and_evaluate_decoys(
+    f,
+    file_loc="./",
+    output_loc="./",
+    dataset="dude",
+    num_cand_dec_per_act=100,
+    num_dec_per_act=50,
+    max_idx_cmpd=10000,
+    min_active_size=10,
+):
     print("Processing: ", f)
     dec_results = [f]
     dec_results.append(dataset)
     # Read data
-    print(f'###{file_loc+f}###')
+    print(f"###{file_loc+f}###")
     data = decoy_utils.read_paired_file(file_loc + f)
     # Filter dupes and actives that are too small
     dec_results.append(len(set([d[0] for d in data])))
     seen = set()
     data = [
         d for d in data
-        if Chem.MolFromSmiles(d[0]).GetNumHeavyAtoms() > min_active_size
-    ]
+        if Chem.MolFromSmiles(d[0]).GetNumHeavyAtoms() > min_active_size]
     unique_data = [
-        x for x in data if not (tuple(x) in seen or seen.add(tuple(x)))
-    ]
+        x for x in data if not (tuple(x) in seen or seen.add(tuple(x)))]
     in_mols = [d[0] for d in data]
     gen_mols = [d[1] for d in data]
     dec_results.extend([len(set(in_mols)), len(data), len(unique_data)])
@@ -64,8 +64,7 @@ def select_and_evaluate_decoys(f,
     # Calculate properties of in_mols and gen_mols
     used = set([])
     in_mols_set = [
-        x for x in in_mols if x not in used and (used.add(x) or True)
-    ]
+        x for x in in_mols if x not in used and (used.add(x) or True)]
 
     if dataset == "dude_ext":
         in_props_temp = decoy_utils.calc_dataset_props_dude_extended(
@@ -126,7 +125,7 @@ def select_and_evaluate_decoys(f,
     active_min_all.append(active_mins)
 
     scale = []
-    for (a_max, a_min) in zip(active_maxes, active_mins):
+    for a_max, a_min in zip(active_maxes, active_mins):
         if a_max != a_min:
             scale.append(a_max - a_min)
         else:
@@ -146,8 +145,7 @@ def select_and_evaluate_decoys(f,
     for i, smi in enumerate(in_mols):
         in_sa.append(in_sa_temp[in_mols_temp.index(smi)])
     gen_sa_props = [
-        sascorer.calculateScore(Chem.MolFromSmiles(mol)) for mol in gen_mols
-    ]
+        sascorer.calculateScore(Chem.MolFromSmiles(mol)) for mol in gen_mols]
 
     # Calc Morgan fingerprints
     in_fps = []
@@ -185,17 +183,29 @@ def select_and_evaluate_decoys(f,
         if in_mols[i] in results_dict:
             sim = DataStructs.TanimotoSimilarity(in_fps[i], gen_fps[i])
             results_dict[in_mols[i]].append([
-                in_mols[i], gen_mols[i], in_props[i], gen_props[i], prop_diff,
-                sim, basic_diff,
-                abs(gen_sa_props[i] - in_sa[i]), dg_scores[i], lads_scores[i]
-            ])
+                in_mols[i],
+                gen_mols[i],
+                in_props[i],
+                gen_props[i],
+                prop_diff,
+                sim,
+                basic_diff,
+                abs(gen_sa_props[i] - in_sa[i]),
+                dg_scores[i],
+                lads_scores[i],])
         else:
             sim = DataStructs.TanimotoSimilarity(in_fps[i], gen_fps[i])
             results_dict[in_mols[i]] = [[
-                in_mols[i], gen_mols[i], in_props[i], gen_props[i], prop_diff,
-                sim, basic_diff,
-                abs(gen_sa_props[i] - in_sa[i]), dg_scores[i], lads_scores[i]
-            ]]
+                in_mols[i],
+                gen_mols[i],
+                in_props[i],
+                gen_props[i],
+                prop_diff,
+                sim,
+                basic_diff,
+                abs(gen_sa_props[i] - in_sa[i]),
+                dg_scores[i],
+                lads_scores[i],]]
 
     # Get decoy matches
     results = []
@@ -212,18 +222,18 @@ def select_and_evaluate_decoys(f,
             count_success = sum([
                 i[4] < prop_max_diff and i[6] < max_basic_diff and
                 i[7] < max_sa_diff and i[8] < max_dg_score and
-                i[9] < max_lads_score for i in results_dict[key][0:max_idx_cmpd]
-            ])
+                i[9] < max_lads_score
+                for i in results_dict[key][0:max_idx_cmpd]])
             # Adjust criteria if not enough successes
             if count_success < num_cand_dec_per_act:
-                #print("Widening search", count_success)
+                # print("Widening search", count_success)
                 prop_max_diff *= 1.1
                 max_basic_diff += 1
                 max_sa_diff *= 1.1
                 max_dg_score *= 1.1
                 max_lads_score *= 1.1
             else:
-                #print("Reached threshold", count_success)
+                # print("Reached threshold", count_success)
                 # Sort by sum of LADS and property difference (smaller better)
                 sorted_mols_success.append([
                     (i[0], i[1], i[4], i[9], i[4] + i[9])
@@ -232,9 +242,8 @@ def select_and_evaluate_decoys(f,
                                     reverse=False)
                     if i[4] < prop_max_diff and i[6] < max_basic_diff and
                     i[7] < max_sa_diff and i[8] < max_dg_score and
-                    i[9] < max_lads_score
-                ])
-                #assert count_success == len(sorted_mols_success[-1])
+                    i[9] < max_lads_score])
+                # assert count_success == len(sorted_mols_success[-1])
                 break
 
     # Choose decoys
@@ -249,8 +258,9 @@ def select_and_evaluate_decoys(f,
         for ent in act_res:
             # Check can gen conformer
             m = Chem.AddHs(Chem.MolFromSmiles(ent[1]))
-            if AllChem.EmbedMolecule(m, randomSeed=42) != -1 and ent[
-                    1] not in decoy_mols_gen:  # Check conf and not a decoy for another ligand
+            if (AllChem.EmbedMolecule(m, randomSeed=42) != -1 and
+                    ent[1] not in decoy_mols_gen
+               ):  # Check conf and not a decoy for another ligand
                 decoy_mols_gen.append(ent[1])
                 count += 1
                 if count >= num_dec_per_act:
@@ -260,7 +270,7 @@ def select_and_evaluate_decoys(f,
             else:
                 embed_fails += 1
         active_mols_gen.append(act_res[0][0])
-    #dec_results.extend([len(active_mols_gen), len(decoy_mols_gen), len(decoy_mols_gen)/num_dec_per_act, embed_fails, dupes_wanted])
+    # dec_results.extend([len(active_mols_gen), len(decoy_mols_gen), len(decoy_mols_gen)/num_dec_per_act, embed_fails, dupes_wanted])
 
     # Calc props for chosen decoys
     if dataset == "dude_ext":
@@ -311,16 +321,16 @@ def select_and_evaluate_decoys(f,
     dec_results.extend([np.mean(dg_scores), max(dg_scores)])
 
     # Save intermediate performance results in unique file
-    #with open(output_loc+'results_'+f+'.csv', 'w') as csvfile:
+    # with open(output_loc+'results_'+f+'.csv', 'w') as csvfile:
     #    writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
     #    writer.writerow(dec_results)
 
     # Save decoy mols
-    output_name = output_loc + f.split('.')[0] + '-selected.smi'
-    with open(output_name, 'w') as outfile:
+    output_name = output_loc + f.split(".")[0] + "-selected.smi"
+    with open(output_name, "w") as outfile:
         for i, smi in enumerate(decoy_mols_gen):
-            outfile.write(active_mols_gen[i // num_dec_per_act] + ' ' + smi +
-                          '\n')
+            outfile.write(active_mols_gen[i // num_dec_per_act] + " " + smi +
+                          "\n")
 
     return dec_results
 
@@ -328,58 +338,56 @@ def select_and_evaluate_decoys(f,
 if __name__ == "__main__":
     # Parse args
     args = docopt(__doc__)
-    #print(args)
-    if not args.get('--data_path'):
+    # print(args)
+    if not args.get("--data_path"):
         print("Please specify a valid file or directory.")
         exit()
-    file_loc = args.get('--data_path')
-    output_loc = args.get('--output_path')
-    dataset = args.get('--dataset_name')
-    num_dec_per_act = int(args.get('--num_decoys_per_active'))
-    num_cand_dec_per_act = int(args.get('--min_num_candidates'))
-    n_cores = int(args.get('--num_cores'))
-    min_active_size = int(args.get('--min_active_size'))
-    max_idx_cmpd = int(args.get('--max_idx_cmpd'))
+    file_loc = args.get("--data_path")
+    output_loc = args.get("--output_path")
+    dataset = args.get("--dataset_name")
+    num_dec_per_act = int(args.get("--num_decoys_per_active"))
+    num_cand_dec_per_act = int(args.get("--min_num_candidates"))
+    n_cores = int(args.get("--num_cores"))
+    min_active_size = int(args.get("--min_active_size"))
+    max_idx_cmpd = int(args.get("--max_idx_cmpd"))
 
     # Get input files
     if os.path.isdir(file_loc):
         res_files = [
-            f for f in os.listdir(file_loc) if os.path.isfile(file_loc + f)
-        ]
+            f for f in os.listdir(file_loc) if os.path.isfile(file_loc + f)]
         res_files = sorted(res_files)
     elif os.path.isfile(file_loc):
         res_files = [file_loc]
-        file_loc = './'
+        file_loc = "./"
     else:
         print("Please specify a valid file or directory")
         exit()
 
     # Declare metric variables
     columns = [
-        'File name',
-        'Dataset',
-        'Orig num actives',
-        'Num actives',
-        'Num generated mols',
-        'Num unique gen mols',
-        'AUC ROC - 1NN',
-        'AUC ROC - RF',
-        'DOE score',
-        'LADS score',
-        'Doppelganger score mean',
-        'Doppelganger score max',
-    ]
+        "File name",
+        "Dataset",
+        "Orig num actives",
+        "Num actives",
+        "Num generated mols",
+        "Num unique gen mols",
+        "AUC ROC - 1NN",
+        "AUC ROC - RF",
+        "DOE score",
+        "LADS score",
+        "Doppelganger score mean",
+        "Doppelganger score max",]
 
     # Populate CSV file with headers
-    with open(output_loc + '/results.csv', 'w') as csvfile:
+    with open(output_loc + "/results.csv", "w") as csvfile:
         writer = csv.writer(csvfile,
-                            delimiter=',',
-                            quotechar='|',
+                            delimiter=",",
+                            quotechar="|",
                             quoting=csv.QUOTE_MINIMAL)
         writer.writerow(columns)
 
     # Select decoys and evaluate
-    with Parallel(n_jobs=n_cores, backend='multiprocessing') as parallel:
+    with Parallel(n_jobs=n_cores, backend="multiprocessing") as parallel:
         results = parallel(
             delayed(select_and_evaluate_decoys)(
                 f,
@@ -389,13 +397,14 @@ if __name__ == "__main__":
                 num_cand_dec_per_act=num_cand_dec_per_act,
                 num_dec_per_act=num_dec_per_act,
                 max_idx_cmpd=max_idx_cmpd,
-                min_active_size=min_active_size) for f in res_files)
+                min_active_size=min_active_size,
+            ) for f in res_files)
 
     # Write performance results
     for dec_results in results:
-        with open(output_loc + '/results.csv', 'a') as csvfile:
+        with open(output_loc + "/results.csv", "a") as csvfile:
             writer = csv.writer(csvfile,
-                                delimiter=',',
-                                quotechar='|',
+                                delimiter=",",
+                                quotechar="|",
                                 quoting=csv.QUOTE_MINIMAL)
             writer.writerow(dec_results)

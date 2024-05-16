@@ -34,23 +34,26 @@ def calc_props_dude(smiles):
         # Calculate properties and store in dict
         prop_dict = {}
         # molweight
-        prop_dict.update({'mol_wg': Descriptors.MolWt(mol)})
+        prop_dict.update({"mol_wg": Descriptors.MolWt(mol)})
         # logP
-        prop_dict.update({'log_p': Chem.Crippen.MolLogP(mol)})
+        prop_dict.update({"log_p": Chem.Crippen.MolLogP(mol)})
         # HBA
-        prop_dict.update({'hba': Chem.rdMolDescriptors.CalcNumLipinskiHBA(mol)})
+        prop_dict.update({"hba": Chem.rdMolDescriptors.CalcNumLipinskiHBA(mol)})
         # HBD
-        prop_dict.update({'hbd': Chem.rdMolDescriptors.CalcNumLipinskiHBD(mol)})
+        prop_dict.update({"hbd": Chem.rdMolDescriptors.CalcNumLipinskiHBD(mol)})
         # rotatable bonds
-        prop_dict.update(
-            {'rot_bnds': Chem.rdMolDescriptors.CalcNumRotatableBonds(mol)})
+        prop_dict.update({
+            "rot_bnds": Chem.rdMolDescriptors.CalcNumRotatableBonds(mol)})
         # Formal (net) charge
-        prop_dict.update({'net_charge': Chem.rdmolops.GetFormalCharge(mol)})
+        prop_dict.update({"net_charge": Chem.rdmolops.GetFormalCharge(mol)})
 
         prop_array = [
-            prop_dict['mol_wg'], prop_dict['log_p'], prop_dict['hba'],
-            prop_dict['hbd'], prop_dict['rot_bnds'], prop_dict['net_charge']
-        ]
+            prop_dict["mol_wg"],
+            prop_dict["log_p"],
+            prop_dict["hba"],
+            prop_dict["hbd"],
+            prop_dict["rot_bnds"],
+            prop_dict["net_charge"],]
 
         return (prop_dict, prop_array)
 
@@ -65,36 +68,40 @@ def calc_props_dude_extended(smiles):
         # Calculate properties and store in dict
         prop_dict = {}
         # molweight
-        prop_dict.update({'mol_wg': Descriptors.MolWt(mol)})
+        prop_dict.update({"mol_wg": Descriptors.MolWt(mol)})
         # logP
-        prop_dict.update({'log_p': Chem.Crippen.MolLogP(mol)})
+        prop_dict.update({"log_p": Chem.Crippen.MolLogP(mol)})
         # HBA
-        prop_dict.update({'hba': Chem.rdMolDescriptors.CalcNumLipinskiHBA(mol)})
+        prop_dict.update({"hba": Chem.rdMolDescriptors.CalcNumLipinskiHBA(mol)})
         # HBD
-        prop_dict.update({'hbd': Chem.rdMolDescriptors.CalcNumLipinskiHBD(mol)})
+        prop_dict.update({"hbd": Chem.rdMolDescriptors.CalcNumLipinskiHBD(mol)})
         # ring count
-        prop_dict.update({'ring_ct': Chem.rdMolDescriptors.CalcNumRings(mol)})
+        prop_dict.update({"ring_ct": Chem.rdMolDescriptors.CalcNumRings(mol)})
         # rotatable bonds
-        prop_dict.update(
-            {'rot_bnds': Chem.rdMolDescriptors.CalcNumRotatableBonds(mol)})
+        prop_dict.update({
+            "rot_bnds": Chem.rdMolDescriptors.CalcNumRotatableBonds(mol)})
         # Formal (net) charge
-        prop_dict.update({'net_charge': Chem.rdmolops.GetFormalCharge(mol)})
+        prop_dict.update({"net_charge": Chem.rdmolops.GetFormalCharge(mol)})
         # Topological polar surface area
-        prop_dict.update({'tpsa': Chem.rdMolDescriptors.CalcTPSA(mol)})
+        prop_dict.update({"tpsa": Chem.rdMolDescriptors.CalcTPSA(mol)})
         # Stereo centers
         prop_dict.update({
-            'stereo_cnts':
+            "stereo_cnts":
                 len(
                     Chem.FindMolChiralCenters(mol,
                                               force=True,
-                                              includeUnassigned=True))
-        })
+                                              includeUnassigned=True))})
 
         prop_array = [
-            prop_dict['mol_wg'], prop_dict['log_p'], prop_dict['hba'],
-            prop_dict['hbd'], prop_dict['ring_ct'], prop_dict['rot_bnds'],
-            prop_dict['net_charge'], prop_dict['tpsa'], prop_dict['stereo_cnts']
-        ]
+            prop_dict["mol_wg"],
+            prop_dict["log_p"],
+            prop_dict["hba"],
+            prop_dict["hbd"],
+            prop_dict["ring_ct"],
+            prop_dict["rot_bnds"],
+            prop_dict["net_charge"],
+            prop_dict["tpsa"],
+            prop_dict["stereo_cnts"],]
 
         return (prop_dict, prop_array)
 
@@ -260,29 +267,33 @@ def calc_props_dekois(smiles):
         # Calculate properties and store in dict
         prop_dict = {}
         # molweight
-        prop_dict.update({'mol_wg': Descriptors.MolWt(mol)})
+        prop_dict.update({"mol_wg": Descriptors.MolWt(mol)})
         # logP
-        prop_dict.update({'log_p': Chem.Crippen.MolLogP(mol)})
+        prop_dict.update({"log_p": Chem.Crippen.MolLogP(mol)})
         # HBA
-        prop_dict.update({'hba': Chem.rdMolDescriptors.CalcNumLipinskiHBA(mol)})
+        prop_dict.update({"hba": Chem.rdMolDescriptors.CalcNumLipinskiHBA(mol)})
         # HBD
-        prop_dict.update({'hbd': Chem.rdMolDescriptors.CalcNumLipinskiHBD(mol)})
+        prop_dict.update({"hbd": Chem.rdMolDescriptors.CalcNumLipinskiHBD(mol)})
         # aromatic ring count
-        prop_dict.update(
-            {'ring_ct': Chem.rdMolDescriptors.CalcNumAromaticRings(mol)})
+        prop_dict.update({
+            "ring_ct": Chem.rdMolDescriptors.CalcNumAromaticRings(mol)})
         # rotatable bonds
-        prop_dict.update(
-            {'rot_bnds': Chem.rdMolDescriptors.CalcNumRotatableBonds(mol)})
+        prop_dict.update({
+            "rot_bnds": Chem.rdMolDescriptors.CalcNumRotatableBonds(mol)})
         # Formal charges
         pos, neg = calc_charges(mol)
-        prop_dict.update({'pos_charge': pos})
-        prop_dict.update({'neg_charge': neg})
+        prop_dict.update({"pos_charge": pos})
+        prop_dict.update({"neg_charge": neg})
 
         prop_array = [
-            prop_dict['mol_wg'], prop_dict['log_p'], prop_dict['hba'],
-            prop_dict['hbd'], prop_dict['ring_ct'], prop_dict['rot_bnds'],
-            prop_dict['pos_charge'], prop_dict['neg_charge']
-        ]
+            prop_dict["mol_wg"],
+            prop_dict["log_p"],
+            prop_dict["hba"],
+            prop_dict["hbd"],
+            prop_dict["ring_ct"],
+            prop_dict["rot_bnds"],
+            prop_dict["pos_charge"],
+            prop_dict["neg_charge"],]
 
         return (prop_dict, prop_array)
 
@@ -405,7 +416,7 @@ def calc_dataset_props_all(dataset, verbose=False):
         if props is not None:
             results.append(props)
         if verbose and i % 1000 == 0:
-            print("\rProcessed smiles: " + str(i), end='')
+            print("\rProcessed smiles: " + str(i), end="")
     print("\nDone calculating properties")
     return np.array(results)
 
@@ -418,7 +429,7 @@ def calc_dataset_props_dude(dataset, verbose=False):
         if props is not None:
             results.append(props[1])
         if verbose and i % 1000 == 0:
-            print("\rProcessed smiles: " + str(i), end='')
+            print("\rProcessed smiles: " + str(i), end="")
     print("\nDone calculating properties")
     return np.array(results)
 
@@ -431,7 +442,7 @@ def calc_dataset_props_dude_extended(dataset, verbose=False):
         if props is not None:
             results.append(props[1])
         if verbose and i % 1000 == 0:
-            print("\rProcessed smiles: " + str(i), end='')
+            print("\rProcessed smiles: " + str(i), end="")
     print("\nDone calculating properties")
     return np.array(results)
 
@@ -444,7 +455,7 @@ def calc_dataset_props_muv(dataset, verbose=False):
         if props is not None:
             results.append(props)
         if verbose and i % 1000 == 0:
-            print("\rProcessed smiles: " + str(i), end='')
+            print("\rProcessed smiles: " + str(i), end="")
     print("\nDone calculating properties")
     return np.array(results)
 
@@ -457,7 +468,7 @@ def calc_dataset_props_basic(dataset, verbose=False):
         if props is not None:
             results.append(props)
         if verbose and i % 1000 == 0:
-            print("\rProcessed smiles: " + str(i), end='')
+            print("\rProcessed smiles: " + str(i), end="")
     print("\nDone calculating properties")
     return np.array(results)
 
@@ -470,7 +481,7 @@ def calc_dataset_props_dekois(dataset, verbose=False):
         if props is not None:
             results.append(props[1])
         if verbose and i % 1000 == 0:
-            print("\rProcessed smiles: " + str(i), end='')
+            print("\rProcessed smiles: " + str(i), end="")
     print("\nDone calculating properties")
     return np.array(results)
 
@@ -482,7 +493,7 @@ def doe_score(actives, decoys):
     norms = up_p - low_p
     for i in range(len(norms)):
         if norms[i] == 0:
-            norms[i] = 1.
+            norms[i] = 1.0
 
     active_norm = [act / norms for act in actives]
     decoy_norm = [dec / norms for dec in decoys]
@@ -500,12 +511,12 @@ def doe_score(actives, decoys):
         tpr = tpr[::]
         a_score = 0
         for i in range(len(fpr) - 1):
-            a_score += (abs(0.5 *
-                            ((tpr[i + 1] + tpr[i]) * (fpr[i + 1] - fpr[i]) -
-                             (fpr[i + 1] + fpr[i]) * (fpr[i + 1] - fpr[i]))))
+            a_score += abs(0.5 *
+                           ((tpr[i + 1] + tpr[i]) * (fpr[i + 1] - fpr[i]) -
+                            (fpr[i + 1] + fpr[i]) * (fpr[i + 1] - fpr[i])))
         active_embed.append(a_score)
 
-    #print(np.average(active_embed))
+    # print(np.average(active_embed))
     return np.average(active_embed)
 
 
@@ -538,8 +549,8 @@ def lads_score_v2(actives, decoys):
     decoys_fps = [
         AllChem.GetMorganFingerprint(Chem.MolFromSmiles(smi),
                                      3,
-                                     useFeatures=True) for smi in decoys
-    ]  # Roughly FCFP_6
+                                     useFeatures=True)
+        for smi in decoys]  # Roughly FCFP_6
 
     master_active_fp_freq = defaultdict(int)
     for fp in active_fps:
@@ -555,8 +566,7 @@ def lads_score_v2(actives, decoys):
 
     decoys_lads_avoid_scores = [
         sum([master_active_fp_freq[k] for k in decoy_fp.GetNonzeroElements()]) /
-        len(decoy_fp.GetNonzeroElements()) for decoy_fp in decoys_fps
-    ]
+        len(decoy_fp.GetNonzeroElements()) for decoy_fp in decoys_fps]
 
     return decoys_lads_avoid_scores
 
@@ -568,14 +578,12 @@ def dg_score(actives, decoys):
         AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(smi),
                                               3,
                                               useFeatures=True)
-        for smi in actives
-    ]  # Roughly FCFP_6
+        for smi in actives]  # Roughly FCFP_6
     decoys_fps = [
         AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(smi),
                                               3,
                                               useFeatures=True)
-        for smi in decoys
-    ]  # Roughly FCFP_6
+        for smi in decoys]  # Roughly FCFP_6
 
     closest_sims = []
     closest_sims_id = []
@@ -597,14 +605,12 @@ def dg_score_rev(actives, decoys):
         AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(smi),
                                               3,
                                               useFeatures=True)
-        for smi in actives
-    ]  # Roughly FCFP_6
+        for smi in actives]  # Roughly FCFP_6
     decoys_fps = [
         AllChem.GetMorganFingerprintAsBitVect(Chem.MolFromSmiles(smi),
                                               3,
                                               useFeatures=True)
-        for smi in decoys
-    ]  # Roughly FCFP_6
+        for smi in decoys]  # Roughly FCFP_6
 
     closest_sims = []
     closest_sims_id = []
@@ -621,35 +627,35 @@ def dg_score_rev(actives, decoys):
 
 # LOAD ZINC DATA
 def read_file(filename):
-    '''Reads .smi file '''
-    '''Returns array containing smiles strings of molecules'''
+    """Reads .smi file"""
+    """Returns array containing smiles strings of molecules"""
     smiles, names = [], []
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line in f:
             if line:
-                smiles.append(line.strip().split(' ')[0])
+                smiles.append(line.strip().split(" ")[0])
     return smiles
 
 
 def read_paired_file(filename):
-    '''Reads .smi file '''
-    '''Returns array containing smiles strings of molecules'''
+    """Reads .smi file"""
+    """Returns array containing smiles strings of molecules"""
     smiles, names = [], []
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line in f:
             if line:
-                smiles.append(line.strip().split(' ')[0:2])
+                smiles.append(line.strip().split(" ")[0:2])
     return smiles
 
 
 def read_paired_dude_file(filename):
-    '''Reads .smi file '''
-    '''Returns array containing smiles strings of molecules'''
+    """Reads .smi file"""
+    """Returns array containing smiles strings of molecules"""
     smiles, names = [], []
-    with open(filename, 'r') as f:
+    with open(filename, "r") as f:
         for line in f:
             if line:
-                toks = line.strip().split(' ')
+                toks = line.strip().split(" ")
                 smiles.append([toks[0], toks[-1]])
     return smiles
 
@@ -697,7 +703,7 @@ def calc_xval_performance(active_props,
     active_min_all.append(active_mins)
 
     scale = []
-    for (a_max, a_min) in zip(active_maxes, active_mins):
+    for a_max, a_min in zip(active_maxes, active_mins):
         if a_max != a_min:
             scale.append(a_max - a_min)
         else:
@@ -750,34 +756,41 @@ def calc_xval_performance(active_props,
 
 
 ### Dataset info #####
-def dataset_info(dataset):  #qm9, zinc, cep
-    if dataset == 'qm9':
+def dataset_info(dataset):  # qm9, zinc, cep
+    if dataset == "qm9":
         return {
-            'atom_types': ["H", "C", "N", "O", "F"],
-            'maximum_valence': {
+            "atom_types": ["H", "C", "N", "O", "F"],
+            "maximum_valence": {
                 0: 1,
                 1: 4,
                 2: 3,
                 3: 2,
-                4: 1
-            },
-            'number_to_atom': {
+                4: 1},
+            "number_to_atom": {
                 0: "H",
                 1: "C",
                 2: "N",
                 3: "O",
-                4: "F"
-            },
-            'bucket_sizes': np.array(list(range(4, 28, 2)) + [29])
-        }
-    elif dataset == 'zinc':
+                4: "F"},
+            "bucket_sizes": np.array(list(range(4, 28, 2)) + [29]),}
+    elif dataset == "zinc":
         return {
-            'atom_types': [
-                'Br1(0)', 'C4(0)', 'Cl1(0)', 'F1(0)', 'H1(0)', 'I1(0)',
-                'N2(-1)', 'N3(0)', 'N4(1)', 'O1(-1)', 'O2(0)', 'S2(0)', 'S4(0)',
-                'S6(0)'
-            ],
-            'maximum_valence': {
+            "atom_types": [
+                "Br1(0)",
+                "C4(0)",
+                "Cl1(0)",
+                "F1(0)",
+                "H1(0)",
+                "I1(0)",
+                "N2(-1)",
+                "N3(0)",
+                "N4(1)",
+                "O1(-1)",
+                "O2(0)",
+                "S2(0)",
+                "S4(0)",
+                "S6(0)",],
+            "maximum_valence": {
                 0: 1,
                 1: 4,
                 2: 1,
@@ -792,61 +805,54 @@ def dataset_info(dataset):  #qm9, zinc, cep
                 11: 2,
                 12: 4,
                 13: 6,
-                14: 3
-            },
-            'number_to_atom': {
-                0: 'Br',
-                1: 'C',
-                2: 'Cl',
-                3: 'F',
-                4: 'H',
-                5: 'I',
-                6: 'N',
-                7: 'N',
-                8: 'N',
-                9: 'O',
-                10: 'O',
-                11: 'S',
-                12: 'S',
-                13: 'S'
-            },
-            'bucket_sizes':
+                14: 3,},
+            "number_to_atom": {
+                0: "Br",
+                1: "C",
+                2: "Cl",
+                3: "F",
+                4: "H",
+                5: "I",
+                6: "N",
+                7: "N",
+                8: "N",
+                9: "O",
+                10: "O",
+                11: "S",
+                12: "S",
+                13: "S",},
+            "bucket_sizes":
                 np.array([
                     28, 31, 33, 35, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-                    48, 49, 50, 51, 53, 55, 58, 84
-                ])
-        }
+                    48, 49, 50, 51, 53, 55, 58, 84]),}
 
     elif dataset == "cep":
         return {
-            'atom_types': ["C", "S", "N", "O", "Se", "Si"],
-            'maximum_valence': {
+            "atom_types": ["C", "S", "N", "O", "Se", "Si"],
+            "maximum_valence": {
                 0: 4,
                 1: 2,
                 2: 3,
                 3: 2,
                 4: 2,
-                5: 4
-            },
-            'number_to_atom': {
+                5: 4},
+            "number_to_atom": {
                 0: "C",
                 1: "S",
                 2: "N",
                 3: "O",
                 4: "Se",
-                5: "Si"
-            },
-            'bucket_sizes':
-                np.array(
-                    [25, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 43, 46])
-        }
+                5: "Si"},
+            "bucket_sizes":
+                np.array([
+                    25, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 43, 46]),}
     else:
         print("the datasets in use are qm9|zinc|cep")
         exit(1)
 
 
 ##### Check data #####
-def check_smi_atom_types(smi, dataset='zinc', verbose=False):
+def check_smi_atom_types(smi, dataset="zinc", verbose=False):
     mol = Chem.MolFromSmiles(smi)
     for atom in mol.GetAtoms():
         symbol = atom.GetSymbol()
@@ -854,11 +860,11 @@ def check_smi_atom_types(smi, dataset='zinc', verbose=False):
         charge = atom.GetFormalCharge()
         atom_str = "%s%i(%i)" % (symbol, valence, charge)
 
-        if atom_str not in dataset_info(dataset)['atom_types']:
+        if atom_str not in dataset_info(dataset)["atom_types"]:
             if "*" in atom_str:
                 continue
             else:
                 if verbose:
-                    print('unrecognized atom type %s' % atom_str)
+                    print("unrecognized atom type %s" % atom_str)
                 return False
     return True

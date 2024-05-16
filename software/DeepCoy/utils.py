@@ -21,43 +21,49 @@ LARGE_NUMBER = 1e10
 geometry_numbers = [3, 4, 5, 6]  # triangle, square, pentagen, hexagon
 
 # bond mapping
-bond_dict = {'SINGLE': 0, 'DOUBLE': 1, 'TRIPLE': 2, "AROMATIC": 3}
+bond_dict = {"SINGLE": 0, "DOUBLE": 1, "TRIPLE": 2, "AROMATIC": 3}
 number_to_bond = {
     0: Chem.rdchem.BondType.SINGLE,
     1: Chem.rdchem.BondType.DOUBLE,
     2: Chem.rdchem.BondType.TRIPLE,
-    3: Chem.rdchem.BondType.AROMATIC
-}
+    3: Chem.rdchem.BondType.AROMATIC,}
 
 
-def dataset_info(dataset):  #qm9, zinc, cep
-    if dataset == 'qm9':
+def dataset_info(dataset):  # qm9, zinc, cep
+    if dataset == "qm9":
         return {
-            'atom_types': ["H", "C", "N", "O", "F"],
-            'maximum_valence': {
+            "atom_types": ["H", "C", "N", "O", "F"],
+            "maximum_valence": {
                 0: 1,
                 1: 4,
                 2: 3,
                 3: 2,
-                4: 1
-            },
-            'number_to_atom': {
+                4: 1},
+            "number_to_atom": {
                 0: "H",
                 1: "C",
                 2: "N",
                 3: "O",
-                4: "F"
-            },
-            'bucket_sizes': np.array(list(range(4, 28, 2)) + [29])
-        }
-    elif dataset == 'zinc':
+                4: "F"},
+            "bucket_sizes": np.array(list(range(4, 28, 2)) + [29]),}
+    elif dataset == "zinc":
         return {
-            'atom_types': [
-                'Br1(0)', 'C4(0)', 'Cl1(0)', 'F1(0)', 'H1(0)', 'I1(0)',
-                'N2(-1)', 'N3(0)', 'N4(1)', 'O1(-1)', 'O2(0)', 'S2(0)', 'S4(0)',
-                'S6(0)'
-            ],
-            'maximum_valence': {
+            "atom_types": [
+                "Br1(0)",
+                "C4(0)",
+                "Cl1(0)",
+                "F1(0)",
+                "H1(0)",
+                "I1(0)",
+                "N2(-1)",
+                "N3(0)",
+                "N4(1)",
+                "O1(-1)",
+                "O2(0)",
+                "S2(0)",
+                "S4(0)",
+                "S6(0)",],
+            "maximum_valence": {
                 0: 1,
                 1: 4,
                 2: 1,
@@ -72,38 +78,45 @@ def dataset_info(dataset):  #qm9, zinc, cep
                 11: 2,
                 12: 4,
                 13: 6,
-                14: 3
-            },
-            'number_to_atom': {
-                0: 'Br',
-                1: 'C',
-                2: 'Cl',
-                3: 'F',
-                4: 'H',
-                5: 'I',
-                6: 'N',
-                7: 'N',
-                8: 'N',
-                9: 'O',
-                10: 'O',
-                11: 'S',
-                12: 'S',
-                13: 'S'
-            },
-            'bucket_sizes':
+                14: 3,},
+            "number_to_atom": {
+                0: "Br",
+                1: "C",
+                2: "Cl",
+                3: "F",
+                4: "H",
+                5: "I",
+                6: "N",
+                7: "N",
+                8: "N",
+                9: "O",
+                10: "O",
+                11: "S",
+                12: "S",
+                13: "S",},
+            "bucket_sizes":
                 np.array([
                     28, 31, 33, 35, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-                    48, 49, 50, 51, 53, 55, 58, 84
-                ])
-        }
-    elif dataset == 'zinc_phosphorus':
+                    48, 49, 50, 51, 53, 55, 58, 84]),}
+    elif dataset == "zinc_phosphorus":
         return {
-            'atom_types': [
-                'Br1(0)', 'C4(0)', 'Cl1(0)', 'F1(0)', 'H1(0)', 'I1(0)',
-                'N2(-1)', 'N3(0)', 'N4(1)', 'O1(-1)', 'O2(0)', 'S2(0)', 'S4(0)',
-                'S6(0)', 'P5(0)'
-            ],
-            'maximum_valence': {
+            "atom_types": [
+                "Br1(0)",
+                "C4(0)",
+                "Cl1(0)",
+                "F1(0)",
+                "H1(0)",
+                "I1(0)",
+                "N2(-1)",
+                "N3(0)",
+                "N4(1)",
+                "O1(-1)",
+                "O2(0)",
+                "S2(0)",
+                "S4(0)",
+                "S6(0)",
+                "P5(0)",],
+            "maximum_valence": {
                 0: 1,
                 1: 4,
                 2: 1,
@@ -118,54 +131,47 @@ def dataset_info(dataset):  #qm9, zinc, cep
                 11: 2,
                 12: 4,
                 13: 6,
-                14: 5
-            },
-            'number_to_atom': {
-                0: 'Br',
-                1: 'C',
-                2: 'Cl',
-                3: 'F',
-                4: 'H',
-                5: 'I',
-                6: 'N',
-                7: 'N',
-                8: 'N',
-                9: 'O',
-                10: 'O',
-                11: 'S',
-                12: 'S',
-                13: 'S',
-                14: 'P'
-            },
-            'bucket_sizes':
+                14: 5,},
+            "number_to_atom": {
+                0: "Br",
+                1: "C",
+                2: "Cl",
+                3: "F",
+                4: "H",
+                5: "I",
+                6: "N",
+                7: "N",
+                8: "N",
+                9: "O",
+                10: "O",
+                11: "S",
+                12: "S",
+                13: "S",
+                14: "P",},
+            "bucket_sizes":
                 np.array([
                     28, 31, 33, 35, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
-                    48, 49, 50, 51, 53, 55, 58, 84
-                ])
-        }
+                    48, 49, 50, 51, 53, 55, 58, 84]),}
     elif dataset == "cep":
         return {
-            'atom_types': ["C", "S", "N", "O", "Se", "Si"],
-            'maximum_valence': {
+            "atom_types": ["C", "S", "N", "O", "Se", "Si"],
+            "maximum_valence": {
                 0: 4,
                 1: 2,
                 2: 3,
                 3: 2,
                 4: 2,
-                5: 4
-            },
-            'number_to_atom': {
+                5: 4},
+            "number_to_atom": {
                 0: "C",
                 1: "S",
                 2: "N",
                 3: "O",
                 4: "Se",
-                5: "Si"
-            },
-            'bucket_sizes':
-                np.array(
-                    [25, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 43, 46])
-        }
+                5: "Si"},
+            "bucket_sizes":
+                np.array([
+                    25, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 43, 46]),}
     else:
         print("the datasets in use are qm9|zinc|zinc_phosphorus|cep")
         exit(1)
@@ -198,9 +204,20 @@ def graph_to_adj_mat(graph,
 
 
 def check_edge_prob(dataset):
-    with open('intermediate_results_%s' % dataset, 'rb') as f:
-        adjacency_matrix, edge_type_prob, edge_type_label, node_symbol_prob, node_symbol, edge_prob, edge_prob_label, qed_prediction, qed_labels, mean, logvariance = pickle.load(
-            f)
+    with open("intermediate_results_%s" % dataset, "rb") as f:
+        (
+            adjacency_matrix,
+            edge_type_prob,
+            edge_type_label,
+            node_symbol_prob,
+            node_symbol,
+            edge_prob,
+            edge_prob_label,
+            qed_prediction,
+            qed_labels,
+            mean,
+            logvariance,
+        ) = pickle.load(f)
     for ep, epl in zip(edge_prob, edge_prob_label):
         print("prediction")
         print(ep)
@@ -209,9 +226,20 @@ def check_edge_prob(dataset):
 
 
 def check_edge_type_prob(filter=None):
-    with open('intermediate_results_%s' % dataset, 'rb') as f:
-        adjacency_matrix, edge_type_prob, edge_type_label, node_symbol_prob, node_symbol, edge_prob, edge_prob_label, qed_prediction, qed_labels, mean, logvariance = pickle.load(
-            f)
+    with open("intermediate_results_%s" % dataset, "rb") as f:
+        (
+            adjacency_matrix,
+            edge_type_prob,
+            edge_type_label,
+            node_symbol_prob,
+            node_symbol,
+            edge_prob,
+            edge_prob_label,
+            qed_prediction,
+            qed_labels,
+            mean,
+            logvariance,
+        ) = pickle.load(f)
     for ep, epl in zip(edge_type_prob, edge_type_label):
         print("prediction")
         print(ep)
@@ -220,33 +248,77 @@ def check_edge_type_prob(filter=None):
 
 
 def check_mean(dataset, filter=None):
-    with open('intermediate_results_%s' % dataset, 'rb') as f:
-        adjacency_matrix, edge_type_prob, edge_type_label, node_symbol_prob, node_symbol, edge_prob, edge_prob_label, qed_prediction, qed_labels, mean, logvariance = pickle.load(
-            f)
+    with open("intermediate_results_%s" % dataset, "rb") as f:
+        (
+            adjacency_matrix,
+            edge_type_prob,
+            edge_type_label,
+            node_symbol_prob,
+            node_symbol,
+            edge_prob,
+            edge_prob_label,
+            qed_prediction,
+            qed_labels,
+            mean,
+            logvariance,
+        ) = pickle.load(f)
     print(mean.tolist()[:40])
 
 
 def check_variance(dataset, filter=None):
-    with open('intermediate_results_%s' % dataset, 'rb') as f:
-        adjacency_matrix, edge_type_prob, edge_type_label, node_symbol_prob, node_symbol, edge_prob, edge_prob_label, qed_prediction, qed_labels, mean, logvariance = pickle.load(
-            f)
+    with open("intermediate_results_%s" % dataset, "rb") as f:
+        (
+            adjacency_matrix,
+            edge_type_prob,
+            edge_type_label,
+            node_symbol_prob,
+            node_symbol,
+            edge_prob,
+            edge_prob_label,
+            qed_prediction,
+            qed_labels,
+            mean,
+            logvariance,
+        ) = pickle.load(f)
     print(np.exp(logvariance).tolist()[:40])
 
 
 def check_node_prob(filter=None):
     print(dataset)
-    with open('intermediate_results_%s' % dataset, 'rb') as f:
-        adjacency_matrix, edge_type_prob, edge_type_label, node_symbol_prob, node_symbol, edge_prob, edge_prob_label, qed_prediction, qed_labels, mean, logvariance = pickle.load(
-            f)
+    with open("intermediate_results_%s" % dataset, "rb") as f:
+        (
+            adjacency_matrix,
+            edge_type_prob,
+            edge_type_label,
+            node_symbol_prob,
+            node_symbol,
+            edge_prob,
+            edge_prob_label,
+            qed_prediction,
+            qed_labels,
+            mean,
+            logvariance,
+        ) = pickle.load(f)
     print(node_symbol_prob[0])
     print(node_symbol[0])
     print(node_symbol_prob.shape)
 
 
 def check_qed(filter=None):
-    with open('intermediate_results_%s' % dataset, 'rb') as f:
-        adjacency_matrix, edge_type_prob, edge_type_label, node_symbol_prob, node_symbol, edge_prob, edge_prob_label, qed_prediction, qed_labels, mean, logvariance = pickle.load(
-            f)
+    with open("intermediate_results_%s" % dataset, "rb") as f:
+        (
+            adjacency_matrix,
+            edge_type_prob,
+            edge_type_label,
+            node_symbol_prob,
+            node_symbol,
+            edge_prob,
+            edge_prob_label,
+            qed_prediction,
+            qed_labels,
+            mean,
+            logvariance,
+        ) = pickle.load(f)
     print(qed_prediction)
     print(qed_labels[0])
     print(np.mean(np.abs(qed_prediction - qed_labels[0])))
@@ -268,7 +340,7 @@ def generate_std_normal(a1, a2, a3):
 
 
 def check_validity(dataset):
-    with open('generated_smiles_%s' % dataset, 'rb') as f:
+    with open("generated_smiles_%s" % dataset, "rb") as f:
         all_smiles = set(pickle.load(f))
     count = 0
     for smiles in all_smiles:
@@ -293,7 +365,7 @@ def get_graph_length(all_node_mask):
 def make_dir(path):
     if not os.path.exists(path):
         os.mkdir(path)
-        print('made directory %s' % path)
+        print("made directory %s" % path)
 
 
 # sample node symbols based on node predictions
@@ -303,7 +375,7 @@ def sample_node_symbol(all_node_symbol_prob, all_lengths, dataset):
         node_symbol = []
         for node_idx in range(all_lengths[graph_idx]):
             symbol = np.random.choice(np.arange(
-                len(dataset_info(dataset)['atom_types'])),
+                len(dataset_info(dataset)["atom_types"])),
                                       p=graph_prob[node_idx])
             node_symbol.append(symbol)
         all_node_symbol.append(node_symbol)
@@ -319,7 +391,7 @@ def sample_node_keep_new(node_keep_probs, real_length):
     for idx in node_keep_idxs:
         node_keeps[idx] = 1
     return node_keeps
-    #for i, prob in enumerate(node_keep_probs[0][0:real_length]):
+    # for i, prob in enumerate(node_keep_probs[0][0:real_length]):
     #    node_keeps[i] = np.random.choice([0, 1], p=[1-prob, prob])
     return node_keeps
 
@@ -333,12 +405,12 @@ def sample_node_keep(node_keep_probs, real_length):
 
 
 def dump(file_name, content):
-    with open(file_name, 'wb') as out_file:
+    with open(file_name, "wb") as out_file:
         pickle.dump(content, out_file, pickle.HIGHEST_PROTOCOL)
 
 
 def load(file_name):
-    with open(file_name, 'rb') as f:
+    with open(file_name, "rb") as f:
         return pickle.load(f)
 
 
@@ -384,20 +456,20 @@ def bfs_distance(start, adj_list, is_dense=False):
 
 
 def get_initial_valence(node_symbol, dataset):
-    return [dataset_info(dataset)['maximum_valence'][s] for s in node_symbol]
+    return [dataset_info(dataset)["maximum_valence"][s] for s in node_symbol]
 
 
 def add_atoms(new_mol, node_symbol, dataset):
     for number in node_symbol:
-        if dataset == 'qm9' or dataset == 'cep':
+        if dataset == "qm9" or dataset == "cep":
             idx = new_mol.AddAtom(
-                Chem.Atom(dataset_info(dataset)['number_to_atom'][number]))
-        elif dataset == 'zinc' or dataset == 'zinc_phosphorus':
+                Chem.Atom(dataset_info(dataset)["number_to_atom"][number]))
+        elif dataset == "zinc" or dataset == "zinc_phosphorus":
             new_atom = Chem.Atom(
-                dataset_info(dataset)['number_to_atom'][number])
+                dataset_info(dataset)["number_to_atom"][number])
             charge_num = int(
-                dataset_info(dataset)['atom_types'][number].split('(')[1].strip(
-                    ')'))
+                dataset_info(dataset)["atom_types"][number].split("(")[1].strip(
+                    ")"))
             new_atom.SetFormalCharge(charge_num)
             new_mol.AddAtom(new_atom)
 
@@ -426,9 +498,9 @@ def remove_extra_nodes(new_mol):
 
 
 def novelty_metric(dataset):
-    with open('all_smiles_%s.pkl' % dataset, 'rb') as f:
+    with open("all_smiles_%s.pkl" % dataset, "rb") as f:
         all_smiles = set(pickle.load(f))
-    with open('generated_smiles_%s' % dataset, 'rb') as f:
+    with open("generated_smiles_%s" % dataset, "rb") as f:
         generated_all_smiles = set(pickle.load(f))
     total_new_molecules = 0
     for generated_smiles in generated_all_smiles:
@@ -440,10 +512,10 @@ def novelty_metric(dataset):
 
 def count_edge_type(dataset, generated=True):
     if generated:
-        filename = 'generated_smiles_%s' % dataset
+        filename = "generated_smiles_%s" % dataset
     else:
-        filename = 'all_smiles_%s.pkl' % dataset
-    with open(filename, 'rb') as f:
+        filename = "all_smiles_%s.pkl" % dataset
+    with open(filename, "rb") as f:
         all_smiles = set(pickle.load(f))
 
     counter = defaultdict(int)
@@ -468,7 +540,7 @@ def need_kekulize(mol):
 
 
 def count_atoms(dataset):
-    with open("generated_smiles_%s" % dataset, 'rb') as f:
+    with open("generated_smiles_%s" % dataset, "rb") as f:
         all_smiles = set(pickle.load(f))
     counter = defaultdict(int)
     atom_count_per_molecule = []  # record the counts for each molecule
@@ -478,7 +550,7 @@ def count_atoms(dataset):
         except:
             continue
         atom_count_this_molecule = [0] * len(
-            dataset_info(dataset)['atom_types'])
+            dataset_info(dataset)["atom_types"])
         for node in nodes:
             atom_type = np.argmax(node)
             atom_count_this_molecule[atom_type] += 1
@@ -526,25 +598,27 @@ def to_graph(smiles, dataset):
              bond.GetEndAtomIdx()))
         assert bond_dict[str(bond.GetBondType())] != 3
     for atom in mol.GetAtoms():
-        if dataset == 'qm9' or dataset == "cep":
+        if dataset == "qm9" or dataset == "cep":
             nodes.append(
                 onehot(
-                    dataset_info(dataset)['atom_types'].index(atom.GetSymbol()),
-                    len(dataset_info(dataset)['atom_types'])))
-        elif dataset == 'zinc' or dataset == 'zinc_phosphorus':  # transform using "<atom_symbol><valence>(<charge>)"  notation
+                    dataset_info(dataset)["atom_types"].index(atom.GetSymbol()),
+                    len(dataset_info(dataset)["atom_types"]),
+                ))
+        elif (dataset == "zinc" or dataset == "zinc_phosphorus"
+             ):  # transform using "<atom_symbol><valence>(<charge>)"  notation
             symbol = atom.GetSymbol()
             valence = atom.GetTotalValence()
             charge = atom.GetFormalCharge()
             atom_str = "%s%i(%i)" % (symbol, valence, charge)
 
-            if atom_str not in dataset_info(dataset)['atom_types']:
-                print('unrecognized atom type %s' % atom_str)
+            if atom_str not in dataset_info(dataset)["atom_types"]:
+                print("unrecognized atom type %s" % atom_str)
                 return [], []
 
             nodes.append(
                 onehot(
-                    dataset_info(dataset)['atom_types'].index(atom_str),
-                    len(dataset_info(dataset)['atom_types'])))
+                    dataset_info(dataset)["atom_types"].index(atom_str),
+                    len(dataset_info(dataset)["atom_types"])))
 
     return nodes, edges
 
@@ -563,8 +637,8 @@ def to_graph_mol(mol, dataset):
     edges = []
     nodes = []
     for bond in mol.GetBonds():
-        if mol.GetAtomWithIdx(bond.GetBeginAtomIdx()).GetAtomicNum(
-        ) == 0 or mol.GetAtomWithIdx(bond.GetEndAtomIdx()).GetAtomicNum() == 0:
+        if (mol.GetAtomWithIdx(bond.GetBeginAtomIdx()).GetAtomicNum() == 0 or
+                mol.GetAtomWithIdx(bond.GetEndAtomIdx()).GetAtomicNum() == 0):
             continue
         else:
             edges.append(
@@ -572,35 +646,37 @@ def to_graph_mol(mol, dataset):
                  bond.GetEndAtomIdx()))
             assert bond_dict[str(bond.GetBondType())] != 3
     for atom in mol.GetAtoms():
-        if dataset == 'qm9' or dataset == "cep":
+        if dataset == "qm9" or dataset == "cep":
             nodes.append(
                 onehot(
-                    dataset_info(dataset)['atom_types'].index(atom.GetSymbol()),
-                    len(dataset_info(dataset)['atom_types'])))
-        elif dataset == 'zinc' or dataset == 'zinc_phosphorus':  # transform using "<atom_symbol><valence>(<charge>)"  notation
+                    dataset_info(dataset)["atom_types"].index(atom.GetSymbol()),
+                    len(dataset_info(dataset)["atom_types"]),
+                ))
+        elif (dataset == "zinc" or dataset == "zinc_phosphorus"
+             ):  # transform using "<atom_symbol><valence>(<charge>)"  notation
             symbol = atom.GetSymbol()
             valence = atom.GetTotalValence()
             charge = atom.GetFormalCharge()
             atom_str = "%s%i(%i)" % (symbol, valence, charge)
 
-            if atom_str not in dataset_info(dataset)['atom_types']:
+            if atom_str not in dataset_info(dataset)["atom_types"]:
                 if "*" in atom_str:
                     continue
                 else:
-                    print('unrecognized atom type %s' % atom_str)
+                    print("unrecognized atom type %s" % atom_str)
                     return [], []
 
             nodes.append(
                 onehot(
-                    dataset_info(dataset)['atom_types'].index(atom_str),
-                    len(dataset_info(dataset)['atom_types'])))
+                    dataset_info(dataset)["atom_types"].index(atom_str),
+                    len(dataset_info(dataset)["atom_types"])))
 
     return nodes, edges
 
 
 def shape_count(dataset, remove_print=False, all_smiles=None):
     if all_smiles == None:
-        with open('generated_smiles_%s' % dataset, 'rb') as f:
+        with open("generated_smiles_%s" % dataset, "rb") as f:
             all_smiles = set(pickle.load(f))
 
     geometry_counts = [0] * len(geometry_numbers)
@@ -650,7 +726,7 @@ class ThreadedIterator:
 
     def worker(self, original_iterator):
         for element in original_iterator:
-            assert element is not None, 'By convention, iterator elements much not be None'
+            assert element is not None, "By convention, iterator elements much not be None"
             self.__queue.put(element, block=True)
         self.__queue.put(None, block=True)
 
@@ -676,19 +752,14 @@ class MLP(object):
         dims = [self.in_size] + self.hid_sizes + [self.out_size]
         weight_sizes = list(zip(dims[:-1], dims[1:]))
         weights = [
-            tf.Variable(self.init_weights(s), name='MLP_W_layer%i' % i)
-            for (i, s) in enumerate(weight_sizes)
-        ]
+            tf.Variable(self.init_weights(s), name="MLP_W_layer%i" % i)
+            for (i, s) in enumerate(weight_sizes)]
         biases = [
             tf.Variable(np.zeros(s[-1]).astype(np.float32),
-                        name='MLP_b_layer%i' % i)
-            for (i, s) in enumerate(weight_sizes)
-        ]
+                        name="MLP_b_layer%i" % i)
+            for (i, s) in enumerate(weight_sizes)]
 
-        network_params = {
-            "weights": weights,
-            "biases": biases,
-        }
+        network_params = {"weights": weights, "biases": biases}
 
         return network_params
 
@@ -706,7 +777,7 @@ class MLP(object):
         return last_hidden
 
 
-class Graph():
+class Graph:
 
     def __init__(self, V, g):
         self.V = V
@@ -722,7 +793,6 @@ class Graph():
     # and parent to detect cycle in subgraph
     # reachable from vertex v.
     def isCyclicUtil(self, v, visited, parent):
-
         # Mark current node as visited
         visited[v] = True
 
@@ -770,10 +840,10 @@ class Graph():
 # whether whether the graphs has no cycle or not
 def check_cyclic(dataset, generated=True):
     if generated:
-        with open("generated_smiles_%s" % dataset, 'rb') as f:
+        with open("generated_smiles_%s" % dataset, "rb") as f:
             all_smiles = set(pickle.load(f))
     else:
-        with open("all_smiles_%s.pkl" % dataset, 'rb') as f:
+        with open("all_smiles_%s.pkl" % dataset, "rb") as f:
             all_smiles = set(pickle.load(f))
 
     tree_count = 0
@@ -794,7 +864,7 @@ def check_cyclic(dataset, generated=True):
 
 
 def check_logp(dataset):
-    with open('generated_smiles_%s' % dataset, 'rb') as f:
+    with open("generated_smiles_%s" % dataset, "rb") as f:
         all_smiles = set(pickle.load(f))
     logp_sum = 0
     total = 0
@@ -812,7 +882,7 @@ def check_logp(dataset):
 
 
 def sssr_metric(dataset):
-    with open('generated_smiles_%s' % dataset, 'rb') as f:
+    with open("generated_smiles_%s" % dataset, "rb") as f:
         all_smiles = set(pickle.load(f))
     overlapped_molecule = 0
     for smiles in all_smiles:
@@ -895,13 +965,14 @@ def node_keep_to_dense(nodes_to_keep, maximum_vertice_num):
 def transition_freqs_to_dense(transition_freqs, maximum_vertice_num):
     new_freqs_sequence = []
     for step in transition_freqs:
-        s = [1.] * maximum_vertice_num
+        s = [1.0] * maximum_vertice_num
         for node, freq in step:
             if freq > 0:
-                #s[node] = max(min(1/freq, 1000000) / 100000., 0.1)
-                s[node] = math.log10(max(min(1 / freq, 10000000) / 1000., 10.))
+                # s[node] = max(min(1/freq, 1000000) / 100000., 0.1)
+                s[node] = math.log10(max(
+                    min(1 / freq, 10000000) / 1000.0, 10.0))
             else:
-                s[node] = 10.
+                s[node] = 10.0
         new_freqs_sequence.append(s)
     return new_freqs_sequence  # [number_iteration, maximum_vertice_num]
 
@@ -913,14 +984,14 @@ def transition_freqs_edge_to_dense(transition_freqs,
     for step in transition_freqs:
         new_freq_seq = []
         for i in range(num_edge_types):
-            s = [1.] * maximum_vertice_num
+            s = [1.0] * maximum_vertice_num
             for node, edge, freq in step:
                 if freq > 0 and int(edge) == i:
-                    #s[node] = max(min(1/freq, 1000000) / 100000., 0.1)
+                    # s[node] = max(min(1/freq, 1000000) / 100000., 0.1)
                     s[node] = math.log10(
-                        max(min(1 / freq, 10000000) / 1000., 10.))
+                        max(min(1 / freq, 10000000) / 1000.0, 10.0))
                 else:
-                    s[node] = 10.
+                    s[node] = 10.0
             new_freq_seq.append(s)
         new_freqs_sequence.append(new_freq_seq)
     return new_freqs_sequence  # [number_iteration, num_edge_types, maximum_vertice_num]
@@ -934,7 +1005,7 @@ def edge_type_masks_to_dense(edge_type_masks, maximum_vertice_num,
         for node_in_focus, neighbor, bond in mask_sparse:
             mask_dense[bond][neighbor] = 1
         new_edge_type_masks.append(mask_dense)
-    return new_edge_type_masks  #[number_iteration, 3, maximum_vertice_num]
+    return new_edge_type_masks  # [number_iteration, 3, maximum_vertice_num]
 
 
 def edge_type_labels_to_dense(edge_type_labels, maximum_vertice_num,
@@ -946,7 +1017,7 @@ def edge_type_labels_to_dense(edge_type_labels, maximum_vertice_num,
             labels_dense[bond][neighbor] = 1 / float(
                 len(labels_sparse))  # fix the probability bug here.
         new_edge_type_labels.append(labels_dense)
-    return new_edge_type_labels  #[number_iteration, 3, maximum_vertice_num]
+    return new_edge_type_labels  # [number_iteration, 3, maximum_vertice_num]
 
 
 def edge_masks_to_dense(edge_masks, maximum_vertice_num):

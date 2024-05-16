@@ -17,7 +17,7 @@ def align_smiles_by_MCS_it(smiles_1, smiles_2):
         while repeat:
             count += 1
             # Align mols by MCS
-            res = rdFMCS.FindMCS(partial_mols)  #, ringMatchesRingOnly=True)
+            res = rdFMCS.FindMCS(partial_mols)  # , ringMatchesRingOnly=True)
             MCS_res.append(res)
 
             for i, mol in enumerate(aligned_mols):
@@ -58,7 +58,7 @@ def align_smiles_by_MCS_it(smiles_1, smiles_2):
             # Get atom type of mol1
             atom_type = aligned_mols[0].GetAtomWithIdx(i).GetAtomicNum()
             # Warning if not an atom type we know is matched perfectly
-            #if atom_type not in [6, 7, 8, 9, 16, 17]:
+            # if atom_type not in [6, 7, 8, 9, 16, 17]:
             #    print("Warning: out of guaranteed scope atom type.")
             # Find same atom type on mol2
             for j in range(total_atoms_aligned, mols[0].GetNumHeavyAtoms()):

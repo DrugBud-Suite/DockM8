@@ -11,18 +11,24 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.utilities import convert_molecules, delete_files, printlog, split_pdbqt_str
 
 
-def qvina2_docking(split_file: Path, w_dir: Path, protein_file: Path,
-                   pocket_definition: Dict[str, list], software: Path,
-                   exhaustiveness: int, n_poses: int):
+def qvina2_docking(
+    split_file: Path,
+    w_dir: Path,
+    protein_file: Path,
+    pocket_definition: Dict[str, list],
+    software: Path,
+    exhaustiveness: int,
+    n_poses: int,
+):
     """
     Perform docking using the QVINA2 software for either a library of molecules or split files.
 
@@ -59,10 +65,7 @@ def qvina2_docking(split_file: Path, w_dir: Path, protein_file: Path,
 
     protein_file_pdbqt = convert_molecules(
         str(protein_file),
-        str(protein_file).replace(".pdb", ".pdbqt"),
-        "pdb",
-        "pdbqt",
-    )
+        str(protein_file).replace(".pdb", ".pdbqt"), "pdb", "pdbqt")
 
     # Dock each ligand using QVINA2
     for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
@@ -108,8 +111,7 @@ def qvina2_docking(split_file: Path, w_dir: Path, protein_file: Path,
                 "Pose ID": pose_file.stem,
                 "Molecule": rdkit_mol[0],
                 "QVINA2_Affinity": affinity,
-                "ID": pose_file.stem.split("_")[0],
-            }
+                "ID": pose_file.stem.split("_")[0],}
         PandasTools.WriteSDF(
             qvina2_poses,
             str(qvina2_docking_results),
@@ -141,14 +143,11 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
             qvina2_dataframes = []
             for file in tqdm(os.listdir(w_dir / "qvina2"),
                              desc="Loading QVINA2 poses"):
-                if (file.startswith("split") or
-                        file.startswith("final_library") and
-                        file.endswith(".sdf")):
-                    df = PandasTools.LoadSDF(
-                        str(w_dir / "qvina2" / file),
-                        idName="Pose ID",
-                        molColName="Molecule",
-                    )
+                if file.startswith("split") or file.startswith(
+                        "final_library") and file.endswith(".sdf"):
+                    df = PandasTools.LoadSDF(str(w_dir / "qvina2" / file),
+                                             idName="Pose ID",
+                                             molColName="Molecule")
                     qvina2_dataframes.append(df)
             qvina2_df = pd.concat(qvina2_dataframes)
             qvina2_df["ID"] = qvina2_df["Pose ID"].apply(

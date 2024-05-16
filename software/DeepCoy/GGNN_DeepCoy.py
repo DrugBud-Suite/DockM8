@@ -9,7 +9,15 @@ import numpy as np
 import pickle
 import random
 from ..DeepCoy import utils
-from ..DeepCoy.utils import MLP, dataset_info, ThreadedIterator, graph_to_adj_mat, SMALL_NUMBER, LARGE_NUMBER, graph_to_adj_mat
+from ..DeepCoy.utils import (
+    MLP,
+    dataset_info,
+    ThreadedIterator,
+    graph_to_adj_mat,
+    SMALL_NUMBER,
+    LARGE_NUMBER,
+    graph_to_adj_mat,
+)
 
 
 class ChemModel(object):
@@ -22,31 +30,31 @@ class ChemModel(object):
         self.args = args
 
         # Collect argument things:
-        data_dir = ''
-        if '--data_dir' in args and args['--data_dir'] is not None:
-            data_dir = args['--data_dir']
+        data_dir = ""
+        if "--data_dir" in args and args["--data_dir"] is not None:
+            data_dir = args["--data_dir"]
         self.data_dir = data_dir
 
         # Collect parameters:
         params = self.default_params()
-        config_file = args.get('--config-file')
+        config_file = args.get("--config-file")
         if config_file is not None:
-            with open(config_file, 'r') as f:
+            with open(config_file, "r") as f:
                 params.update(json.load(f))
-        config = args.get('--config')
+        config = args.get("--config")
         if config is not None:
             params.update(json.loads(config))
         self.params = params
 
         # Get which dataset in use
-        self.params['dataset'] = dataset = args.get('--dataset')
+        self.params["dataset"] = dataset = args.get("--dataset")
         # Number of atom types of this dataset
-        self.params['num_symbols'] = len(dataset_info(dataset)["atom_types"])
+        self.params["num_symbols"] = len(dataset_info(dataset)["atom_types"])
 
-        self.run_id = "_".join(
-            [time.strftime("%Y-%m-%d-%H-%M-%S"),
-             str(os.getpid())])
-        log_dir = args.get('--log_dir') or '.'
+        self.run_id = "_".join([
+            time.strftime("%Y-%m-%d-%H-%M-%S"),
+            str(os.getpid())])
+        log_dir = args.get("--log_dir") or "."
         self.log_file = os.path.join(log_dir,
                                      "%s_log_%s.json" % (self.run_id, dataset))
         self.best_model_file = os.path.join(log_dir,
@@ -59,15 +67,15 @@ class ChemModel(object):
             json.dump(params, f)
         print("Run %s starting with following parameters:\n%s" %
               (self.run_id, json.dumps(self.params)))
-        random.seed(params['random_seed'])
-        np.random.seed(params['random_seed'])
+        random.seed(params["random_seed"])
+        np.random.seed(params["random_seed"])
 
         # Load subgraph frequency dictionary
-        if params['subgraph_freq_file']:
+        if params["subgraph_freq_file"]:
             self.freq_dict = pickle.load(
-                open(params['subgraph_freq_file'], 'rb'))
+                open(params["subgraph_freq_file"], "rb"))
             print("Loaded subgraph frequency dictionary from %s" %
-                  params['subgraph_freq_file'])
+                  params["subgraph_freq_file"])
         else:
             self.freq_dict = {}
             print("Subgraph frequency dictionary not used.")
@@ -76,9 +84,9 @@ class ChemModel(object):
         self.max_num_vertices = 0
         self.num_edge_types = 0
         self.annotation_size = 0
-        self.train_data = self.load_data(params['train_file'],
+        self.train_data = self.load_data(params["train_file"],
                                          is_training_data=True)
-        self.valid_data = self.load_data(params['valid_file'],
+        self.valid_data = self.load_data(params["valid_file"],
                                          is_training_data=False)
 
         # Build the actual model
@@ -87,7 +95,7 @@ class ChemModel(object):
         self.graph = tf.Graph()
         self.sess = tf.compat.v1.Session(graph=self.graph, config=config)
         with self.graph.as_default():
-            tf.compat.v1.set_random_seed(params['random_seed'])
+            tf.compat.v1.set_random_seed(params["random_seed"])
             self.placeholders = {}
             self.weights = {}
             self.ops = {}
@@ -95,7 +103,7 @@ class ChemModel(object):
             self.make_train_step()
 
             # Restore/initialize variables:
-            restore_file = args.get('--restore')
+            restore_file = args.get("--restore")
             if restore_file is not None:
                 self.restore_model(restore_file)
             else:
@@ -105,7 +113,7 @@ class ChemModel(object):
         full_path = os.path.join(self.data_dir, file_name)
 
         print("Loading data from %s" % full_path)
-        with open(full_path, 'r') as f:
+        with open(full_path, "r") as f:
             data = json.load(f)
 
         restrict = self.args.get("--restrict_data")
@@ -117,12 +125,13 @@ class ChemModel(object):
         for g in data:
             self.max_num_vertices = max(
                 self.max_num_vertices,
-                max([v for e in g['graph_in'] for v in [e[0], e[2]]]),
-                max([v for e in g['graph_out'] for v in [e[0], e[2]]]))
+                max([v for e in g["graph_in"] for v in [e[0], e[2]]]),
+                max([v for e in g["graph_out"] for v in [e[0], e[2]]]),
+            )
 
         self.num_edge_types = max(
             self.num_edge_types,
-            num_fwd_edge_types * (1 if self.params['tie_fwd_bkwd'] else 2))
+            num_fwd_edge_types * (1 if self.params["tie_fwd_bkwd"] else 2))
         self.annotation_size = max(self.annotation_size,
                                    len(data[0]["node_features_in"][0]))
 
@@ -130,7 +139,7 @@ class ChemModel(object):
 
     @staticmethod
     def graph_string_to_array(graph_string: str) -> List[List[int]]:
-        return [[int(v) for v in s.split(' ')] for s in graph_string.split('\n')
+        return [[int(v) for v in s.split(" ")] for s in graph_string.split("\n")
                ]
 
     def process_raw_graphs(self,
@@ -141,84 +150,92 @@ class ChemModel(object):
         raise Exception("Models have to implement process_raw_graphs!")
 
     def make_model(self):
-        self.placeholders['num_graphs'] = tf.compat.v1.placeholder(
-            tf.int64, [], name='num_graphs')
+        self.placeholders["num_graphs"] = tf.compat.v1.placeholder(
+            tf.int64, [], name="num_graphs")
         self.placeholders[
-            'out_layer_dropout_keep_prob'] = tf.compat.v1.placeholder(
-                tf.float32, [], name='out_layer_dropout_keep_prob')
+            "out_layer_dropout_keep_prob"] = tf.compat.v1.placeholder(
+                tf.float32, [], name="out_layer_dropout_keep_prob")
         # whether this session is for generating new graphs or not
-        self.placeholders['is_generative'] = tf.compat.v1.placeholder(
-            tf.bool, [], name='is_generative')
+        self.placeholders["is_generative"] = tf.compat.v1.placeholder(
+            tf.bool, [], name="is_generative")
 
         with tf.compat.v1.variable_scope("graph_model"):
             self.prepare_specific_graph_model()
 
             # Initial state: embedding
             initial_state_in = self.get_node_embedding_state(
-                self.placeholders['initial_node_representation_in'],
+                self.placeholders["initial_node_representation_in"],
                 source=True)
             initial_state_out = self.get_node_embedding_state(
-                self.placeholders['initial_node_representation_out'],
+                self.placeholders["initial_node_representation_out"],
                 source=False)
 
             # This does the actual graph work:
-            if self.params['use_graph']:
+            if self.params["use_graph"]:
                 if self.params["residual_connection_on"]:
                     self.ops[
-                        'final_node_representations_in'] = self.compute_final_node_representations_with_residual(
+                        "final_node_representations_in"] = self.compute_final_node_representations_with_residual(
                             initial_state_in,
                             tf.transpose(
-                                self.placeholders['adjacency_matrix_in'],
-                                [1, 0, 2, 3]), "_encoder")
+                                self.placeholders["adjacency_matrix_in"],
+                                [1, 0, 2, 3]),
+                            "_encoder",
+                        )
                     self.ops[
-                        'final_node_representations_out'] = self.compute_final_node_representations_with_residual(
+                        "final_node_representations_out"] = self.compute_final_node_representations_with_residual(
                             initial_state_out,
                             tf.transpose(
-                                self.placeholders['adjacency_matrix_out'],
-                                [1, 0, 2, 3]), "_encoder")
+                                self.placeholders["adjacency_matrix_out"],
+                                [1, 0, 2, 3]),
+                            "_encoder",
+                        )
 
                 else:
-                    self.ops[
-                        'final_node_representations_in'] = self.compute_final_node_representations_without_residual(
+                    self.ops["final_node_representations_in"] = (
+                        self.
+                        compute_final_node_representations_without_residual(
                             initial_state_in,
                             tf.transpose(
-                                self.placeholders['adjacency_matrix_in'],
+                                self.placeholders["adjacency_matrix_in"],
                                 [1, 0, 2, 3]),
-                            self.weights['edge_weights_encoder'],
-                            self.weights['edge_biases_encoder'],
-                            self.weights['node_gru_encoder'],
-                            "gru_scope_encoder")
-                    self.ops[
-                        'final_node_representations_out'] = self.compute_final_node_representations_without_residual(
+                            self.weights["edge_weights_encoder"],
+                            self.weights["edge_biases_encoder"],
+                            self.weights["node_gru_encoder"],
+                            "gru_scope_encoder",
+                        ))
+                    self.ops["final_node_representations_out"] = (
+                        self.
+                        compute_final_node_representations_without_residual(
                             initial_state_out,
                             tf.transpose(
-                                self.placeholders['adjacency_matrix_out'],
+                                self.placeholders["adjacency_matrix_out"],
                                 [1, 0, 2, 3]),
-                            self.weights['edge_weights_encoder'],
-                            self.weights['edge_biases_encoder'],
-                            self.weights['node_gru_encoder'],
-                            "gru_scope_encoder")
+                            self.weights["edge_weights_encoder"],
+                            self.weights["edge_biases_encoder"],
+                            self.weights["node_gru_encoder"],
+                            "gru_scope_encoder",
+                        ))
 
             else:
-                self.ops['final_node_representations_in'] = initial_state_in
-                self.ops['final_node_representations_out'] = initial_state_out
+                self.ops["final_node_representations_in"] = initial_state_in
+                self.ops["final_node_representations_out"] = initial_state_out
 
         # Calculate p(z|x)'s mean and log variance
-        self.ops['mean'], self.ops['logvariance'], self.ops[
-            'mean_out'], self.ops[
-                'logvariance_out'] = self.compute_mean_and_logvariance()
+        self.ops["mean"], self.ops["logvariance"], self.ops[
+            "mean_out"], self.ops["logvariance_out"] = (
+                self.compute_mean_and_logvariance())
         # Sample from a gaussian distribution according to the mean and log variance
-        self.ops['z_sampled_in'] = self.sample_with_mean_and_logvariance()
+        self.ops["z_sampled_in"] = self.sample_with_mean_and_logvariance()
         # Construct logit matrices for both edges and edge types
         self.construct_logit_matrices()
 
         # Obtain losses
-        self.ops['loss'] = self.construct_loss()
+        self.ops["loss"] = self.construct_loss()
 
     def make_train_step(self):
         trainable_vars = self.sess.graph.get_collection(
             tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)
-        if self.args.get('--freeze-graph-model'):
+        if self.args.get("--freeze-graph-model"):
             graph_vars = set(
                 self.sess.graph.get_collection(
                     tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES,
@@ -232,15 +249,15 @@ class ChemModel(object):
             trainable_vars = filtered_vars
 
         optimizer = tf.compat.v1.train.AdamOptimizer(
-            self.params['learning_rate'])
-        grads_and_vars = optimizer.compute_gradients(self.ops['loss'],
+            self.params["learning_rate"])
+        grads_and_vars = optimizer.compute_gradients(self.ops["loss"],
                                                      var_list=trainable_vars)
         clipped_grads = []
         for grad, var in grads_and_vars:
             if grad is not None:
                 clipped_grads.append(
                     (tf.clip_by_norm(grad,
-                                     self.params['clamp_gradient_norm']), var))
+                                     self.params["clamp_gradient_norm"]), var))
             else:
                 clipped_grads.append((grad, var))
         grads_for_display = []
@@ -248,9 +265,9 @@ class ChemModel(object):
             if grad is not None:
                 grads_for_display.append(
                     (tf.clip_by_norm(grad,
-                                     self.params['clamp_gradient_norm']), var))
-        self.ops['grads'] = grads_for_display
-        self.ops['train_step'] = optimizer.apply_gradients(clipped_grads)
+                                     self.params["clamp_gradient_norm"]), var))
+        self.ops["grads"] = grads_for_display
+        self.ops["train_step"] = optimizer.apply_gradients(clipped_grads)
         # Initialize newly-introduced variables:
         self.sess.run(tf.compat.v1.local_variables_initializer())
 
@@ -279,8 +296,8 @@ class ChemModel(object):
         raise Exception("Models have to implement make_minibatch_iterator!")
 
     def save_probs(self, all_results):
-        with open('epoch_prob_matices_%s' % self.params["dataset"],
-                  'wb') as out_file:
+        with open("epoch_prob_matices_%s" % self.params["dataset"],
+                  "wb") as out_file:
             pickle.dump([all_results], out_file, pickle.HIGHEST_PROTOCOL)
 
     def run_epoch(self, epoch_name: str, epoch_num, data, is_training: bool):
@@ -293,32 +310,39 @@ class ChemModel(object):
                                           max_queue_size=5)
 
         for step, batch_data in enumerate(batch_iterator):
-            num_graphs = batch_data[self.placeholders['num_graphs']]
+            num_graphs = batch_data[self.placeholders["num_graphs"]]
             processed_graphs += num_graphs
-            batch_data[self.placeholders['is_generative']] = False
+            batch_data[self.placeholders["is_generative"]] = False
             # Randomly sample from normal distribution
-            batch_data[self.placeholders['z_prior']] = utils.generate_std_normal(\
-                self.params['batch_size'], batch_data[self.placeholders['num_vertices']],self.params['encoding_size'])
-            batch_data[self.placeholders['z_prior_in']] = utils.generate_std_normal(\
-                self.params['batch_size'], batch_data[self.placeholders['num_vertices']],self.params['hidden_size'])
+            batch_data[
+                self.placeholders["z_prior"]] = utils.generate_std_normal(
+                    self.params["batch_size"],
+                    batch_data[self.placeholders["num_vertices"]],
+                    self.params["encoding_size"])
+            batch_data[
+                self.placeholders["z_prior_in"]] = utils.generate_std_normal(
+                    self.params["batch_size"],
+                    batch_data[self.placeholders["num_vertices"]],
+                    self.params["hidden_size"])
 
             if is_training:
                 batch_data[self.placeholders[
-                    'out_layer_dropout_keep_prob']] = self.params[
-                        'out_layer_dropout_keep_prob']
+                    "out_layer_dropout_keep_prob"]] = self.params[
+                        "out_layer_dropout_keep_prob"]
                 fetch_list = [
-                    self.ops['loss'], self.ops['mean_edge_loss_in'],
-                    self.ops['mean_kl_loss_in'],
-                    self.ops['mean_node_symbol_loss_in'], self.ops['train_step']
-                ]
+                    self.ops["loss"],
+                    self.ops["mean_edge_loss_in"],
+                    self.ops["mean_kl_loss_in"],
+                    self.ops["mean_node_symbol_loss_in"],
+                    self.ops["train_step"],]
             else:
                 batch_data[
-                    self.placeholders['out_layer_dropout_keep_prob']] = 1.0
+                    self.placeholders["out_layer_dropout_keep_prob"]] = 1.0
                 fetch_list = [
-                    self.ops['loss'], self.ops['mean_edge_loss_in'],
-                    self.ops['mean_kl_loss_in'],
-                    self.ops['mean_node_symbol_loss_in']
-                ]
+                    self.ops["loss"],
+                    self.ops["mean_edge_loss_in"],
+                    self.ops["mean_kl_loss_in"],
+                    self.ops["mean_node_symbol_loss_in"],]
 
             result = self.sess.run(fetch_list, feed_dict=batch_data)
 
@@ -331,10 +355,17 @@ class ChemModel(object):
 
             print(
                 "Running %s, batch %i (has %i graphs). Loss so far: %.4f. Edge loss: %.4f, KL loss: %.4f, Node symbol loss: %.4f"
-                % (epoch_name, step, num_graphs, loss / processed_graphs,
-                   edge_loss / processed_graphs, kl_loss / processed_graphs,
-                   node_symbol_loss / processed_graphs),
-                end='\r')
+                % (
+                    epoch_name,
+                    step,
+                    num_graphs,
+                    loss / processed_graphs,
+                    edge_loss / processed_graphs,
+                    kl_loss / processed_graphs,
+                    node_symbol_loss / processed_graphs,
+                ),
+                end="\r",
+            )
 
         loss = loss / processed_graphs
         edge_loss = edge_loss / processed_graphs
@@ -350,8 +381,8 @@ class ChemModel(object):
         log_to_save = []
         total_time_start = time.time()
         with self.graph.as_default():
-            for epoch in range(1, self.params['num_epochs'] + 1):
-                if not self.params['generation']:
+            for epoch in range(1, self.params["num_epochs"] + 1):
+                if not self.params["generation"]:
                     print("== Epoch %i" % epoch)
 
                     train_losses, train_speed = self.run_epoch(
@@ -374,22 +405,21 @@ class ChemModel(object):
                     epoch_time = time.time() - total_time_start
 
                     log_entry = {
-                        'epoch':
+                        "epoch":
                             epoch,
-                        'time':
+                        "time":
                             epoch_time,
-                        'results_format':
+                        "results_format":
                             "Total loss, Edge loss, KL loss, Node symbol loss, instances/sec",
-                        'train_results': (train_losses, train_speed),
-                        'valid_results': (valid_losses, valid_speed),
-                    }
+                        "train_results": (train_losses, train_speed),
+                        "valid_results": (valid_losses, valid_speed),}
                     log_to_save.append(log_entry)
-                    with open(self.log_file, 'w') as f:
+                    with open(self.log_file, "w") as f:
                         json.dump(log_to_save, f, indent=4)
                     self.save_model(self.run_id + "_" + str(epoch) +
                                     ("_%s.pickle" % (self.params["dataset"])))
                 # Run epoches for graph generation
-                if epoch >= self.params['epoch_to_generate']:
+                if epoch >= self.params["epoch_to_generate"]:
                     self.generate_new_graphs(self.valid_data)
                     break
 
@@ -402,7 +432,7 @@ class ChemModel(object):
 
         data_to_save = {"params": self.params, "weights": weights_to_save}
 
-        with open(path, 'wb') as out_file:
+        with open(path, "wb") as out_file:
             pickle.dump(data_to_save, out_file, pickle.HIGHEST_PROTOCOL)
 
     def initialize_model(self) -> None:
@@ -412,7 +442,7 @@ class ChemModel(object):
 
     def restore_model(self, path: str) -> None:
         print("Restoring weights from file %s." % path)
-        with open(path, 'rb') as in_file:
+        with open(path, "rb") as in_file:
             data_to_load = pickle.load(in_file)
 
         variables_to_initialize = []
@@ -422,17 +452,17 @@ class ChemModel(object):
             for variable in self.sess.graph.get_collection(
                     tf.compat.v1.GraphKeys.GLOBAL_VARIABLES):
                 used_vars.add(variable.name)
-                if variable.name in data_to_load['weights']:
+                if variable.name in data_to_load["weights"]:
                     restore_ops.append(
-                        variable.assign(data_to_load['weights'][variable.name]))
+                        variable.assign(data_to_load["weights"][variable.name]))
                 else:
                     print(
-                        'Freshly initializing %s since no saved value was found.'
+                        "Freshly initializing %s since no saved value was found."
                         % variable.name)
                     variables_to_initialize.append(variable)
-            for var_name in data_to_load['weights']:
+            for var_name in data_to_load["weights"]:
                 if var_name not in used_vars:
-                    print('Saved weights for %s not used by model.' % var_name)
+                    print("Saved weights for %s not used by model." % var_name)
             restore_ops.append(
                 tf.compat.v1.variables_initializer(variables_to_initialize))
             self.sess.run(restore_ops)

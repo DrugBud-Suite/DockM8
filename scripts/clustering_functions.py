@@ -16,9 +16,9 @@ from sklearn_extra.cluster import KMedoids
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -54,28 +54,28 @@ def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
         silhouette_scores = {}
         for num_clusters in range(2, 5):
             kmedoids = KMedoids(n_clusters=num_clusters,
-                                method='pam',
-                                init='build',
+                                method="pam",
+                                init="build",
                                 max_iter=150)
             kmedoids.fit_predict(df)
             silhouette_average_score = silhouette_score(df, kmedoids.labels_)
             silhouette_scores[num_clusters] = silhouette_average_score
-        #Determine optimal number of clusters
+        # Determine optimal number of clusters
         optimum_no_clusters = max(silhouette_scores, key=silhouette_scores.get)
         # Apply optimized k-medoids clustering
         kmedoids = KMedoids(n_clusters=optimum_no_clusters,
-                            method='pam',
-                            init='build',
+                            method="pam",
+                            init="build",
                             max_iter=150)
         clusters = kmedoids.fit_predict(df)
-        df['KMedoids Cluster'] = clusters
-        df['Pose ID'] = molecule_list
+        df["KMedoids Cluster"] = clusters
+        df["Pose ID"] = molecule_list
         # Determine cluster centers
         centroids = kmedoids.cluster_centers_
         cluster_centers = pd.DataFrame(centroids, columns=molecule_list)
         # Merge the dataframe with the cluster labels and the dataframe of cluster centers on the molecule list
-        merged_df = pd.merge(df, cluster_centers, on=molecule_list, how='inner')
-        merged_df = merged_df[['Pose ID']]
+        merged_df = pd.merge(df, cluster_centers, on=molecule_list, how="inner")
+        merged_df = merged_df[["Pose ID"]]
         return merged_df
     except Exception as e:
         print(f"Error in kmedoids_S_clustering: {e}")
@@ -98,15 +98,15 @@ def affinity_propagation_clustering(
     affinity_propagation = AffinityPropagation(max_iter=150)
     clusters = affinity_propagation.fit_predict(df)
     # Assign cluster labels and Pose IDs to the dataframe
-    df['Affinity Cluster'] = clusters
-    df['Pose ID'] = molecule_list
+    df["Affinity Cluster"] = clusters
+    df["Pose ID"] = molecule_list
     # Determine cluster centers
     cluster_centers = pd.DataFrame(affinity_propagation.cluster_centers_,
                                    columns=molecule_list)
     # Merge dataframe with cluster centers based on the molecule list
-    merged_df = pd.merge(df, cluster_centers, on=molecule_list, how='inner')
+    merged_df = pd.merge(df, cluster_centers, on=molecule_list, how="inner")
     # Select only the Pose ID column from the merged dataframe
-    merged_df = merged_df[['Pose ID']]
+    merged_df = merged_df[["Pose ID"]]
     return merged_df
 
 
@@ -126,18 +126,17 @@ def calculate_and_cluster(clustering_metric: str, clustering_method: str,
     """
     # Dictionary mapping clustering methods to their corresponding clustering functions
     clustering_methods: Dict[str, Callable] = {
-        'KMedoids': kmedoids_S_clustering,
-        'AffProp': affinity_propagation_clustering
-    }
+        "KMedoids": kmedoids_S_clustering,
+        "AffProp": affinity_propagation_clustering,}
     # Generate all possible combinations of molecules in the dataframe
-    subsets = np.array(list(itertools.combinations(df['Molecule'], 2)))
+    subsets = np.array(list(itertools.combinations(df["Molecule"], 2)))
     # Create a dictionary mapping molecule names to their indices in the dataframe
-    indices = {mol: idx for idx, mol in enumerate(df['Molecule'].values)}
+    indices = {mol: idx for idx, mol in enumerate(df["Molecule"].values)}
     # Select the appropriate clustering metric function based on the input metric
-    if clustering_metric == '3DScore':
-        metric_func = CLUSTERING_METRICS['spyRMSD']['function']
+    if clustering_metric == "3DScore":
+        metric_func = CLUSTERING_METRICS["spyRMSD"]["function"]
     elif clustering_metric in CLUSTERING_METRICS.keys():
-        metric_func = CLUSTERING_METRICS[clustering_metric]['function']
+        metric_func = CLUSTERING_METRICS[clustering_metric]["function"]
     else:
         raise ValueError(f"Invalid metric '{clustering_metric}'")
 
@@ -158,32 +157,39 @@ def calculate_and_cluster(clustering_metric: str, clustering_method: str,
     matrix[j, i] = results
 
     # Perform clustering based on the selected metric and method
-    if clustering_metric == '3DScore':
+    if clustering_metric == "3DScore":
         # If 3DScore is selected, calculate the sum of spyRMSD values for each molecule and select the molecule with the lowest sum
         clustered_df = pd.DataFrame(matrix,
-                                    index=df['Pose ID'].values.tolist(),
-                                    columns=df['Pose ID'].values.tolist())
-        clustered_df['3DScore'] = clustered_df.sum(axis=1)
-        clustered_df.sort_values(by='3DScore', ascending=True, inplace=True)
+                                    index=df["Pose ID"].values.tolist(),
+                                    columns=df["Pose ID"].values.tolist())
+        clustered_df["3DScore"] = clustered_df.sum(axis=1)
+        clustered_df.sort_values(by="3DScore", ascending=True, inplace=True)
         clustered_df = clustered_df.head(1)
-        clustered_df = pd.DataFrame(clustered_df.index, columns=['Pose ID'])
-        clustered_df['Pose ID'] = clustered_df['Pose ID'].astype(
-            str).str.replace('[()\',]', '', regex=False)
+        clustered_df = pd.DataFrame(clustered_df.index, columns=["Pose ID"])
+        clustered_df["Pose ID"] = clustered_df["Pose ID"].astype(
+            str).str.replace("[()',]", "", regex=False)
         return clustered_df
     else:
         # For other clustering metrics, pass the matrix to the corresponding clustering method function
         matrix_df = pd.DataFrame(matrix,
-                                 index=df['Pose ID'].values.tolist(),
-                                 columns=df['Pose ID'].values.tolist())
+                                 index=df["Pose ID"].values.tolist(),
+                                 columns=df["Pose ID"].values.tolist())
         matrix_df.fillna(0)
         clustered_df = clustering_methods[clustering_method](matrix_df)
         return clustered_df
 
 
-def select_poses(selection_method: str, clustering_method: str, w_dir: Path,
-                 protein_file: Path, pocket_definition: dict, software: Path,
-                 all_poses: pd.DataFrame, n_cpus: int):
-    '''This function clusters all poses according to the metric selected using multiple CPU cores.
+def select_poses(
+    selection_method: str,
+    clustering_method: str,
+    w_dir: Path,
+    protein_file: Path,
+    pocket_definition: dict,
+    software: Path,
+    all_poses: pd.DataFrame,
+    n_cpus: int,
+):
+    """This function clusters all poses according to the metric selected using multiple CPU cores.
 
     Args:
         metric (str): A string representing the clustering metric to be used.
@@ -195,39 +201,41 @@ def select_poses(selection_method: str, clustering_method: str, w_dir: Path,
 
     Returns:
         None. The function writes the clustered poses to a SDF file.
-    '''
+    """
     # Create a directory for clustering results
-    cluster_dir = Path(w_dir) / 'clustering'
+    cluster_dir = Path(w_dir) / "clustering"
     cluster_dir.mkdir(exist_ok=True)
-    cluster_file = cluster_dir / f'{selection_method}_clustered.sdf'
+    cluster_file = cluster_dir / f"{selection_method}_clustered.sdf"
 
     # Check if clustering has already been done for the given metric
     if not cluster_file.exists():
         # Get unique IDs from the input DataFrame
-        id_list = np.unique(np.array(all_poses['ID']))
+        id_list = np.unique(np.array(all_poses["ID"]))
         printlog(f"*Calculating {selection_method} metrics and clustering*")
 
         # Add additional columns to the DataFrame for clustering
-        all_poses['Pose_Number'] = all_poses['Pose ID'].str.split(
-            '_').str[2].astype(int)
-        all_poses['Docking_program'] = all_poses['Pose ID'].str.split(
-            '_').str[1].astype(str)
+        all_poses["Pose_Number"] = all_poses["Pose ID"].str.split(
+            "_").str[2].astype(int)
+        all_poses["Docking_program"] = all_poses["Pose ID"].str.split(
+            "_").str[1].astype(str)
 
-        if selection_method == 'bestpose':
+        if selection_method == "bestpose":
             # Select the best pose for each ID and docking program
-            min_pose_indices = all_poses.groupby(['ID', 'Docking_program'
-                                                 ])['Pose_Number'].idxmin()
+            min_pose_indices = all_poses.groupby(["ID", "Docking_program"
+                                                 ])["Pose_Number"].idxmin()
             clustered_poses = all_poses.loc[min_pose_indices]
         elif selection_method in [
-                'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS',
-                'bestpose_QVINAW', 'bestpose_QVINA2'
-        ]:
+                "bestpose_GNINA",
+                "bestpose_SMINA",
+                "bestpose_PLANTS",
+                "bestpose_QVINAW",
+                "bestpose_QVINA2",]:
             # Select the best pose for each ID based on the specified docking program
-            min_pose_indices = all_poses.groupby(['ID', 'Docking_program'
-                                                 ])['Pose_Number'].idxmin()
+            min_pose_indices = all_poses.groupby(["ID", "Docking_program"
+                                                 ])["Pose_Number"].idxmin()
             clustered_poses = all_poses.loc[min_pose_indices]
-            clustered_poses = clustered_poses[clustered_poses['Docking_program']
-                                              == selection_method.split('_')[1]]
+            clustered_poses = clustered_poses[clustered_poses["Docking_program"]
+                                              == selection_method.split("_")[1]]
         elif selection_method in CLUSTERING_METRICS.keys():
             # Perform clustering using multiple CPU cores
             clustered_dataframes = []
@@ -236,16 +244,20 @@ def select_poses(selection_method: str, clustering_method: str, w_dir: Path,
                 jobs = []
                 for current_id in tqdm(
                         id_list,
-                        desc=f'Submitting {selection_method} jobs...',
-                        unit='IDs'):
+                        desc=f"Submitting {selection_method} jobs...",
+                        unit="IDs"):
                     try:
                         # Schedule the clustering job for each ID
                         job = executor.schedule(
                             calculate_and_cluster,
-                            args=(selection_method, clustering_method,
-                                  all_poses[all_poses['ID'] == current_id],
-                                  protein_file),
-                            timeout=120)
+                            args=(
+                                selection_method,
+                                clustering_method,
+                                all_poses[all_poses["ID"] == current_id],
+                                protein_file,
+                            ),
+                            timeout=120,
+                        )
                         jobs.append(job)
                     except pebble.TimeoutError as e:
                         printlog("Timeout error in pebble job creation: " +
@@ -264,8 +276,8 @@ def select_poses(selection_method: str, clustering_method: str, w_dir: Path,
                 for job in tqdm(
                         jobs,
                         total=len(id_list),
-                        desc=f'Running {selection_method} clustering...',
-                        unit='jobs'):
+                        desc=f"Running {selection_method} clustering...",
+                        unit="jobs"):
                     try:
                         # Get the clustering results for each job
                         res = job.result()
@@ -280,21 +292,21 @@ def select_poses(selection_method: str, clustering_method: str, w_dir: Path,
                                               pocket_definition, software,
                                               selection_method, n_cpus)
         else:
-            raise ValueError(f'Invalid clustering metric: {selection_method}')
+            raise ValueError(f"Invalid clustering metric: {selection_method}")
         # Clean up the Pose ID column
-        clustered_poses['Pose ID'] = clustered_poses['Pose ID'].astype(
-            str).replace('[()\',]', '', regex=True)
+        clustered_poses["Pose ID"] = clustered_poses["Pose ID"].astype(
+            str).replace("[()',]", "", regex=True)
         # Filter the original DataFrame based on the clustered poses
-        filtered_poses = all_poses[all_poses['Pose ID'].isin(
-            clustered_poses['Pose ID'])]
-        filtered_poses = filtered_poses[['Pose ID', 'Molecule', 'ID']]
+        filtered_poses = all_poses[all_poses["Pose ID"].isin(
+            clustered_poses["Pose ID"])]
+        filtered_poses = filtered_poses[["Pose ID", "Molecule", "ID"]]
         # Write the filtered poses to a SDF file
         PandasTools.WriteSDF(filtered_poses,
                              str(cluster_file),
-                             molColName='Molecule',
-                             idName='Pose ID')
+                             molColName="Molecule",
+                             idName="Pose ID")
     else:
         printlog(
-            f'Clustering using {selection_method} already done, moving to next metric...'
+            f"Clustering using {selection_method} already done, moving to next metric..."
         )
     return

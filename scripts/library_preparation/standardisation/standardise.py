@@ -10,9 +10,9 @@ from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -59,8 +59,8 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str,
             df["ID"] = ["DOCKM8-" + str(1 + i) for i in range(len(df))]
         else:
             # Process existing IDs
-            df["ID"] = (df["ID"].astype(str).apply(lambda x: "DOCKM8-" + x
-                                                   if x.isdigit() else x))
+            df["ID"] = df["ID"].astype(str).apply(lambda x: "DOCKM8-" + x
+                                                  if x.isdigit() else x)
             # Remove special characters (keeping alphanumeric and dashes)
             df["ID"] = df["ID"].apply(lambda x: re.sub(r"[^a-zA-Z0-9-]", "", x))
         n_cpds_start = len(df)

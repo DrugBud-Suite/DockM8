@@ -5,16 +5,14 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / 'scripts'
+scripts_path = next((p / "scripts"
                      for p in Path(__file__).resolve().parents
-                     if (p / 'scripts').is_dir()), None)
+                     if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.library_preparation.conformer_generation.confgen_GypsumDL import (
-    generate_conformers_GypsumDL,)
-from scripts.library_preparation.conformer_generation.confgen_RDKit import (
-    generate_conformers_RDKit,)
+from scripts.library_preparation.conformer_generation.confgen_GypsumDL import generate_conformers_GypsumDL
+from scripts.library_preparation.conformer_generation.confgen_RDKit import generate_conformers_RDKit
 from scripts.library_preparation.protonation.protgen_GypsumDL import protonate_GypsumDL
 from scripts.library_preparation.standardisation.standardise import standardize_library
 from scripts.utilities.utilities import printlog
@@ -26,14 +24,16 @@ PROTONATION_OPTIONS = ["GypsumDL", "None"]
 CONFORMER_OPTIONS = ["RDKit", "MMFF", "GypsumDL"]
 
 
-def prepare_library(input_sdf: str,
-                    output_dir: Path,
-                    id_column: str,
-                    protonation: str,
-                    conformers: str,
-                    software: Path,
-                    n_cpus: int,
-                    n_conformers: int = 1):
+def prepare_library(
+    input_sdf: str,
+    output_dir: Path,
+    id_column: str,
+    protonation: str,
+    conformers: str,
+    software: Path,
+    n_cpus: int,
+    n_conformers: int = 1,
+):
     """
     Prepares a docking library for further analysis.
 
