@@ -26,7 +26,7 @@ from scripts.performance_calculation import *
 from scripts.pocket_finding.pocket_finding import pocket_finder
 from scripts.postprocessing import *
 from scripts.protein_preparation.protein_preparation import prepare_protein
-from scripts.rescoring import *
+from scripts.rescoring.rescoring import rescore_poses
 from scripts.utilities.utilities import printlog
 from software.DeepCoy.generate_decoys import generate_decoys
 
