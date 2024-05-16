@@ -66,7 +66,7 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
     global vinardo_rescoring_splitted
 
     def vinardo_rescoring_splitted(split_file, protein_file):
-        vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring--"
+        vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
         results = (
             vinardo_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
         )
@@ -80,7 +80,8 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
             " --cnn_scoring none"
         )
         try:
-            subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            subprocess.call(vinardo_cmd, shell=True#, stdout=DEVNULL, stderr=STDOUT
+                            )
         except Exception as e:
             printlog(f"{column_name} rescoring failed: " + e)
         return
