@@ -61,7 +61,6 @@ RESCORING_FUNCTIONS = {
 def rescore_poses(
     w_dir: Path,
     protein_file: Path,
-    pocket_definition: dict,
     software: Path,
     clustered_sdf: Path,
     functions: List[str],
@@ -102,7 +101,6 @@ def rescore_poses(
                     n_cpus,
                     function_info["column_name"],
                     protein_file=protein_file,
-                    pocket_definition=pocket_definition,
                     software=software,
                     rescoring_folder=rescoring_folder,
                 )
