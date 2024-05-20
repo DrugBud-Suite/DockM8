@@ -13,13 +13,35 @@ scripts_path = next((p / "scripts"
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.consensus_methods import CONSENSUS_METHODS
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.utilities import printlog
 from scripts.consensus.score_manipulation import standardize_scores, rank_scores
+from scripts.consensus.consensus_methods.ECR_best import ECR_best
+from scripts.consensus.consensus_methods.ECR_avg import ECR_avg
+from scripts.consensus.consensus_methods.avg_ECR import avg_ECR
+from scripts.consensus.consensus_methods.avg_R_ECR import avg_R_ECR
+from scripts.consensus.consensus_methods.RbR_best import RbR_best
+from scripts.consensus.consensus_methods.RbR_avg import RbR_avg
+from scripts.consensus.consensus_methods.RbV_best import RbV_best
+from scripts.consensus.consensus_methods.RbV_avg import RbV_avg
+from scripts.consensus.consensus_methods.Zscore_best import Zscore_best
+from scripts.consensus.consensus_methods.Zscore_avg import Zscore_avg
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+CONSENSUS_METHODS = {
+    'avg_ECR': {'function': avg_ECR, 'type': 'rank'},
+    'avg_R_ECR': {'function': avg_R_ECR, 'type': 'rank'},
+    'ECR_avg': {'function': ECR_avg, 'type': 'rank'},
+    'ECR_best': {'function': ECR_best, 'type': 'rank'},
+    'RbR_avg': {'function': RbR_avg, 'type': 'rank'},
+    'RbR_best': {'function': RbR_best, 'type': 'rank'},
+    'RbV_avg': {'function': RbV_avg, 'type': 'score'},
+    'RbV_best': {'function': RbV_best, 'type': 'score'},
+    'Zscore_avg': {'function': Zscore_avg, 'type': 'score'},
+    'Zscore_best': {'function': Zscore_best, 'type': 'score'}
+}
 
 def apply_consensus_methods(w_dir: str, selection_method: str,
                             consensus_methods: str, rescoring_functions: list,
@@ -60,6 +82,15 @@ def apply_consensus_methods(w_dir: str, selection_method: str,
         # Ensure consensus_methods is a list even if it's a single string
         if isinstance(consensus_methods, str):
             consensus_methods = [consensus_methods]
+        # Remove averaging consensus methods if the pose selection method outputs single poses
+        if selection_method.startswith("bestpose_") or selection_method == '3DScore' or selection_method in RESCORING_FUNCTIONS.keys():
+            if len(consensus_methods) > 1:
+                printlog("WARNING: An averaging consensus method was selected with a pose selection method that outputs single poses. Skipping averaging consensus methods.")
+                consensus_methods = [method for method in list(CONSENSUS_METHODS.keys()) if 'avg' not in method]
+            else:
+                printlog("WARNING: An averaging consensus method was selected with a pose selection method that outputs single poses. Will proceed with selected methods as only one method was selected.")
+        else:
+            pass
         for consensus_method in consensus_methods:
             # Create the 'consensus' directory if it doesn't exist
             (Path(w_dir) / "consensus").mkdir(parents=True, exist_ok=True)
