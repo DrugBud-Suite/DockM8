@@ -191,3 +191,5 @@ results/split_analysis.ipynb
 tests/test_files/rescoring/rescoring_example_poses_1fvv/
 tests/test_files/1obv.pdb
 tests/test_files/P00520.pdb
+tests/test_files/4kd1_p/
+tests/test_files/1fvv_p/
