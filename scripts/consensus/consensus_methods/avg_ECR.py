@@ -9,7 +9,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
-    """
+	"""
     Averages the ranks across poses then calculates the Exponential Consensus Ranking (ECR) for a given dataframe.
 
     Args:
@@ -20,19 +20,19 @@ def avg_ECR(df: pd.DataFrame, clustering_metric: str, selected_columns: list) ->
     Returns:
         pd.DataFrame: The output dataframe with columns 'ID' and 'avg_ECR_clustering' representing the ID and Exponential Consensus Ranking values for the selected columns.
     """
-    # Select the 'ID' column and the selected columns from the input dataframe
-    df = df[["ID"] + selected_columns]
-    # Convert selected columns to numeric values
-    df.loc[:, selected_columns] = df.loc[:, selected_columns].apply(pd.to_numeric, errors="coerce")
-    # Calculate the mean ranks for the selected columns
-    df = df.groupby("ID", as_index=False).mean(numeric_only=True).round(2)
-    # Calculate the sigma value
-    sigma = 0.05 * len(df)
-    # Calculate the ECR values using the formula
-    ecr_scores = np.exp(-df[selected_columns] / sigma)
-    # Sum the ECR values across each row
-    df["ECR"] = ecr_scores[selected_columns].sum(axis=1) / sigma
-    # Normalize the ECR column
-    df["ECR"] = (df["ECR"] - df["ECR"].min()) / (df["ECR"].max() - df["ECR"].min())
-    df = df.rename(columns={"ECR": f"avg_ECR_{clustering_metric}"})
-    return df[["ID", f"avg_ECR_{clustering_metric}"]]
+	# Select the 'ID' column and the selected columns from the input dataframe
+	df = df[["ID"] + selected_columns]
+	# Convert selected columns to numeric values
+	df.loc[:, selected_columns] = df.loc[:, selected_columns].apply(pd.to_numeric, errors="coerce")
+	# Calculate the mean ranks for the selected columns
+	df = df.groupby("ID", as_index=False).mean(numeric_only=True).round(2)
+	# Calculate the sigma value
+	sigma = 0.05 * len(df)
+	# Calculate the ECR values using the formula
+	ecr_scores = np.exp(-df[selected_columns] / sigma)
+	# Sum the ECR values across each row
+	df["ECR"] = ecr_scores[selected_columns].sum(axis=1) / sigma
+	# Normalize the ECR column
+	df["ECR"] = (df["ECR"] - df["ECR"].min()) / (df["ECR"].max() - df["ECR"].min())
+	df = df.rename(columns={"ECR": f"avg_ECR_{clustering_metric}"})
+	return df[["ID", f"avg_ECR_{clustering_metric}"]]

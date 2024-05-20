@@ -11,9 +11,7 @@ from pandas import DataFrame
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / "scripts"
-                     for p in Path(__file__).resolve().parents
-                     if (p / "scripts").is_dir()), None)
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -23,9 +21,8 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str,
-                      **kwargs) -> DataFrame:
-    """
+def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> DataFrame:
+	"""
     Performs rescoring of poses using the Vinardo scoring function.
 
     Args:
@@ -43,75 +40,60 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str,
     Returns:
         DataFrame: A dataframe containing the 'Pose ID' and Vinardo score columns for the rescored poses.
     """
-    tic = time.perf_counter()
+	tic = time.perf_counter()
 
-    rescoring_folder = kwargs.get("rescoring_folder")
-    software = kwargs.get("software")
-    protein_file = kwargs.get("protein_file")
+	rescoring_folder = kwargs.get("rescoring_folder")
+	software = kwargs.get("software")
+	protein_file = kwargs.get("protein_file")
 
-    split_files_folder = split_sdf_str(
-        rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus)
-    split_files_sdfs = [
-        split_files_folder / f
-        for f in os.listdir(split_files_folder)
-        if f.endswith(".sdf")]
+	split_files_folder = split_sdf_str(rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus)
+	split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-    vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
-    vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
+	vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
+	vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
 
-    global vinardo_rescoring_splitted
+	global vinardo_rescoring_splitted
 
-    def vinardo_rescoring_splitted(split_file, protein_file):
-        vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
-        results = vinardo_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
-        vinardo_cmd = (f"{software}/gnina"
-                       f" --receptor {protein_file}"
-                       f" --ligand {split_file}"
-                       f" --out {results}"
-                       " --score_only"
-                       " --scoring vinardo"
-                       " --cnn_scoring none")
-        try:
-            subprocess.call(vinardo_cmd,
-                            shell=True,
-                            stdout=DEVNULL,
-                            stderr=STDOUT)
-        except Exception as e:
-            printlog(f"{column_name} rescoring failed: " + e)
-        return
+	def vinardo_rescoring_splitted(split_file, protein_file):
+		vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
+		results = vinardo_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
+		vinardo_cmd = (f"{software}/gnina"
+						f" --receptor {protein_file}"
+						f" --ligand {split_file}"
+						f" --out {results}"
+						" --score_only"
+						" --scoring vinardo"
+						" --cnn_scoring none")
+		try:
+			subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+		except Exception as e:
+			printlog(f"{column_name} rescoring failed: " + e)
+		return
 
-    parallel_executor(vinardo_rescoring_splitted,
-                      split_files_sdfs,
-                      n_cpus,
-                      protein_file=protein_file)
+	parallel_executor(vinardo_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
 
-    try:
-        vinardo_dataframes = [
-            PandasTools.LoadSDF(
-                str(rescoring_folder / f"{column_name}_rescoring" / file),
-                idName="Pose ID",
-                molColName=None,
-                includeFingerprints=False,
-                embedProps=False)
-
-            for file in os.listdir(rescoring_folder /
-                                   f"{column_name}_rescoring")
-            if file.startswith("split") and file.endswith(".sdf")]
-    except Exception as e:
-        printlog(f"ERROR: Failed to Load {column_name} rescoring SDF file!")
-        printlog(e)
-    try:
-        vinardo_rescoring_results = pd.concat(vinardo_dataframes)
-    except Exception as e:
-        printlog(f"ERROR: Could not combine {column_name} rescored poses")
-        printlog(e)
-    vinardo_rescoring_results.rename(columns={"minimizedAffinity": column_name},
-                                     inplace=True)
-    vinardo_rescoring_results = vinardo_rescoring_results[[
-        "Pose ID", column_name]]
-    vinardo_scores_path = vinardo_rescoring_folder / f"{column_name}_scores.csv"
-    vinardo_rescoring_results.to_csv(vinardo_scores_path, index=False)
-    delete_files(vinardo_rescoring_folder, f"{column_name}_scores.csv")
-    toc = time.perf_counter()
-    printlog(f"Rescoring with Vinardo complete in {toc - tic:0.4f}!")
-    return vinardo_rescoring_results
+	try:
+		vinardo_dataframes = [
+			PandasTools.LoadSDF(str(rescoring_folder / f"{column_name}_rescoring" / file),
+								idName="Pose ID",
+								molColName=None,
+								includeFingerprints=False,
+								embedProps=False)
+			for file in os.listdir(rescoring_folder / f"{column_name}_rescoring")
+			if file.startswith("split") and file.endswith(".sdf")]
+	except Exception as e:
+		printlog(f"ERROR: Failed to Load {column_name} rescoring SDF file!")
+		printlog(e)
+	try:
+		vinardo_rescoring_results = pd.concat(vinardo_dataframes)
+	except Exception as e:
+		printlog(f"ERROR: Could not combine {column_name} rescored poses")
+		printlog(e)
+	vinardo_rescoring_results.rename(columns={"minimizedAffinity": column_name}, inplace=True)
+	vinardo_rescoring_results = vinardo_rescoring_results[["Pose ID", column_name]]
+	vinardo_scores_path = vinardo_rescoring_folder / f"{column_name}_scores.csv"
+	vinardo_rescoring_results.to_csv(vinardo_scores_path, index=False)
+	delete_files(vinardo_rescoring_folder, f"{column_name}_scores.csv")
+	toc = time.perf_counter()
+	printlog(f"Rescoring with Vinardo complete in {toc - tic:0.4f}!")
+	return vinardo_rescoring_results

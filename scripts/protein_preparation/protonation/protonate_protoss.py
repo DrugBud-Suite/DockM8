@@ -10,9 +10,7 @@ from Bio.PDB import PDBParser
 from Bio.PDB.PDBIO import PDBIO
 
 # Search for 'DockM8' in parent directories
-scripts_path = next((p / "scripts"
-                     for p in Path(__file__).resolve().parents
-                     if (p / "scripts").is_dir()), None)
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -31,7 +29,7 @@ PROTOSS_JOBS = urljoin(PROTEINS_PLUS_URL, "protoss/jobs/")
 
 
 def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
-    """
+	"""
     Poll the progress of a job by continuously polling the server in regular intervals and updating the job information.
 
     Args:
@@ -43,37 +41,36 @@ def poll_job(job_id, poll_url, poll_interval=1, max_polls=10):
     Returns:
     dict: Polled job information.
     """
-    # Get the initial job information
-    job = requests.get(poll_url + job_id + "/").json()
-    status = job["status"]
-    current_poll = 0
+	# Get the initial job information
+	job = requests.get(poll_url + job_id + "/").json()
+	status = job["status"]
+	current_poll = 0
 
-    # Continuously poll the job until it is completed or maximum polls reached
-    while status == "pending" or status == "running":
-        printlog(f"Protoss job {job_id} is {status}")
-        current_poll += 1
+	# Continuously poll the job until it is completed or maximum polls reached
+	while status == "pending" or status == "running":
+		printlog(f"Protoss job {job_id} is {status}")
+		current_poll += 1
 
-        # Check if maximum polls reached
-        if current_poll >= max_polls:
-            printlog(
-                f"Protoss job {job_id} has not completed after {max_polls} polling requests and {poll_interval * max_polls} seconds"
-            )
-            return job
+		# Check if maximum polls reached
+		if current_poll >= max_polls:
+			printlog(
+				f"Protoss job {job_id} has not completed after {max_polls} polling requests and {poll_interval * max_polls} seconds"
+			)
+			return job
 
-        # Wait for the specified interval before polling again
-        time.sleep(poll_interval)
+		# Wait for the specified interval before polling again
+		time.sleep(poll_interval)
 
-        # Poll the job again to get updated status
-        job = requests.get(poll_url + job_id + "/").json()
-        status = job["status"]
+		# Poll the job again to get updated status
+		job = requests.get(poll_url + job_id + "/").json()
+		status = job["status"]
 
-    printlog(f"Protoss job {job_id} completed with {status}")
-    return job
+	printlog(f"Protoss job {job_id} completed with {status}")
+	return job
 
 
-def protonate_protein_protoss(input_pdb_file: Path,
-                              output_dir: Path = None) -> Path:
-    """
+def protonate_protein_protoss(input_pdb_file: Path, output_dir: Path = None) -> Path:
+	"""
     Prepares a protein using ProtoSS.
 
     Args:
@@ -82,41 +79,39 @@ def protonate_protein_protoss(input_pdb_file: Path,
     Returns:
     Path: Path to the prepared protein file in PDB format.
     """
-    # Print log message
-    printlog("Preparing protein with ProtoSS ...")
+	# Print log message
+	printlog("Preparing protein with ProtoSS ...")
 
-    # Open the input_pdb_file protein file
-    with open(input_pdb_file) as upload_file:
-        # Create the query with the protein file
-        query = {"protein_file": upload_file}
-        # Submit the job to ProtoSS and get the job submission response
-        job_submission = requests.post(PROTOSS, files=query).json()
+	# Open the input_pdb_file protein file
+	with open(input_pdb_file) as upload_file:
+		# Create the query with the protein file
+		query = {"protein_file": upload_file}
+		# Submit the job to ProtoSS and get the job submission response
+		job_submission = requests.post(PROTOSS, files=query).json()
 
-    # Poll the job status until it is completed
-    protoss_job = poll_job(job_submission["job_id"], PROTOSS_JOBS)
+	# Poll the job status until it is completed
+	protoss_job = poll_job(job_submission["job_id"], PROTOSS_JOBS)
 
-    # Get the output protein information from the job
-    protossed_protein = requests.get(PROTEINS + protoss_job["output_protein"] +
-                                     "/").json()
+	# Get the output protein information from the job
+	protossed_protein = requests.get(PROTEINS + protoss_job["output_protein"] + "/").json()
 
-    # Create a StringIO object with the protein file string
-    protein_file = io.StringIO(protossed_protein["file_string"])
+	# Create a StringIO object with the protein file string
+	protein_file = io.StringIO(protossed_protein["file_string"])
 
-    # Parse the protein structure from the StringIO object
-    protein_structure = PDBParser().get_structure(protossed_protein["name"],
-                                                  protein_file)
+	# Parse the protein structure from the StringIO object
+	protein_structure = PDBParser().get_structure(protossed_protein["name"], protein_file)
 
-    # Create the output file path by replacing the extension of the input_pdb_file file
-    output_file = Path(str(input_pdb_file).replace(".pdb", "_protoss.pdb"))
+	# Create the output file path by replacing the extension of the input_pdb_file file
+	output_file = Path(str(input_pdb_file).replace(".pdb", "_protoss.pdb"))
 
-    # Open the output file in write mode
-    with output_file.open("w") as output_file_handle:
-        # Create a PDBIO object
-        pdbio = PDBIO()
-        # Set the protein structure for saving
-        pdbio.set_structure(protein_structure)
-        # Save the protein structure to the output file
-        pdbio.save(output_file_handle)
+	# Open the output file in write mode
+	with output_file.open("w") as output_file_handle:
+		# Create a PDBIO object
+		pdbio = PDBIO()
+		# Set the protein structure for saving
+		pdbio.set_structure(protein_structure)
+		# Save the protein structure to the output file
+		pdbio.save(output_file_handle)
 
-    # Return the path to the prepared protein file
-    return output_file
+	# Return the path to the prepared protein file
+	return output_file
