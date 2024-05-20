@@ -17,8 +17,8 @@ sys.path.append(str(dockm8_path))
 
 # Import modules for docking, scoring, protein and ligand preparation, etc.
 from scripts.utilities.config_parser import check_config
-from scripts.clustering_functions import *
-from scripts.consensus_methods import *
+from scripts.pose_selection.pose_selection import select_poses
+from scripts.consensus.consensus import apply_consensus_methods
 from scripts.docking.docking import dockm8_docking, concat_all_poses
 from scripts.library_preparation.main import prepare_library
 from scripts.docking_postprocessing.docking_postprocessing import docking_postprocessing

@@ -13,8 +13,8 @@ scripts_path = next((p / "scripts"
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.clustering_metrics import CLUSTERING_METRICS
-from scripts.consensus_methods import CONSENSUS_METHODS
+from scripts.pose_selection.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
+from scripts.consensus.consensus import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.library_preparation.main import CONFORMER_OPTIONS, PROTONATION_OPTIONS
 from scripts.pocket_finding.pocket_finding import POCKET_DETECTION_OPTIONS
