@@ -1,99 +1,3 @@
-[tool.ruff]
-# List of directories to exclude from linting.
-exclude = [
-    ".bzr",                  # Bazaar version control system directory
-    ".direnv",               # direnv environment management directory
-    ".eggs",                 # Python Eggs cache directory
-    ".git",                  # Git version control system directory
-    ".git-rewrite",          # Git rewrite history directory
-    ".hg",                   # Mercurial version control system directory
-    ".mypy_cache",           # mypy type checking cache directory
-    ".nox",                  # nox testing tool directory
-    ".pants.d",              # Pants build tool cache directory
-    ".pytype",               # pytype type checking cache directory
-    ".ruff_cache",           # Ruff linter cache directory
-    ".svn",                  # Subversion version control system directory
-    ".tox",                  # tox testing tool directory
-    ".venv",                 # Python virtual environment directory
-    "__pypackages__",        # PEP 582 local packages directory
-    "_build",                # Build output directory
-    "buck-out",              # Buck build tool output directory
-    "build",                 # General build output directory
-    "dist",                  # Distribution output directory
-    "node_modules",          # Node.js packages directory
-    "venv",                  # Another common virtual environment directory
-]
-
-# Maximum allowed line length for code.
-line-length = 120             # Updated to match Google style guide
-
-# Number of spaces per indentation level.
-indent-width = 4
-
-# Target Python version for linting and formatting.
-target-version = "py310"
-
-[tool.ruff.lint]
-# List of rules to ignore during linting.
-ignore = [                  # Ignoring "from module import *" used; unable to detect undefined names
-    "E402",                  # Ignoring module level import not at top of file
-]
-
-# List of rules that can be auto-fixed.
-fixable = ["ALL"]
-
-# List of rules that cannot be auto-fixed.
-unfixable = []
-
-# Regular expression for variable names that can be ignored if unused.
-dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
-[tool.ruff.format]
-# Style for string quotes.
-quote-style = "double"
-
-# Style for indentation.
-indent-style = "space"
-
-# Option to skip adding a trailing comma automatically.
-skip-magic-trailing-comma = true
-
-# Option to automatically detect the appropriate line ending (LF/CRLF).
-line-ending = "auto"
-
-# Option to enable auto-formatting of code examples in docstrings.
-docstring-code-format = false
-
-# Set the line length limit used when formatting code snippets in docstrings.
-docstring-code-line-length = "dynamic"
-
-[tool.ruff.lint.pydocstyle]
-# Convention to use for pydocstyle (PEP 257) linting.
-convention = "pep257"
-
-[tool.ruff.lint.pycodestyle]
-# Maximum line length for pycodestyle linting.
-max-line-length = 120
-
-[tool.ruff.lint.isort]
-# Option to force each import to be on a single line.
-force-single-line = true
-
-# Option to combine 'as' imports on the same line.
-combine-as-imports = true
-
-# Option to sort imports within sections.
-force-sort-within-sections = true
-
-# Option to not order imports by type.
-order-by-type = false
-
-# List of known local folders to be used in import sorting.
-known-local-folder = ["pytest", "_pytest"]
-
-# Number of lines to insert after the imports.
-lines-after-imports = 2
-
 [tool.pytest.ini_options]
 # Directories to look for tests.
 testpaths = ["tests", "integration"]
@@ -126,3 +30,29 @@ cache_dir = ".pytest_cache"
 # Base style for yapf formatting.
 based_on_style = "google"
 split_before_closing_bracket = false
+ARITHMETIC_PRECEDENCE_INDICATION = true
+BLANK_LINES_AROUND_TOP_LEVEL_DEFINITION = 2
+BLANK_LINE_BEFORE_CLASS_DOCSTRING = 1
+BLANK_LINE_BEFORE_MODULE_DOCSTRING = 0
+BLANK_LINE_BEFORE_NESTED_CLASS_OR_DEF = 1
+ALIGN_CLOSING_BRACKET_WITH_VISUAL_INDENT = false
+CONTINUATION_ALIGN_STYLE = "VALIGN-RIGHT"
+EACH_DICT_ENTRY_ON_SEPARATE_LINE = true
+DEDENT_CLOSING_BRACKETS = false
+COLUMN_LIMIT = 120
+INDENT_DICTIONARY_VALUE = true
+INDENT_WIDTH = 4
+INDENT_BLANK_LINES = false
+JOIN_MULTIPLE_LINES = true
+SPACE_BETWEEN_ENDING_COMMA_AND_CLOSING_BRACKET = true
+SPLIT_ALL_TOP_LEVEL_COMMA_SEPARATED_VALUES = true
+SPLIT_BEFORE_BITWISE_OPERATOR = false
+SPLIT_BEFORE_DICT_SET_GENERATOR = false
+SPLIT_BEFORE_LOGICAL_OPERATOR = false
+SPLIT_BEFORE_ARITHMETIC_OPERATOR = false
+SPLIT_BEFORE_DOT = false
+SPACES_BEFORE_COMMENT = "10, 30, 50, 70"
+SPLIT_COMPLEX_COMPREHENSION = true
+SPLIT_PENALTY_COMPREHENSION = 2100
+USE_TABS = true
+DISABLE_ENDING_COMMA_HEURISTIC = true
