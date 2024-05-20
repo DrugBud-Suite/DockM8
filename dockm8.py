@@ -149,7 +149,6 @@ def dockm8(
                 clustering_method=pose_selection["clustering_method"],
                 w_dir=w_dir,
                 protein_file=receptor,
-                pocket_definition=pocket_definition,
                 software=software,
                 all_poses=all_poses,
                 n_cpus=n_cpus,
