@@ -5,10 +5,8 @@ from pathlib import Path
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-dockm8_path = next(
-    (p / "DockM8" for p in Path(__file__).resolve().parents if (p / "DockM8").is_dir()),
-    None,
-)
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 import warnings
@@ -20,16 +18,15 @@ from scripts.utilities.utilities import parallel_SDF_loader, printlog
 warnings.filterwarnings("ignore")
 
 
-def docking_postprocessing(
-    input_sdf: Path,
-    output_path: Path,
-    protein_file: Path,
-    bust_poses: bool,
-    strain_cutoff: int,
-    clash_cutoff: int,
-    n_cpus: int,
-):
-    """
+def docking_postprocessing(input_sdf: Path,
+							output_path: Path,
+							protein_file: Path,
+							bust_poses: bool,
+							strain_cutoff: int,
+							clash_cutoff: int,
+							n_cpus: int,
+							):
+	"""
     Perform postprocessing on docking results.
 
     Args:
@@ -44,32 +41,26 @@ def docking_postprocessing(
     Returns:
         Path: Path to the postprocessed SDF file.
     """
-    printlog("Postprocessing docking results...")
-    sdf_dataframe = parallel_SDF_loader(
-        input_sdf, molColName="Molecule", idName="Pose ID", n_cpus=n_cpus
-    )
-    starting_length = len(sdf_dataframe)
-    if (strain_cutoff is not None) and (clash_cutoff is not None):
-        checked_poses = pose_checker(
-            sdf_dataframe, protein_file, clash_cutoff, strain_cutoff, n_cpus
-        )
-        sdf_dataframe = checked_poses
-        step1_length = len(sdf_dataframe)
-        printlog(f"Removed {starting_length - step1_length} poses during PoseChecker postprocessing.")
-    else:
-        step1_length = starting_length
-    if bust_poses:
-        sdf_dataframe = pose_buster(sdf_dataframe, protein_file, n_cpus)
-        step2_length = len(sdf_dataframe)
-        if step1_length:
-            printlog(f"Removed {step1_length - step2_length} poses during PoseBusters postprocessing.")
-        else:
-            printlog(f"Removed {starting_length - step2_length} poses during PoseBusters postprocessing.")
-    PandasTools.WriteSDF(
-        sdf_dataframe,
-        str(output_path),
-        molColName="Molecule",
-        idName="Pose ID",
-        properties=list(sdf_dataframe.columns),
-    )
-    return output_path
+	printlog("Postprocessing docking results...")
+	sdf_dataframe = parallel_SDF_loader(input_sdf, molColName="Molecule", idName="Pose ID", n_cpus=n_cpus)
+	starting_length = len(sdf_dataframe)
+	if (strain_cutoff is not None) and (clash_cutoff is not None):
+		checked_poses = pose_checker(sdf_dataframe, protein_file, clash_cutoff, strain_cutoff, n_cpus)
+		sdf_dataframe = checked_poses
+		step1_length = len(sdf_dataframe)
+		printlog(f"Removed {starting_length - step1_length} poses during PoseChecker postprocessing.")
+	else:
+		step1_length = starting_length
+	if bust_poses:
+		sdf_dataframe = pose_buster(sdf_dataframe, protein_file, n_cpus)
+		step2_length = len(sdf_dataframe)
+		if step1_length:
+			printlog(f"Removed {step1_length - step2_length} poses during PoseBusters postprocessing.")
+		else:
+			printlog(f"Removed {starting_length - step2_length} poses during PoseBusters postprocessing.")
+	PandasTools.WriteSDF(sdf_dataframe,
+							str(output_path),
+							molColName="Molecule",
+							idName="Pose ID",
+							properties=list(sdf_dataframe.columns))
+	return output_path

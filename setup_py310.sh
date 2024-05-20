@@ -139,8 +139,8 @@ else
     ###############################################################
     """
 
-    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol -q
+    pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 
     echo -e """
@@ -258,12 +258,18 @@ if [[ ! -d $DOCKM8_FOLDER/software/gypsum_dl-1.2.1 ]]; then
     rm v1.2.1.tar.gz
 fi
 
-if [[ ! -d $DOCKM8_FOLDER/software/SCORCH ]]; then
+if [[ ! -d $DOCKM8_FOLDER/software/SCORCH-1.0.0 ]]; then
     echo -e "\nDownloading SCORCH!"
     wget https://github.com/SMVDGroup/SCORCH/archive/refs/tags/v1.0.0.tar.gz --no-check-certificate -q --show-progress
     tar -xf v1.0.0.tar.gz
     rm v1.0.0.tar.gz
+    cd SCORCH-1.0.0/utils
+    sed -i 's/import pybel/from openbabel import pybel/g' dock_functions.py
+    cd ..
+    sed -i 's/dtest = xgb.DMatrix(df, feature_names=df.columns)/dtest = xgb.DMatrix(df, feature_names=list(df.columns))/g' scorch.py
+    cd $DOCKM8_FOLDER/software
 fi
+
 
 if [[ ! -f $DOCKM8_FOLDER/software/rf-score-vs ]]; then
     echo -e "\nDownloading RF-Score-VS!"
@@ -289,6 +295,8 @@ if [[ ! -d $DOCKM8_FOLDER/software/posecheck-main ]]; then
     wget https://github.com/cch1999/posecheck/archive/refs/heads/main.zip --no-check-certificate -q --show-progress
     unzip -q main.zip 
     rm main.zip
+    conda activate $ENV_NAME
+    pip install -e ./posecheck-main
 fi
 
 cd $BASEDIR
