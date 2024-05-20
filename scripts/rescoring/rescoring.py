@@ -159,8 +159,8 @@ def rescore_poses(w_dir: Path, protein_file: Path, software: Path,
                     function_info["column_name"],
                     protein_file=protein_file,
                     software=software,
-                    rescoring_folder=rescoring_folder,
-                )
+                    rescoring_folder=rescoring_folder)
+
             except Exception as e:
                 printlog(e)
                 printlog(f"Failed for {function}")
@@ -236,8 +236,8 @@ def rescore_docking(w_dir: Path, protein_file: Path, software: Path,
         function_info["column_name"],
         protein_file=protein_file,
         software=software,
-        rescoring_folder=w_dir,
-    )
+        rescoring_folder=w_dir)
+
 
     score_file = f"{w_dir}/{function}_rescoring/{function}_scores.csv"
 

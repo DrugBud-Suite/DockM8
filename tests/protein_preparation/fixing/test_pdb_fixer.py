@@ -49,8 +49,8 @@ def test_fix_pdb_file_custom_options(common_test_data):
         fix_missing_residues=False,
         add_missing_hydrogens_pH=7.4,
         remove_hetero=False,
-        remove_water=True,
-    )
+        remove_water=True)
+
     assert output_path.is_file()
     assert output_path.name == f"{input_pdb_file.stem}_fixed{input_pdb_file.suffix}"
     assert output_path.parent == output_dir

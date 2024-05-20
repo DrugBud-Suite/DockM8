@@ -210,8 +210,8 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path,
                 str(w_dir / "plants" / "plants_poses.sdf"),
                 molColName="Molecule",
                 idName="Pose ID",
-                properties=list(plants_df.columns),
-            )
+                properties=list(plants_df.columns))
+
             files = Path(os.getcwd()).glob("*.pid")
             for file in files:
                 file.unlink()

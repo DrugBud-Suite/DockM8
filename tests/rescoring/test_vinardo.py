@@ -45,8 +45,8 @@ def test_vinardo_rescoring(test_data):
         column_name,
         rescoring_folder=rescoring_folder,
         software=software,
-        protein_file=protein_file,
-    )
+        protein_file=protein_file)
+
 
     # Assert the result
     assert isinstance(result, DataFrame)

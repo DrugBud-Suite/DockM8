@@ -108,8 +108,8 @@ def select_cutoff_residues(protein_dataframe, center_coordinates, cutoff):
         lambda row: calculate_distance([
             row["x_coord"], row["y_coord"], row["z_coord"]], [
                 center_x, center_y, center_z]),
-        axis=1,
-    )
+        axis=1)
+
     # Select residues within the cutoff distance
     residues_within_cutoff = protein_dataframe[protein_dataframe["distance"] <
                                                cutoff]

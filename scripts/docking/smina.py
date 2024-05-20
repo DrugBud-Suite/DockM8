@@ -114,8 +114,8 @@ def fetch_smina_poses(w_dir: Union[str, Path], n_poses: int, *args):
                 str(w_dir / "smina" / "smina_poses.sdf"),
                 molColName="Molecule",
                 idName="Pose ID",
-                properties=list(smina_df.columns),
-            )
+                properties=list(smina_df.columns))
+
         except Exception as e:
             printlog("ERROR: Failed to write combined SMINA poses SDF file!")
             printlog(e)

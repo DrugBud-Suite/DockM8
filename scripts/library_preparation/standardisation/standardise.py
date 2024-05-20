@@ -51,8 +51,8 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str,
             includeFingerprints=False,
             embedProps=True,
             removeHs=True,
-            smilesName="SMILES",
-        )
+            smilesName="SMILES")
+
         # Check if 'ID' column is empty or if all values are NaN
         if df["ID"].isnull().all():
             # Generate unique IDs if 'ID' column is empty

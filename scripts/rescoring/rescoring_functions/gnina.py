@@ -81,8 +81,8 @@ def gnina_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
                 idName="Pose ID",
                 molColName=None,
                 includeFingerprints=False,
-                embedProps=False,
-            )
+                embedProps=False)
+
             for file in os.listdir(rescoring_folder /
                                    f"{column_name}_rescoring")
             if file.startswith("split") and file.endswith(".sdf")]
@@ -99,8 +99,8 @@ def gnina_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
             "minimizedAffinity": "GNINA-Affinity",
             "CNNscore": "CNN-Score",
             "CNNaffinity": "CNN-Affinity"},
-        inplace=True,
-    )
+        inplace=True)
+
     gnina_rescoring_results = gnina_rescoring_results[["Pose ID", column_name]]
     gnina_scores_path = rescoring_folder / f"{column_name}_rescoring" / f"{column_name}_scores.csv"
     gnina_rescoring_results.to_csv(gnina_scores_path, index=False)

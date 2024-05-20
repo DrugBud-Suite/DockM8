@@ -83,8 +83,8 @@ def AD4_rescoring(sdf: str, n_cpus: int, column_name: str,
                 idName="Pose ID",
                 molColName=None,
                 includeFingerprints=False,
-                embedProps=False,
-            )
+                embedProps=False)
+
             for file in os.listdir(rescoring_folder /
                                    f"{column_name}_rescoring")
             if file.startswith("split") and file.endswith(".sdf")]

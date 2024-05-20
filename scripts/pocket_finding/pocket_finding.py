@@ -53,5 +53,5 @@ pocket_finder(
     ligand=Path(
         "/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/pocket_finder/1fvv_l.sdf"
     ),
-    radius=10,
-)
+    radius=10)
+

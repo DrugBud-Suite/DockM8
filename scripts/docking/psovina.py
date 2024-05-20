@@ -117,8 +117,8 @@ def psovina_docking(
             str(psovina_docking_results),
             molColName="Molecule",
             idName="Pose ID",
-            properties=list(psovina_poses.columns),
-        )
+            properties=list(psovina_poses.columns))
+
     except Exception as e:
         printlog("ERROR: Failed to combine PSOVINA SDF file!")
         printlog(e)
@@ -164,8 +164,8 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
                 str(w_dir / "psovina" / "psovina_poses.sdf"),
                 molColName="Molecule",
                 idName="Pose ID",
-                properties=list(psovina_df.columns),
-            )
+                properties=list(psovina_df.columns))
+
         except Exception as e:
             printlog("ERROR: Failed to write combined PSOVINA poses SDF file!")
             printlog(e)

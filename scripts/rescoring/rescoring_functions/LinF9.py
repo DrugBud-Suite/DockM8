@@ -85,8 +85,8 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
                 idName="Pose ID",
                 molColName=None,
                 includeFingerprints=False,
-                embedProps=False,
-            )
+                embedProps=False)
+
             for file in os.listdir(rescoring_folder / "LinF9_rescoring")
             if file.startswith("split") and file.endswith("_LinF9.sdf")]
     except Exception as e:

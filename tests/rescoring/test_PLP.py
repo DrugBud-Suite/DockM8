@@ -44,8 +44,8 @@ def test_plp_rescoring(test_data):
         rescoring_folder=rescoring_folder,
         software=software,
         protein_file=protein_file,
-        pocket_definition=pocket_definition,
-    )
+        pocket_definition=pocket_definition)
+
 
     # Assert the result
     assert isinstance(result, DataFrame)

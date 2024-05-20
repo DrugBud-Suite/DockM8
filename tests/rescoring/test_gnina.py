@@ -42,8 +42,8 @@ def test_gnina_rescoring_affinity(test_data):
         column_name,
         rescoring_folder=rescoring_folder,
         software=software,
-        protein_file=protein_file,
-    )
+        protein_file=protein_file)
+
 
     # Assert the result
     assert isinstance(result, DataFrame)
@@ -65,8 +65,8 @@ def test_gnina_rescoring_cnnscore(test_data):
         column_name,
         rescoring_folder=rescoring_folder,
         software=software,
-        protein_file=protein_file,
-    )
+        protein_file=protein_file)
+
 
     # Assert the result
     assert isinstance(result, DataFrame)
@@ -88,8 +88,8 @@ def test_gnina_rescoring_cnnaffinity(test_data):
         column_name,
         rescoring_folder=rescoring_folder,
         software=software,
-        protein_file=protein_file,
-    )
+        protein_file=protein_file)
+
 
     # Assert the result
     assert isinstance(result, DataFrame)

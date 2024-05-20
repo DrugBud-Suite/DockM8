@@ -30,8 +30,8 @@ def test_select_poses():
         protein_file=dockm8_path / "tests" / "test_files" / "pose_selection" / "4kd1_p.pdb",
         software=dockm8_path / "software",
         all_poses=allposes,
-        n_cpus=int(os.cpu_count() * 0.9),
-    )
+        n_cpus=int(os.cpu_count() * 0.9))
+
 
     RMSD_results = PandasTools.LoadSDF(str(dockm8_path / "tests" / "test_files" / "pose_selection" / "clustering" / "RMSD_clustered.sdf"), molColName="Molecule", idName="Pose ID")
 
@@ -47,8 +47,8 @@ def test_select_poses():
         protein_file=dockm8_path / "tests" / "test_files" / "pose_selection" / "4kd1_p.pdb",
         software=dockm8_path / "software",
         all_poses=allposes,
-        n_cpus=int(os.cpu_count() * 0.9),
-    )
+        n_cpus=int(os.cpu_count() * 0.9))
+
 
     bestpose_GNINA_results = PandasTools.LoadSDF(str(dockm8_path / "tests" / "test_files" / "pose_selection" / "clustering" / "bestpose_GNINA_clustered.sdf"), molColName="Molecule", idName="Pose ID")
 
@@ -64,8 +64,8 @@ def test_select_poses():
         protein_file=dockm8_path / "tests" / "test_files" / "pose_selection" / "4kd1_p.pdb",
         software=dockm8_path / "software",
         all_poses=allposes,
-        n_cpus=int(os.cpu_count() * 0.9),
-    )
+        n_cpus=int(os.cpu_count() * 0.9))
+
 
     KORP_PL_results = PandasTools.LoadSDF(str(dockm8_path / "tests" / "test_files" / "pose_selection" / "clustering" / "KORP-PL_clustered.sdf"), molColName="Molecule", idName="Pose ID")
 

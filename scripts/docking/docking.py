@@ -103,8 +103,8 @@ def dockm8_docking(
                         pocket_definition=pocket_definition,
                         software=software,
                         exhaustiveness=exhaustiveness,
-                        n_poses=n_poses,
-                    )
+                        n_poses=n_poses)
+
                 if (w_dir / program.lower()
                    ).exists() and not (w_dir / program.lower() /
                                        f"{program.lower()}_poses.sdf").exists():
@@ -135,8 +135,8 @@ def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path,
             f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf",
             molColName="Molecule",
             idName="Pose ID",
-            n_cpus=n_cpus,
-        )
+            n_cpus=n_cpus)
+
         all_poses = pd.concat([all_poses, df])
     try:
         # Write the combined poses to an SDF file
@@ -145,8 +145,8 @@ def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path,
             f"{w_dir}/allposes.sdf",
             molColName="Molecule",
             idName="Pose ID",
-            properties=list(all_poses.columns),
-        )
+            properties=list(all_poses.columns))
+
         printlog("All poses succesfully checked and combined!")
     except Exception as e:
         printlog("ERROR: Failed to write all_poses SDF file!")

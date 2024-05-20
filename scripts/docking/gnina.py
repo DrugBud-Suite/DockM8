@@ -115,8 +115,8 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
                 str(w_dir / "gnina" / "gnina_poses.sdf"),
                 molColName="Molecule",
                 idName="Pose ID",
-                properties=list(gnina_df.columns),
-            )
+                properties=list(gnina_df.columns))
+
         except Exception as e:
             printlog("ERROR: Failed to write combined GNINA poses SDF file!")
             printlog(e)

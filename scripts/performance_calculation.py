@@ -131,8 +131,8 @@ def calculate_performance_for_clustering_method(dir, w_dir, actives_df,
             ranked_df=ranked_df,
             standardised_df=standardised_df,
             actives_df=actives_df,
-            percentages=percentages,
-        )
+            percentages=percentages)
+
         for result in results:
             result_list.append(result)
     return pd.concat(result_list, axis=0)
@@ -170,8 +170,8 @@ def calculate_performance(w_dir: Path, actives_library: Path,
         backend="concurrent_process_silent",
         w_dir=w_dir,
         actives_df=actives_df,
-        percentages=percentages,
-    )
+        percentages=percentages)
+
     all_results = pd.concat(results, ignore_index=True)
     (w_dir / "performance").mkdir(parents=True, exist_ok=True)
     all_results.to_csv(Path(w_dir) / "performance" / "performance.csv",

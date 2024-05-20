@@ -252,8 +252,8 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
             }},
         headers={
             "Content-type": "application/json",
-            "Accept": "application/json"},
-    )
+            "Accept": "application/json"})
+
 
     r.raise_for_status()
 

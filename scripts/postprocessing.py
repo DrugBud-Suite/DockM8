@@ -150,16 +150,16 @@ def apply_consensus_methods(w_dir: str, selection_method: str,
                     selection_method,
                     [
                         col for col in ranked_dataframe.columns
-                        if col not in ["Pose ID", "ID"]],
-                )
+                        if col not in ["Pose ID", "ID"]])
+
             elif conensus_type == "score":
                 consensus_dataframe = conensus_function(
                     standardized_dataframe,
                     selection_method,
                     [
                         col for col in standardized_dataframe.columns
-                        if col not in ["Pose ID", "ID"]],
-                )
+                        if col not in ["Pose ID", "ID"]])
+
             else:
                 raise ValueError(
                     f"Invalid consensus method type: {conensus_type}")
@@ -178,8 +178,8 @@ def apply_consensus_methods(w_dir: str, selection_method: str,
                     str(w_dir / "clustering" /
                         f"{selection_method}_clustered.sdf"),
                     molColName="Molecule",
-                    idName="Pose ID",
-                )
+                    idName="Pose ID")
+
                 poses["ID"] = poses["Pose ID"].str.split("_").str[0]
                 poses = poses[["ID", "Molecule"]]
                 consensus_dataframe = pd.merge(consensus_dataframe,
@@ -192,8 +192,8 @@ def apply_consensus_methods(w_dir: str, selection_method: str,
                         f"{selection_method}_{consensus_method}_results.sdf"),
                     molColName="Molecule",
                     idName="ID",
-                    properties=list(consensus_dataframe.columns),
-                )
+                    properties=list(consensus_dataframe.columns))
+
             else:
                 consensus_dataframe.to_csv(
                     Path(w_dir) / "consensus" /
@@ -239,8 +239,8 @@ def ensemble_consensus(receptors: list, selection_method: str,
                 str(w_dir / "consensus" /
                     f"{selection_method}_{consensus_method}_results.sdf"),
                 molColName="Molecule",
-                idName="ID",
-            )
+                idName="ID")
+
         else:
             consensus_file = pd.read_csv(
                 Path(w_dir) / "consensus" /
@@ -272,8 +272,8 @@ def ensemble_consensus(receptors: list, selection_method: str,
                 str(w_dir / "consensus" /
                     f"{selection_method}_{consensus_method}_results.sdf"),
                 molColName="Molecule",
-                idName="ID",
-            )
+                idName="ID")
+
         else:
             consensus_file = pd.read_csv(
                 Path(w_dir) / "consensus" /
@@ -295,8 +295,8 @@ def ensemble_consensus(receptors: list, selection_method: str,
             str(Path(receptors[0]).parent / "ensemble_results.sdf"),
             molColName="Molecule",
             idName="ID",
-            properties=list(common_compounds_df.columns),
-        )
+            properties=list(common_compounds_df.columns))
+
     else:
         common_compounds_df.to_csv(Path(receptors[0]).parent /
                                    "ensemble_results.csv",

@@ -117,8 +117,8 @@ def qvina2_docking(
             str(qvina2_docking_results),
             molColName="Molecule",
             idName="Pose ID",
-            properties=list(qvina2_poses.columns),
-        )
+            properties=list(qvina2_poses.columns))
+
     except Exception as e:
         printlog("ERROR: Failed to combine QVINA2 SDF file!")
         printlog(e)
@@ -161,8 +161,8 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
                 str(w_dir / "qvina2" / "qvina2_poses.sdf"),
                 molColName="Molecule",
                 idName="Pose ID",
-                properties=list(qvina2_df.columns),
-            )
+                properties=list(qvina2_df.columns))
+
         except Exception as e:
             printlog("ERROR: Failed to write combined QVINA2 poses SDF file!")
             printlog(e)

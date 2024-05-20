@@ -126,8 +126,8 @@ def prepare_protein(
                 fix_missing_residues,
                 add_missing_hydrogens_pH,
                 remove_hetero,
-                remove_water,
-            )
+                remove_water)
+
         else:
             step2_pdb = step1_pdb
         # Protonate the protein
