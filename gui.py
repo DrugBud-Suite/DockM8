@@ -58,11 +58,11 @@ if mode != "Single":
 else:
 	threshold = None
 n_cpus = st.slider("Number of CPUs",
-		min_value=1,
-		max_value=os.cpu_count(),
-		step=1,
-		value=int(os.cpu_count() * 0.9),
-		help="Number of CPUs to use for calculations")
+					min_value=1,
+					max_value=os.cpu_count(),
+					step=1,
+					value=int(os.cpu_count() * 0.9),
+					help="Number of CPUs to use for calculations")
 
 software = st.text_input(
 	"Choose a software directory",
@@ -70,8 +70,8 @@ software = st.text_input(
 	help="Type the directory containing the software folder: For example: /home/user/Dockm8/software")
 
 gen_decoys = st.toggle(label="Generate decoys",
-		value=False,
-		help="Generate decoys for the active ligands and determine optimal DockM8 conditions")
+						value=False,
+						help="Generate decoys for the active ligands and determine optimal DockM8 conditions")
 
 if mode == "Single":
 	receptor_value = CWD + "/tests/test_files/1fvv_p.pdb"
@@ -87,23 +87,23 @@ if gen_decoys:
 	# Active ligands
 	actives = Path(
 		st.text_input(label="Enter the path to the active ligands file (.sdf format)",
-			value=CWD + "/tests/test_files/CDK2_actives.sdf",
-			help="Choose an active ligands file (.sdf format)",
-			))
+						value=CWD + "/tests/test_files/CDK2_actives.sdf",
+						help="Choose an active ligands file (.sdf format)",
+						))
 	if not actives.is_file():
 		st.error(f"Invalid file path: {actives}")
 	# Number of decoys
 	n_decoys = st.slider(label="Number of decoys",
-			min_value=1,
-			max_value=100,
-			step=1,
-			value=10,
-			help="Number of decoys to generate for each active ligand")
+							min_value=1,
+							max_value=100,
+							step=1,
+							value=10,
+							help="Number of decoys to generate for each active ligand")
 
 	# Decoy generation program
 	decoy_model = st.selectbox(label="Which decoy generation model do you want to use?",
-			options=("DUD-E", "DEKOIS", "DUD-E_phosphorus"),
-			help="Select which Deepcoy decoy generation model you want to use ")
+								options=("DUD-E", "DEKOIS", "DUD-E_phosphorus"),
+								help="Select which Deepcoy decoy generation model you want to use ")
 
 else:
 	actives = n_decoys = decoy_model = None
@@ -132,14 +132,14 @@ remove_heteroatoms = st.toggle(label="Remove ligands and heteroatoms", key="remo
 remove_water = st.toggle(label="Remove water", key="remove_water", value=True)
 st.subheader("Receptor Protonation", divider="orange")
 protonation = st.toggle(label="Automatically protonate receptor using Protoss (untoggle to choose a specific pH)",
-		value=True,
-		help="Choose whether or not to use Protoss Web service to protonate the protein structure")
+						value=True,
+						help="Choose whether or not to use Protoss Web service to protonate the protein structure")
 
 if not protonation:
 	add_hydrogens = st.number_input(label="Add hydrogens with PDB Fixer at pH",
-			min_value=0.0,
-			max_value=14.0,
-			value=7.0)
+									min_value=0.0,
+									max_value=14.0,
+									value=7.0)
 else:
 	add_hydrogens = None
 
@@ -174,14 +174,14 @@ elif pocket_mode == "Manual" and mode == "Single":
 	y_center = col2.number_input(label="Y Center", value=0.0, help="Enter the Y coordinate of the pocket center")
 	z_center = col3.number_input(label="Z Center", value=0.0, help="Enter the Z coordinate of the pocket center")
 	x_size = col1.number_input(label="X Size",
-			value=20.0,
-			help="Enter the size of the pocket in the X direction (in Angstroms)")
+								value=20.0,
+								help="Enter the size of the pocket in the X direction (in Angstroms)")
 	y_size = col2.number_input(label="Y Size",
-			value=20.0,
-			help="Enter the size of the pocket in the Y direction (in Angstroms)")
+								value=20.0,
+								help="Enter the size of the pocket in the Y direction (in Angstroms)")
 	z_size = col3.number_input(label="Z Size",
-			value=20.0,
-			help="Enter the size of the pocket in the Z direction (in Angstroms)")
+								value=20.0,
+								help="Enter the size of the pocket in the Z direction (in Angstroms)")
 	manual_pocket = f"center:{x_center},{y_center},{z_center}*size:{x_size},{y_size},{z_size}"
 	pocket_radius = reference_files = None
 elif pocket_mode == "Manual" and mode != "Single":
@@ -193,8 +193,8 @@ else:
 # Ligand library
 st.header("Ligands", divider="orange")
 docking_library = st.text_input(label="Entre the path to the ligand library file (.sdf format)",
-		value=library_value,
-		help="Choose a ligand library file (.sdf format)")
+								value=library_value,
+								help="Choose a ligand library file (.sdf format)")
 
 if not Path(docking_library).is_file():
 	st.error(f"Invalid file path: {docking_library}")
@@ -202,39 +202,39 @@ if not Path(docking_library).is_file():
 # Ligand protonation
 st.subheader("Ligand protonation", divider="orange")
 ligand_protonation = st.selectbox(label="How should the ligands be protonated?",
-			options=("None", "GypsumDL"),
-			index=1,
-			help="None: No protonation " +
-			"Gypsum-DL: DockM8 will use Gypsum-DL to protonate the ligands")
+									options=("None", "GypsumDL"),
+									index=1,
+									help="None: No protonation " +
+									"Gypsum-DL: DockM8 will use Gypsum-DL to protonate the ligands")
 
 # Ligand conformers
 st.subheader("Ligand conformers", divider="orange")
 ligand_conformers = st.selectbox(label="How should the conformers be generated?",
-			options=["MMFF", "GypsumDL"],
-			index=1,
-			help="MMFF: DockM8 will use MMFF to prepare the ligand 3D conformers. " +
-			"GypsumDL: DockM8 will use Gypsum-DL to prepare the ligand 3D conformers.")
+									options=["MMFF", "GypsumDL"],
+									index=1,
+									help="MMFF: DockM8 will use MMFF to prepare the ligand 3D conformers. " +
+									"GypsumDL: DockM8 will use Gypsum-DL to prepare the ligand 3D conformers.")
 
 n_conformers = st.number_input("Number of conformers to generate.", min_value=1, max_value=100, step=1)
 
 # Docking programs
 st.header("Docking programs", divider="orange")
 docking_programs = st.multiselect(label="Choose the docking programs you want to use",
-			default=["GNINA"],
-			options=DOCKING_PROGRAMS,
-			help="Choose the docking programs you want to use, mutliple selection is allowed")
+									default=["GNINA"],
+									options=DOCKING_PROGRAMS,
+									help="Choose the docking programs you want to use, mutliple selection is allowed")
 
-if "PLANTS" in docking_programs and not os.path.exists("/path/to/software/PLANTS"):
+if "PLANTS" in docking_programs and not os.path.exists(f"{software}/PLANTS"):
 	st.warning(
 		"PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php")
 
 # Number of poses
 n_poses = st.slider(label="Number of poses",
-		min_value=1,
-		max_value=100,
-		step=5,
-		value=10,
-		help="Number of poses to generate for each ligand")
+					min_value=1,
+					max_value=100,
+					step=5,
+					value=10,
+					help="Number of poses to generate for each ligand")
 
 # Exhaustiveness
 exhaustiveness = st.select_slider(
@@ -248,9 +248,9 @@ exhaustiveness = st.select_slider(
 # Post docking
 st.header("Docking postprocessing", divider="orange")
 clash_cutoff_toggle = st.toggle(label="Remove poses with clashes",
-		value=True,
-		help="Remove poses with clashes",
-		key="clash_cutoff_toggle")
+								value=True,
+								help="Remove poses with clashes",
+								key="clash_cutoff_toggle")
 if clash_cutoff_toggle:
 	clash_cutoff = st.number_input(
 		label=
@@ -264,9 +264,9 @@ else:
 	clash_cutoff = None
 
 strain_cutoff_toggle = st.toggle(label="Remove poses with high strain",
-			value=True,
-			help="Remove poses with high strain",
-			key="strain_cutoff_toggle")
+									value=True,
+									help="Remove poses with high strain",
+									key="strain_cutoff_toggle")
 if strain_cutoff_toggle:
 	strain_cutoff = st.number_input(
 		label=
@@ -325,16 +325,16 @@ else:
 # Rescoring
 st.header("Scoring functions", divider="orange")
 rescoring = st.multiselect(label="Choose the scoring functions you want to use",
-		default=["CNN-Score", "KORP-PL"],
-		options=list(RESCORING_FUNCTIONS.keys()),
-		help="The method(s) to use for scoring. Multiple selection allowed")
+							default=["CNN-Score", "KORP-PL"],
+							options=list(RESCORING_FUNCTIONS.keys()),
+							help="The method(s) to use for scoring. Multiple selection allowed")
 
 # Consensus
 st.header("Consensus", divider="orange")
 consensus_method = st.selectbox(label="Choose which consensus algorithm to use: ",
-		index=2,
-		options=list(CONSENSUS_METHODS.keys()),
-		help="The method to use for consensus.")
+								index=2,
+								options=list(CONSENSUS_METHODS.keys()),
+								help="The method to use for consensus.")
 
 if gen_decoys:
 	total_combinations = 0
