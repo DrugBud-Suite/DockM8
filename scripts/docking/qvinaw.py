@@ -19,13 +19,13 @@ from scripts.utilities.utilities import convert_molecules, delete_files, printlo
 
 
 def qvinaw_docking(split_file: Path,
-					w_dir: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					software: Path,
-					exhaustiveness: int,
-					n_poses: int,
-					):
+		w_dir: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		software: Path,
+		exhaustiveness: int,
+		n_poses: int,
+		):
 	"""
     Perform docking using the QVINAW software for either a library of molecules or split files.
 
@@ -45,7 +45,7 @@ def qvinaw_docking(split_file: Path,
 	results_folder = qvinaw_folder / Path(split_file).stem / "docked"
 	if split_file:
 		input_file = split_file
-		pdbqt_folder = results_folder / Path(split_file).stem / "pdbqt_files"
+		pdbqt_folder = qvinaw_folder / Path(split_file).stem / "pdbqt_files"
 	else:
 		input_file = w_dir / "final_library.sdf"
 		pdbqt_folder = qvinaw_folder / "pdbqt_files"
@@ -60,11 +60,10 @@ def qvinaw_docking(split_file: Path,
 		print("Failed to convert sdf file to .pdbqt")
 		print(e)
 
-	protein_file_pdbqt = convert_molecules(str(protein_file),
-											str(protein_file).replace(".pdb", ".pdbqt"),
+	protein_file_pdbqt = convert_molecules(protein_file,
+											protein_file.with_suffix(".pdbqt"),
 											"pdb",
 											"pdbqt")
-
 	# Dock each ligand using QVINAW
 	for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
 		output_file = results_folder / (pdbqt_file.stem + "_QVINAW.pdbqt")
@@ -133,7 +132,10 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
 			qvinaw_dataframes = []
 			for file in tqdm(os.listdir(w_dir / "qvinaw"), desc="Loading QVINAW poses"):
 				if file.startswith("split") or file.startswith("final_library") and file.endswith(".sdf"):
-					df = PandasTools.LoadSDF(str(w_dir / "qvinaw" / file), idName="Pose ID", molColName="Molecule")
+					df = PandasTools.LoadSDF(str(w_dir / "qvinaw" / file),
+												idName="Pose ID",
+												molColName="Molecule",
+												strictParsing=False)
 					qvinaw_dataframes.append(df)
 			qvinaw_df = pd.concat(qvinaw_dataframes)
 			qvinaw_df["ID"] = qvinaw_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -151,5 +153,5 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
 			printlog("ERROR: Failed to write combined QVINAW poses SDF file!")
 			printlog(e)
 		else:
-			delete_files(w_dir / "qvinaw", "qvinaw_poses.sdf")
+			delete_files(w_dir / "qvinaw", ["qvinaw_poses.sdf", "*.log"])
 	return w_dir / "qvinaw" / "qvinaw_poses.sdf"

@@ -19,13 +19,13 @@ from scripts.utilities.utilities import convert_molecules, delete_files, printlo
 
 
 def qvina2_docking(split_file: Path,
-					w_dir: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					software: Path,
-					exhaustiveness: int,
-					n_poses: int,
-					):
+		w_dir: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		software: Path,
+		exhaustiveness: int,
+		n_poses: int,
+		):
 	"""
     Perform docking using the QVINA2 software for either a library of molecules or split files.
 
@@ -60,11 +60,11 @@ def qvina2_docking(split_file: Path,
 		print("Failed to convert sdf file to .pdbqt")
 		print(e)
 
-	protein_file_pdbqt = convert_molecules(str(protein_file),
-											str(protein_file).replace(".pdb", ".pdbqt"),
+	protein_file_pdbqt = convert_molecules(protein_file,
+											protein_file.with_suffix(".pdbqt"),
 											"pdb",
 											"pdbqt")
-
+	log = qvina2_folder / f"{os.path.basename(split_file).split('.')[0]}_qvina2.log"
 	# Dock each ligand using QVINA2
 	for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
 		output_file = results_folder / (pdbqt_file.stem + "_QVINA2.pdbqt")
@@ -79,9 +79,10 @@ def qvina2_docking(split_file: Path,
 						f" --size_y {pocket_definition['size'][1]}"
 						f" --size_z {pocket_definition['size'][2]}"
 						f" --exhaustiveness {exhaustiveness}"
-						" --cpu 1 --seed 1"
+						" --cpu 1 --seed 1 --energy_range 10"
 						f" --num_modes {n_poses}")
-		subprocess.call(qvina2_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+		subprocess.call(qvina2_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+						)
 
 	qvina2_docking_results = qvina2_folder / (Path(input_file).stem + "_qvina2.sdf")
 	# Process the docked poses
@@ -130,7 +131,10 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
 			qvina2_dataframes = []
 			for file in tqdm(os.listdir(w_dir / "qvina2"), desc="Loading QVINA2 poses"):
 				if file.startswith("split") or file.startswith("final_library") and file.endswith(".sdf"):
-					df = PandasTools.LoadSDF(str(w_dir / "qvina2" / file), idName="Pose ID", molColName="Molecule")
+					df = PandasTools.LoadSDF(str(w_dir / "qvina2" / file),
+												idName="Pose ID",
+												molColName="Molecule",
+												strictParsing=False)
 					qvina2_dataframes.append(df)
 			qvina2_df = pd.concat(qvina2_dataframes)
 			qvina2_df["ID"] = qvina2_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -148,5 +152,5 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
 			printlog("ERROR: Failed to write combined QVINA2 poses SDF file!")
 			printlog(e)
 		else:
-			delete_files(w_dir / "qvina2", "qvina2_poses.sdf")
+			delete_files(w_dir / "qvina2", ["qvina2_poses.sdf", "*.log"])
 	return w_dir / "qvina2" / "qvina2_poses.sdf"

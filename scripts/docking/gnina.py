@@ -17,13 +17,13 @@ from scripts.utilities.utilities import delete_files, printlog
 
 
 def gnina_docking(split_file: Path,
-					w_dir: Path,
-					protein_file: str,
-					pocket_definition: Dict[str, list],
-					software: Path,
-					exhaustiveness: int,
-					n_poses: int,
-					):
+		w_dir: Path,
+		protein_file: str,
+		pocket_definition: Dict[str, list],
+		software: Path,
+		exhaustiveness: int,
+		n_poses: int,
+		):
 	"""
     Dock ligands from a splitted file into a protein using gnina.
 
@@ -48,17 +48,27 @@ def gnina_docking(split_file: Path,
 	else:
 		input_file = w_dir / "final_library.sdf"
 		results_path = gnina_folder / "docked.sdf"
+	log = gnina_folder / f"{os.path.basename(split_file).split('.')[0]}_gnina.log"
 	# Construct the gnina command
-	gnina_cmd = (f"{software / 'gnina'}" + f" --receptor {protein_file}" + f" --ligand {input_file}" +
-					f" --out {results_path}" + f" --center_x {pocket_definition['center'][0]}" +
-					f" --center_y {pocket_definition['center'][1]}" + f" --center_z {pocket_definition['center'][2]}" +
-					f" --size_x {pocket_definition['size'][0]}" + f" --size_y {pocket_definition['size'][1]}" +
-					f" --size_z {pocket_definition['size'][2]}" + f" --exhaustiveness {exhaustiveness}" +
-					" --cpu 1 --seed 1" + f" --num_modes {n_poses}" +
+	gnina_cmd = (f"{software / 'gnina'}"
+					f" --receptor {protein_file}"
+					f" --ligand {input_file}"
+					f" --out {results_path}"
+					f" --center_x {pocket_definition['center'][0]}"
+					f" --center_y {pocket_definition['center'][1]}"
+					f" --center_z {pocket_definition['center'][2]}"
+					f" --size_x {pocket_definition['size'][0]}"
+					f" --size_y {pocket_definition['size'][1]}"
+					f" --size_z {pocket_definition['size'][2]}"
+					f" --exhaustiveness {exhaustiveness}"
+					f" --log {log}"
+					" --cpu 1 --seed 1"
+					f" --num_modes {n_poses}"
 					" --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu")
 	try:
 		# Execute the gnina command
-		subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+		subprocess.call(gnina_cmd, shell=True          #, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+						)
 	except Exception as e:
 		printlog(f"GNINA docking failed: {e}")
 	return
@@ -80,7 +90,10 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			gnina_dataframes = []
 			for file in tqdm(os.listdir(w_dir / "gnina"), desc="Loading GNINA poses"):
 				if file.startswith("split"):
-					df = PandasTools.LoadSDF(str(w_dir / "gnina" / file), idName="ID", molColName="Molecule")
+					df = PandasTools.LoadSDF(str(w_dir / "gnina" / file),
+												idName="ID",
+												molColName="Molecule",
+												strictParsing=False)
 					gnina_dataframes.append(df)
 			gnina_df = pd.concat(gnina_dataframes)
 			list_ = [*range(1, int(n_poses) + 1, 1)]
@@ -103,4 +116,5 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			printlog("ERROR: Failed to write combined GNINA poses SDF file!")
 			printlog(e)
 		else:
-			delete_files(w_dir / "gnina", "gnina_poses.sdf")
+			delete_files(w_dir / "gnina", ["gnina_poses.sdf", "*.log"])
+	return w_dir / "gnina" / "gnina_poses.sdf"
