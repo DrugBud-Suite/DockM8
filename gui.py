@@ -9,7 +9,7 @@ from pathlib import Path
 
 import streamlit as st
 
-from scripts.pose_selection.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
+from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
 from scripts.consensus.consensus import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
@@ -224,7 +224,7 @@ docking_programs = st.multiselect(label="Choose the docking programs you want to
 									options=DOCKING_PROGRAMS,
 									help="Choose the docking programs you want to use, mutliple selection is allowed")
 
-if "PLANTS" in docking_programs and not os.path.exists("/path/to/software/PLANTS"):
+if "PLANTS" in docking_programs and not os.path.exists(f"{software}/PLANTS"):
 	st.warning(
 		"PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php")
 
@@ -349,32 +349,32 @@ if gen_decoys:
 
 config = {
 	"general": {
-		"software": software, "mode": mode.lower(), "n_cpus": n_cpus},
+	"software": software, "mode": mode.lower(), "n_cpus": n_cpus},
 	"decoy_generation": {
-		"gen_decoys": gen_decoys, "decoy_model": decoy_model, "n_decoys": n_decoys, "actives": actives, },
+	"gen_decoys": gen_decoys, "decoy_model": decoy_model, "n_decoys": n_decoys, "actives": actives, },
 	"receptor(s)": [str(receptor) for receptor in receptors],
 	"docking_library": docking_library,
 	"protein_preparation": {
-		"select_best_chain": select_best_chain,
-		"fix_nonstandard_residues": fix_nonstandard_residues,
-		"fix_missing_residues": fix_missing_residues,
-		"remove_heteroatoms": remove_heteroatoms,
-		"remove_water": remove_water,
-		"add_hydrogens": add_hydrogens,
-		"protonation": protonation, },
+	"select_best_chain": select_best_chain,
+	"fix_nonstandard_residues": fix_nonstandard_residues,
+	"fix_missing_residues": fix_missing_residues,
+	"remove_heteroatoms": remove_heteroatoms,
+	"remove_water": remove_water,
+	"add_hydrogens": add_hydrogens,
+	"protonation": protonation, },
 	"ligand_preparation": {
-		"protonation": ligand_protonation, "conformers": ligand_conformers, "n_conformers": n_conformers, },
+	"protonation": ligand_protonation, "conformers": ligand_conformers, "n_conformers": n_conformers, },
 	"pocket_detection": {
-		"method": pocket_mode,
-		"reference_ligand(s)": [str(ligand) for ligand in reference_files] if reference_files is not None else None,
-		"radius": pocket_radius,
-		"manual_pocket": manual_pocket, },
+	"method": pocket_mode,
+	"reference_ligand(s)": [str(ligand) for ligand in reference_files] if reference_files is not None else None,
+	"radius": pocket_radius,
+	"manual_pocket": manual_pocket, },
 	"docking": {
-		"docking_programs": docking_programs, "n_poses": n_poses, "exhaustiveness": exhaustiveness},
+	"docking_programs": docking_programs, "n_poses": n_poses, "exhaustiveness": exhaustiveness},
 	"post_docking": {
-		"clash_cutoff": clash_cutoff, "strain_cutoff": strain_cutoff, "bust_poses": bust_poses},
+	"clash_cutoff": clash_cutoff, "strain_cutoff": strain_cutoff, "bust_poses": bust_poses},
 	"pose_selection": {
-		"pose_selection_method": pose_selection, "clustering_method": clustering_algorithm},
+	"pose_selection_method": pose_selection, "clustering_method": clustering_algorithm},
 	"rescoring": rescoring,
 	"consensus": consensus_method,
 	"threshold": threshold, }
@@ -419,6 +419,6 @@ if log_file_path is not None:
 		time.sleep(0.2)            # Adjust the interval as needed
 		new_log_content = read_log_file(log_file_path)
 		if new_log_content != log_content:
-			                             # Update the contents of the existing text area
+			# Update the contents of the existing text area
 			log_container.text_area("Log ", new_log_content, height=300)
 			log_content = new_log_content

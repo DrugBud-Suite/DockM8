@@ -11,7 +11,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.pose_selection.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
+from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
 from scripts.consensus.consensus import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.library_preparation.main import CONFORMER_OPTIONS, PROTONATION_OPTIONS
@@ -370,9 +370,9 @@ def check_config(config):
 		raise DockM8Error(
 			f"DockM8 configuration error: Invalid consensus method ({consensus_method}) specified in the configuration file. Must be one of {valid_consensus_methods}."
 		)
+	# Check threshold for ensemble and active learning modes
+	threshold = config.get("threshold", None)
 
-	threshold = config.get("threshold", None)       # None is a placeholder if threshold is not set
-	                                                 # Check threshold for ensemble and active learning modes
 	if mode in ["ensemble", "active_learning"]:
 		if threshold is None:
 			DockM8Warning(

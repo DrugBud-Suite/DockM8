@@ -39,12 +39,3 @@ def pocket_finder(mode: str,
 	# Extract the pocket from the receptor
 	pocket_path = extract_pocket(pocket_definition, receptor)
 	return pocket_definition
-
-
-pocket_finder(
-	"Reference",
-	receptor=Path(
-		"/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/docking_postprocessing/example_prepared_receptor_1fvv.pdb"
-	),
-	ligand=Path("/home/tony/DockM8_bare.worktrees/Tonylac77/issue8/tests/test_files/pocket_finder/1fvv_l.sdf"),
-	radius=10)

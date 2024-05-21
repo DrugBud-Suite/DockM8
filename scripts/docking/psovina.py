@@ -45,7 +45,7 @@ def psovina_docking(split_file: Path,
 	results_folder = psovina_folder / Path(split_file).stem / "docked"
 	if split_file:
 		input_file = split_file
-		pdbqt_folder = results_folder / Path(split_file).stem / "pdbqt_files"
+		pdbqt_folder = psovina_folder / Path(split_file).stem / "pdbqt_files"
 	else:
 		input_file = w_dir / "final_library.sdf"
 		pdbqt_folder = psovina_folder / "pdbqt_files"
@@ -60,11 +60,8 @@ def psovina_docking(split_file: Path,
 		print("Failed to convert sdf file to .pdbqt")
 		print(e)
 
-	protein_file_pdbqt = convert_molecules(str(protein_file),
-											str(protein_file).replace(".pdb", ".pdbqt"),
-											"pdb",
-											"pdbqt")
-
+	protein_file_pdbqt = convert_molecules(protein_file, protein_file.with_suffix(".pdbqt"), "pdb", "pdbqt")
+	log = psovina_folder / f"{os.path.basename(split_file).split('.')[0]}_psovina.log"
 	# Dock each ligand using PSOVINA
 	for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
 		output_file = results_folder / (pdbqt_file.stem + "_PSOVINA.pdbqt")
@@ -79,7 +76,7 @@ def psovina_docking(split_file: Path,
 						f" --size_y {pocket_definition['size'][1]}"
 						f" --size_z {pocket_definition['size'][2]}"
 						f" --exhaustiveness {exhaustiveness}"
-						" --cpu 1 --seed 1"
+						" --cpu 1 --seed 1 --energy_range 10"
 						f" --num_modes {n_poses}")
 		subprocess.call(psovina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
@@ -133,7 +130,10 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
 			psovina_dataframes = []
 			for file in tqdm(os.listdir(w_dir / "psovina"), desc="Loading PSOVINA poses"):
 				if file.endswith(".sdf"):
-					df = PandasTools.LoadSDF(str(w_dir / "psovina" / file), idName="Pose ID", molColName="Molecule")
+					df = PandasTools.LoadSDF(str(w_dir / "psovina" / file),
+												idName="Pose ID",
+												molColName="Molecule",
+												strictParsing=False)
 					psovina_dataframes.append(df)
 			psovina_df = pd.concat(psovina_dataframes)
 			psovina_df["ID"] = psovina_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -151,5 +151,5 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
 			printlog("ERROR: Failed to write combined PSOVINA poses SDF file!")
 			printlog(e)
 		else:
-			delete_files(w_dir / "psovina", "psovina_poses.sdf")
+			delete_files(w_dir / "psovina", ["psovina_poses.sdf", "*.log"])
 	return w_dir / "psovina" / "psovina_poses.sdf"

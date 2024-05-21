@@ -17,7 +17,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.consensus_methods import CONSENSUS_METHODS
+from scripts.consensus.consensus import CONSENSUS_METHODS
 from scripts.postprocessing import rank_scores, standardize_scores
 from scripts.utilities.utilities import parallel_executor, printlog
 
@@ -33,12 +33,12 @@ def process_combination(combination, clustering_method, ranked_df, standardised_
 	for method in CONSENSUS_METHODS.keys():
 		if CONSENSUS_METHODS[method]["type"] == "rank":
 			consensus_dfs[method] = CONSENSUS_METHODS[method]["function"](filtered_ranked_df,
-																			clustering_method,
-																			list(combination))
+							clustering_method,
+							list(combination))
 		elif CONSENSUS_METHODS[method]["type"] == "score":
 			consensus_dfs[method] = CONSENSUS_METHODS[method]["function"](filtered_standardised_df,
-																			clustering_method,
-																			list(combination))
+							clustering_method,
+							list(combination))
 		merged_df = pd.merge(consensus_dfs[method], actives_df, on="ID")
 		# Get the column name that is not 'ID' or 'Activity'
 		col_to_sort = [col for col in merged_df.columns if col not in ["ID", "Activity"]][0]
@@ -54,17 +54,17 @@ def process_combination(combination, clustering_method, ranked_df, standardised_
 		rie = round(Scoring.CalcRIE(list(zip(scores, activities)), 1, 80.5), 3)
 		combination_dfs.append(
 			pd.DataFrame(
-				{
-					"clustering": clustering_method,
-					"consensus": method,
-					"scoring": "_".join(list(combination)),
-					"AUC_ROC": auc_roc,
-					"BEDROC": bedroc,
-					"AUC": auc,
-					**{
-						f"EF_{p}%": ef for p, ef in zip(percentages, ef_results)},
-					"RIE": rie, },
-				index=[0],
+			{
+			"clustering": clustering_method,
+			"consensus": method,
+			"scoring": "_".join(list(combination)),
+			"AUC_ROC": auc_roc,
+			"BEDROC": bedroc,
+			"AUC": auc,
+			**{
+			f"EF_{p}%": ef for p, ef in zip(percentages, ef_results)},
+			"RIE": rie, },
+			index=[0],
 			))
 	combination_df = pd.concat(combination_dfs, axis=0)
 	return combination_df
@@ -72,7 +72,7 @@ def process_combination(combination, clustering_method, ranked_df, standardised_
 
 def calculate_performance_for_clustering_method(dir, w_dir, actives_df, percentages):
 	clustering_method = ("_".join(dir.split("_")[1:3])
-							if len(dir.split("_")) > 3 else dir.split("_")[1] if len(dir.split("_")) == 3 else None)
+			if len(dir.split("_")) > 3 else dir.split("_")[1] if len(dir.split("_")) == 3 else None)
 	# Calculate performance for single scoring functions
 	rescored_df = pd.read_csv(Path(w_dir) / dir / "allposes_rescored.csv")
 	standardised_df = standardize_scores(rescored_df, "min_max")
@@ -94,17 +94,17 @@ def calculate_performance_for_clustering_method(dir, w_dir, actives_df, percenta
 		rie = round(Scoring.CalcRIE(list(zip(scores, activities)), 1, 80.5), 3)
 		result_list.append(
 			pd.DataFrame(
-				{
-					"clustering": clustering_method,
-					"consensus": "None",
-					"scoring": col,
-					"AUC_ROC": auc_roc,
-					"BEDROC": bedroc,
-					"AUC": auc,
-					**{
-						f"EF_{p}%": ef for p, ef in zip(percentages, ef_results)},
-					"RIE": rie, },
-				index=[0],
+			{
+			"clustering": clustering_method,
+			"consensus": "None",
+			"scoring": col,
+			"AUC_ROC": auc_roc,
+			"BEDROC": bedroc,
+			"AUC": auc,
+			**{
+			f"EF_{p}%": ef for p, ef in zip(percentages, ef_results)},
+			"RIE": rie, },
+			index=[0],
 			))
 	# Calculate performance for consensus scoring functions
 	ranked_df = rank_scores(standardised_df)
@@ -114,14 +114,14 @@ def calculate_performance_for_clustering_method(dir, w_dir, actives_df, percenta
 		combinations = list(itertools.combinations(score_columns, length))
 		# For each combination
 		results = parallel_executor(process_combination,
-									combinations,
-									n_cpus=50,
-									backend="concurrent_process_silent",
-									clustering_method=clustering_method,
-									ranked_df=ranked_df,
-									standardised_df=standardised_df,
-									actives_df=actives_df,
-									percentages=percentages)
+				combinations,
+				n_cpus=50,
+				backend="concurrent_process_silent",
+				clustering_method=clustering_method,
+				ranked_df=ranked_df,
+				standardised_df=standardised_df,
+				actives_df=actives_df,
+				percentages=percentages)
 
 		for result in results:
 			result_list.append(result)
@@ -149,12 +149,12 @@ def calculate_performance(w_dir: Path, actives_library: Path, percentages: list)
 	# Calculate performance for each clustering method
 	dirs = [dir for dir in os.listdir(w_dir) if dir.startswith("rescoring") and dir.endswith("clustered")]
 	results = parallel_executor(calculate_performance_for_clustering_method,
-								dirs,
-								n_cpus=math.ceil(len(dirs) // 2),
-								backend="concurrent_process_silent",
-								w_dir=w_dir,
-								actives_df=actives_df,
-								percentages=percentages)
+			dirs,
+			n_cpus=math.ceil(len(dirs) // 2),
+			backend="concurrent_process_silent",
+			w_dir=w_dir,
+			actives_df=actives_df,
+			percentages=percentages)
 
 	all_results = pd.concat(results, ignore_index=True)
 	(w_dir / "performance").mkdir(parents=True, exist_ok=True)

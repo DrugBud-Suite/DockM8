@@ -13,7 +13,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.consensus_methods import CONSENSUS_METHODS
+from scripts.consensus.consensus import CONSENSUS_METHODS
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.utilities import printlog
 
@@ -38,7 +38,7 @@ def standardize_scores(df: pd.DataFrame, standardization_type: str):
         Performs min-max standardization scaling on a given score using the defined min and max values.
         """
 		return ((score-min_value) / (max_value-min_value) if best_value == "max" else
-				(max_value-score) / (max_value-min_value))
+			(max_value-score) / (max_value-min_value))
 
 	for col in df.columns:
 		if col not in ["Pose ID", "ID"]:
@@ -50,9 +50,9 @@ def standardize_scores(df: pd.DataFrame, standardization_type: str):
 				if standardization_type == "min_max":
 					# Standardise using the score's (current distribution) min and max values
 					df[col] = min_max_standardization(df[col],
-														function_info["best_value"],
-														df[col].min(),
-														df[col].max())
+								function_info["best_value"],
+								df[col].min(),
+								df[col].max())
 				elif standardization_type == "scaled":
 					# Standardise using the range defined in the RESCORING_FUNCTIONS dictionary
 					df[col] = min_max_standardization(df[col], function_info["best_value"], *function_info["range"])
@@ -61,7 +61,7 @@ def standardize_scores(df: pd.DataFrame, standardization_type: str):
 					column_data = df[col].dropna().values
 					col_min, col_max = (np.percentile(column_data, [
 						1, 99]) if function_info["best_value"] == "max" else
-										np.percentile(column_data, [99, 1]))
+							np.percentile(column_data, [99, 1]))
 					df[col] = min_max_standardization(df[col], function_info["best_value"], col_min, col_max)
 				else:
 					raise ValueError(f"Invalid standardization type: {standardization_type}")
@@ -85,10 +85,10 @@ def rank_scores(df):
 
 
 def apply_consensus_methods(w_dir: str,
-							selection_method: str,
-							consensus_methods: str,
-							rescoring_functions: list,
-							standardization_type: str):
+		selection_method: str,
+		consensus_methods: str,
+		rescoring_functions: list,
+		standardization_type: str):
 	"""
     Applies consensus methods to rescored data and saves the results to a CSV file.
 
@@ -150,24 +150,24 @@ def apply_consensus_methods(w_dir: str,
 			# Save the consensus results to a CSV file or SDF file depending on the selection method
 			if selection_method in [
 				"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-					RESCORING_FUNCTIONS.keys()):
+				RESCORING_FUNCTIONS.keys()):
 				poses = PandasTools.LoadSDF(str(w_dir / "clustering" / f"{selection_method}_clustered.sdf"),
-											molColName="Molecule",
-											idName="Pose ID")
+						molColName="Molecule",
+						idName="Pose ID")
 
 				poses["ID"] = poses["Pose ID"].str.split("_").str[0]
 				poses = poses[["ID", "Molecule"]]
 				consensus_dataframe = pd.merge(consensus_dataframe, poses, on="ID", how="left")
 				PandasTools.WriteSDF(consensus_dataframe,
-										str(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf"),
-										molColName="Molecule",
-										idName="ID",
-										properties=list(consensus_dataframe.columns))
+						str(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf"),
+						molColName="Molecule",
+						idName="ID",
+						properties=list(consensus_dataframe.columns))
 
 			else:
 				consensus_dataframe.to_csv(Path(w_dir) / "consensus" /
-											f"{selection_method}_{consensus_method}_results.csv",
-											index=False)
+						f"{selection_method}_{consensus_method}_results.csv",
+						index=False)
 		return
 
 
@@ -199,11 +199,11 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-				RESCORING_FUNCTIONS.keys()):
+			RESCORING_FUNCTIONS.keys()):
 			consensus_file = PandasTools.LoadSDF(str(w_dir / "consensus" /
-														f"{selection_method}_{consensus_method}_results.sdf"),
-													molColName="Molecule",
-													idName="ID")
+						f"{selection_method}_{consensus_method}_results.sdf"),
+						molColName="Molecule",
+						idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -226,11 +226,11 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-				RESCORING_FUNCTIONS.keys()):
+			RESCORING_FUNCTIONS.keys()):
 			consensus_file = PandasTools.LoadSDF(str(w_dir / "consensus" /
-														f"{selection_method}_{consensus_method}_results.sdf"),
-													molColName="Molecule",
-													idName="ID")
+						f"{selection_method}_{consensus_method}_results.sdf"),
+						molColName="Molecule",
+						idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -241,12 +241,12 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 	# Save the common compounds and CSV or SDF file
 	if selection_method in [
 		"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-			RESCORING_FUNCTIONS.keys()):
+		RESCORING_FUNCTIONS.keys()):
 		PandasTools.WriteSDF(common_compounds_df,
-								str(Path(receptors[0]).parent / "ensemble_results.sdf"),
-								molColName="Molecule",
-								idName="ID",
-								properties=list(common_compounds_df.columns))
+				str(Path(receptors[0]).parent / "ensemble_results.sdf"),
+				molColName="Molecule",
+				idName="ID",
+				properties=list(common_compounds_df.columns))
 
 	else:
 		common_compounds_df.to_csv(Path(receptors[0]).parent / "ensemble_results.csv", index=False)
