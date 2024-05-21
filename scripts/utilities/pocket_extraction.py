@@ -70,7 +70,6 @@ def process_protein(protein_file, center_coordinates, cutoff, output_file):
         cutoff (float): Cutoff distance for selecting residues near the center coordinates.
         output_file (Path): Path to the output pocket file.
     """
-	center_x, center_y, center_z = center_coordinates
 	# Read the protein file using PandasPdb
 	ppdb = PandasPdb()
 	ppdb.read_pdb(str(protein_file))
@@ -99,7 +98,7 @@ def select_cutoff_residues(protein_dataframe, center_coordinates, cutoff):
 	# Calculate the distance from each residue to the center coordinates
 	protein_dataframe["distance"] = protein_dataframe.apply(lambda row: calculate_distance([
 		row["x_coord"], row["y_coord"], row["z_coord"]], [center_x, center_y, center_z]),
-															axis=1)
+					axis=1)
 
 	# Select residues within the cutoff distance
 	residues_within_cutoff = protein_dataframe[protein_dataframe["distance"] < cutoff]
