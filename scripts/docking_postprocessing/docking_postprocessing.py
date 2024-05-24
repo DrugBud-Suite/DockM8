@@ -13,6 +13,7 @@ import warnings
 
 from scripts.docking_postprocessing.posebusters.posebusters import pose_buster
 from scripts.docking_postprocessing.posecheck.posecheck import pose_checker
+from scripts.docking_postprocessing.minimisation.minimize import minimize_all_ligands
 from scripts.utilities.utilities import parallel_SDF_loader, printlog
 
 warnings.filterwarnings("ignore")
@@ -21,6 +22,7 @@ warnings.filterwarnings("ignore")
 def docking_postprocessing(input_sdf: Path,
 							output_path: Path,
 							protein_file: Path,
+							minimize_poses: bool,
 							bust_poses: bool,
 							strain_cutoff: int,
 							clash_cutoff: int,
@@ -44,6 +46,13 @@ def docking_postprocessing(input_sdf: Path,
 	printlog("Postprocessing docking results...")
 	sdf_dataframe = parallel_SDF_loader(input_sdf, molColName="Molecule", idName="Pose ID", n_cpus=n_cpus)
 	starting_length = len(sdf_dataframe)
+	if minimize_poses:
+		minimized_ligands = minimize_all_ligands(protein_file,
+													str(input_sdf),
+													Path(str(input_sdf).replace('.sdf', '_minimized.sdf')),
+													n_cpus)
+	else:
+		step1_length = starting_length
 	if (strain_cutoff is not None) and (clash_cutoff is not None):
 		checked_poses = pose_checker(sdf_dataframe, protein_file, clash_cutoff, strain_cutoff, n_cpus)
 		sdf_dataframe = checked_poses
@@ -58,9 +67,10 @@ def docking_postprocessing(input_sdf: Path,
 			printlog(f"Removed {step1_length - step2_length} poses during PoseBusters postprocessing.")
 		else:
 			printlog(f"Removed {starting_length - step2_length} poses during PoseBusters postprocessing.")
+	os.unlink(minimized_ligands) if minimize_poses else None
 	PandasTools.WriteSDF(sdf_dataframe,
-							str(output_path),
-							molColName="Molecule",
-							idName="Pose ID",
-							properties=list(sdf_dataframe.columns))
+			str(output_path),
+			molColName="Molecule",
+			idName="Pose ID",
+			properties=list(sdf_dataframe.columns))
 	return output_path
