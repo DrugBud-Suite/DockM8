@@ -26,6 +26,13 @@ filterwarnings = "ignore"
 # Custom directory for pytest cache.
 cache_dir = ".pytest_cache"
 
+[tool.ruff]
+line-length = 120
+indent-width = 4
+
+[tool.ruff.lint]
+ignore = ["E402"]
+
 [tool.yapf]
 # Base style for yapf formatting.
 based_on_style = "google"
