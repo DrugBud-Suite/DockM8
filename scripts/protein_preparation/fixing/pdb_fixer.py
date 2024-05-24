@@ -13,13 +13,13 @@ from scripts.utilities.utilities import printlog
 
 
 def fix_pdb_file(input_pdb_file: Path,
-					output_dir: Path = None,
-					fix_nonstandard_residues: bool = True,
-					fix_missing_residues: bool = True,
-					add_missing_hydrogens_pH: float = 7.0,
-					remove_hetero: bool = True,
-					remove_water: bool = True,
-				):
+		output_dir: Path = None,
+		fix_nonstandard_residues: bool = True,
+		fix_missing_residues: bool = True,
+		add_missing_hydrogens_pH: float = 7.0,
+		remove_hetero: bool = True,
+		remove_water: bool = True,
+	):
 	"""
     Fixes a PDB file by performing various modifications.
 
@@ -54,10 +54,10 @@ def fix_pdb_file(input_pdb_file: Path,
 		fixer.addMissingHydrogens(add_missing_hydrogens_pH)
 	if remove_hetero and remove_water:
 		printlog("Removing heteroatoms and water molecules")
-		fixer.removeHeterogens(False)
+		fixer.removeHeterogens(keepWater=False)
 	if remove_hetero and not remove_water:
 		printlog("Removing heteroatoms and leaving water")
-		fixer.removeHeterogens(False)
+		fixer.removeHeterogens(keepWater=True)
 	printlog("Writing fixed PDB file")
 	output_file = output_dir / (input_pdb_file.stem + "_fixed.pdb")
 	PDBFile.writeFile(fixer.topology, fixer.positions, open(output_file, "w"))
