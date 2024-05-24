@@ -12,6 +12,7 @@ from sklearn.metrics import roc_auc_score
 from tqdm import tqdm
 
 from scripts.consensus_methods import CONSENSUS_METHODS
+from scripts.rescoring_functions import RESCORING_FUNCTIONS
 from scripts.postprocessing import rank_scores, standardize_scores
 from scripts.utilities import parallel_executor, printlog
 
@@ -22,8 +23,12 @@ def process_combination(combination, clustering_method, ranked_df, standardised_
     filtered_standardised_df = standardised_df[['ID'] + list(combination)]
     combination_dfs = []
     consensus_dfs = {}
-    # For each consensus method
-    for method in CONSENSUS_METHODS.keys():
+
+    if clustering_method.startswith("bestpose_") or clustering_method == '3DScore' or clustering_method in RESCORING_FUNCTIONS.keys():
+        filtered_consensus_methods = [method for method in list(CONSENSUS_METHODS.keys()) if 'avg' not in method]
+    else:
+        filtered_consensus_methods = list(CONSENSUS_METHODS.keys())
+    for method in filtered_consensus_methods:
         if CONSENSUS_METHODS[method]['type'] == 'rank':
             consensus_dfs[method] = CONSENSUS_METHODS[method]['function'](filtered_ranked_df, clustering_method, list(combination))
         elif CONSENSUS_METHODS[method]['type'] == 'score':
@@ -89,7 +94,7 @@ def calculate_performance_for_clustering_method(dir, w_dir, actives_df, percenta
         for length in tqdm(range(2, len(score_columns)), desc=f'{clustering_method}'):
             combinations = list(itertools.combinations(score_columns, length))
             # For each combination
-            results = parallel_executor(process_combination, combinations, ncpus = 50, backend = 'concurrent_process_silent', clustering_method = clustering_method, ranked_df = ranked_df, standardised_df = standardised_df, actives_df = actives_df, percentages = percentages)
+            results = parallel_executor(process_combination, combinations, ncpus = 5, backend = 'concurrent_process_silent', clustering_method = clustering_method, ranked_df = ranked_df, standardised_df = standardised_df, actives_df = actives_df, percentages = percentages)
             for result in results:
                 result_list.append(result)
         return pd.concat(result_list, axis=0)
