@@ -126,6 +126,9 @@ for file in receptors:
 # Prepare receptor
 st.header("Receptor Preparation", divider="orange")
 select_best_chain = st.toggle(label="AutoSelect best chain", key="select_best_chain", value=False)
+minimize_receptor = st.toggle(label="Minimize receptor", key="minimize", value=True)
+if minimize_receptor:
+	with_solvent = st.toggle(label="Minimize with solvent", key="with_solvent", value=True)
 fix_nonstandard_residues = st.toggle(label="Fix non standard residues", key="fix_nonstandard_residues", value=True)
 fix_missing_residues = st.toggle(label="Fix mising residues", key="fix_missing_residues", value=True)
 remove_heteroatoms = st.toggle(label="Remove ligands and heteroatoms", key="remove_heteroatoms", value=True)
@@ -247,6 +250,12 @@ exhaustiveness = st.select_slider(
 
 # Post docking
 st.header("Docking postprocessing", divider="orange")
+
+minimize_poses = st.toggle(label="Minimize poses",
+							value=False,
+							help="Minimize H positions of poses after docking",
+							key="minimize_poses")
+
 clash_cutoff_toggle = st.toggle(label="Remove poses with clashes",
 								value=True,
 								help="Remove poses with clashes",
@@ -285,6 +294,15 @@ bust_poses = st.toggle(
 	help=
 	"Bust poses using PoseBusters : Will remove any poses with clashes, non-flat aromatic rings etc. WARNING may take a long time to run",
 	key="bust_poses_toggle")
+
+classy_pose = st.toggle(label="Classify poses using Classy_Pose",
+						value=False,
+						help="Classify poses using Classy_Pose",
+						key="classy_pose_toggle")
+if classy_pose:
+	classy_pose_model = st.selectbox(label="Choose the Classy_Pose model to use",
+										options=("SVM (from publication)", "LGBM (retrained model)"),
+										index=0)
 
 # Pose selection
 st.header("Pose Selection", divider="orange")
@@ -349,32 +367,39 @@ if gen_decoys:
 
 config = {
 	"general": {
-	"software": software, "mode": mode.lower(), "n_cpus": n_cpus},
+		"software": software, "mode": mode.lower(), "n_cpus": n_cpus},
 	"decoy_generation": {
-	"gen_decoys": gen_decoys, "decoy_model": decoy_model, "n_decoys": n_decoys, "actives": actives, },
+		"gen_decoys": gen_decoys, "decoy_model": decoy_model, "n_decoys": n_decoys, "actives": actives, },
 	"receptor(s)": [str(receptor) for receptor in receptors],
 	"docking_library": docking_library,
 	"protein_preparation": {
-	"select_best_chain": select_best_chain,
-	"fix_nonstandard_residues": fix_nonstandard_residues,
-	"fix_missing_residues": fix_missing_residues,
-	"remove_heteroatoms": remove_heteroatoms,
-	"remove_water": remove_water,
-	"add_hydrogens": add_hydrogens,
-	"protonation": protonation, },
+		"select_best_chain": select_best_chain,
+		"minimize_receptor": minimize_receptor,
+		"with_solvent": with_solvent if minimize_receptor else None,
+		"fix_nonstandard_residues": fix_nonstandard_residues,
+		"fix_missing_residues": fix_missing_residues,
+		"remove_heteroatoms": remove_heteroatoms,
+		"remove_water": remove_water,
+		"add_hydrogens": add_hydrogens,
+		"protonation": protonation, },
 	"ligand_preparation": {
-	"protonation": ligand_protonation, "conformers": ligand_conformers, "n_conformers": n_conformers, },
+		"protonation": ligand_protonation, "conformers": ligand_conformers, "n_conformers": n_conformers, },
 	"pocket_detection": {
-	"method": pocket_mode,
-	"reference_ligand(s)": [str(ligand) for ligand in reference_files] if reference_files is not None else None,
-	"radius": pocket_radius,
-	"manual_pocket": manual_pocket, },
+		"method": pocket_mode,
+		"reference_ligand(s)": [str(ligand) for ligand in reference_files] if reference_files is not None else None,
+		"radius": pocket_radius,
+		"manual_pocket": manual_pocket, },
 	"docking": {
-	"docking_programs": docking_programs, "n_poses": n_poses, "exhaustiveness": exhaustiveness},
+		"docking_programs": docking_programs, "n_poses": n_poses, "exhaustiveness": exhaustiveness},
 	"post_docking": {
-	"clash_cutoff": clash_cutoff, "strain_cutoff": strain_cutoff, "bust_poses": bust_poses},
+		"minimize_poses": minimize_poses,
+		"clash_cutoff": clash_cutoff,
+		"strain_cutoff": strain_cutoff,
+		"bust_poses": bust_poses,
+		"classy_pose": classy_pose,
+		"classy_pose_model": classy_pose_model if classy_pose else None},
 	"pose_selection": {
-	"pose_selection_method": pose_selection, "clustering_method": clustering_algorithm},
+		"pose_selection_method": pose_selection, "clustering_method": clustering_algorithm},
 	"rescoring": rescoring,
 	"consensus": consensus_method,
 	"threshold": threshold, }
@@ -419,6 +444,6 @@ if log_file_path is not None:
 		time.sleep(0.2)            # Adjust the interval as needed
 		new_log_content = read_log_file(log_file_path)
 		if new_log_content != log_content:
-			# Update the contents of the existing text area
+			                             # Update the contents of the existing text area
 			log_container.text_area("Log ", new_log_content, height=300)
 			log_content = new_log_content

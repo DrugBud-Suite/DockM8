@@ -23,11 +23,13 @@ docking_library: "/home/tony/DockM8/tests/test_files/library.sdf"   # Path to th
 ## Protein Preparation
 protein_preparation:
   select_best_chain: true                                           # Control whether the best chain is selected (true) or not (false), only works when supplying a PDB code in the receptor section
-  fix_nonstandard_residues: true                                  # Whether to replace non-standard residues with standard ones
-  fix_missing_residues: true                                      # Whether to add missing residues
-  remove_heteroatoms: true                                        # Whether to remove heteroatoms (ligands, ions, etc.)
-  remove_water: true                                              # Whether to remove water molecules
-  add_hydrogens: 7.0                                              # Whether to add hydrogens to the protein; 7.0 is the default pH. Will be ignored if "protonation" is set to true
+  fix_nonstandard_residues: true                                    # Whether to replace non-standard residues with standard ones
+  fix_missing_residues: true                                        # Whether to add missing residues
+  minimize: true                                                    # Whether to minimize the protein (also fixes missing atoms and residues)
+  with_solvent: true                                               # Whether to include solvent in the energy minimization (solvent is removed afterwards)
+  remove_heteroatoms: true                                          # Whether to remove heteroatoms (ligands, ions, etc.)
+  remove_water: true                                                # Whether to remove water molecules
+  add_hydrogens: 7.0                                                # Whether to add hydrogens to the protein; 7.0 is the default pH. Will be ignored if "protonation" is set to true
   protonation: true                                                 # Whether to protonate the protein using Protoss webserver
 
 ## Ligand Preparation
@@ -48,14 +50,17 @@ pocket_detection:
 docking:
   docking_programs:                                                 # List of methods used for docking (options : "SMINA", "GNINA", "QVINA2", "QVINAW", "PLANTS"). 
     - "SMINA"                                                       # Include multiple rows to use multiple docking engines
-    - "GNINA"                                                 # Control whether problematic poses are removed. Can be slow for large datasets
-  n_poses: 10                                                        # Number of poses to generate per compound
+    - "GNINA"                                                       # Control whether problematic poses are removed. Can be slow for large datasets
+  n_poses: 10                                                       # Number of poses to generate per compound
   exhaustiveness: 8                                                 # Exhaustiveness of the docking; higher values increase accuracy and computation time. Only valid for Vina derivatives
 
 post_docking:
-  clash_cutoff: 5
-  strain_cutoff: 5000
-  bust_poses: true
+  minimize: true                                                    # Control whether poses are minimized (true) or not (false)
+  clash_cutoff: 5                                                   # Clash cutoff used for pose filtering.
+  strain_cutoff: 5000                                               # Strain cutoff used for pose filtering.
+  bust_poses: true                                                  # Control whether problematic poses are removed (true) or not (false). Can be slow for large datasets
+  classy_poses: false                                               # Control whether poses are classified as "good" or "bad" (true) or not (false). Can be slow for large datasets
+  classy_pose_model: 'SVM'                                          # Options are : 'SVM' or 'LGBM'
 
 ## Pose selection configuration
 pose_selection:
