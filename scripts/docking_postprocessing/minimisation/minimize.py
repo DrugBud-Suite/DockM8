@@ -1,16 +1,17 @@
-import MDAnalysis as mda
-from rdkit import Chem
-from rdkit.Chem.rdchem import AtomPDBResidueInfo
-from rdkit.Chem import rdmolops
-from rdkit.Chem import ChemicalForceFields
-from openmm import app
-from rdkit.Geometry import Point3D
-import subprocess
 import os
+import subprocess
 import sys
-from pathlib import Path
 import tempfile
-from typing import List, Tuple, Callable
+from pathlib import Path
+from typing import Callable, List, Tuple
+
+import MDAnalysis as mda
+import pandas as pd
+from openmm import app
+from rdkit import Chem
+from rdkit.Chem import ChemicalForceFields, PandasTools, rdmolops
+from rdkit.Chem.rdchem import AtomPDBResidueInfo
+from rdkit.Geometry import Point3D
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -178,7 +179,7 @@ def minimize_polar_hydrogens(ligand: Chem.Mol, protein_universe: mda.Universe, m
 	return ligand
 
 
-def minimize_all_ligands(pdb_path: str, ligfile_path: str, outfile_path: str, n_cpus: int = int(os.cpu_count() * 0.9)):
+def minimize_all_ligands(pdb_path: str, ligfile_path: str, n_cpus: int = int(os.cpu_count() * 0.9)) -> pd.DataFrame:
 	"""
     Minimize all ligands in an SDF file in the context of a protein pocket.
 
@@ -189,7 +190,10 @@ def minimize_all_ligands(pdb_path: str, ligfile_path: str, outfile_path: str, n_
     n_cpus (int): Number of CPUs to use for parallel processing.
     """
 	# Read the ligands from the SDF file
-	ligands = Chem.SDMolSupplier(ligfile_path, removeHs=False)
+	dataframe = PandasTools.LoadSDF(ligfile_path, molColName='Molecule', idName='Pose ID')
+
+	ligands = dataframe['Molecule']
+
 	minimized_ligands = []
 
 	# Preprocess the protein once
@@ -203,13 +207,8 @@ def minimize_all_ligands(pdb_path: str, ligfile_path: str, outfile_path: str, n_
 											protein_universe=protein_universe,
 											mda_to_rdkit=mda_to_rdkit)
 
-	# Write minimized ligands to the output SDF file
-	writer = Chem.SDWriter(outfile_path)
-	for ligand in minimized_ligands:
-		writer.write(ligand)
-	writer.close()
-	return outfile_path
+	# Add the minimized ligands to the dataframe
 
+	dataframe['Molecule'] = minimized_ligands
 
-# Example usage:
-# minimize_all_ligands("protein.pdb", "ligands.sdf", "minimized_ligands.sdf", 4)
+	return dataframe
