@@ -20,12 +20,8 @@ def common_test_data():
 	input_sdf = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_poses_1fvv.sdf")
 	output_path = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_poses_1fvv_postprocessed.sdf")
 	protein_file = Path(dockm8_path / "tests/test_files/docking_postprocessing/example_prepared_receptor_1fvv.pdb")
-	bust_poses = True
-	minimize_poses = True
-	strain_cutoff = 5
-	clash_cutoff = 3
 	n_cpus = int(os.cpu_count() * 0.9)
-	return input_sdf, output_path, protein_file, minimize_poses, bust_poses, strain_cutoff, clash_cutoff, n_cpus
+	return input_sdf, output_path, protein_file, n_cpus
 
 
 @pytest.fixture
@@ -51,7 +47,13 @@ def test_docking_postprocessing(common_test_data, cleanup):
     Returns:
         None
     """
-	input_sdf, output_path, protein_file, minimize_poses, bust_poses, strain_cutoff, clash_cutoff, n_cpus = common_test_data
+	input_sdf, output_path, protein_file, n_cpus = common_test_data
+	minimize_poses = True
+	bust_poses = True
+	strain_cutoff = 5
+	clash_cutoff = 3
+	classy_pose = False
+	classy_pose_model = None
 	result = docking_postprocessing(input_sdf,
 									output_path,
 									protein_file,
@@ -59,6 +61,8 @@ def test_docking_postprocessing(common_test_data, cleanup):
 									bust_poses,
 									strain_cutoff,
 									clash_cutoff,
+									classy_pose,
+									classy_pose_model,
 									n_cpus)
 	assert result == output_path
 	assert output_path.exists()
@@ -76,9 +80,13 @@ def test_docking_postprocessing_without_pose_busting(common_test_data, cleanup):
     Returns:
         None
     """
-	input_sdf, output_path, protein_file, minimize_poses, bust_poses, strain_cutoff, clash_cutoff, n_cpus = common_test_data
-	bust_poses = False
+	input_sdf, output_path, protein_file, n_cpus = common_test_data
 	minimize_poses = False
+	bust_poses = False
+	strain_cutoff = 5
+	clash_cutoff = 3
+	classy_pose = False
+	classy_pose_model = None
 	result = docking_postprocessing(input_sdf,
 									output_path,
 									protein_file,
@@ -86,6 +94,8 @@ def test_docking_postprocessing_without_pose_busting(common_test_data, cleanup):
 									bust_poses,
 									strain_cutoff,
 									clash_cutoff,
+									classy_pose,
+									classy_pose_model,
 									n_cpus)
 	assert result == output_path
 	assert output_path.exists()
@@ -103,9 +113,13 @@ def test_docking_postprocessing_with_no_cutoffs(common_test_data, cleanup):
     Returns:
         None
     """
-	input_sdf, output_path, protein_file, minimize_poses, bust_poses, strain_cutoff, clash_cutoff, n_cpus = common_test_data
+	input_sdf, output_path, protein_file, n_cpus = common_test_data
+	minimize_poses = False
+	bust_poses = True
 	strain_cutoff = None
 	clash_cutoff = None
+	classy_pose = False
+	classy_pose_model = None
 	result = docking_postprocessing(input_sdf,
 									output_path,
 									protein_file,
@@ -113,6 +127,8 @@ def test_docking_postprocessing_with_no_cutoffs(common_test_data, cleanup):
 									bust_poses,
 									strain_cutoff,
 									clash_cutoff,
+									classy_pose,
+									classy_pose_model,
 									n_cpus)
 	assert result == output_path
 	assert output_path.exists()
@@ -130,10 +146,13 @@ def test_docking_postprocessing_minimization(common_test_data, cleanup):
     Returns:
         None
     """
-	input_sdf, output_path, protein_file, bust_poses, minimize_poses, strain_cutoff, clash_cutoff, n_cpus = common_test_data
-	bust_poses = False
+	input_sdf, output_path, protein_file, n_cpus = common_test_data
+	minimize_poses = True
+	bust_poses = True
 	strain_cutoff = None
 	clash_cutoff = None
+	classy_pose = False
+	classy_pose_model = None
 	result = docking_postprocessing(input_sdf,
 									output_path,
 									protein_file,
@@ -141,8 +160,76 @@ def test_docking_postprocessing_minimization(common_test_data, cleanup):
 									bust_poses,
 									strain_cutoff,
 									clash_cutoff,
+									classy_pose,
+									classy_pose_model,
 									n_cpus)
 	assert result == output_path
 	assert output_path.exists()
 	output_data = PandasTools.LoadSDF(str(output_path))
 	assert len(output_data) == 40
+
+
+def test_docking_postprocessing_classy_pose_SVM(common_test_data, cleanup):
+	"""
+    Test case for docking_postprocessing function with minimization.
+
+    Args:
+        common_test_data: A tuple containing the input_sdf, output_path, protein_file, bust_poses, strain_cutoff, clash_cutoff, and n_cpus.
+
+    Returns:
+        None
+    """
+	input_sdf, output_path, protein_file, n_cpus = common_test_data
+	minimize_poses = False
+	bust_poses = False
+	strain_cutoff = None
+	clash_cutoff = None
+	classy_pose = True
+	classy_pose_model = 'SVM'
+	result = docking_postprocessing(input_sdf,
+									output_path,
+									protein_file,
+									minimize_poses,
+									bust_poses,
+									strain_cutoff,
+									clash_cutoff,
+									classy_pose,
+									classy_pose_model,
+									n_cpus)
+	assert result == output_path
+	assert output_path.exists()
+	output_data = PandasTools.LoadSDF(str(output_path))
+	assert len(output_data) == 2
+
+
+def test_docking_postprocessing_classy_pose_LGBM(common_test_data, cleanup):
+	"""
+    Test case for docking_postprocessing function with minimization.
+
+    Args:
+        common_test_data: A tuple containing the input_sdf, output_path, protein_file, bust_poses, strain_cutoff, clash_cutoff, and n_cpus.
+
+    Returns:
+        None
+    """
+	input_sdf, output_path, protein_file, n_cpus = common_test_data
+	minimize_poses = False
+	bust_poses = False
+	strain_cutoff = None
+	clash_cutoff = None
+	classy_pose = True
+	classy_pose_model = 'LGBM'
+	result = docking_postprocessing(input_sdf,
+									output_path,
+									protein_file,
+									minimize_poses,
+									bust_poses,
+									strain_cutoff,
+									clash_cutoff,
+									classy_pose,
+									classy_pose_model,
+									n_cpus)
+	assert result == output_path
+	assert output_path.exists()
+	output_data = PandasTools.LoadSDF(str(output_path))
+	assert len(output_data) == 0
