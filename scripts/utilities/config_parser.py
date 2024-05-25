@@ -80,7 +80,7 @@ def check_config(config):
 	decoy_config = config.get("decoy_generation", {})
 	# Check if decoy generation is enabled and validate conditions
 	if decoy_config.get("gen_decoys", False):                                                                                     # Default to False if gen_decoys is not specified
-		                                                                                                                               # Validate the active compounds path
+		# Validate the active compounds path
 		active_path = decoy_config.get("actives")
 		if not Path(active_path).is_dir():
 			raise DockM8Error(
@@ -88,7 +88,7 @@ def check_config(config):
 			)
 		else:
 			config["decoy_generation"]["actives"] = active_path
-		                                                                                                                               # Validate the number of decoys to generate
+		# Validate the number of decoys to generate
 		try:
 			int(decoy_config.get("n_decoys"))
 		except ValueError:
@@ -159,6 +159,7 @@ def check_config(config):
 	# Define the conditions expected to be boolean values
 	conditions = [
 		"select_best_chain",
+		"minimize",
 		"fix_nonstandard_residues",
 		"fix_missing_residues",
 		"remove_heteroatoms",
@@ -295,6 +296,10 @@ def check_config(config):
 
 	# Check Docking postprocessing settings
 	post_docking = config.get("post_docking", {})
+	minimize = post_docking.get("minimize")
+	if not isinstance(minimize, bool):
+		raise DockM8Error(
+			"DockM8 configuration error: 'minimize' in 'post_docking' section must be a boolean (true/false) value.")
 	clash_cutoff = post_docking.get("clash_cutoff")
 	if not (isinstance(clash_cutoff, int) or clash_cutoff is None):
 		raise DockM8Error(
@@ -307,6 +312,19 @@ def check_config(config):
 	if not isinstance(bust_poses, bool):
 		raise DockM8Error(
 			"DockM8 configuration error: 'bust_poses' in 'post_docking' section must be a boolean (true/false) value.")
+	classy_pose = post_docking.get("classy_pose")
+	if not isinstance(classy_pose, bool):
+		raise DockM8Error(
+			"DockM8 configuration error: 'classy_pose' in 'post_docking' section must be a boolean (true/false) value.")
+	classy_pose_model = post_docking.get("classy_pose_model")
+	if classy_pose_model and not classy_pose:
+		classy_pose = True
+		DockM8Warning(
+			"DockM8 warning: 'classy_pose_model' in 'post_docking' section is set but 'classy_pose' is not enabled. Setting 'classy_pose' to True."
+		)
+	if classy_pose_model not in ["SVM", "LGBM"]:
+		raise DockM8Error(
+			"DockM8 configuration error: 'classy_pose_model' in 'post_docking' section must be either 'SVM' or 'LGBM'.")
 
 	# Check pose selection configuration
 	pose_selection = config.get("pose_selection", {})
