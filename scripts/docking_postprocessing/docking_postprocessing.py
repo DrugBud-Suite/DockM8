@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -14,6 +13,7 @@ import warnings
 from scripts.docking_postprocessing.posebusters.posebusters import pose_buster
 from scripts.docking_postprocessing.posecheck.posecheck import pose_checker
 from scripts.docking_postprocessing.minimisation.minimize import minimize_all_ligands
+from scripts.docking_postprocessing.classy_pose.classy_pose import classy_pose_filter
 from scripts.utilities.utilities import parallel_SDF_loader, printlog
 
 warnings.filterwarnings("ignore")
@@ -73,7 +73,7 @@ def docking_postprocessing(input_sdf: Path,
 		initial_length = len(sdf_dataframe)
 
 	if classy_pose:
-		sdf_dataframe = classy_pose(sdf_dataframe, protein_file, classy_pose_model, n_cpus)
+		sdf_dataframe = classy_pose_filter(sdf_dataframe, protein_file, classy_pose_model, n_cpus)
 		log_dataframe_length_change(initial_length, len(sdf_dataframe), "ClassyPose")
 
 	PandasTools.WriteSDF(sdf_dataframe,
