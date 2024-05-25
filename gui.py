@@ -58,11 +58,11 @@ if mode != "Single":
 else:
 	threshold = None
 n_cpus = st.slider("Number of CPUs",
-					min_value=1,
-					max_value=os.cpu_count(),
-					step=1,
-					value=int(os.cpu_count() * 0.9),
-					help="Number of CPUs to use for calculations")
+		min_value=1,
+		max_value=os.cpu_count(),
+		step=1,
+		value=int(os.cpu_count() * 0.9),
+		help="Number of CPUs to use for calculations")
 
 software = st.text_input(
 	"Choose a software directory",
@@ -70,8 +70,8 @@ software = st.text_input(
 	help="Type the directory containing the software folder: For example: /home/user/Dockm8/software")
 
 gen_decoys = st.toggle(label="Generate decoys",
-						value=False,
-						help="Generate decoys for the active ligands and determine optimal DockM8 conditions")
+		value=False,
+		help="Generate decoys for the active ligands and determine optimal DockM8 conditions")
 
 if mode == "Single":
 	receptor_value = CWD + "/tests/test_files/1fvv_p.pdb"
@@ -87,23 +87,23 @@ if gen_decoys:
 	# Active ligands
 	actives = Path(
 		st.text_input(label="Enter the path to the active ligands file (.sdf format)",
-						value=CWD + "/tests/test_files/CDK2_actives.sdf",
-						help="Choose an active ligands file (.sdf format)",
-						))
+			value=CWD + "/tests/test_files/CDK2_actives.sdf",
+			help="Choose an active ligands file (.sdf format)",
+			))
 	if not actives.is_file():
 		st.error(f"Invalid file path: {actives}")
 	# Number of decoys
 	n_decoys = st.slider(label="Number of decoys",
-							min_value=1,
-							max_value=100,
-							step=1,
-							value=10,
-							help="Number of decoys to generate for each active ligand")
+			min_value=1,
+			max_value=100,
+			step=1,
+			value=10,
+			help="Number of decoys to generate for each active ligand")
 
 	# Decoy generation program
 	decoy_model = st.selectbox(label="Which decoy generation model do you want to use?",
-								options=("DUD-E", "DEKOIS", "DUD-E_phosphorus"),
-								help="Select which Deepcoy decoy generation model you want to use ")
+			options=("DUD-E", "DEKOIS", "DUD-E_phosphorus"),
+			help="Select which Deepcoy decoy generation model you want to use ")
 
 else:
 	actives = n_decoys = decoy_model = None
