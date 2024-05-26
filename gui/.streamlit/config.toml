@@ -5,5 +5,6 @@ backgroundColor="#2D2D2A"
 secondaryBackgroundColor="#0D0D0D"
 textColor="#E7E7E7"
 font="sans serif"
-showTitleBar="true"
+
+[client]
 showSidebarNavigation=false

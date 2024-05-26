@@ -1,5 +1,7 @@
 import streamlit as st
 
+st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
+
 
 def app():
 	st.columns(3)[1].image(image="./media/DockM8_white_vertical.png")
@@ -13,3 +15,6 @@ def app():
 	with col2:
 		if st.button("**Advanced mode**", type="primary", use_container_width=True):
 			st.switch_page("./pages/page2_library_analysis.py")
+
+
+app()

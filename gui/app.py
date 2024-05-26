@@ -1,4 +1,5 @@
 import streamlit as st
+
 from pages import page1_welcome
 from pages import page2_library_analysis
 from pages import page3_library_preparation
@@ -12,7 +13,7 @@ from pages import page10_rescoring
 from pages import page11_consensus
 from pages import page12_dockm8_report
 
-st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
+
 
 st.sidebar.image(image="./media/DockM8_white_horizontal.png", width=200)
 st.sidebar.subheader("Open-source consensus docking for everyone")

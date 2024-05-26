@@ -7,4 +7,4 @@ textColor="#E7E7E7"
 font="sans serif"
 
 [client] 
-showSidebarNavigation = false
+#showSidebarNavigation = false
