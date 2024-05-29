@@ -1,44 +1,23 @@
 import streamlit as st
+from pathlib import Path
+from pages import *
+from menu import menu
 
-from pages import page1_welcome
-from pages import page2_library_analysis
-from pages import page3_library_preparation
-from pages import page4_protein_fetching_and_analysis
-from pages import page5_protein_preparation
-from pages import page6_binding_site_detection
-from pages import page7_docking
-from pages import page8_docking_postprocessing
-from pages import page9_pose_selection
-from pages import page10_rescoring
-from pages import page11_consensus
-from pages import page12_dockm8_report
+st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
 
+menu()
 
+def app():
+	st.columns(3)[1].image(image="./media/DockM8_white_vertical.png")
 
-st.sidebar.image(image="./media/DockM8_white_horizontal.png", width=200)
-st.sidebar.subheader("Open-source consensus docking for everyone")
+	st.markdown("<h1 style='text-align: center;'>Welcome to DockM8!</h1>", unsafe_allow_html=True)
 
-PAGES = {
-	"Welcome": page1_welcome,
-	"Library Analysis and Filtering": page2_library_analysis,
-	"Library Preparation": page3_library_preparation,
-	"Protein Fetching and Analysis": page4_protein_fetching_and_analysis,
-	"Protein Preparation": page5_protein_preparation,
-	"Binding Site Detection": page6_binding_site_detection,
-	"Docking": page7_docking,
-	"Docking Postprocessing": page8_docking_postprocessing,
-	"Pose Selection": page9_pose_selection,
-	"Rescoring": page10_rescoring,
-	"Consensus": page11_consensus,
-	"DockM8 Report": page12_dockm8_report}
+	st.markdown("<h2 style='text-align: center;'>Choose a mode:</h2>", unsafe_allow_html=True)
+	col1, col2 = st.columns(2)
+	with col1:
+		st.button("**Guided Mode**", type="primary", use_container_width=True)
+	with col2:
+		if st.button("**Advanced mode**", type="primary", use_container_width=True):
+			st.switch_page("pages/2_library_analysis.py")
 
-st.sidebar.title('Navigation')
-selection = st.sidebar.radio("Go to: ", list(PAGES.keys()))
-
-st.sidebar.link_button("Github", url="https://github.com/DrugBud-Suite/DockM8", use_container_width=True)
-st.sidebar.link_button("Visit Website", url="https://drugbud-suite.github.io/dockm8-web/", use_container_width=True)
-st.sidebar.link_button("Publication", url="https://doi.org/your-doi", use_container_width=True)
-st.sidebar.link_button("Zenodo repository", url="https://doi.org/your-doi", use_container_width=True)
-
-page = PAGES[selection]
-page.app()
+app()

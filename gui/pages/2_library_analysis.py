@@ -1,20 +1,21 @@
-import streamlit as st
 import sys
 from pathlib import Path
+
+import streamlit as st
 from rdkit.Chem import PandasTools
+import plotly.express as px
 
 # Search for 'DockM8' in parent directories
 gui_path = next((p / "gui" for p in Path(__file__).resolve().parents if (p / "gui").is_dir()), None)
 dockm8_path = gui_path.parent
 sys.path.append(str(dockm8_path))
 
+st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
+
+from gui.menu import menu
 from scripts.library_analysis.descriptor_calculation import calculate_properties
 
-st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
-# Logo
-st.image(image="./media/DockM8_white_vertical.png", width=200)
-
-import plotly.express as px
+menu()
 
 
 def plot_histograms(df, properties):
@@ -36,7 +37,8 @@ def app():
 	docking_library = st.text_input(label="Entre the path to the ligand library file (.sdf format)",
 									value=str(dockm8_path / "tests" / "test_files" / "library.sdf"),
 									help="Choose a ligand library file (.sdf format)")
-
+	
+	st.subheader("Select the properties you want to calculate:")
 	col1, col2, col3, col4, col5 = st.columns(5)
 	properties = {
 		'MW': col1.checkbox('Molecular Weight (MW)', value=True),
@@ -49,7 +51,7 @@ def app():
 		'sp3 percentage': col3.checkbox('sp3 Carbon Percentage', value=True),
 		'Ring Count': col4.checkbox('Ring Count', value=True)}
 
-	if st.button("Load and Calculate Properties"):
+	if st.button("Load Library and Calculate Properties"):
 		if Path(docking_library).is_file():
 			ligand_library = PandasTools.LoadSDF(docking_library,
 													smilesName="SMILES",

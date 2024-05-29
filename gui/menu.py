@@ -1,0 +1,26 @@
+import streamlit as st
+
+def menu():
+	st.sidebar.image(image="./media/DockM8_white_horizontal.png", width=200)
+	st.sidebar.subheader("Open-source consensus docking for everyone")
+	st.sidebar.subheader("", divider="orange")
+	st.sidebar.page_link("app.py", label="Home")
+	st.sidebar.page_link("pages/1_setup.py", label="Setup")
+	st.sidebar.page_link("pages/2_library_analysis.py", label="Library Analysis")
+	st.sidebar.page_link("pages/3_library_preparation.py", label="Library Preparation")
+	st.sidebar.page_link("pages/4_protein_fetching_and_analysis.py", label="Protein Fetching and Analysis")
+	st.sidebar.page_link("pages/5_protein_preparation.py", label="Protein Preparation")
+	st.sidebar.page_link("pages/6_binding_site_detection.py", label="Binding Site Detection")
+	st.sidebar.page_link("pages/7_docking.py", label="Docking")
+	st.sidebar.page_link("pages/8_docking_postprocessing.py", label="Docking Postprocessing")
+	st.sidebar.page_link("pages/9_pose_selection.py", label="Pose Selection")
+	st.sidebar.page_link("pages/10_rescoring.py", label="Rescoring")
+	st.sidebar.page_link("pages/11_consensus.py", label="Consensus")
+	st.sidebar.page_link("pages/12_dockm8_report.py", label="DockM8 Report")
+	st.sidebar.subheader("", divider="orange")
+	col1, col3 = st.sidebar.columns(2)
+	col1.link_button("Github", url="https://github.com/DrugBud-Suite/DockM8")
+	col3.link_button("Visit Website", url="https://drugbud-suite.github.io/dockm8-web/")
+	col1.link_button("Publication", url="https://doi.org/your-doi")
+	col3.link_button("Zenodo", url="https://doi.org/your-doi")
+	return
