@@ -73,7 +73,7 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
     if ncpus == 1:
         # Standardize molecules sequentially
         df['Molecule'] = [standardizer.get_parent_mol(standardizer.standardize_mol(mol)) for mol in df['Molecule']]
-    else: 
+    else:
         # Standardize molecules in parallel using multiple CPUs
         with concurrent.futures.ProcessPoolExecutor(max_workers=ncpus) as executor:
             df['Molecule'] = list(tqdm(executor.map(standardize_molecule, df['Molecule']), total=len(df['Molecule']), desc='Standardizing molecules', unit='mol'))
@@ -93,7 +93,7 @@ def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, ncpus
                             allNumeric=True)
     except BaseException:
         raise Exception('Failed to write standardized library SDF file!')
-    
+
 def conf_gen_RDKit(molecule):
     """
     Generates 3D conformers using RDKit.
@@ -166,28 +166,46 @@ def generate_conformers_GypsumDL_withprotonation(input_sdf, output_dir, software
         results_dir = output_dir / 'GypsumDL_results'
         try:
             gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {split_file} -o {results_dir} --job_manager multiprocessing -p {cpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1 --separate_output_files'
-            subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            subprocess.call(
+                gypsum_dl_command,
+                shell=True,
+                stdout=DEVNULL,
+                stderr=STDOUT,
+            )
         except Exception as e:
             printlog('ERROR: Failed to generate protomers and conformers!')
             printlog(e)
         return
+
     printlog('Running GypsumDL in parallel...')
     n_workers = 3
-    parallel_executor(gypsum_dl_run, split_files_sdfs, n_workers, output_dir=output_dir, cpus = math.ceil(ncpus//n_workers))
+    parallel_executor(gypsum_dl_run,
+                      split_files_sdfs,
+                      n_workers,
+                      output_dir=output_dir,
+                      cpus=math.ceil(ncpus // n_workers))
 
     results_dfs = []
-    
+
     for file in os.listdir(output_dir / 'GypsumDL_results'):
         if file.endswith('.sdf'):
-            sdf_df = PandasTools.LoadSDF(str(output_dir / 'GypsumDL_results' / file), molColName='Molecule', idName='ID', removeHs=False)
+            sdf_df = PandasTools.LoadSDF(str(output_dir / 'GypsumDL_results' /
+                                             file),
+                                         molColName='Molecule',
+                                         idName='ID',
+                                         removeHs=False)
             results_dfs.append(sdf_df)
-    
+
     final_df = pd.concat(results_dfs)
-    
-    PandasTools.WriteSDF(final_df, str(output_dir / 'gypsum_dl_success.sdf'), molColName='Molecule', idName='ID')
+
+    PandasTools.WriteSDF(final_df,
+                         str(output_dir / 'gypsum_dl_success.sdf'),
+                         molColName='Molecule',
+                         idName='ID')
     shutil.rmtree(output_dir / 'GypsumDL_results')
     shutil.rmtree(output_dir / 'GypsumDL_split')
-    
+
+
 def GypsumDL_onlyprotonation(input_sdf, output_dir, software, ncpus):
     """
     Generates protonation states and 3D conformers using GypsumDL.
@@ -205,13 +223,19 @@ def GypsumDL_onlyprotonation(input_sdf, output_dir, software, ncpus):
     printlog('Calculating protonation states using GypsumDL...')
     try:
         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --min_ph 6.5 --max_ph 7.5 --pka_precision 1 --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1 --2d_output_only'
-        subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(
+            gypsum_dl_command,
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT,
+        )
     except Exception as e:
         printlog('ERROR: Failed to generate protomers!')
         printlog(e)
 
 
-def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, ncpus):
+def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software,
+                                               ncpus):
     """
     Generates 3D conformers using GypsumDL.
 
@@ -227,7 +251,12 @@ def generate_conformers_GypsumDL_noprotonation(input_sdf, output_dir, software, 
     printlog('Generating 3D conformers using GypsumDL...')
     try:
         gypsum_dl_command = f'python {software}/gypsum_dl-1.2.1/run_gypsum_dl.py -s {input_sdf} -o {output_dir} --job_manager multiprocessing -p {ncpus} -m 1 -t 10 --skip_adding_hydrogen --skip_alternate_ring_conformations --skip_making_tautomers --skip_enumerate_chiral_mol --skip_enumerate_double_bonds --max_variants_per_compound 1'
-        subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(
+            gypsum_dl_command,
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT,
+        )
     except Exception as e:
         printlog('ERROR: Failed to generate conformers!')
         printlog(e)
@@ -243,16 +272,16 @@ def cleanup(input_sdf: str, output_dir: Path) -> pd.DataFrame:
         pd.DataFrame: The final DataFrame containing the cleaned-up library with only the 'Molecule' and 'ID' columns.
     """
     printlog('Cleaning up files...')
-    
+
     # Load the successfully generated conformers from the GypsumDL process into a pandas DataFrame
     gypsum_df = PandasTools.LoadSDF(str(output_dir / 'gypsum_dl_success.sdf'), molColName='Molecule',idName='ID', removeHs=False)
-    
+
     # Sanitize all the molecules in the DataFrame
     #for mol in gypsum_df['Molecule']:
     #    AllChem.SanitizeMol(mol)
-    
+
     # END: abpxx6d04wxr
-    
+
     # Remove the first row of the DataFrame, which contains the original input molecule
     final_df = gypsum_df.iloc[1:, :]
 
@@ -286,10 +315,10 @@ def prepare_library(input_sdf: str, output_dir: Path, id_column: str, conformers
         ncpus (int): The number of CPUs to use for parallelization.
     """
     standardized_sdf = output_dir / 'standardized_library.sdf'
-    
+
     if not standardized_sdf.is_file():
         standardize_library(input_sdf, output_dir, id_column, ncpus)
-        
+
     if conformers == 'RDKit' or conformers == 'MMFF':
         if protonation == 'GypsumDL':
             GypsumDL_onlyprotonation(standardized_sdf, output_dir, software, ncpus)
@@ -307,7 +336,6 @@ def prepare_library(input_sdf: str, output_dir: Path, id_column: str, conformers
             raise ValueError(f'Invalid protonation method specified : {protonation}. Must be either "None" or "GypsumDL".')
     else:
         raise ValueError(f'Invalid conformer method specified : {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".')
-    
+
     cleanup(input_sdf, output_dir)
     return
-

@@ -67,15 +67,36 @@ def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
             f' --cnn {cnn} --no_gpu'
         )
         try:
-            subprocess.call(gnina_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            subprocess.call(
+                gnina_cmd,
+                shell=True,
+                stdout=DEVNULL,
+                stderr=STDOUT,
+            )
         except Exception as e:
             printlog(f'{column_name} rescoring failed: ' + e)
         return
 
-    parallel_executor(gnina_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    parallel_executor(gnina_rescoring_splitted,
+                      split_files_sdfs,
+                      ncpus,
+                      protein_file=protein_file,
+                      pocket_definition=pocket_definition)
 
     try:
-        gnina_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+        gnina_dataframes = [
+            PandasTools.LoadSDF(str(rescoring_folder /
+                                    f'{column_name}_rescoring' / file),
+                                idName='Pose ID',
+                                molColName=None,
+                                includeFingerprints=False,
+                                embedProps=False,
+                                removeHs=False,
+                                strictParsing=True)
+            for file in os.listdir(rescoring_folder /
+                                   f'{column_name}_rescoring')
+            if file.startswith('split') and file.endswith('.sdf')
+        ]
     except Exception as e:
         printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
         printlog(e)
@@ -84,19 +105,24 @@ def gnina_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     except Exception as e:
         printlog(f'ERROR: Could not combine {column_name} rescored poses')
         printlog(e)
-    gnina_rescoring_results.rename(columns={'minimizedAffinity': 'GNINA-Affinity',
-                                            'CNNscore': 'CNN-Score',
-                                            'CNNaffinity': 'CNN-Affinity'},
-                                            inplace=True)
+    gnina_rescoring_results.rename(columns={
+        'minimizedAffinity': 'GNINA-Affinity',
+        'CNNscore': 'CNN-Score',
+        'CNNaffinity': 'CNN-Affinity'
+    },
+                                   inplace=True)
     gnina_rescoring_results = gnina_rescoring_results[['Pose ID', column_name]]
     gnina_scores_path = rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv'
     gnina_rescoring_results.to_csv(gnina_scores_path, index=False)
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with {column_name} complete in {toc - tic:0.4f}!')
     return gnina_rescoring_results
 
-def vinardo_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame:
+
+def vinardo_rescoring(sdf: str, ncpus: int, column_name: str,
+                      **kwargs) -> DataFrame:
     """
     Performs rescoring of poses using the Vinardo scoring function.
 
@@ -122,41 +148,66 @@ def vinardo_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     protein_file = kwargs.get('protein_file')
     pocket_definition = kwargs.get('pocket_definition')
 
-    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
-    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    split_files_folder = split_sdf_str(
+        rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_sdfs = [
+        split_files_folder / f for f in os.listdir(split_files_folder)
+        if f.endswith('.sdf')
+    ]
 
     vinardo_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
 
     global vinardo_rescoring_splitted
-    def vinardo_rescoring_splitted(split_file, protein_file, pocket_definition):
+
+    def vinardo_rescoring_splitted(split_file, protein_file,
+                                   pocket_definition):
         vinardo_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
         results = vinardo_rescoring_folder / f'{Path(split_file).stem}_{column_name}.sdf'
-        vinardo_cmd = (
-            f"{software}/gnina"
-            f" --receptor {protein_file}"
-            f" --ligand {split_file}"
-            f" --out {results}"
-            f" --center_x {pocket_definition['center'][0]}"
-            f" --center_y {pocket_definition['center'][1]}"
-            f" --center_z {pocket_definition['center'][2]}"
-            f" --size_x {pocket_definition['size'][0]}"
-            f" --size_y {pocket_definition['size'][1]}"
-            f" --size_z {pocket_definition['size'][2]}"
-            " --score_only"
-            " --scoring vinardo"
-            " --cnn_scoring none"
-        )
+        vinardo_cmd = (f"{software}/gnina"
+                       f" --receptor {protein_file}"
+                       f" --ligand {split_file}"
+                       f" --out {results}"
+                       f" --center_x {pocket_definition['center'][0]}"
+                       f" --center_y {pocket_definition['center'][1]}"
+                       f" --center_z {pocket_definition['center'][2]}"
+                       f" --size_x {pocket_definition['size'][0]}"
+                       f" --size_y {pocket_definition['size'][1]}"
+                       f" --size_z {pocket_definition['size'][2]}"
+                       " --score_only"
+                       " --scoring vinardo"
+                       " --cnn_scoring none")
         try:
-            subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            subprocess.call(
+                vinardo_cmd,
+                shell=True,
+                stdout=DEVNULL,
+                stderr=STDOUT,
+            )
         except Exception as e:
             printlog(f'{column_name} rescoring failed: ' + e)
         return
 
-    parallel_executor(vinardo_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    parallel_executor(vinardo_rescoring_splitted,
+                      split_files_sdfs,
+                      ncpus,
+                      protein_file=protein_file,
+                      pocket_definition=pocket_definition)
 
     try:
-        vinardo_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+        vinardo_dataframes = [
+            PandasTools.LoadSDF(str(rescoring_folder /
+                                    f'{column_name}_rescoring' / file),
+                                idName='Pose ID',
+                                molColName=None,
+                                includeFingerprints=False,
+                                embedProps=False,
+                                removeHs=False,
+                                strictParsing=True)
+            for file in os.listdir(rescoring_folder /
+                                   f'{column_name}_rescoring')
+            if file.startswith('split') and file.endswith('.sdf')
+        ]
     except Exception as e:
         printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
         printlog(e)
@@ -165,8 +216,11 @@ def vinardo_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     except Exception as e:
         printlog(f'ERROR: Could not combine {column_name} rescored poses')
         printlog(e)
-    vinardo_rescoring_results.rename(columns={'minimizedAffinity': column_name}, inplace=True)
-    vinardo_rescoring_results = vinardo_rescoring_results[['Pose ID', column_name]]
+    vinardo_rescoring_results.rename(
+        columns={'minimizedAffinity': column_name}, inplace=True)
+    vinardo_rescoring_results = vinardo_rescoring_results[[
+        'Pose ID', column_name
+    ]]
     vinardo_scores_path = vinardo_rescoring_folder / f'{column_name}_scores.csv'
     vinardo_rescoring_results.to_csv(vinardo_scores_path, index=False)
     delete_files(vinardo_rescoring_folder, f'{column_name}_scores.csv')
@@ -174,7 +228,9 @@ def vinardo_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     printlog(f'Rescoring with Vinardo complete in {toc - tic:0.4f}!')
     return vinardo_rescoring_results
 
-def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame:
+
+def AD4_rescoring(sdf: str, ncpus: int, column_name: str,
+                  **kwargs) -> DataFrame:
     """
     Performs rescoring of poses using the AutoDock4 (AD4) scoring function.
 
@@ -194,41 +250,65 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     protein_file = kwargs.get('protein_file')
     pocket_definition = kwargs.get('pocket_definition')
 
-    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
-    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    split_files_folder = split_sdf_str(
+        rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_sdfs = [
+        split_files_folder / f for f in os.listdir(split_files_folder)
+        if f.endswith('.sdf')
+    ]
 
     AD4_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     AD4_rescoring_folder.mkdir(parents=True, exist_ok=True)
 
     global AD4_rescoring_splitted
+
     def AD4_rescoring_splitted(split_file, protein_file, pocket_definition):
         AD4_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
         results = AD4_rescoring_folder / f'{Path(split_file).stem}_{column_name}.sdf'
-        AD4_cmd = (
-            f"{software}/gnina"
-            f" --receptor {protein_file}"
-            f" --ligand {split_file}"
-            f" --out {results}"
-            f" --center_x {pocket_definition['center'][0]}"
-            f" --center_y {pocket_definition['center'][1]}"
-            f" --center_z {pocket_definition['center'][2]}"
-            f" --size_x {pocket_definition['size'][0]}"
-            f" --size_y {pocket_definition['size'][1]}"
-            f" --size_z {pocket_definition['size'][2]}"
-            " --score_only"
-            " --scoring ad4_scoring"
-            " --cnn_scoring none"
-        )
+        AD4_cmd = (f"{software}/gnina"
+                   f" --receptor {protein_file}"
+                   f" --ligand {split_file}"
+                   f" --out {results}"
+                   f" --center_x {pocket_definition['center'][0]}"
+                   f" --center_y {pocket_definition['center'][1]}"
+                   f" --center_z {pocket_definition['center'][2]}"
+                   f" --size_x {pocket_definition['size'][0]}"
+                   f" --size_y {pocket_definition['size'][1]}"
+                   f" --size_z {pocket_definition['size'][2]}"
+                   " --score_only"
+                   " --scoring ad4_scoring"
+                   " --cnn_scoring none")
         try:
-            subprocess.call(AD4_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            subprocess.call(
+                AD4_cmd,
+                shell=True,
+                stdout=DEVNULL,
+                stderr=STDOUT,
+            )
         except Exception as e:
             printlog(f'{column_name} rescoring failed: ' + e)
         return
 
-    parallel_executor(AD4_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    parallel_executor(AD4_rescoring_splitted,
+                      split_files_sdfs,
+                      ncpus,
+                      protein_file=protein_file,
+                      pocket_definition=pocket_definition)
 
     try:
-        AD4_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / f'{column_name}_rescoring' / file),  idName='Pose ID', molColName=None, includeFingerprints=False, embedProps=False, removeHs=False, strictParsing=True) for file in os.listdir(rescoring_folder / f'{column_name}_rescoring') if file.startswith('split') and file.endswith('.sdf')]
+        AD4_dataframes = [
+            PandasTools.LoadSDF(str(rescoring_folder /
+                                    f'{column_name}_rescoring' / file),
+                                idName='Pose ID',
+                                molColName=None,
+                                includeFingerprints=False,
+                                embedProps=False,
+                                removeHs=False,
+                                strictParsing=True)
+            for file in os.listdir(rescoring_folder /
+                                   f'{column_name}_rescoring')
+            if file.startswith('split') and file.endswith('.sdf')
+        ]
     except Exception as e:
         printlog(f'ERROR: Failed to Load {column_name} rescoring SDF file!')
         printlog(e)
@@ -238,7 +318,8 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
         printlog(f'ERROR: Could not combine {column_name} rescored poses')
         printlog(e)
 
-    AD4_rescoring_results.rename(columns={'minimizedAffinity': column_name}, inplace=True)
+    AD4_rescoring_results.rename(columns={'minimizedAffinity': column_name},
+                                 inplace=True)
     AD4_rescoring_results = AD4_rescoring_results[['Pose ID', column_name]]
     AD4_scores_file = AD4_rescoring_folder / f'{column_name}_scores.csv'
     AD4_rescoring_results.to_csv(AD4_scores_file, index=False)
@@ -247,7 +328,8 @@ def AD4_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame
     printlog(f'Rescoring with AD4 complete in {toc-tic:0.4f}!')
     return AD4_rescoring_results
 
-def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+
+def rfscorevs_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
     Rescores poses in an SDF file using RFScoreVS and returns the results as a pandas DataFrame.
 
@@ -275,25 +357,51 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     rfscorevs_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     rfscorevs_rescoring_folder.mkdir(parents=True, exist_ok=True)
 
-    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
-    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    split_files_folder = split_sdf_str(
+        rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_sdfs = [
+        split_files_folder / f for f in os.listdir(split_files_folder)
+        if f.endswith('.sdf')
+    ]
     global rf_score_vs_splitted
+
     def rf_score_vs_splitted(split_file, protein_file):
         rfscorevs_cmd = f'{software}/rf-score-vs --receptor {protein_file} {split_file} -O {rfscorevs_rescoring_folder / Path(split_file).stem}_RFScoreVS_scores.csv -n 1'
-        subprocess.call(rfscorevs_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(
+            rfscorevs_cmd,
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT,
+        )
         return
 
-    parallel_executor(rf_score_vs_splitted, split_files_sdfs, ncpus, protein_file=protein_file)
+    parallel_executor(rf_score_vs_splitted,
+                      split_files_sdfs,
+                      ncpus,
+                      protein_file=protein_file)
 
     try:
-        rfscorevs_dataframes = [pd.read_csv(rfscorevs_rescoring_folder / file, delimiter=',', header=0) for file in os.listdir(rfscorevs_rescoring_folder) if file.startswith('split') and file.endswith('.csv')]
+        rfscorevs_dataframes = [
+            pd.read_csv(rfscorevs_rescoring_folder / file,
+                        delimiter=',',
+                        header=0)
+            for file in os.listdir(rfscorevs_rescoring_folder)
+            if file.startswith('split') and file.endswith('.csv')
+        ]
         rfscorevs_results = pd.concat(rfscorevs_dataframes)
-        rfscorevs_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2': column_name}, inplace=True)
+        rfscorevs_results.rename(columns={
+            'name': 'Pose ID',
+            'RFScoreVS_v2': column_name
+        },
+                                 inplace=True)
     except Exception as e:
         printlog('ERROR: Failed to process RFScoreVS results!')
         printlog(e)
-    rfscorevs_results.to_csv(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv', index=False)
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    rfscorevs_results.to_csv(rescoring_folder / f'{column_name}_rescoring' /
+                             f'{column_name}_scores.csv',
+                             index=False)
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RFScoreVS complete in {toc-tic:0.4f}!')
     return rfscorevs_results
@@ -330,18 +438,29 @@ def rfscorevs_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     subprocess.call(rfscorevs_cmd, shell=True)
 
     try:
-        rfscorevs_results = pd.read_csv(rfscorevs_rescoring_folder / f"{column_name}_scores.csv", delimiter=',', header=0)
-        rfscorevs_results.rename(columns={'name': 'Pose ID', 'RFScoreVS_v2': column_name}, inplace=True)
+        rfscorevs_results = pd.read_csv(rfscorevs_rescoring_folder /
+                                        f"{column_name}_scores.csv",
+                                        delimiter=',',
+                                        header=0)
+        rfscorevs_results.rename(columns={
+            'name': 'Pose ID',
+            'RFScoreVS_v2': column_name
+        },
+                                 inplace=True)
     except Exception as e:
         printlog('ERROR: Failed to process RFScoreVS results!')
         printlog(e)
-    rfscorevs_results.to_csv(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv', index=False)
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    rfscorevs_results.to_csv(rescoring_folder / f'{column_name}_rescoring' /
+                             f'{column_name}_scores.csv',
+                             index=False)
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RFScoreVS complete in {toc-tic:0.4f}!')
     return rfscorevs_results
 
-def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+
+def plp_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
     Rescores ligands using PLP scoring function.
 
@@ -374,57 +493,44 @@ def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
     # Generate plants config file
     plp_rescoring_config_path_txt = plp_rescoring_folder / 'config.txt'
-    plp_config = ['# search algorithm\n',
-                    'search_speed ' + plants_search_speed + '\n',
-                    'aco_ants ' + ants + '\n',
-                    'flip_amide_bonds 0\n',
-                    'flip_planar_n 1\n',
-                    'force_flipped_bonds_planarity 0\n',
-                    'force_planar_bond_rotation 1\n',
-                    'rescore_mode simplex\n',
-                    'flip_ring_corners 0\n',
-                    '# scoring functions\n',
-                    '# Intermolecular (protein-ligand interaction scoring)\n',
-                    'scoring_function plp\n',
-                    'outside_binding_site_penalty 50.0\n',
-                    'enable_sulphur_acceptors 1\n',
-                    '# Intramolecular ligand scoring\n',
-                    'ligand_intra_score clash2\n',
-                    'chemplp_clash_include_14 1\n',
-                    'chemplp_clash_include_HH 0\n',
-
-                    '# input\n',
-                    'protein_file ' + str(plants_protein_mol2) + '\n',
-                    'ligand_file ' + str(plants_ligands_mol2) + '\n',
-
-                    '# output\n',
-                    'output_dir ' + str(plp_rescoring_folder / 'results') + '\n',
-
-                    '# write single mol2 files (e.g. for RMSD calculation)\n',
-                    'write_multi_mol2 1\n',
-
-                    '# binding site definition\n',
-                    'bindingsite_center ' + str(pocket_definition["center"][0]) + ' ' + str(pocket_definition["center"][1]) + ' ' + str(pocket_definition["center"][2]) + '\n',
-                    'bindingsite_radius ' + str(pocket_definition["size"][0] / 2) + '\n',
-
-                    '# cluster algorithm\n',
-                    'cluster_structures 10\n',
-                    'cluster_rmsd 2.0\n',
-
-                    '# write\n',
-                    'write_ranking_links 0\n',
-                    'write_protein_bindingsite 1\n',
-                    'write_protein_conformations 1\n',
-                    'write_protein_splitted 1\n',
-                    'write_merged_protein 0\n',
-                    '####\n']
-    plp_rescoring_config_path_config = plp_rescoring_config_path_txt.with_suffix('.config')
+    plp_config = [
+        '# search algorithm\n', 'search_speed ' + plants_search_speed + '\n',
+        'aco_ants ' + ants + '\n', 'flip_amide_bonds 0\n', 'flip_planar_n 1\n',
+        'force_flipped_bonds_planarity 0\n', 'force_planar_bond_rotation 1\n',
+        'rescore_mode simplex\n', 'flip_ring_corners 0\n',
+        '# scoring functions\n',
+        '# Intermolecular (protein-ligand interaction scoring)\n',
+        'scoring_function plp\n', 'outside_binding_site_penalty 50.0\n',
+        'enable_sulphur_acceptors 1\n', '# Intramolecular ligand scoring\n',
+        'ligand_intra_score clash2\n', 'chemplp_clash_include_14 1\n',
+        'chemplp_clash_include_HH 0\n', '# input\n',
+        'protein_file ' + str(plants_protein_mol2) + '\n',
+        'ligand_file ' + str(plants_ligands_mol2) + '\n', '# output\n',
+        'output_dir ' + str(plp_rescoring_folder / 'results') + '\n',
+        '# write single mol2 files (e.g. for RMSD calculation)\n',
+        'write_multi_mol2 1\n', '# binding site definition\n',
+        'bindingsite_center ' + str(pocket_definition["center"][0]) + ' ' +
+        str(pocket_definition["center"][1]) + ' ' +
+        str(pocket_definition["center"][2]) + '\n',
+        'bindingsite_radius ' + str(pocket_definition["size"][0] / 2) + '\n',
+        '# cluster algorithm\n', 'cluster_structures 10\n',
+        'cluster_rmsd 2.0\n', '# write\n', 'write_ranking_links 0\n',
+        'write_protein_bindingsite 1\n', 'write_protein_conformations 1\n',
+        'write_protein_splitted 1\n', 'write_merged_protein 0\n', '####\n'
+    ]
+    plp_rescoring_config_path_config = plp_rescoring_config_path_txt.with_suffix(
+        '.config')
     with plp_rescoring_config_path_config.open('w') as configwriter:
         configwriter.writelines(plp_config)
 
     # Run PLANTS docking
     plp_rescoring_command = f'{software}/PLANTS --mode rescore {plp_rescoring_config_path_config}'
-    subprocess.call(plp_rescoring_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    subprocess.call(
+        plp_rescoring_command,
+        shell=True,
+        stdout=DEVNULL,
+        stderr=STDOUT,
+    )
 
     # Fetch results
     results_csv_location = plp_rescoring_folder / 'results' / 'ranking.csv'
@@ -434,16 +540,20 @@ def plp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
         split = row['LIGAND_ENTRY'].split('_')
         plp_results.loc[i, ['Pose ID']] = f'{split[0]}_{split[1]}_{split[2]}'
     plp_rescoring_output = plp_results[['Pose ID', column_name]]
-    plp_rescoring_output.to_csv(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv', index=False)
+    plp_rescoring_output.to_csv(rescoring_folder / f'{column_name}_rescoring' /
+                                f'{column_name}_scores.csv',
+                                index=False)
 
     # Remove files
     plants_ligands_mol2.unlink()
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with PLP complete in {toc-tic:0.4f}!')
     return plp_rescoring_output
 
-def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+
+def chemplp_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     rescoring_folder = kwargs.get('rescoring_folder')
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
@@ -452,7 +562,8 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
     plants_search_speed = 'speed1'
     ants = '20'
-    chemplp_rescoring_folder = kwargs.get('rescoring_folder') / f'{column_name}_rescoring'
+    chemplp_rescoring_folder = kwargs.get(
+        'rescoring_folder') / f'{column_name}_rescoring'
     chemplp_rescoring_folder.mkdir(parents=True, exist_ok=True)
     # Convert protein file to .mol2 using open babel
     plants_protein_mol2 = chemplp_rescoring_folder / 'protein.mol2'
@@ -462,50 +573,33 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     convert_molecules(sdf, plants_ligands_mol2, 'sdf', 'mol2')
 
     chemplp_rescoring_config_path_txt = chemplp_rescoring_folder / 'config.txt'
-    chemplp_config = ['# search algorithm\n',
-                        'search_speed ' + plants_search_speed + '\n',
-                        'aco_ants ' + ants + '\n',
-                        'flip_amide_bonds 0\n',
-                        'flip_planar_n 1\n',
-                        'force_flipped_bonds_planarity 0\n',
-                        'force_planar_bond_rotation 1\n',
-                        'rescore_mode simplex\n',
-                        'flip_ring_corners 0\n',
-                        '# scoring functions\n',
-                        '# Intermolecular (protein-ligand interaction scoring)\n',
-                        'scoring_function chemplp\n',
-                        'outside_binding_site_penalty 50.0\n',
-                        'enable_sulphur_acceptors 1\n',
-                        '# Intramolecular ligand scoring\n',
-                        'ligand_intra_score clash2\n',
-                        'chemplp_clash_include_14 1\n',
-                        'chemplp_clash_include_HH 0\n',
-
-                        '# input\n',
-                        'protein_file ' + str(plants_protein_mol2) + '\n',
-                        'ligand_file ' + str(plants_ligands_mol2) + '\n',
-
-                        '# output\n',
-                        'output_dir ' + str(chemplp_rescoring_folder / 'results') + '\n',
-
-                        '# write single mol2 files (e.g. for RMSD calculation)\n',
-                        'write_multi_mol2 1\n',
-
-                        '# binding site definition\n',
-                        'bindingsite_center ' + str(kwargs.get('pocket_definition')["center"][0]) + ' ' + str(kwargs.get('pocket_definition')["center"][1]) + ' ' + str(kwargs.get('pocket_definition')["center"][2]) + '\n',
-                        'bindingsite_radius ' + str(kwargs.get('pocket_definition')["size"][0] / 2) + '\n',
-
-                        '# cluster algorithm\n',
-                        'cluster_structures 10\n',
-                        'cluster_rmsd 2.0\n',
-
-                        '# write\n',
-                        'write_ranking_links 0\n',
-                        'write_protein_bindingsite 1\n',
-                        'write_protein_conformations 1\n',
-                        'write_protein_splitted 1\n',
-                        'write_merged_protein 0\n',
-                        '####\n']
+    chemplp_config = [
+        '# search algorithm\n', 'search_speed ' + plants_search_speed + '\n',
+        'aco_ants ' + ants + '\n', 'flip_amide_bonds 0\n', 'flip_planar_n 1\n',
+        'force_flipped_bonds_planarity 0\n', 'force_planar_bond_rotation 1\n',
+        'rescore_mode simplex\n', 'flip_ring_corners 0\n',
+        '# scoring functions\n',
+        '# Intermolecular (protein-ligand interaction scoring)\n',
+        'scoring_function chemplp\n', 'outside_binding_site_penalty 50.0\n',
+        'enable_sulphur_acceptors 1\n', '# Intramolecular ligand scoring\n',
+        'ligand_intra_score clash2\n', 'chemplp_clash_include_14 1\n',
+        'chemplp_clash_include_HH 0\n', '# input\n',
+        'protein_file ' + str(plants_protein_mol2) + '\n',
+        'ligand_file ' + str(plants_ligands_mol2) + '\n', '# output\n',
+        'output_dir ' + str(chemplp_rescoring_folder / 'results') + '\n',
+        '# write single mol2 files (e.g. for RMSD calculation)\n',
+        'write_multi_mol2 1\n', '# binding site definition\n',
+        'bindingsite_center ' +
+        str(kwargs.get('pocket_definition')["center"][0]) + ' ' +
+        str(kwargs.get('pocket_definition')["center"][1]) + ' ' +
+        str(kwargs.get('pocket_definition')["center"][2]) + '\n',
+        'bindingsite_radius ' +
+        str(kwargs.get('pocket_definition')["size"][0] / 2) + '\n',
+        '# cluster algorithm\n', 'cluster_structures 10\n',
+        'cluster_rmsd 2.0\n', '# write\n', 'write_ranking_links 0\n',
+        'write_protein_bindingsite 1\n', 'write_protein_conformations 1\n',
+        'write_protein_splitted 1\n', 'write_merged_protein 0\n', '####\n'
+    ]
     # Write config file
     chemplp_rescoring_config_path_config = chemplp_rescoring_config_path_txt.with_suffix(
         '.config')
@@ -514,7 +608,12 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
 
     # Run PLANTS docking
     chemplp_rescoring_command = f'{software}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}'
-    subprocess.call(chemplp_rescoring_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    subprocess.call(
+        chemplp_rescoring_command,
+        shell=True,
+        stdout=DEVNULL,
+        stderr=STDOUT,
+    )
 
     # Fetch results
     results_csv_location = chemplp_rescoring_folder / 'results' / 'ranking.csv'
@@ -522,19 +621,25 @@ def chemplp_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     chemplp_results.rename(columns={'TOTAL_SCORE': column_name}, inplace=True)
     for i, row in chemplp_results.iterrows():
         split = row['LIGAND_ENTRY'].split('_')
-        chemplp_results.loc[i, ['Pose ID']] = f'{split[0]}_{split[1]}_{split[2]}'
+        chemplp_results.loc[i,
+                            ['Pose ID']] = f'{split[0]}_{split[1]}_{split[2]}'
     chemplp_rescoring_output = chemplp_results[['Pose ID', column_name]]
-    chemplp_rescoring_output.to_csv(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv', index=False)
+    chemplp_rescoring_output.to_csv(rescoring_folder /
+                                    f'{column_name}_rescoring' /
+                                    f'{column_name}_scores.csv',
+                                    index=False)
 
     # Remove files
     plants_ligands_mol2.unlink()
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
 
     toc = time.perf_counter()
     printlog(f'Rescoring with CHEMPLP complete in {toc-tic:0.4f}!')
     return chemplp_rescoring_output
 
-def oddt_nnscore_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+
+def oddt_nnscore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
     Rescores the input SDF file using the NNscore algorithm and returns a Pandas dataframe with the rescored values.
 
@@ -557,18 +662,32 @@ def oddt_nnscore_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     nnscore_rescoring_folder.mkdir(parents=True, exist_ok=True)
     pickle_path = f'{software}/models/NNScore_pdbbind2016.pickle'
     results = nnscore_rescoring_folder / 'rescored_NNscore.sdf'
-    nnscore_rescoring_command = ('oddt_cli ' + str(sdf) + ' --receptor ' + str(protein_file) + ' -n ' + str(ncpus) + ' --score_file ' + str(pickle_path) + ' -O ' + str(results))
-    subprocess.call(nnscore_rescoring_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-    df = PandasTools.LoadSDF(str(results), idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
+    nnscore_rescoring_command = ('oddt_cli ' + str(sdf) + ' --receptor ' +
+                                 str(protein_file) + ' -n ' + str(ncpus) +
+                                 ' --score_file ' + str(pickle_path) + ' -O ' +
+                                 str(results))
+    subprocess.call(
+        nnscore_rescoring_command,
+        shell=True,
+        stdout=DEVNULL,
+        stderr=STDOUT,
+    )
+    df = PandasTools.LoadSDF(str(results),
+                             idName='Pose ID',
+                             molColName=None,
+                             includeFingerprints=False,
+                             removeHs=False)
     df.rename(columns={'nnscore': column_name}, inplace=True)
     df = df[['Pose ID', column_name]]
-    df.to_csv(nnscore_rescoring_folder / f'{column_name}_scores.csv', index=False)
+    df.to_csv(nnscore_rescoring_folder / f'{column_name}_scores.csv',
+              index=False)
     toc = time.perf_counter()
     printlog(f'Rescoring with NNscore complete in {toc-tic:0.4f}!')
     delete_files(nnscore_rescoring_folder, f'{column_name}_scores.csv')
     return df
 
-def oddt_plecscore_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+
+def oddt_plecscore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
     Rescores the input SDF file using the PLECscore rescoring method.
 
@@ -591,18 +710,27 @@ def oddt_plecscore_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs
     plecscore_rescoring_folder.mkdir(parents=True, exist_ok=True)
     pickle_path = f'{software}/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle'
     results = plecscore_rescoring_folder / 'rescored_PLECnn.sdf'
-    plecscore_rescoring_command = ('oddt_cli ' + str(sdf) + ' --receptor ' + str(protein_file) + ' -n ' + str(ncpus) + ' --score_file ' + str(pickle_path) + ' -O ' + str(results)        )
+    plecscore_rescoring_command = ('oddt_cli ' + str(sdf) + ' --receptor ' +
+                                   str(protein_file) + ' -n ' + str(ncpus) +
+                                   ' --score_file ' + str(pickle_path) +
+                                   ' -O ' + str(results))
     subprocess.call(plecscore_rescoring_command, shell=True)
-    df = PandasTools.LoadSDF(str(results), idName='Pose ID', molColName=None, includeFingerprints=False, removeHs=False)
+    df = PandasTools.LoadSDF(str(results),
+                             idName='Pose ID',
+                             molColName=None,
+                             includeFingerprints=False,
+                             removeHs=False)
     df.rename(columns={'PLECnn_p5_l1_s65536': column_name}, inplace=True)
     df = df[['Pose ID', column_name]]
-    df.to_csv(plecscore_rescoring_folder / f'{column_name}_scores.csv', index=False)
+    df.to_csv(plecscore_rescoring_folder / f'{column_name}_scores.csv',
+              index=False)
     toc = time.perf_counter()
     printlog(f'Rescoring with PLECScore complete in {toc-tic:0.4f}!')
     delete_files(plecscore_rescoring_folder, f'{column_name}_scores.csv')
     return df
 
-def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+
+def SCORCH_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
     Rescores ligands in an SDF file using SCORCH and saves the results in a CSV file.
 
@@ -623,7 +751,9 @@ def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     SCORCH_rescoring_folder = rescoring_folder / f'{column_name}_rescoring'
     SCORCH_rescoring_folder.mkdir(parents=True, exist_ok=True)
     SCORCH_protein = SCORCH_rescoring_folder / "protein.pdbqt"
-    convert_molecules(str(protein_file).replace('.pdb', '_pocket.pdb'), SCORCH_protein, 'pdb', 'pdbqt')
+    convert_molecules(
+        str(protein_file).replace('.pdb', '_pocket.pdb'), SCORCH_protein,
+        'pdb', 'pdbqt')
     # Convert ligands to pdbqt
     split_files_folder = SCORCH_rescoring_folder / f'split_{sdf.stem}'
     split_files_folder.mkdir(exist_ok=True)
@@ -631,17 +761,27 @@ def SCORCH_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     # Run SCORCH
 
     SCORCH_command = f'python {software}/SCORCH-1.0.0/scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {ncpus} --return_pose_scores'
-    subprocess.call(SCORCH_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+    subprocess.call(
+        SCORCH_command,
+        shell=True,
+        stdout=DEVNULL,
+        stderr=STDOUT,
+    )
     # Clean data
-    SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder / 'scoring_results.csv')
-    SCORCH_scores = SCORCH_scores.rename(columns={'Ligand_ID': 'Pose ID',
-                                                    'SCORCH_pose_score': column_name})
+    SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder /
+                                'scoring_results.csv')
+    SCORCH_scores = SCORCH_scores.rename(columns={
+        'Ligand_ID': 'Pose ID',
+        'SCORCH_pose_score': column_name
+    })
     SCORCH_scores = SCORCH_scores[[column_name, 'Pose ID']]
-    SCORCH_scores.to_csv(SCORCH_rescoring_folder / f'{column_name}_scores.csv', index=False)
+    SCORCH_scores.to_csv(SCORCH_rescoring_folder / f'{column_name}_scores.csv',
+                         index=False)
     delete_files(SCORCH_rescoring_folder, f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with SCORCH complete in {toc-tic:0.4f}!')
     return
+
 
 def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
@@ -667,25 +807,39 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     protein_file = kwargs.get('protein_file')
 
     tic = time.perf_counter()
-    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    output_file = str(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv')
+    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True,
+                                                          exist_ok=True)
+    output_file = str(rescoring_folder / f'{column_name}_rescoring' /
+                      f'{column_name}_scores.csv')
     try:
         RTMScore_command = (
             f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py'
             + f' -p {str(protein_file)}' + f' -l {sdf}' +
             ' -o RTMScore_scores' + ' -pl'
             f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
-        subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        subprocess.call(
+            RTMScore_command,
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT,
+        )
     except Exception as e:
-        if not os.path.exists(os.path.join(software, 'RTMScore-main', 'example', 'rtmscore.py')):
-            printlog('ERROR: Failed to run RTMScore! The software folder does not contain rtmscore.py, please reinstall RTMScore.')
+        if not os.path.exists(
+                os.path.join(software, 'RTMScore-main', 'example',
+                             'rtmscore.py')):
+            printlog(
+                'ERROR: Failed to run RTMScore! The software folder does not contain rtmscore.py, please reinstall RTMScore.'
+            )
         else:
-            printlog(f'ERROR: Failed to run RTMScore! This was likely caused by a failure in generating the pocket graph : {e}.')
+            printlog(
+                f'ERROR: Failed to run RTMScore! This was likely caused by a failure in generating the pocket graph : {e}.'
+            )
     df = pd.read_csv(output_file)
     df = df.rename(columns={'id': 'Pose ID', 'score': f'{column_name}'})
     df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]
     df.to_csv(output_file, index=False)
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
     return
@@ -715,30 +869,47 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
 
     tic = time.perf_counter()
 
-    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus*2)
-    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    split_files_folder = split_sdf_str(
+        rescoring_folder / f'{column_name}_rescoring', sdf, ncpus * 2)
+    split_files_sdfs = [
+        split_files_folder / f for f in os.listdir(split_files_folder)
+        if f.endswith('.sdf')
+    ]
 
-    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
+    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True,
+                                                          exist_ok=True)
 
     global RTMScore_rescoring_splitted
 
     def RTMScore_rescoring_splitted(split_file, protein_file):
-        RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
-                            f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
-                            f' -l {split_file}' +
-                            f' -o RTMScore_scores_{split_file.stem}' +
-                            f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
-        subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+        RTMScore_command = (
+            f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py'
+            + f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
+            f' -l {split_file}' + f' -o RTMScore_scores_{split_file.stem}' +
+            f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
+        subprocess.call(
+            RTMScore_command,
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT,
+        )
         return
 
-    parallel_executor(RTMScore_rescoring_splitted, split_files_sdfs, 3, protein_file=protein_file)
+    parallel_executor(RTMScore_rescoring_splitted,
+                      split_files_sdfs,
+                      3,
+                      protein_file=protein_file)
 
     try:
         score_dfs = []
         for file in os.listdir(rescoring_folder / 'RTMScore_rescoring'):
             if file.startswith('RTMScore_scores_') and file.endswith('.csv'):
-                df = pd.read_csv(rescoring_folder / 'RTMScore_rescoring' / file)
-                df = df.rename(columns={'id': 'Pose ID', 'score': f'{column_name}'})
+                df = pd.read_csv(rescoring_folder / 'RTMScore_rescoring' /
+                                 file)
+                df = df.rename(columns={
+                    'id': 'Pose ID',
+                    'score': f'{column_name}'
+                })
                 df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]
                 score_dfs.append(df)
         RTMScore_rescoring_results = pd.concat(score_dfs)
@@ -747,13 +918,15 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
         printlog(e)
 
     try:
-        output_file = str(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv')
+        output_file = str(rescoring_folder / f'{column_name}_rescoring' /
+                          f'{column_name}_scores.csv')
         RTMScore_rescoring_results.to_csv(output_file, index=False)
     except Exception as e:
         printlog(f'ERROR: Could not write {column_name} combined scores')
         printlog(e)
 
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
     return
@@ -783,19 +956,29 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
 
     tic = time.perf_counter()
 
-    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus*2)
-    split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    split_files_folder = split_sdf_str(
+        rescoring_folder / f'{column_name}_rescoring', sdf, ncpus * 2)
+    split_files_sdfs = [
+        split_files_folder / f for f in os.listdir(split_files_folder)
+        if f.endswith('.sdf')
+    ]
 
-    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
+    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True,
+                                                          exist_ok=True)
     for file in tqdm(split_files_sdfs):
         try:
-            RTMScore_command = (f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py' +
-                                f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
-                                f' -l {file}' +
-                                f' -o RTMScore_scores_{file.stem}' +
-                                ' -pl'
-                                f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth')
-            subprocess.call(RTMScore_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            RTMScore_command = (
+                f'cd {rescoring_folder / "RTMScore_rescoring"} && python {software}/RTMScore-main/example/rtmscore.py'
+                + f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' +
+                f' -l {file}' + f' -o RTMScore_scores_{file.stem}' + ' -pl'
+                f' -m {software}/RTMScore-main/trained_models/rtmscore_model1.pth'
+            )
+            subprocess.call(
+                RTMScore_command,
+                shell=True,
+                stdout=DEVNULL,
+                stderr=STDOUT,
+            )
         except Exception as e:
             printlog(f'Failed to run RTMScore on {file}!')
             printlog(e)
@@ -804,8 +987,12 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
         score_dfs = []
         for file in os.listdir(rescoring_folder / 'RTMScore_rescoring'):
             if file.startswith('RTMScore_scores_') and file.endswith('.csv'):
-                df = pd.read_csv(rescoring_folder / 'RTMScore_rescoring' / file)
-                df = df.rename(columns={'id': 'Pose ID', 'score': f'{column_name}'})
+                df = pd.read_csv(rescoring_folder / 'RTMScore_rescoring' /
+                                 file)
+                df = df.rename(columns={
+                    'id': 'Pose ID',
+                    'score': f'{column_name}'
+                })
                 df['Pose ID'] = df['Pose ID'].str.rsplit('-', n=1).str[0]
                 score_dfs.append(df)
         RTMScore_rescoring_results = pd.concat(score_dfs)
@@ -814,18 +1001,21 @@ def RTMScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
         printlog(e)
 
     try:
-        output_file = str(rescoring_folder / f'{column_name}_rescoring' / f'{column_name}_scores.csv')
+        output_file = str(rescoring_folder / f'{column_name}_rescoring' /
+                          f'{column_name}_scores.csv')
         RTMScore_rescoring_results.to_csv(output_file, index=False)
     except Exception as e:
         printlog(f'ERROR: Could not write {column_name} combined scores')
         printlog(e)
 
-    delete_files(rescoring_folder / f'{column_name}_rescoring', f'{column_name}_scores.csv')
+    delete_files(rescoring_folder / f'{column_name}_rescoring',
+                 f'{column_name}_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with RTMScore complete in {toc-tic:0.4f}!')
     return
 
-def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
+
+def LinF9_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs):
     """
     Performs rescoring of poses in an SDF file using the LinF9 scoring function.
 
@@ -850,47 +1040,60 @@ def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
     pocket_definition = kwargs.get('pocket_definition')
 
     tic = time.perf_counter()
-    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
-    split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
-    split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True,
+                                                          exist_ok=True)
+    split_files_folder = split_sdf_str(
+        rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+    split_files_sdfs = [
+        Path(split_files_folder) / f for f in os.listdir(split_files_folder)
+        if f.endswith('.sdf')
+    ]
 
     global LinF9_rescoring_splitted
 
     def LinF9_rescoring_splitted(split_file, protein_file, pocket_definition):
         LinF9_folder = rescoring_folder / 'LinF9_rescoring'
         results = LinF9_folder / f'{split_file.stem}_LinF9.sdf'
-        LinF9_cmd = (
-            f'{software}/smina.static' +
-            f' --receptor {protein_file}' +
-            f' --ligand {split_file}' +
-            f' --out {results}' +
-            f' --center_x {pocket_definition["center"][0]}' +
-            f' --center_y {pocket_definition["center"][1]}' +
-            f' --center_z {pocket_definition["center"][2]}' +
-            f' --size_x {pocket_definition["size"][0]}' +
-            f' --size_y {pocket_definition["size"][1]}' +
-            f' --size_z {pocket_definition["size"][2]}' +
-            ' --cpu 1' +
-            ' --scoring Lin_F9 --score_only')
+        LinF9_cmd = (f'{software}/smina.static' +
+                     f' --receptor {protein_file}' +
+                     f' --ligand {split_file}' + f' --out {results}' +
+                     f' --center_x {pocket_definition["center"][0]}' +
+                     f' --center_y {pocket_definition["center"][1]}' +
+                     f' --center_z {pocket_definition["center"][2]}' +
+                     f' --size_x {pocket_definition["size"][0]}' +
+                     f' --size_y {pocket_definition["size"][1]}' +
+                     f' --size_z {pocket_definition["size"][2]}' + ' --cpu 1' +
+                     ' --scoring Lin_F9 --score_only')
         try:
-            subprocess.call(LinF9_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+            subprocess.call(
+                LinF9_cmd,
+                shell=True,
+                stdout=DEVNULL,
+                stderr=STDOUT,
+            )
         except Exception as e:
             printlog(f'LinF9 rescoring failed: {e}')
         return
 
-    parallel_executor(LinF9_rescoring_splitted, split_files_sdfs, ncpus, protein_file=protein_file, pocket_definition=pocket_definition)
+    parallel_executor(LinF9_rescoring_splitted,
+                      split_files_sdfs,
+                      ncpus,
+                      protein_file=protein_file,
+                      pocket_definition=pocket_definition)
 
     try:
-        LinF9_dataframes = [PandasTools.LoadSDF(str(rescoring_folder / 'LinF9_rescoring' / file),
-                                                idName='Pose ID',
-                                                molColName=None,
-                                                includeFingerprints=False,
-                                                embedProps=False,
-                                                removeHs=False,
-                                                strictParsing=True) for file in os.listdir(
-                                                rescoring_folder /
-                                                'LinF9_rescoring') if file.startswith('split') and file.endswith('_LinF9.sdf')
-                            ]
+        LinF9_dataframes = [
+            PandasTools.LoadSDF(str(rescoring_folder / 'LinF9_rescoring' /
+                                    file),
+                                idName='Pose ID',
+                                molColName=None,
+                                includeFingerprints=False,
+                                embedProps=False,
+                                removeHs=False,
+                                strictParsing=True)
+            for file in os.listdir(rescoring_folder / 'LinF9_rescoring')
+            if file.startswith('split') and file.endswith('_LinF9.sdf')
+        ]
     except Exception as e:
         printlog('ERROR: Failed to Load LinF9 rescoring SDF file!')
         printlog(e)
@@ -901,15 +1104,20 @@ def LinF9_rescoring(sdf : str, ncpus : int, column_name : str, **kwargs):
         printlog('ERROR: Could not combine LinF9 rescored poses')
         printlog(e)
 
-    LinF9_rescoring_results.rename(columns={'minimizedAffinity': column_name},inplace=True)
+    LinF9_rescoring_results.rename(columns={'minimizedAffinity': column_name},
+                                   inplace=True)
     LinF9_rescoring_results = LinF9_rescoring_results[['Pose ID', column_name]]
-    LinF9_rescoring_results.to_csv(rescoring_folder / 'LinF9_rescoring' / 'LinF9_scores.csv', index=False)
+    LinF9_rescoring_results.to_csv(rescoring_folder / 'LinF9_rescoring' /
+                                   'LinF9_scores.csv',
+                                   index=False)
     delete_files(rescoring_folder / 'LinF9_rescoring', 'LinF9_scores.csv')
     toc = time.perf_counter()
     printlog(f'Rescoring with LinF9 complete in {toc-tic:0.4f}!')
     return LinF9_rescoring_results
 
-def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataFrame:
+
+def AAScore_rescoring(sdf: str, ncpus: int, column_name: str,
+                      **kwargs) -> DataFrame:
     """
     Rescores poses in an SDF file using the AA-Score tool.
 
@@ -933,17 +1141,30 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
     software = kwargs.get('software')
     protein_file = kwargs.get('protein_file')
 
-    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True, exist_ok=True)
+    (rescoring_folder / f'{column_name}_rescoring').mkdir(parents=True,
+                                                          exist_ok=True)
     pocket = str(protein_file).replace('.pdb', '_pocket.pdb')
 
     if ncpus == 1:
         results = rescoring_folder / f'{column_name}_rescoring' / 'rescored_AAScore.csv'
         AAscore_cmd = f'python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {sdf} --Out {results}'
-        subprocess.call(AAscore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
-        AAScore_rescoring_results = pd.read_csv(results, delimiter='\t', header=None, names=['Pose ID', column_name])
+        subprocess.call(
+            AAscore_cmd,
+            shell=True,
+            stdout=DEVNULL,
+            stderr=STDOUT,
+        )
+        AAScore_rescoring_results = pd.read_csv(results,
+                                                delimiter='\t',
+                                                header=None,
+                                                names=['Pose ID', column_name])
     else:
-        split_files_folder = split_sdf_str(rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
-        split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith('.sdf')]
+        split_files_folder = split_sdf_str(
+            rescoring_folder / f'{column_name}_rescoring', sdf, ncpus)
+        split_files_sdfs = [
+            Path(split_files_folder) / f
+            for f in os.listdir(split_files_folder) if f.endswith('.sdf')
+        ]
         global AAScore_rescoring_splitted
 
         def AAScore_rescoring_splitted(split_file):
@@ -951,7 +1172,12 @@ def AAScore_rescoring(sdf: str, ncpus: int, column_name: str, **kwargs) -> DataF
             results = AAScore_folder / f'{split_file.stem}_AAScore.csv'
             AAScore_cmd = f'python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {split_file} --Out {results}'
             try:
-                subprocess.call(AAScore_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
+                subprocess.call(
+                    AAScore_cmd,
+                    shell=True,
+                    stdout=DEVNULL,
+                    stderr=STDOUT,
+                )
             except Exception as e:
                 printlog('AAScore rescoring failed: ' + str(e))
 
