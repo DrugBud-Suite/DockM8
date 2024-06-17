@@ -10,13 +10,13 @@ def calculate_properties(df, properties):
 		df['TPSA'] = df['TPSA'].astype(float)
 	if 'HBA' in properties:
 		df['HBA'] = df['Molecule'].apply(lambda x: rdMolDescriptors.CalcNumHBA(x))
-		df['HBA'] = df['HBA'].astype(int)
+		df['HBA'] = df['HBA'].astype(float)
 	if 'HBD' in properties:
 		df['HBD'] = df['Molecule'].apply(lambda x: rdMolDescriptors.CalcNumHBD(x))
-		df['HBD'] = df['HBD'].astype(int)
+		df['HBD'] = df['HBD'].astype(float)
 	if 'Rotatable Bonds' in properties:
 		df['Rotatable Bonds'] = df['Molecule'].apply(lambda x: Descriptors.NumRotatableBonds(x))
-		df['Rotatable Bonds'] = df['Rotatable Bonds'].astype(int)
+		df['Rotatable Bonds'] = df['Rotatable Bonds'].astype(float)
 	if 'QED' in properties:
 		df['QED'] = df['Molecule'].apply(lambda x: QED.qed(x))
 		df['QED'] = df['QED'].astype(float)
@@ -25,5 +25,5 @@ def calculate_properties(df, properties):
 		df['sp3 percentage'] = df['sp3 percentage'].astype(float)
 	if 'Ring Count' in properties:
 		df['Ring Count'] = df['Molecule'].apply(lambda x: rdMolDescriptors.CalcNumRings(x))
-		df['Ring Count'] = df['Ring Count'].astype(int)
+		df['Ring Count'] = df['Ring Count'].astype(float)
 	return df
