@@ -3,7 +3,7 @@
 [![Forks](https://img.shields.io/github/forks/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 [![Stars](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 [![Watching](https://img.shields.io/github/watchers/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
-![License](https://img.shields.io/github/license/DrugBud-Suite/DockM8?style=for-the-badge)
+[![License](https://img.shields.io/github/license/DrugBud-Suite/DockM8?style=for-the-badge)](https://github.com/DrugBud-Suite/DockM8/blob/main/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/pulls)
 [![Last Commit](https://img.shields.io/github/last-commit/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
@@ -42,11 +42,13 @@ Please refer to the [**Usage Guide**](https://github.com/DrugBud-Suite/DockM8/bl
 
 ## Issues and bug reports
 
-Please you the issue system built into github to report issues. They will be resolved as soon as possible.
+Please you the [issue system](https://github.com/DrugBud-Suite/DockM8/issues) built into github to report issues. They will be resolved as soon as possible.
 
 ## Acknowledgements
 
-We acknowledge and thank the authors of the packages used in DockM8. Please see the publication for citations.
+This project is a collaboration between the [Volkamer](https://volkamerlab.org/) and [Hirsch](https://www.helmholtz-hips.de/en/research/teams/team/drug-design-and-optimisation/) labs.
+
+We acknowledge and thank the authors of the various packages used in DockM8. Please see the publication for citations.
 
 ## Citation
 
