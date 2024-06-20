@@ -1,6 +1,7 @@
 from pandas.api.types import (is_categorical_dtype, is_datetime64_any_dtype, is_numeric_dtype, is_object_dtype, )
 import pandas as pd
 import streamlit as st
+from rdkit.Chem import PandasTools
 
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -91,3 +92,12 @@ def display_dataframe(df: pd.DataFrame, placement: str = 'center') -> pd.DataFra
 	else:
 		st.error("Invalid placement argument for displaying dataframe. Use 'center', 'left', or 'right'.")
 	return df
+
+
+def save_dataframe_to_sdf(dataframe, file_path, molecule_column='Molecule', id_column='ID'):
+	"""Helper function to save DataFrame to SDF format."""
+	PandasTools.WriteSDF(dataframe,
+							file_path,
+							molColName=molecule_column,
+							idName=id_column,
+							properties=list(dataframe.columns))

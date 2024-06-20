@@ -25,22 +25,22 @@ def visualize_chemical_space(df, method='UMAP', fingerprint='ECFP4'):
 
 	# Perform dimensionality reduction
 	if method == 'UMAP':
-		reducer = UMAP(n_neighbors=15, min_dist=0.1, metric='jaccard')
+		reducer = UMAP(n_neighbors=15, n_components=2, min_dist=0.1, metric='jaccard', n_jobs=int(os.cpu_count() * 0.9))
 	elif method == 'T-SNE':
-		reducer = TSNE(n_components=2)
+		reducer = TSNE(n_components=2, n_jobs=int(os.cpu_count() * 0.9))
 	elif method == 'PCA':
 		reducer = PCA(n_components=2)
 
 	embedding = reducer.fit_transform(fingerprint_df)
-
-	embedding_df = pd.DataFrame(embedding)
-
-	# Create a plot
+	embedding_df = pd.DataFrame(embedding, columns=[f'{method} Dimension 1', f'{method} Dimension 2'])
+	embedding_df['ID'] = df['ID'].values
 	fig = px.scatter(embedding_df,
+						x=f'{method} Dimension 1',
+						y=f'{method} Dimension 2',
 						labels={
 							'x': f'{method} Dimension 1', 'y': f'{method} Dimension 2'},
 						title=f"{method} Projection of Chemical Space using {fingerprint}",
 						color_discrete_sequence=['#FF871F'],
-						hover_name='ID')
+						hover_data=['ID'])                                                  # Now 'ID' is a valid column in embedding_df
 
-	return fig
+	return fig, embedding_df
