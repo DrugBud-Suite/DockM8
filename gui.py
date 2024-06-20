@@ -151,6 +151,13 @@ elif pocket_mode == "Custom" and mode == "Single":
 elif pocket_mode == "Custom" and mode != "Single":
     col1.error("Custom pocket definition does not currently work in ensemble mode, please change the pocket definition mode")
 
+if pocket_mode == 'Dogsitescorer':
+    dss_mode = col1.selectbox(
+        label="Choose method to select binding site",
+        options=("Volume", "Druggability_Score", "Surface", "Depth"),
+        help=
+        "Choose which DogSiteScorer metric to use to select the binding site. The site with the highest value of the chosen metric will be used."
+    )
 # Ligand library
 col2.header("Ligands", divider="orange")
 ligand_file = col2.text_input(
@@ -172,8 +179,8 @@ ligand_conformers = col2.selectbox(
     label="How should the conformers be generated?",
     options=["MMFF", "GypsumDL"],
     index=1,
-    help="MMFF: DockM8 will use MMFF to prepare the ligand 3D conformers. "
-    + "GypsumDL: DockM8 will use Gypsum-DL to prepare the ligand 3D conformers.",
+    help="MMFF: DockM8 will use MMFF to prepare the ligand 3D conformers. " +
+    "GypsumDL: DockM8 will use Gypsum-DL to prepare the ligand 3D conformers.",
 )
 
 # Ligand protonation
@@ -182,8 +189,8 @@ ligand_protonation = col2.selectbox(
     label="How should the ligands be protonated?",
     options=("None", "GypsumDL"),
     index=1,
-    help="None: No protonation "
-    + "Gypsum-DL: DockM8 will use  Gypsum-DL to protonate the ligands",
+    help="None: No protonation " +
+    "Gypsum-DL: DockM8 will use  Gypsum-DL to protonate the ligands",
 )
 
 # Docking programs
@@ -192,11 +199,15 @@ docking_programs = st.multiselect(
     label="Choose the docking programs you want to use",
     default=["GNINA"],
     options=DOCKING_PROGRAMS,
-    help="Choose the docking programs you want to use, mutliple selection is allowed",
+    help=
+    "Choose the docking programs you want to use, multiple selection is allowed",
 )
 
-if "PLANTS" in docking_programs and not os.path.exists("/path/to/software/PLANTS"):
-    st.warning('PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php', icon=':warning:')
+if "PLANTS" in docking_programs and not os.path.exists(
+        "/path/to/software/PLANTS"):
+    st.warning(
+        'PLANTS was not found in the software folder, please visit http://www.tcd.uni-konstanz.de/research/plants.php',
+        icon=':warning:')
 
 # Number of poses
 nposes = st.slider(
@@ -213,13 +224,15 @@ exhaustiveness = st.select_slider(
     label="Exhaustiveness",
     options=[1, 2, 4, 8, 16, 32],
     value=8,
-    help="Exhaustiveness of the docking, only applies to GNINA, SMINA, QVINA2 and QVINAW. Higher values can significantly increase the runtime.",
+    help=
+    "Exhaustiveness of the docking, only applies to GNINA, SMINA, QVINA2 and QVINAW. Higher values can significantly increase the runtime.",
 )
 
 bust_poses = st.checkbox(
     label="Bust poses using PoseBusters : WARNING may take a long time to run",
     value=False,
-    help="Bust poses using PoseBusters : Will remove any poses with clashes, non-flat aromatic rings etc. WARNING may take a long time to run",
+    help=
+    "Bust poses using PoseBusters : Will remove any poses with clashes, non-flat aromatic rings etc. WARNING may take a long time to run",
 )
 
 # Pose selection
@@ -227,29 +240,28 @@ st.header("Pose Selection", divider="orange")
 pose_selection = st.multiselect(
     label="Choose the pose selection method you want to use",
     default=["KORP-PL"],
-    options=list(CLUSTERING_METRICS.keys())
-    + [
+    options=list(CLUSTERING_METRICS.keys()) + [
         "bestpose",
         "bestpose_GNINA",
         "bestpose_SMINA",
         "bestpose_PLANTS",
         "bestpose_QVINA2",
         "bestpose_QVINAW",
-    ]
-    + list(RESCORING_FUNCTIONS.keys()),
+    ] + list(RESCORING_FUNCTIONS.keys()),
     help="The method(s) to use for pose clustering. Must be one or more of:\n"
-    + "- RMSD : Cluster compounds on RMSD matrix of poses \n"
-    + "- spyRMSD : Cluster compounds on symmetry-corrected RMSD matrix of poses\n"
-    + "- espsim : Cluster compounds on electrostatic shape similarity matrix of poses\n"
-    + "- USRCAT : Cluster compounds on shape similarity matrix of poses\n"
-    + "- 3DScore : Selects pose with the lowest average RMSD to all other poses\n"
-    + "- bestpose : Takes the best pose from each docking program\n"
-    + "- bestpose_GNINA : Takes the best pose from GNINA docking program\n"
-    + "- bestpose_SMINA : Takes the best pose from SMINA docking program\n"
-    + "- bestpose_QVINAW : Takes the best pose from QVINAW docking program\n"
-    + "- bestpose_QVINA2 : Takes the best pose from QVINA2 docking program\n"
-    + "- bestpose_PLANTS : Takes the best pose from PLANTS docking program  \n"
-    + "- You can also use any of the scoring functions and DockM8 will select the best pose for each compound according to the specified scoring function.",
+    + "- RMSD : Cluster compounds on RMSD matrix of poses \n" +
+    "- spyRMSD : Cluster compounds on symmetry-corrected RMSD matrix of poses\n"
+    +
+    "- espsim : Cluster compounds on electrostatic shape similarity matrix of poses\n"
+    + "- USRCAT : Cluster compounds on shape similarity matrix of poses\n" +
+    "- 3DScore : Selects pose with the lowest average RMSD to all other poses\n"
+    + "- bestpose : Takes the best pose from each docking program\n" +
+    "- bestpose_GNINA : Takes the best pose from GNINA docking program\n" +
+    "- bestpose_SMINA : Takes the best pose from SMINA docking program\n" +
+    "- bestpose_QVINAW : Takes the best pose from QVINAW docking program\n" +
+    "- bestpose_QVINA2 : Takes the best pose from QVINA2 docking program\n" +
+    "- bestpose_PLANTS : Takes the best pose from PLANTS docking program  \n" +
+    "- You can also use any of the scoring functions and DockM8 will select the best pose for each compound according to the specified scoring function.",
 )
 # Clustering algorithm
 if any(x in CLUSTERING_METRICS.keys() for x in pose_selection):
@@ -257,7 +269,8 @@ if any(x in CLUSTERING_METRICS.keys() for x in pose_selection):
         label="Which clustering algorithm do you want to use?",
         options=("KMedoids", "Aff_Prop"),
         index=0,
-        help='Which algorithm to use for clustering. Must be one of "KMedoids", "Aff_prop". Must be set when using "RMSD", "spyRMSD", "espsim", "USRCAT" clustering metrics.',
+        help=
+        'Which algorithm to use for clustering. Must be one of "KMedoids", "Aff_prop". Must be set when using "RMSD", "spyRMSD", "espsim", "USRCAT" clustering metrics.',
     )
 else:
     clustering_algorithm = None
@@ -275,7 +288,7 @@ rescoring = st.multiselect(
 st.header("Consensus", divider="orange")
 consensus_method = st.selectbox(
     label="Choose which consensus algorithm to use: ",
-    index=2,
+    index=9,
     options=list(CONSENSUS_METHODS.keys()),
     help="The method to use for consensus.",
 )
@@ -285,44 +298,42 @@ if gen_decoys:
     for length in range(2, len(rescoring)):
         combinations = list(itertools.combinations(rescoring, length))
         total_combinations += len(combinations)
-    num_possibilities = (
-        len(CONSENSUS_METHODS.keys())
-        * len(pose_selection)
-        * (len(rescoring) + total_combinations)
-    )
+    num_possibilities = (len(CONSENSUS_METHODS.keys()) * len(pose_selection) *
+                         (len(rescoring) + total_combinations))
     if num_possibilities > 10000:
         st.warning(
             f"WARNING: The combination of scoring functions and pose selection method you have selected will yield a large number of possible combinations ({num_possibilities}). This may take a long time to run."
         )
 
-command = (
-    f'{sys.executable} {CWD}/dockm8.py '
-    f'--software {software} '
-    f'--receptor {receptor_file} '
-    f'--docking_library {ligand_file} '
-    f'--idcolumn {id_column} '
-    f'--prepare_proteins {prepare_receptor} '
-    f'--conformers {ligand_conformers} '
-    f'--protonation {ligand_protonation} '
-    f'--docking_programs {" ".join(docking_programs)} '
-    f'--bust_poses {bust_poses} '
-    f'--pose_selection {" ".join(pose_selection)} '
-    f'--nposes {nposes} '
-    f'--exhaustiveness {exhaustiveness} '
-    f'--ncpus {num_cpus} '
-    f'--clustering_method {clustering_algorithm} '
-    f'--rescoring {" ".join(rescoring)} '
-    f'--consensus {consensus_method}'
-)
+command = (f'{sys.executable} {CWD}/dockm8.py '
+           f'--software {software} '
+           f'--receptor {receptor_file} '
+           f'--docking_library {ligand_file} '
+           f'--idcolumn {id_column} '
+           f'--prepare_proteins {prepare_receptor} '
+           f'--conformers {ligand_conformers} '
+           f'--protonation {ligand_protonation} '
+           f'--docking_programs {" ".join(docking_programs)} '
+           f'--bust_poses {bust_poses} '
+           f'--pose_selection {" ".join(pose_selection)} '
+           f'--nposes {nposes} '
+           f'--exhaustiveness {exhaustiveness} '
+           f'--ncpus {num_cpus} '
+           f'--clustering_method {clustering_algorithm} '
+           f'--rescoring {" ".join(rescoring)} '
+           f'--consensus {consensus_method}')
 # Add pocket-specific arguments
 if pocket_mode == "Custom":
-    pocket_str = '*'.join([f"{k}:{','.join(map(str, v))}" for k, v in pocket_coordinates.items()])
+    pocket_str = '*'.join([
+        f"{k}:{','.join(map(str, v))}" for k, v in pocket_coordinates.items()
+    ])
     command += (f" --pocket {pocket_str}")
 elif pocket_mode == "Reference" or pocket_mode == "RoG":
     command += (f" --pocket {pocket_mode}")
     command += (f" --reffile {reference_file}")
 elif pocket_mode == "Dogsitescorer":
     command += (f" --pocket {pocket_mode}")
+    command += (f" --dogsitescorer_mode {dss_mode}")
 
 # Add mode-specific arguments
 if mode == "ensemble" or mode == "active_learning":
@@ -331,12 +342,10 @@ else:
     command += f" --mode {mode}"
 
 if gen_decoys:
-    command += (
-        " --gen_decoys True "
-        f"--decoy_model {decoy_model} "
-        f"--n_decoys {n_decoys} "
-        f"--actives {active_ligands} "
-    )
+    command += (" --gen_decoys True "
+                f"--decoy_model {decoy_model} "
+                f"--n_decoys {n_decoys} "
+                f"--actives {active_ligands} ")
 
 open("log.txt", "w").close()
 
@@ -364,12 +373,15 @@ if log_file_path is not None:
     # Create an empty container for dynamic content updates
     log_container = st.empty()
     # Display initial log content
-    log_container.text_area("Log ", log_content, height=300)
+    log_container.text_area(
+        "Log (if inactive for a long time, please check your terminal from which you launched the GUI, any errors will be there)",
+        log_content,
+        height=300)
     # Periodically check for changes in the log file
     while True:
         time.sleep(1)  # Adjust the interval as needed
         new_log_content = read_log_file(log_file_path)
         if new_log_content != log_content:
             # Update the contents of the existing text area
-            log_container.text_area("Log ", new_log_content, height=300)
+            log_container.text_area("Log (if inactive for a long time, please check your terminal from which you launched the GUI, any errors will be there)", new_log_content, height=300)
             log_content = new_log_content

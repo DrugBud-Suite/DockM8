@@ -39,15 +39,67 @@ parser.add_argument('--actives', default=None, type=str, help ='Path to the list
 parser.add_argument('--receptor', required=True, type=str, nargs='+', help ='Path to the protein file(s) or protein files if using ensemble docking mode')
 parser.add_argument('--pocket', type=str, help ='Method to use for pocket determination')
 parser.add_argument('--reffile', type=str, nargs='+', help ='Path to the reference ligand file(s)')
-parser.add_argument('--docking_library', required=True, type=str, help ='Path to the docking library .sdf file')
-parser.add_argument('--idcolumn', required=True, type=str, help ='Column name for the unique identifier')
-parser.add_argument('--prepare_proteins', default=True, type=str2bool, help ='Whether or not to add hydrogens to the protein using Protoss (True for yes, False for no)')
-parser.add_argument('--conformers', default='RDKit', type=str, choices=['RDKit', 'MMFF', 'GypsumDL'], help ='Method to use for conformer generation (RDKit and MMFF are equivalent)')
-parser.add_argument('--protonation', required=True, type=str, choices=['GypsumDL', 'None'], help ='Method to use for compound protonation')
-parser.add_argument('--docking_programs', required=True, type=str, nargs='+', choices=DOCKING_PROGRAMS, help ='Method(s) to use for docking')
-parser.add_argument('--bust_poses', default=False, type=str2bool, help ='Whether or not to remove problematic poses with PoseBusters (True for yes, False for no)')
-parser.add_argument('--pose_selection', required=True, type=str, nargs='+', choices=list(CLUSTERING_METRICS.keys())+['bestpose', 'bestpose_GNINA', 'bestpose_SMINA', 'bestpose_PLANTS', 'bestpose_QVINA2', 'bestpose_QVINAW']+list(RESCORING_FUNCTIONS.keys()), help ='Method(s) to use for pose clustering')
-parser.add_argument('--nposes', default=10, type=int, help ='Number of poses to generate')
+parser.add_argument(
+    '--dogsitescorer_mode',
+    type=str,
+    default='Volume',
+    choices=['Volume', 'Druggability_Score', 'Surface', 'Depth'],
+    help=
+    'Choose which DogSiteScorer metric to use to select the binding site. The site with the highest value of the chosen metric will be used.'
+)
+parser.add_argument('--docking_library',
+                    required=True,
+                    type=str,
+                    help='Path to the docking library .sdf file')
+parser.add_argument('--idcolumn',
+                    required=True,
+                    type=str,
+                    help='Column name for the unique identifier')
+parser.add_argument(
+    '--prepare_proteins',
+    default=True,
+    type=str2bool,
+    help=
+    'Whether or not to add hydrogens to the protein using Protoss (True for yes, False for no)'
+)
+parser.add_argument(
+    '--conformers',
+    default='RDKit',
+    type=str,
+    choices=['RDKit', 'MMFF', 'GypsumDL'],
+    help=
+    'Method to use for conformer generation (RDKit and MMFF are equivalent)')
+parser.add_argument('--protonation',
+                    required=True,
+                    type=str,
+                    choices=['GypsumDL', 'None'],
+                    help='Method to use for compound protonation')
+parser.add_argument('--docking_programs',
+                    required=True,
+                    type=str,
+                    nargs='+',
+                    choices=DOCKING_PROGRAMS,
+                    help='Method(s) to use for docking')
+parser.add_argument(
+    '--bust_poses',
+    default=False,
+    type=str2bool,
+    help=
+    'Whether or not to remove problematic poses with PoseBusters (True for yes, False for no)'
+)
+parser.add_argument('--pose_selection',
+                    required=True,
+                    type=str,
+                    nargs='+',
+                    choices=list(CLUSTERING_METRICS.keys()) + [
+                        'bestpose', 'bestpose_GNINA', 'bestpose_SMINA',
+                        'bestpose_PLANTS', 'bestpose_QVINA2', 'bestpose_QVINAW'
+                    ] + list(RESCORING_FUNCTIONS.keys()),
+                    help='Method(s) to use for pose clustering')
+parser.add_argument('--nposes',
+                    default=10,
+                    type=int,
+                    help='Number of poses to generate')
 parser.add_argument('--exhaustiveness',
                     default=8,
                     type=int,
@@ -153,10 +205,10 @@ def parse_pocket_coordinates(pocket_arg):
 
 
 # Main function to manage docking process
-def dockm8(software, receptor, pocket, ref, docking_library, idcolumn,
-           prepare_proteins, conformers, protonation, docking_programs,
-           bust_poses, pose_selection, nposes, exhaustiveness, ncpus,
-           clustering_method, rescoring, consensus):
+def dockm8(software, receptor, pocket, ref, dogsitescorer_mode,
+           docking_library, idcolumn, prepare_proteins, conformers,
+           protonation, docking_programs, bust_poses, pose_selection, nposes,
+           exhaustiveness, ncpus, clustering_method, rescoring, consensus):
     # Set working directory based on the receptor file
     w_dir = Path(receptor).parent / Path(receptor).stem
     print('The working directory has been set to:', w_dir)
@@ -175,9 +227,15 @@ def dockm8(software, receptor, pocket, ref, docking_library, idcolumn,
         pocket_definition = get_pocket_RoG(Path(ref), prepared_receptor)
     elif pocket == 'Dogsitescorer':
         pocket_definition = binding_site_coordinates_dogsitescorer(
-            prepared_receptor, w_dir, method='volume')
+            prepared_receptor, w_dir, method=dogsitescorer_mode)
     else:
         pocket_definition = parse_pocket_coordinates(pocket)
+	# Write binding site information to a text file
+    with open(w_dir / 'binding_site_info.txt', 'w') as f:
+        f.write('Binding Site Information:\n')
+        f.write(f'Receptor: {prepared_receptor}\n')
+        f.write(f'Pocket Mode: {pocket}\n')
+        f.write(f'Pocket Definition: {pocket_definition}\n')
 
     print("The pocket coordinates are:", pocket_definition)
 
@@ -242,6 +300,7 @@ def run_command(**kwargs):
                    pocket=kwargs.get('pocket'),
                    ref=(kwargs.get('reffile'))[0]
                    if kwargs.get('reffile') else None,
+                   dogsitescorer_mode=kwargs.get('dogsitescorer_mode'),
                    docking_library=output_library,
                    idcolumn=kwargs.get('idcolumn'),
                    prepare_proteins=kwargs.get('prepare_proteins'),
@@ -281,6 +340,7 @@ def run_command(**kwargs):
                    pocket=kwargs.get('pocket'),
                    ref=(kwargs.get('reffile'))[0]
                    if kwargs.get('reffile') else None,
+                   dogsitescorer_mode=kwargs.get('dogsitescorer_mode'),
                    docking_library=kwargs.get('docking_library'),
                    idcolumn=kwargs.get('idcolumn'),
                    prepare_proteins=kwargs.get('prepare_proteins'),
@@ -309,6 +369,7 @@ def run_command(**kwargs):
                    pocket=kwargs.get('pocket'),
                    ref=(kwargs.get('reffile'))[0]
                    if kwargs.get('reffile') else None,
+                   dogsitescorer_mode=kwargs.get('dogsitescorer_mode'),
                    docking_library=output_library,
                    idcolumn=kwargs.get('idcolumn'),
                    prepare_proteins=kwargs.get('prepare_proteins'),
@@ -354,6 +415,7 @@ def run_command(**kwargs):
                        receptor=receptor,
                        pocket=kwargs.get('pocket'),
                        ref=ref,
+                       dogsitescorer_mode=kwargs.get('dogsitescorer_mode'),
                        docking_library=kwargs.get('docking_library'),
                        idcolumn=kwargs.get('idcolumn'),
                        prepare_proteins=kwargs.get('prepare_proteins'),
@@ -380,6 +442,7 @@ def run_command(**kwargs):
                    pocket=kwargs.get('pocket'),
                    ref=(kwargs.get('reffile'))[0]
                    if kwargs.get('reffile') else None,
+                   dogsitescorer_mode=kwargs.get('dogsitescorer_mode'),
                    docking_library=kwargs.get('docking_library'),
                    idcolumn=kwargs.get('idcolumn'),
                    prepare_proteins=kwargs.get('prepare_proteins'),
@@ -409,6 +472,7 @@ def run_command(**kwargs):
                        receptor=receptor,
                        pocket=kwargs.get('pocket'),
                        ref=ref,
+                       dogsitescorer_mode=kwargs.get('dogsitescorer_mode'),
                        docking_library=kwargs.get('docking_library'),
                        idcolumn=kwargs.get('idcolumn'),
                        prepare_proteins=kwargs.get('prepare_proteins'),
