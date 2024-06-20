@@ -81,7 +81,7 @@ if 'ligand_library' in st.session_state:
 									value=str(dockm8_path / 'tests' / 'test_files' / 'library_calculated.sdf'))
 		if st.button('Save Calculated Properties to SDF'):
 			save_dataframe_to_sdf(st.session_state['calculated_properties_df'], save_path)
-			st.success(f'Saved calculated properties to {save_path}')
+			st.success(f'Saved library to {save_path}')
 
 if 'ligand_library' in st.session_state:
 	st.subheader('Medicinal Chemistry Filters', divider='orange')
@@ -115,6 +115,9 @@ if 'ligand_library' in st.session_state:
 		)
 		display_dataframe(medchem_filtered_df, 'center')
 		st.session_state['filtered_ligand_library'] = medchem_filtered_df
+		if st.button('Save Filtered Library to SDF'):
+			save_dataframe_to_sdf(medchem_filtered_df, save_path)
+			st.success(f'Saved library to {save_path}')
 
 if 'ligand_library' in st.session_state:
 	st.subheader('PAINS and Undesirable Compound Filtering', divider='orange')
@@ -145,6 +148,9 @@ if 'ligand_library' in st.session_state:
 		)
 		display_dataframe(alerts_filtered_df, 'center')
 		st.session_state['filtered_ligand_library'] = alerts_filtered_df
+	if st.button('Save Filtered Library to SDF'):
+		save_dataframe_to_sdf(alerts_filtered_df, save_path)
+		st.success(f'Saved library to {save_path}')
 	if st.button('Query the ChemFH server for indesirable compounds'):
 		result = query_chemfh(library_to_filter_pains)
 		st.dataframe(result)
@@ -197,9 +203,10 @@ if 'ligand_library' in st.session_state:
 	else:
 		st.write('Please load a library first.')
 	col1, col2 = st.columns(2)
-	if st.button('Save Calculated Properties to SDF'):
-		save_dataframe_to_sdf(st.session_state['calculated_properties_df'], save_path)
-		st.success(f'Saved calculated properties to {save_path}')
+	if 'filtered_ligand_library' in st.session_state:
+		if st.button('Save Filtered Library to SDF'):
+			save_dataframe_to_sdf(st.session_state['filtered_ligand_library'], save_path)
+			st.success(f'Saved library to {save_path}')
 	if st.button('Proceed to Library Preparation'):
 		st.session_state['library_to_pass_to_preparation'] = library_to_pass_to_preparation
 		st.switch_page('./pages/3_library_preparation.py')
