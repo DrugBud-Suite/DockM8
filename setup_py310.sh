@@ -142,7 +142,7 @@ else
 
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 
-	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html
+	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html -q
 
     echo -e """
     ###############################################################
