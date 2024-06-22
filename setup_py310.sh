@@ -136,7 +136,7 @@ else
     ###############################################################
     """
 
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit -q
 
     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
 
@@ -251,7 +251,7 @@ if [[ ! -d $DOCKM8_FOLDER/software/gypsum_dl-1.2.1 ]]; then
     rm v1.2.1.tar.gz
 fi
 
-if [[ ! -d $DOCKM8_FOLDER/software/SCORCH ]]; then
+if [[ ! -d $DOCKM8_FOLDER/software/SCORCH-1.0.0 ]]; then
     echo -e "\nDownloading SCORCH!"
     wget https://github.com/SMVDGroup/SCORCH/archive/refs/tags/v1.0.0.tar.gz --no-check-certificate -q --show-progress
     tar -xf v1.0.0.tar.gz
