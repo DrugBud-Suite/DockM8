@@ -23,7 +23,7 @@ dependencies:
   - spyrmsd=0.6.0
   - xgboost=1.7.3
   - chembl_structure_pipeline
-  - rdkit
+  - rdkit=2023.09
   - biopandas
   - pip
   - docopt
@@ -42,9 +42,11 @@ dependencies:
     - tensorflow
     - tqdm
     - --extra-index-url https://download.pytorch.org/whl/cpu
-    - torch
+    - torch==2.2.0
     - torch-cluster
     - torch-geometric
     - torch-scatter
     - torch-sparse
     - torch-spline-conv
+    - --extra-index-url https://data.dgl.ai/wheels/torch-2.2/repo.html
+    - dgl
