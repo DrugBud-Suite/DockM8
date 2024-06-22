@@ -128,7 +128,7 @@ else
 
     conda config --add channels conda-forge
 
-    conda install rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm -q -y
+    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pydantic -q -y
 
     echo -e """
     ###############################################################
@@ -136,11 +136,13 @@ else
     ###############################################################
     """
 
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit -q
 
-    pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
+    pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
 
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
+
+	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html
 
     echo -e """
     ###############################################################
