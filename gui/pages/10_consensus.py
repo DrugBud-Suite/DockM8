@@ -23,4 +23,5 @@ def app():
 									options=list(CONSENSUS_METHODS.keys()),
 									help="The method to use for consensus.")
 
+
 app()
