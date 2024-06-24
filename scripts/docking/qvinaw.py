@@ -15,17 +15,18 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import convert_molecules, delete_files, printlog, split_pdbqt_str
-
+from scripts.utilities.file_splitting import split_pdbqt_str
+from scripts.utilities.molecule_conversion import convert_molecules
+from scripts.utilities.utilities import delete_files, printlog
 
 def qvinaw_docking(split_file: Path,
-		w_dir: Path,
-		protein_file: Path,
-		pocket_definition: Dict[str, list],
-		software: Path,
-		exhaustiveness: int,
-		n_poses: int,
-		):
+	w_dir: Path,
+	protein_file: Path,
+	pocket_definition: Dict[str, list],
+	software: Path,
+	exhaustiveness: int,
+	n_poses: int,
+	):
 	"""
     Perform docking using the QVINAW software for either a library of molecules or split files.
 
@@ -61,25 +62,25 @@ def qvinaw_docking(split_file: Path,
 		print(e)
 
 	protein_file_pdbqt = convert_molecules(protein_file,
-											protein_file.with_suffix(".pdbqt"),
-											"pdb",
-											"pdbqt")
+				protein_file.with_suffix(".pdbqt"),
+				"pdb",
+				"pdbqt")
 	# Dock each ligand using QVINAW
 	for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
 		output_file = results_folder / (pdbqt_file.stem + "_QVINAW.pdbqt")
 		qvinaw_cmd = (f"{software / 'qvina-w'}"
-						f" --receptor {protein_file_pdbqt}"
-						f" --ligand {pdbqt_file}"
-						f" --out {output_file}"
-						f" --center_x {pocket_definition['center'][0]}"
-						f" --center_y {pocket_definition['center'][1]}"
-						f" --center_z {pocket_definition['center'][2]}"
-						f" --size_x {pocket_definition['size'][0]}"
-						f" --size_y {pocket_definition['size'][1]}"
-						f" --size_z {pocket_definition['size'][2]}"
-						f" --exhaustiveness {exhaustiveness}"
-						" --cpu 1 --seed 1"
-						f" --num_modes {n_poses}")
+			f" --receptor {protein_file_pdbqt}"
+			f" --ligand {pdbqt_file}"
+			f" --out {output_file}"
+			f" --center_x {pocket_definition['center'][0]}"
+			f" --center_y {pocket_definition['center'][1]}"
+			f" --center_z {pocket_definition['center'][2]}"
+			f" --size_x {pocket_definition['size'][0]}"
+			f" --size_y {pocket_definition['size'][1]}"
+			f" --size_z {pocket_definition['size'][2]}"
+			f" --exhaustiveness {exhaustiveness}"
+			" --cpu 1 --seed 1"
+			f" --num_modes {n_poses}")
 		subprocess.call(qvinaw_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 	qvinaw_docking_results = qvinaw_folder / (Path(input_file).stem + "_qvinaw.sdf")
@@ -101,10 +102,10 @@ def qvinaw_docking(split_file: Path,
 				"QVINAW_Affinity": affinity,
 				"ID": pose_file.stem.split("_")[0], }
 		PandasTools.WriteSDF(qvinaw_poses,
-								str(qvinaw_docking_results),
-								molColName="Molecule",
-								idName="Pose ID",
-								properties=list(qvinaw_poses.columns))
+				str(qvinaw_docking_results),
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(qvinaw_poses.columns))
 
 	except Exception as e:
 		printlog("ERROR: Failed to combine QVINAW SDF file!")
@@ -133,9 +134,9 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
 			for file in tqdm(os.listdir(w_dir / "qvinaw"), desc="Loading QVINAW poses"):
 				if file.startswith("split") or file.startswith("final_library") and file.endswith(".sdf"):
 					df = PandasTools.LoadSDF(str(w_dir / "qvinaw" / file),
-												idName="Pose ID",
-												molColName="Molecule",
-												strictParsing=False)
+							idName="Pose ID",
+							molColName="Molecule",
+							strictParsing=False)
 					qvinaw_dataframes.append(df)
 			qvinaw_df = pd.concat(qvinaw_dataframes)
 			qvinaw_df["ID"] = qvinaw_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -144,10 +145,10 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(qvinaw_df,
-									str(w_dir / "qvinaw" / "qvinaw_poses.sdf"),
-									molColName="Molecule",
-									idName="Pose ID",
-									properties=list(qvinaw_df.columns))
+					str(w_dir / "qvinaw" / "qvinaw_poses.sdf"),
+					molColName="Molecule",
+					idName="Pose ID",
+					properties=list(qvinaw_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined QVINAW poses SDF file!")
