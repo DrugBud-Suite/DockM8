@@ -40,14 +40,14 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 class APIConsts:
 
 	"""
-    Constants for DoGSiteScorer's API.
+	Constants for DoGSiteScorer's API.
 
-    Notes
-    -----
-    API specifications described here:
-    - https://proteins.plus/help/
-    - https://proteins.plus/help/dogsite_rest
-    """
+	Notes
+	-----
+	API specifications described here:
+	- https://proteins.plus/help/
+	- https://proteins.plus/help/dogsite_rest
+	"""
 
 	class FileUpload:
 		URL = "https://proteins.plus/api/pdb_files_rest"
@@ -73,28 +73,28 @@ class APIConsts:
 @redo.retriable(attempts=30, sleeptime=1, sleepscale=1.1, max_sleeptime=20)
 def _send_request_get_results(request_type, keys_list, url, task="Fetching results from DoGSiteScorer API", **kwargs):
 	"""
-    Send a request and get the keyword values from json response.
+	Send a request and get the keyword values from json response.
 
-    Parameters
-    ----------
-    request_type : str
-        Type of request, i.e. name of a function from the `requests` module,
-        e.g. "get", "post".
-    keys_list : list of strings
-        List of keys in the json response to return.
-    url : str
-        URL to send the request to.
-    task : str
-        Textual description of the request's purpose to print in the error message if one is raised.
-        Optional; default : "Fetching results from DoGSiteScorer API"
-    **kwargs
-        Additional arguments to send with the request.
+	Parameters
+	----------
+	request_type : str
+		Type of request, i.e. name of a function from the `requests` module,
+		e.g. "get", "post".
+	keys_list : list of strings
+		List of keys in the json response to return.
+	url : str
+		URL to send the request to.
+	task : str
+		Textual description of the request's purpose to print in the error message if one is raised.
+		Optional; default : "Fetching results from DoGSiteScorer API"
+	**kwargs
+		Additional arguments to send with the request.
 
-    Returns
-    -------
-    list
-        List of values in the json response corresponding to the input list of keys.
-    """
+	Returns
+	-------
+	list
+		List of values in the json response corresponding to the input list of keys.
+	"""
 
 	request_function = getattr(requests, request_type)
 	response = request_function(url, **kwargs)
@@ -112,19 +112,19 @@ def _send_request_get_results(request_type, keys_list, url, task="Fetching resul
 
 def upload_pdb_file(filepath: Path):
 	"""
-    Upload a PDB file to the DoGSiteScorer webserver using their API
-    and get back a dummy PDB code, which can be used to submit a detection job.
+	Upload a PDB file to the DoGSiteScorer webserver using their API
+	and get back a dummy PDB code, which can be used to submit a detection job.
 
-    Parameters
-    ----------
-    filepath : str or pathlib.Path
-        Relative or absolute path of the PDB file.
+	Parameters
+	----------
+	filepath : str or pathlib.Path
+		Relative or absolute path of the PDB file.
 
-    Returns
-    -------
-    str
-        Dummy PDB code of the uploaded structure, which can be used instead of a PDB code.
-    """
+	Returns
+	-------
+	str
+		Dummy PDB code of the uploaded structure, which can be used instead of a PDB code.
+	"""
 
 	# Open the local PDB file for reading in binary mode
 	with open(filepath.with_suffix(".pdb"), "rb") as f:
@@ -140,21 +140,21 @@ def upload_pdb_file(filepath: Path):
 
 def get_dogsitescorer_metadata(job_location, attempts=30):
 	"""
-    Get results from a DoGSiteScorer query, i.e., the binding sites which are found over the protein surface,
-    in the form of a table with the details about all detected pockets.
+	Get results from a DoGSiteScorer query, i.e., the binding sites which are found over the protein surface,
+	in the form of a table with the details about all detected pockets.
 
-    Parameters
-    ----------
-    job_location : str
-        Consists of the location of a finished DoGSiteScorer job on the proteins.plus web server.
-    attempts : int
-        The time waiting for the feedback from DoGSiteScorer service.
+	Parameters
+	----------
+	job_location : str
+		Consists of the location of a finished DoGSiteScorer job on the proteins.plus web server.
+	attempts : int
+		The time waiting for the feedback from DoGSiteScorer service.
 
-    Returns
-    -------
-    pandas.DataFrame
-        Table with metadata on detected binding sites.
-    """
+	Returns
+	-------
+	pandas.DataFrame
+		Table with metadata on detected binding sites.
+	"""
 
 	printlog(f"Querying for job at URL {job_location}...")
 
@@ -197,27 +197,27 @@ def get_dogsitescorer_metadata(job_location, attempts=30):
 
 def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
 	"""
-    Submit PDB ID to DoGSiteScorer webserver using their API and get back URL for job location.
+	Submit PDB ID to DoGSiteScorer webserver using their API and get back URL for job location.
 
-    Parameters
-    ----------
-    pdb_code : str
-        4-letter valid PDB ID, e.g. '3w32'.
-    chain_id : str
-        Chain ID, e.g. 'A'.
-    ligand : str
-        Name of ligand bound to PDB structure with pdb_id, e.g. 'W32_A_1101'.
-        Currently, the ligand name must be checked manually on the DoGSiteScorer website.
+	Parameters
+	----------
+	pdb_code : str
+		4-letter valid PDB ID, e.g. '3w32'.
+	chain_id : str
+		Chain ID, e.g. 'A'.
+	ligand : str
+		Name of ligand bound to PDB structure with pdb_id, e.g. 'W32_A_1101'.
+		Currently, the ligand name must be checked manually on the DoGSiteScorer website.
 
-    Returns
-    -------
-    str
-        Job location URL for submitted query.
+	Returns
+	-------
+	str
+		Job location URL for submitted query.
 
-    References
-    ----------
-    Function is adapted from: https://github.com/volkamerlab/TeachOpenCADD/pull/3 (@jaimergp)
-    """
+	References
+	----------
+	Function is adapted from: https://github.com/volkamerlab/TeachOpenCADD/pull/3 (@jaimergp)
+	"""
 
 	# Submit job to proteins.plus
 	# For details on parameters see: https://proteins.plus/help/dogsite_rest
@@ -241,25 +241,34 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code, chain_id, ligand=""):
 # Function to sort the binding sites in a dataframe based on the given method
 def sort_binding_sites(dataframe, method):
 	"""
-    Sorts the binding sites in a dataframe based on the given method.
+	Sorts the binding sites in a dataframe based on the given method.
 
-    Parameters:
-    dataframe (pandas.DataFrame): The dataframe containing the binding sites.
-    method (str): The method to use for sorting the binding sites. Can be 'drugScore', 'volume', or any other column name in the dataframe.
+	Parameters:
+	dataframe (pandas.DataFrame): The dataframe containing the binding sites.
+	method (str): The method to use for sorting the binding sites. Can be 'Druggability_Score', 'Volume', 'Surface' or 'Depth'.
 
-    Returns:
-    pandas.DataFrame: The sorted dataframe.
+	Returns:
+	pandas.DataFrame: The sorted dataframe.
 
-    """
-	if method == "drugScore":
-		printlog("Sorting binding sites by drug score")
+	Raises:
+	ValueError: If the given method is not a valid binding site metric.
+
+	"""
+	if method == 'Druggability_Score':
+		printlog('Sorting binding sites by drug score')
 		dataframe = dataframe.sort_values(by=["drugScore"], ascending=False)
-	elif method == "volume":
-		printlog("Sorting binding sites by volume")
+	elif method == 'Volume':
+		printlog('Sorting binding sites by volume')
 		dataframe = dataframe.sort_values(by=["volume"], ascending=False)
+	elif method == 'Surface':
+		printlog('Sorting binding sites by surface area')
+		dataframe = dataframe.sort_values(by=["surface"], ascending=False)
+	elif method == 'Depth':
+		printlog('Sorting binding sites by depth')
+		dataframe = dataframe.sort_values(by=["depth"], ascending=False)
 	else:
-		printlog("Sorting binding sites by {}".format(method))
-		dataframe = dataframe.sort_values(by=method, ascending=False)
+		raise ValueError(
+			f"Could not find binding site using DogSiteScorer: {method} is not a valid binding site metric")
 	best_pocket_name = dataframe.iloc[0, :].name
 	return best_pocket_name
 
@@ -267,21 +276,21 @@ def sort_binding_sites(dataframe, method):
 # Function to get all pocket file locations for a finished DoGSiteScorer job
 def get_url_for_pockets(job_location, file_type="pdb"):
 	"""
-    Get all pocket file locations for a finished DoGSiteScorer job
-    for a selected file type (pdb/ccp4).
+	Get all pocket file locations for a finished DoGSiteScorer job
+	for a selected file type (pdb/ccp4).
 
-    Parameters
-    ----------
-    job_location : str
-        URL of finished job submitted to the DoGSiteScorer web server.
-    file_type : str
-        Type of file to be returned (pdb/ccp4).
+	Parameters
+	----------
+	job_location : str
+		URL of finished job submitted to the DoGSiteScorer web server.
+	file_type : str
+		Type of file to be returned (pdb/ccp4).
 
-    Returns
-    -------
-    list
-        List of all respective pocket file URLs.
-    """
+	Returns
+	-------
+	list
+		List of all respective pocket file URLs.
+	"""
 
 	# Get job results
 	result = requests.get(job_location)
@@ -299,22 +308,22 @@ def get_url_for_pockets(job_location, file_type="pdb"):
 # Function to get the selected binding site file location
 def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
 	"""
-    Get the selected binding site file location.
+	Get the selected binding site file location.
 
-    Parameters
-    ----------
-    job_location : str
-        URL of finished job submitted to the DoGSiteScorer web server.
-    best_pocket : str
-        Selected pocket id.
-    file_type : str
-        Type of file to be returned (pdb/ccp4).
+	Parameters
+	----------
+	job_location : str
+		URL of finished job submitted to the DoGSiteScorer web server.
+	best_pocket : str
+		Selected pocket id.
+	file_type : str
+		Type of file to be returned (pdb/ccp4).
 
-    Returns
-    ------
-    str
-        URL of selected pocket file on the DoGSiteScorer web server.
-    """
+	Returns
+	------
+	str
+		URL of selected pocket file on the DoGSiteScorer web server.
+	"""
 	result = []
 
 	# Get URL for all available pdb or ccp4 files
@@ -345,19 +354,19 @@ def get_selected_pocket_location(job_location, best_pocket, file_type="pdb"):
 # Function to download and save the PDB and CCP4 files corresponding to the calculated binding sites
 def save_binding_site_to_file(pdbpath: Path, binding_site_url):
 	"""
-    Download and save the PDB and CCP4 files corresponding to the calculated binding sites.
+	Download and save the PDB and CCP4 files corresponding to the calculated binding sites.
 
-    Parameters
-    ----------
-    pdbpath : pathlib.Path
-        Local path of the PDB file.
-    binding_site_url : str
-        URL of the binding site file.
+	Parameters
+	----------
+	pdbpath : pathlib.Path
+		Local path of the PDB file.
+	binding_site_url : str
+		URL of the binding site file.
 
-    Returns
-    -------
-    None
-    """
+	Returns
+	-------
+	None
+	"""
 	# Send a GET request to the binding site URL
 	response = requests.get(binding_site_url)
 	response.raise_for_status()
@@ -378,20 +387,20 @@ def save_binding_site_to_file(pdbpath: Path, binding_site_url):
 # Function to calculate the coordinates of a binding site using the binding site's PDB file
 def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
 	"""
-    Calculate the coordinates of a binding site using the binding site's PDB file
-    downloaded from DoGSiteScorer.
+	Calculate the coordinates of a binding site using the binding site's PDB file
+	downloaded from DoGSiteScorer.
 
-    Parameters
-    ----------
-    filepath : str or pathlib.Path
-        Local filepath of the binding site's PDB file.
+	Parameters
+	----------
+	filepath : str or pathlib.Path
+		Local filepath of the binding site's PDB file.
 
-    Returns
-    -------
-    dict of list of int
-        Binding site coordinates in format:
-        `{'center': [x, y, z], 'size': [x, y, z]}`
-    """
+	Returns
+	-------
+	dict of list of int
+		Binding site coordinates in format:
+		`{'center': [x, y, z], 'size': [x, y, z]}`
+	"""
 
 	# Function to load the PDB file as a dataframe
 	def load_pdb_file_as_dataframe(pdb_file_text_content):
@@ -415,17 +424,17 @@ def calculate_pocket_coordinates_from_pocket_pdb_file(filepath):
 	return pocket_coordinates
 
 
-def find_pocket_dogsitescorer(pdbpath: Path, method="volume"):
+def find_pocket_dogsitescorer(pdbpath: Path, method="Volume"):
 	"""
-    Retrieves the binding site coordinates for a given PDB file using the DogSiteScorer method.
+	Retrieves the binding site coordinates for a given PDB file using the DogSiteScorer method.
 
-    Parameters:
-    - pdbpath (Path): The path to the PDB file.
-    - method (str): The method used to sort the binding sites. Default is 'volume'.
+	Parameters:
+	- pdbpath (Path): The path to the PDB file.
+	- method (str): The method used to sort the binding sites. Default is 'Volume'. Allowed values are 'Druggability_Score', 'Volume', 'Surface' or 'Depth'.
 
-    Returns:
-    - pocket_coordinates (list): The coordinates of the selected binding site pocket.
-    """
+	Returns:
+	- pocket_coordinates (list): The coordinates of the selected binding site pocket.
+	"""
 	# Upload the PDB file
 	pdb_upload = upload_pdb_file(pdbpath)
 	# Submit the DoGSiteScorer job with the PDB ID
