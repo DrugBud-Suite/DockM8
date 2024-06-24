@@ -143,6 +143,7 @@ else
     pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
     pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf medchem -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
+	pip install streamlit_molstar sh -q
 
     echo -e """
     ###############################################################
