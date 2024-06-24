@@ -18,12 +18,37 @@ POCKET_DETECTION_OPTIONS = ["Reference", "RoG", "Dogsitescorer", "p2rank", "Manu
 
 
 def pocket_finder(mode: str,
-					software: Path = None,
-					receptor: Path = None,
-					ligand: Path = None,
-					radius: int = 10,
-					manual_pocket: str = None,
-					):
+		software: Path = None,
+		receptor: Path = None,
+		ligand: Path = None,
+		radius: int = 10,
+		manual_pocket: str = None,
+		):
+	"""
+	Find and extract a docking pocket based on the specified mode.
+
+	Parameters:
+	- mode (str): The mode for finding the docking pocket. Possible values are:
+		- "Reference": Find the docking pocket using a reference ligand and receptor.
+		- "RoG": Find the docking pocket based on the radius of gyration of the ligand.
+		- "Dogsitescorer": Find the docking pocket using the DogSiteScorer method.
+		- "p2rank": Find the docking pocket using the p2rank method.
+		- "Manual": Find the docking pocket based on manually provided pocket coordinates.
+
+	- software (Path, optional): The path to the p2rank software. Required if mode is "p2rank".
+
+	- receptor (Path, optional): The path to the receptor file. Required for all modes except "Manual".
+
+	- ligand (Path, optional): The path to the ligand file. Required for modes "Reference" and "RoG".
+
+	- radius (int, optional): The radius (in Angstroms) for finding the docking pocket. Default is 10.
+
+	- manual_pocket (str, optional): The manually provided pocket coordinates. Required if mode is "Manual".
+
+	Returns:
+	- pocket_definition: The definition of the docking pocket.
+
+	"""
 	# Determine the docking pocket
 	if mode == "Reference":
 		pocket_definition = find_pocket_default(ligand, receptor, radius)
