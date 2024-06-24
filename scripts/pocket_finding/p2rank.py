@@ -16,55 +16,73 @@ sys.path.append(str(dockm8_path))
 from scripts.utilities.utilities import printlog
 
 
+def download_p2rank(software: Path):
+	"""
+	Downloads and installs p2rank software.
+
+	Args:
+		software (Path): The path to the software directory.
+
+	Returns:
+		None
+	"""
+	print("p2rank executable not found. Downloading...")
+
+	# Use GitHub API to get latest release info
+	repo_url = "https://api.github.com/repos/rdk/p2rank/releases/latest"
+	response = requests.get(repo_url)
+	data = response.json()
+
+	# Find the tarball URL in the assets
+	tarball_url = None
+	for asset in data["assets"]:
+		if asset["name"].endswith(".tar.gz"):
+			tarball_url = asset["browser_download_url"]
+			break
+
+	if tarball_url is None:
+		print("No tarball found in the latest release.")
+		return
+
+	# Download p2rank tarball
+	tarball_path = software / "p2rank.tar.gz"
+	urllib.request.urlretrieve(tarball_url, tarball_path)
+
+	# Extract p2rank tarball
+	subprocess.run(["tar", "-xzf", tarball_path, "-C", software])
+	os.unlink(tarball_path)
+
+	# Find the folder in the software directory that starts with "p2rank"
+	p2rank_folder = next((software / folder for folder in os.listdir(software) if folder.startswith("p2rank")), None)
+	os.rename(p2rank_folder, software / "p2rank")
+
+	printlog("p2rank executable downloaded and installed successfully.")
+
+	p2rank_path = software / "p2rank" / "prank"
+
+	return p2rank_path
+
+
 def find_pocket_p2rank(software: Path, receptor: Path, radius: int):
 	"""
-    Finds the pocket coordinates using p2rank software.
+	Finds the pocket coordinates using p2rank software.
 
-    Args:
-        software (Path): The path to the p2rank software directory.
-        receptor (Path): The path to the receptor file.
-        radius (int): The radius of the pocket.
+	Args:
+		software (Path): The path to the p2rank software directory.
+		receptor (Path): The path to the receptor file.
+		radius (int): The radius of the pocket.
 
-    Returns:
-        dict: A dictionary containing the pocket coordinates with keys 'center' and 'size'.
-    """
+	Returns:
+		dict: A dictionary containing the pocket coordinates with keys 'center' and 'size'.
+	"""
 	p2rank_path = software / "p2rank" / "prank"
 
 	# Check if p2rank executable is available
 	if not os.path.exists(p2rank_path):
-		print("p2rank executable not found. Downloading...")
-
-		# Use GitHub API to get latest release info
-		repo_url = "https://api.github.com/repos/rdk/p2rank/releases/latest"
-		response = requests.get(repo_url)
-		data = response.json()
-
-		# Find the tarball URL in the assets
-		tarball_url = None
-		for asset in data["assets"]:
-			if asset["name"].endswith(".tar.gz"):
-				tarball_url = asset["browser_download_url"]
-				break
-
-		if tarball_url is None:
-			print("No tarball found in the latest release.")
-			return
-
-		# Download p2rank tarball
-		tarball_path = software / "p2rank.tar.gz"      # Adjust path as needed
-		urllib.request.urlretrieve(tarball_url, tarball_path)
-
-		# Extract p2rank tarball
-		subprocess.run(["tar", "-xzf", tarball_path, "-C", software])
-		os.unlink(tarball_path)
-		# Find the folder in the software directory that starts with "p2rank"
-		p2rank_folder = next((software / folder for folder in os.listdir(software) if folder.startswith("p2rank")),
-								None)
-		os.rename(p2rank_folder, software / "p2rank")
-
-		printlog("p2rank executable downloaded and installed successfully.")
+		download_p2rank(software)
 	else:
 		pass
+
 	# Create a directory to store output
 	output_dir = receptor.parent / "p2rank_output"
 	os.makedirs(output_dir, exist_ok=True)
