@@ -1,102 +1,148 @@
 import concurrent.futures
+import os
 import re
 import sys
 from pathlib import Path
+from typing import Optional, Tuple
 
 import pandas as pd
-from chembl_structure_pipeline import standardizer
+from molvs import Standardizer, tautomer
 from rdkit import Chem
-from rdkit.Chem import PandasTools
-from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
+from scripts.utilities.parallel_executor import parallel_executor
 
 
-def standardize_molecule(molecule):
-	"""Standardize a single molecule using ChemBL Structure Pipeline."""
-	standardized_molecule = standardizer.standardize_mol(molecule)
-	standardized_molecule = standardizer.get_parent_mol(standardized_molecule)
-	return standardized_molecule
+class StandardizationError(Exception):
+
+	"""Custom exception for standardization errors."""
+	pass
 
 
-def standardize_library(input_sdf: Path, output_dir: Path, id_column: str, n_cpus: int):
+def is_running_in_streamlit():
+	try:
+		from streamlit.runtime.scriptrunner import get_script_run_ctx
+		return get_script_run_ctx() is not None
+	except ImportError:
+		return False
+
+
+if is_running_in_streamlit():
+	from stqdm import stqdm as tqdm
+else:
+	from tqdm import tqdm
+
+
+def standardize_molecule(molecule: Chem.Mol,
+							remove_salts: bool = True,
+							standardize_tautomers: bool = True) -> Tuple[Optional[Chem.Mol], Optional[str]]:
+	"""Standardize a single molecule using MolVS.
+
+	Args:
+		molecule (Chem.Mol): The molecule to be standardized.
+		remove_salts (bool, optional): Whether to remove salts from the molecule. Defaults to True.
+		standardize_tautomers (bool, optional): Whether to standardize tautomers of the molecule. Defaults to True.
+
+	Returns:
+		Tuple[Optional[Chem.Mol], Optional[str]]: A tuple containing the standardized molecule and an error message, if any.
+
 	"""
-    Standardizes a docking library using the ChemBL Structure Pipeline.
+	s = Standardizer()
+
+	try:
+		if remove_salts:
+			std_molecule = s.fragment_parent(molecule)
+
+		std_molecule = s.standardize(std_molecule)
+
+		if standardize_tautomers:
+			std_molecule = tautomer.canonicalize(std_molecule)
+
+		return std_molecule, None
+	except Exception as e:
+		return molecule, str(StandardizationError(f"Standardization failed: {str(e)}"))
+
+
+def standardize_ids(df: pd.DataFrame, id_column: str = 'ID') -> pd.DataFrame:
+	"""
+	Standardizes the IDs in the given DataFrame.
+
+	Args:
+		df (pd.DataFrame): The DataFrame containing the IDs to be standardized.
+		id_column (str, optional): The name of the column containing the IDs. Defaults to 'ID'.
+
+	Returns:
+		pd.DataFrame: The DataFrame with standardized IDs.
+
+	"""
+	if df[id_column].isnull().all():
+		df[id_column] = [f"DOCKM8-{i+1}" for i in range(len(df))]
+	else:
+		df[id_column] = df[id_column].astype(str).apply(lambda x: f"DOCKM8-{x}" if x.isdigit() else x)
+		df[id_column] = df[id_column].apply(lambda x: re.sub(r"[^a-zA-Z0-9-]", "", x))
+	return df
+
+
+def standardize_library(df: pd.DataFrame,
+						id_column: str = 'ID',
+						smiles_column: str = 'SMILES',
+						remove_salts: bool = True,
+						standardize_tautomers: bool = True,
+						standardize_ids_flag: bool = True,
+						n_cpus: int = int(os.cpu_count() * 0.9)) -> pd.DataFrame:
+	"""
+    Standardizes a docking library using MolVS.
 
     Args:
-        input_sdf (Path): Path to the input SDF file containing the docking library.
-        output_dir (Path): Directory where the standardized SDF file will be saved.
+        df (pd.DataFrame): Input DataFrame containing the docking library.
         id_column (str): Column name containing the compound IDs.
+        smiles_column (str): Column name containing the SMILES strings.
+        remove_salts (bool): Whether to remove salts from the molecules.
+        standardize_tautomers (bool): Whether to standardize tautomers.
+        standardize_ids_flag (bool): Whether to standardize IDs.
         n_cpus (int): Number of CPUs for parallel processing.
 
-    Raises:
-        Exception: If there is an error loading, processing, or writing the SDF file.
+    Returns:
+        Tuple[pd.DataFrame, List[str]]: Standardized DataFrame and list of error messages.
     """
-	printlog("Standardizing docking library using ChemBL Structure Pipeline...")
-
-	# Load the input SDF file and preprocess the data
-	try:
-		df = PandasTools.LoadSDF(str(input_sdf),
-									idName="ID",
-									molColName="Molecule",
-									includeFingerprints=False,
-									embedProps=True,
-									removeHs=True,
-									smilesName="SMILES")
-
-		# Check if 'ID' column is empty or if all values are NaN
-		if df["ID"].isnull().all():
-			# Generate unique IDs if 'ID' column is empty
-			df["ID"] = ["DOCKM8-" + str(1 + i) for i in range(len(df))]
-		else:
-			# Process existing IDs
-			df["ID"] = df["ID"].astype(str).apply(lambda x: "DOCKM8-" + x if x.isdigit() else x)
-			# Remove special characters (keeping alphanumeric and dashes)
-			df["ID"] = df["ID"].apply(lambda x: re.sub(r"[^a-zA-Z0-9-]", "", x))
-		n_cpds_start = len(df)
-	except Exception as e:
-		printlog(f"ERROR: Failed to Load library SDF file! {str(e)}")
-		raise
+	printlog("Standardizing docking library using MolVS...")
 
 	# Convert SMILES strings to RDKit molecules
-	try:
-		df.drop(columns="Molecule", inplace=True)
-		df["Molecule"] = [Chem.MolFromSmiles(smiles) for smiles in df["SMILES"]]
-	except Exception as e:
-		printlog(f"ERROR: Failed to convert SMILES to RDKit molecules! {str(e)}")
-		raise
+	if 'Molecule' not in df.columns:
+		df['Molecule'] = df[smiles_column].apply(Chem.MolFromSmiles)
 
-	# Standardize the molecules using ChemBL Structure Pipeline
-	if n_cpus == 1:
-		df["Molecule"] = [standardize_molecule(mol) for mol in df["Molecule"]]
-	else:
-		with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
-			df["Molecule"] = list(
-				tqdm(executor.map(standardize_molecule, df["Molecule"]),
-						total=len(df["Molecule"]),
-						desc="Standardizing molecules",
-						unit="mol",
-					))
+	# Standardize IDs if the flag is set
+	if standardize_ids_flag:
+		df = standardize_ids(df, id_column)
 
-	# Clean up the dataframe and calculate the number of compounds lost during standardization
-	df[["Molecule", "flag"]] = pd.DataFrame(df["Molecule"].tolist(), index=df.index)
-	df.drop(columns="flag", inplace=True)
-	df = df.loc[:, ~df.columns.duplicated()].copy()
+	# Standardize the molecules using MolVS
+
+	results = parallel_executor(standardize_molecule,
+								df['Molecule'].tolist(),
+								n_cpus,
+								'concurrent_process',
+								remove_salts=remove_salts,
+								standardize_tautomers=standardize_tautomers)
+
+	# Separate molecules and error messages
+	standardized_molecules, error_messages = zip(*results)
+	df['Molecule'] = standardized_molecules
+
+	# Remove entries where standardization failed
+	n_cpds_start = len(df)
+	df = df[df['Molecule'].notnull()]
 	n_cpds_end = len(df)
+
 	printlog(
 		f"Standardization finished: Started with {n_cpds_start}, ended with {n_cpds_end}: {n_cpds_start - n_cpds_end} compounds lost"
 	)
 
-	# Write the standardized library to an SDF file
-	output_file = output_dir / "standardized_library.sdf"
-	try:
-		PandasTools.WriteSDF(df, str(output_file), molColName="Molecule", idName="ID", allNumeric=True)
-	except Exception as e:
-		printlog(f"ERROR: Failed to write standardized library SDF file! {str(e)}")
-		raise
-	return output_file
+	# Update SMILES column with standardized molecules
+	df[smiles_column] = df['Molecule'].apply(Chem.MolToSmiles)
+
+	return df
