@@ -9,7 +9,7 @@ sys.path.append(str(dockm8_path))
 
 st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
 
-from gui.menu import menu
+from gui.menu import menu, PAGES
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 
 menu()
@@ -19,9 +19,9 @@ def app():
 
 	st.subheader("Scoring functions", divider="orange")
 	rescoring = st.multiselect(label="Choose the scoring functions you want to use",
-								default=["CNN-Score", "KORP-PL"],
-								options=list(RESCORING_FUNCTIONS.keys()),
-								help="The method(s) to use for scoring. Multiple selection allowed")
+			default=["CNN-Score", "KORP-PL"],
+			options=list(RESCORING_FUNCTIONS.keys()),
+			help="The method(s) to use for scoring. Multiple selection allowed")
 
 	st.subheader("Score manipulation", divider="orange")
 	st.toggle(label="Normalize scores", value=True, help="Normalize scores to a range of 0-1", key="normalize_scores")

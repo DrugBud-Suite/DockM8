@@ -9,7 +9,7 @@ sys.path.append(str(dockm8_path))
 
 st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
 
-from gui.menu import menu
+from gui.menu import menu, PAGES
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
 

@@ -11,7 +11,7 @@ sys.path.append(str(dockm8_path))
 
 st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
 
-from gui.menu import menu
+from gui.menu import menu, PAGES
 
 menu()
 
@@ -41,11 +41,11 @@ else:
 	threshold = None
 
 n_cpus = st.slider("Number of CPUs",
-					min_value=1,
-					max_value=os.cpu_count(),
-					step=1,
-					value=int(os.cpu_count() * 0.9),
-					help="Number of CPUs to use for calculations")
+		min_value=1,
+		max_value=os.cpu_count(),
+		step=1,
+		value=int(os.cpu_count() * 0.9),
+		help="Number of CPUs to use for calculations")
 
 software = st.text_input(
 	"Choose a software directory",

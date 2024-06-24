@@ -15,7 +15,7 @@ st.set_page_config(page_title='DockM8', page_icon='./media/DockM8_logo.png', lay
 
 import threading
 
-from gui.menu import menu
+from gui.menu import menu, PAGES
 from gui.utils import display_dataframe, filter_dataframe, save_dataframe_to_sdf
 from scripts.library_analysis.chemical_space import visualize_chemical_space
 from scripts.library_analysis.descriptor_calculation import calculate_properties
@@ -36,13 +36,6 @@ sys.path.append(str(dockm8_path))
 docking_library = st.text_input(label='Enter the path to the ligand library file (.sdf format)',
 								value=str(dockm8_path / 'tests' / 'test_files' / 'library.sdf'),
 								help='Choose a ligand library file (.sdf format)')
-
-
-def expander(label, key):
-	if key not in st.session_state:
-		st.session_state[key] = False                  # Default closed
-	return st.expander(label, expanded=st.session_state[key])
-
 
 # Button to load the library
 if st.button('Load Library'):
@@ -209,4 +202,4 @@ if 'ligand_library' in st.session_state:
 			st.success(f'Saved library to {save_path}')
 	if st.button('Proceed to Library Preparation'):
 		st.session_state['library_to_pass_to_preparation'] = library_to_pass_to_preparation
-		st.switch_page('./pages/3_library_preparation.py')
+		st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[2]))

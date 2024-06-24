@@ -9,7 +9,7 @@ sys.path.append(str(dockm8_path))
 
 st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
 
-from gui.menu import menu
+from gui.menu import menu, PAGES
 
 menu()
 
@@ -17,14 +17,14 @@ def app():
 	st.title("Docking Postprocessing")
 
 	minimize_poses = st.toggle(label="Minimize poses",
-								value=False,
-								help="Minimize H positions of poses after docking",
-								key="minimize_poses")
+			value=False,
+			help="Minimize H positions of poses after docking",
+			key="minimize_poses")
 
 	clash_cutoff_toggle = st.toggle(label="Remove poses with clashes",
-									value=True,
-									help="Remove poses with clashes",
-									key="clash_cutoff_toggle")
+			value=True,
+			help="Remove poses with clashes",
+			key="clash_cutoff_toggle")
 	if clash_cutoff_toggle:
 		clash_cutoff = st.number_input(
 			label=
@@ -38,9 +38,9 @@ def app():
 		clash_cutoff = None
 
 	strain_cutoff_toggle = st.toggle(label="Remove poses with high strain",
-										value=True,
-										help="Remove poses with high strain",
-										key="strain_cutoff_toggle")
+				value=True,
+				help="Remove poses with high strain",
+				key="strain_cutoff_toggle")
 	if strain_cutoff_toggle:
 		strain_cutoff = st.number_input(
 			label=
@@ -61,12 +61,12 @@ def app():
 		key="bust_poses_toggle")
 
 	classy_pose = st.toggle(label="Classify poses using Classy_Pose",
-							value=False,
-							help="Classify poses using Classy_Pose",
-							key="classy_pose_toggle")
+			value=False,
+			help="Classify poses using Classy_Pose",
+			key="classy_pose_toggle")
 	if classy_pose:
 		classy_pose_model = st.selectbox(label="Choose the Classy_Pose model to use",
-											options=("SVM (from publication)", "LGBM (retrained model)"),
-											index=0)
+					options=("SVM (from publication)", "LGBM (retrained model)"),
+					index=0)
 
 app()
