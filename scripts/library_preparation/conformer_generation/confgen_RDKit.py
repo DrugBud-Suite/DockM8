@@ -20,15 +20,15 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def conf_gen_RDKit(molecule: Chem.Mol, forcefield: str):
 	"""
-	Generates 3D conformers using RDKit.
+    Generates 3D conformers using RDKit.
 
-	Args:
-		molecule (RDKit molecule): The input molecule.
-		forcefield (str): The force field to be used for optimization. Valid options are 'MMFF' and 'UFF'.
+    Args:
+        molecule (RDKit molecule): The input molecule.
+        forcefield (str): The force field to be used for optimization. Valid options are 'MMFF' and 'UFF'.
 
-	Returns:
-		molecule (RDKit molecule): The molecule with 3D conformers.
-	"""
+    Returns:
+        molecule (RDKit molecule): The molecule with 3D conformers.
+    """
 	try:
 		if not molecule.GetConformer().Is3D():
 			molecule = Chem.AddHs(molecule)               # Add hydrogens to the molecule
@@ -40,41 +40,44 @@ def conf_gen_RDKit(molecule: Chem.Mol, forcefield: str):
 			AllChem.SanitizeMol(molecule)                 # Sanitize the molecule to ensure it is chemically valid
 		return molecule
 	except Exception as e:
+		printlog(f"Error generating conformer: {str(e)}")
 		return None
 
 
-def generate_conformers_RDKit(df: pd.DataFrame, n_cpus: int, forcefield: str) -> Path:
+def generate_conformers_RDKit(df: pd.DataFrame, n_cpus: int, forcefield: str) -> pd.DataFrame:
 	"""
-	Generates 3D conformers using RDKit.
+    Generates 3D conformers using RDKit.
 
-	Args:
-		df (pd.DataFrame): The input DataFrame containing the molecules.
-		n_cpus (int): Number of CPUs to use for parallel processing.
-		forcefield (str): The forcefield to use for conformer generation.
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the molecules.
+        n_cpus (int): Number of CPUs to use for parallel processing.
+        forcefield (str): The forcefield to use for conformer generation.
 
-	Returns:
-		Path: The path to the output SDF file containing the generated conformers.
-	"""
+    Returns:
+        pd.DataFrame: The DataFrame with generated conformers.
+    """
 	printlog("Generating 3D conformers using RDKit...")
 
 	try:
 		n_cpds_start = len(df)
 		# Generate conformers for each molecule in parallel using the conf_gen_RDKit function
 		results = parallel_executor(conf_gen_RDKit,
-									df['Molecule'].to_list(),
+									df['Molecule'].tolist(),
 									n_cpus,
 									'concurrent_process',
 									forcefield=forcefield)
 
 		df['Molecule'] = results
-		n_cpds_end = len(df[df['Molecule'] is not None])
 		# Remove molecules where conformer generation failed
+		df = df.dropna(subset=['Molecule'])
+		n_cpds_end = len(df)
 
 		# Check if the number of compounds matches the input
 		if n_cpds_start != n_cpds_end:
-			printlog("Conformer generation for some compounds failed. Removing compounds from library.")
-			df = df[df["Molecule"].notna()]
+			printlog(
+				f"Conformer generation failed for {n_cpds_start - n_cpds_end} compounds. These compounds have been removed from the library."
+			)
 	except Exception as e:
-		printlog("ERROR: Failed to generate conformers using RDKit!" + e)
+		printlog(f"ERROR: Failed to generate conformers using RDKit! {str(e)}")
 
 	return df
