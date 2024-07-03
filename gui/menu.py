@@ -19,9 +19,9 @@ def menu():
 	st.sidebar.subheader("", divider="orange")
 	col1, col3 = st.sidebar.columns(2)
 	col1.link_button("Github", url="https://github.com/DrugBud-Suite/DockM8")
-	col3.link_button("Visit Website", url="https://drugbud-suite.github.io/dockm8-web/")
+	col3.link_button("Website", url="https://drugbud-suite.github.io/dockm8-web/")
 	col1.link_button("Publication", url="https://doi.org/your-doi")
-	col3.link_button("Zenodo", url="https://doi.org/your-doi")
+	col3.link_button("Zenodo", url="https://doi.org/10.5281/zenodo.11191685")
 	return
 
 
