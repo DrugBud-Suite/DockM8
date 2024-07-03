@@ -1,7 +1,12 @@
-from pandas.api.types import (is_categorical_dtype, is_datetime64_any_dtype, is_numeric_dtype, is_object_dtype, )
 import pandas as pd
 import streamlit as st
+from pandas.api.types import is_categorical_dtype, is_datetime64_any_dtype, is_numeric_dtype, is_object_dtype
 from rdkit.Chem import PandasTools
+
+st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+""",
+			unsafe_allow_html=True)
 
 
 def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -35,32 +40,32 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 	modification_container = st.container()
 
 	with modification_container:
-		to_filter_columns = st.multiselect("Filter dataframe on", df.columns)
+		to_filter_columns = st.multiselect("Filter data by", df.columns)
 		for column in to_filter_columns:
 			left, right = st.columns((1, 20))
 			# Treat columns with < 10 unique values as categorical
 			if is_categorical_dtype(df[column]) or df[column].nunique() < 10:
 				user_cat_input = right.multiselect(f"Values for {column}",
-													df[column].unique(),
-													default=list(df[column].unique()),
-													)
+							df[column].unique(),
+							default=list(df[column].unique()),
+							)
 				df = df[df[column].isin(user_cat_input)]
 			elif is_numeric_dtype(df[column]):
 				_min = float(df[column].min())
 				_max = float(df[column].max())
 				step = (_max-_min) / 10
 				user_num_input = right.slider(f"Values for {column}",
-												min_value=_min,
-												max_value=_max,
-												value=(_min, _max),
-												step=step,
-												)
+						min_value=_min,
+						max_value=_max,
+						value=(_min, _max),
+						step=step,
+						)
 				df = df[df[column].between(*user_num_input)]
 			elif is_datetime64_any_dtype(df[column]):
 				user_date_input = right.date_input(f"Values for {column}",
-													value=(df[column].min(), df[column].max(),
-															),
-													)
+							value=(df[column].min(), df[column].max(),
+							),
+							)
 				if len(user_date_input) == 2:
 					user_date_input = tuple(map(pd.to_datetime, user_date_input))
 					start_date, end_date = user_date_input
@@ -97,7 +102,7 @@ def display_dataframe(df: pd.DataFrame, placement: str = 'center') -> pd.DataFra
 def save_dataframe_to_sdf(dataframe, file_path, molecule_column='Molecule', id_column='ID'):
 	"""Helper function to save DataFrame to SDF format."""
 	PandasTools.WriteSDF(dataframe,
-							file_path,
-							molColName=molecule_column,
-							idName=id_column,
-							properties=list(dataframe.columns))
+			file_path,
+			molColName=molecule_column,
+			idName=id_column,
+			properties=list(dataframe.columns))
