@@ -14,7 +14,8 @@ from scripts.docking_postprocessing.posebusters.posebusters import pose_buster
 from scripts.docking_postprocessing.posecheck.posecheck import pose_checker
 from scripts.docking_postprocessing.minimisation.minimize import minimize_all_ligands
 from scripts.docking_postprocessing.classy_pose.classy_pose import classy_pose_filter
-from scripts.utilities.utilities import parallel_SDF_loader, printlog
+from scripts.utilities.utilities import parallel_SDF_loader
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore")
 
@@ -25,16 +26,16 @@ def log_dataframe_length_change(previous_length, current_length, process_name):
 
 
 def docking_postprocessing(input_sdf: Path,
-							output_path: Path,
-							protein_file: Path,
-							minimize_poses: bool,
-							bust_poses: bool,
-							strain_cutoff: int,
-							clash_cutoff: int,
-							classy_pose: bool,
-							classy_pose_model: str,
-							n_cpus: int,
-							) -> Path:
+		output_path: Path,
+		protein_file: Path,
+		minimize_poses: bool,
+		bust_poses: bool,
+		strain_cutoff: int,
+		clash_cutoff: int,
+		classy_pose: bool,
+		classy_pose_model: str,
+		n_cpus: int,
+		) -> Path:
 	"""
     Perform postprocessing on docking results.
 
@@ -77,8 +78,8 @@ def docking_postprocessing(input_sdf: Path,
 		log_dataframe_length_change(initial_length, len(sdf_dataframe), "ClassyPose")
 
 	PandasTools.WriteSDF(sdf_dataframe,
-							str(output_path),
-							molColName="Molecule",
-							idName="Pose ID",
-							properties=list(sdf_dataframe.columns))
+			str(output_path),
+			molColName="Molecule",
+			idName="Pose ID",
+			properties=list(sdf_dataframe.columns))
 	return output_path
