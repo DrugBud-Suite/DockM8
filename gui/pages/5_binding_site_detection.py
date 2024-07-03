@@ -1,5 +1,6 @@
 import os
 import sys
+import traceback
 from pathlib import Path
 
 import streamlit as st
@@ -28,12 +29,13 @@ menu()
 
 st.title("Binding Site Detection")
 
-pocket_definition = None
+if 'binding_site' not in st.session_state:
+	st.session_state.binding_site = None
 
 if 'prepared_protein_path' not in st.session_state:
 	protein_input = st.text_input("Enter file path (.pdb):",
-									value=str(dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"),
-									help="Enter the complete file path to your protein data.")
+			value=str(dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"),
+			help="Enter the complete file path to your protein data.")
 else:
 	protein_input = st.session_state.prepared_protein_path
 
@@ -56,17 +58,19 @@ if pocket_mode == 'Reference':
 		value=str(dockm8_path / "tests" / "test_files" / "1fvv_l.sdf"),
 	)
 	reference_files = [Path(file.strip()) for file in reference_files.split(",")]
-	# Reference files validation
 	for file in reference_files:
 		if not Path(file).is_file():
 			st.error(f"Invalid file path: {file}")
 
 	if st.button("Find Pocket"):
-		try:
-			pocket_definition = find_pocket_default(reference_files[0], Path(protein_input), pocket_radius)
-			st.success("Pocket found successfully!")
-		except Exception as e:
-			st.error(f"Error in finding pocket: {str(e)}")
+		with st.spinner("Finding pocket..."):
+			try:
+				pocket_definition = find_pocket_default(reference_files[0], Path(protein_input), pocket_radius)
+				st.session_state.binding_site = pocket_definition
+				st.success("Pocket found successfully!")
+			except Exception as e:
+				st.error(f"Error in finding pocket: {str(e)}")
+				st.error(traceback.format_exc())
 
 elif pocket_mode == "RoG":
 	reference_files = st.text_input(
@@ -75,91 +79,150 @@ elif pocket_mode == "RoG":
 		value=str(dockm8_path / "tests" / "test_files" / "1fvv_l.sdf"),
 	)
 	reference_files = [Path(file.strip()) for file in reference_files.split(",")]
-	# Reference files validation
 	for file in reference_files:
 		if not Path(file).is_file():
 			st.error(f"Invalid file path: {file}")
 
 	if st.button("Find Pocket"):
-		try:
-			pocket_definition = find_pocket_RoG(reference_files[0], Path(protein_input))
-			st.success("Pocket found successfully!")
-		except Exception as e:
-			st.error(f"Error in finding pocket: {str(e)}")
+		with st.spinner("Finding pocket..."):
+			try:
+				pocket_definition = find_pocket_RoG(reference_files[0], Path(protein_input))
+				st.session_state.binding_site = pocket_definition
+				st.success("Pocket found successfully!")
+			except Exception as e:
+				st.error(f"Error in finding pocket: {str(e)}")
+				st.error(traceback.format_exc())
 
 elif pocket_mode == "Dogsitescorer":
 	dogsitescorer_mode = st.selectbox(label="Choose which metric to select binding sites by:",
 										options=["Volume", "Druggability_Score", "Surface", "Depth"],
 										help="Choose the metric to select binding sites by.")
 	if st.button("Find Pockets"):
-		try:
-			pocket_definition = find_pocket_dogsitescorer(Path(protein_input), method=dogsitescorer_mode)
-			st.success("Pocket found successfully!")
-		except Exception as e:
-			st.error(f"Error in finding pocket: {str(e)}")
+		with st.spinner("Finding pocket..."):
+			try:
+				pocket_definition = find_pocket_dogsitescorer(Path(protein_input), method=dogsitescorer_mode)
+				st.session_state.binding_site = pocket_definition
+				st.success("Pocket found successfully!")
+			except Exception as e:
+				st.error(f"Error in finding pocket: {str(e)}")
+				st.error(traceback.format_exc())
 
 elif pocket_mode == "p2rank":
 	pocket_radius = st.number_input("Binding Site Radius", min_value=0.0, value=10.0, step=0.1)
 	software = st.session_state.software if 'software' in st.session_state else Path(dockm8_path / 'software')
-	# Check if p2rank executable is available
-	if not os.path.exists(software / "p2rank" / "prank"):
-		p2rank_path = download_p2rank(software)
-	else:
-		pass
-	try:
-		st.write("Finding pockets using p2rank...")
-		selected_pocket = select_pocket_from_local_protein(protein_input, p2rank_home=str(software / "p2rank"))
-		if selected_pocket:
-			st.write(
-				f"Selected pocket coordinates: {selected_pocket['center'][0]}, {selected_pocket['center'][1]}, {selected_pocket['center'][2]}"
-			)
-	except Exception as e:
-		st.error(f"Error in finding pocket: {str(e)}")
-		st.error(f"Error type: {type(e).__name__}")
-		import traceback
-		st.error(f"Traceback: {traceback.format_exc()}")
+	with st.spinner("Finding pocket..."):
+		if not os.path.exists(software / "p2rank" / "prank"):
+			p2rank_path = download_p2rank(software)
+		try:
+			st.write("Finding pockets using p2rank...")
+			selected_pocket = select_pocket_from_local_protein(protein_input, p2rank_home=str(software / "p2rank"))
+			if selected_pocket:
+				# Convert center coordinates to floats
+				center = [float(coord) for coord in selected_pocket['center']]
+				st.session_state.binding_site = {'center': center, 'size': [float(pocket_radius) * 2] * 3}
+				st.write(f"Selected pocket coordinates: {center[0]:.2f}, {center[1]:.2f}, {center[2]:.2f}")
+		except Exception as e:
+			st.error(f"Error in finding pocket: {str(e)}")
+			st.error(traceback.format_exc())
 
-elif pocket_mode == "Manual" and st.session_state["mode"] == "Single":
+elif pocket_mode == "Manual" and st.session_state.get("mode") == "Single":
 	col1, col2, col3 = st.columns(3)
 	x_center = col1.number_input(label="X Center", value=0.0, help="Enter the X coordinate of the pocket center")
 	y_center = col2.number_input(label="Y Center", value=0.0, help="Enter the Y coordinate of the pocket center")
 	z_center = col3.number_input(label="Z Center", value=0.0, help="Enter the Z coordinate of the pocket center")
 	x_size = col1.number_input(label="X Size",
-								value=20.0,
-								help="Enter the size of the pocket in the X direction (in Angstroms)")
+			value=20.0,
+			help="Enter the size of the pocket in the X direction (in Angstroms)")
 	y_size = col2.number_input(label="Y Size",
-								value=20.0,
-								help="Enter the size of the pocket in the Y direction (in Angstroms)")
+			value=20.0,
+			help="Enter the size of the pocket in the Y direction (in Angstroms)")
 	z_size = col3.number_input(label="Z Size",
-								value=20.0,
-								help="Enter the size of the pocket in the Z direction (in Angstroms)")
-	manual_pocket = f"center:{x_center},{y_center},{z_center}*size:{x_size},{y_size},{z_size}"
+			value=20.0,
+			help="Enter the size of the pocket in the Z direction (in Angstroms)")
 
-elif pocket_mode == "Manual" and st.session_state["mode"] != "Single":
+	if st.button("Set Manual Pocket"):
+		st.session_state.binding_site = {'center': [x_center, y_center, z_center], 'size': [x_size, y_size, z_size]}
+		st.success("Manual pocket set successfully!")
+
+elif pocket_mode == "Manual" and st.session_state.get("mode") != "Single":
 	st.error(
 		"Manual pocket definition does not currently work in ensemble mode, please change the pocket definition mode")
 
 else:
 	st.warning("Please select a valid pocket detection mode.")
 
-## Pocket Finding
+if st.session_state.binding_site:
+	st.header("Binding Site Information", divider='orange')
 
-## Visualisation
+	# Custom CSS for styling
+	st.markdown("""
+    <style>
+    .metric-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+		margin-top: 0px;
+    }
+    .metric-label {
+        font-size: 18px;
+        font-weight: bold;
+        width: 30px;
+        margin-right: 10px;
+    }
+    .metric-value {
+        font-size: 18px;
+    }
+    .subheader {
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 0px;
+        margin-bottom: 10px;
+    }
+    </style>
+    """,
+		unsafe_allow_html=True)
 
-if pocket_mode == 'Reference' or pocket_mode == "RoG":
-	# Visualize using docking mode
-	st.header("Binding Site Visualization", divider='orange')
-	st_molstar_docking(protein_input,
-						reference_files[0],
-						key="docking_vis",
-						options={"defaultPolymerReprType": "cartoon"},
-						height=900)
+	col1, col2 = st.columns(2)
 
-elif pocket_mode == "Dogsitescorer":
-	st.header("Protein Visualization", divider='orange')
-	st_molstar(protein_input, key="dogsite_vis", height=900)
+	with col1:
+		st.markdown("<div class='subheader'>Center Coordinates</div>", unsafe_allow_html=True)
+		for i, coord in enumerate(['X', 'Y', 'Z']):
+			st.markdown(f"""
+            <div class="metric-container">
+                <span class="metric-label">{coord}</span>
+                <span class="metric-value">{st.session_state.binding_site['center'][i]:.2f} Å</span>
+            </div>
+            """,
+				unsafe_allow_html=True)
 
-elif pocket_mode == "Manual":
-	st.header("Protein Visualization with Manual Pocket")
-	st_molstar(protein_input, key="manual_vis", height=900)
-	st.info(f"Manual pocket defined as: {manual_pocket}")
+	with col2:
+		st.markdown("<div class='subheader'>Pocket Dimensions</div>", unsafe_allow_html=True)
+		for i, dim in enumerate(['Width', 'Height', 'Depth']):
+			st.markdown(f"""
+            <div class="metric-container">
+                <span class="metric-label">{dim[0]}</span>
+                <span class="metric-value">{st.session_state.binding_site['size'][i]:.2f} Å</span>
+            </div>
+            """,
+				unsafe_allow_html=True)
+
+	if st.button('Proceed to Docking', key='proceed_to_docking_button'):
+		st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[5]))
+
+	# Visualization section remains the same
+	if pocket_mode == 'Reference' or pocket_mode == 'RoG':
+		st.header("Binding Site Visualization", divider='orange')
+		st.write(
+			"DockM8 uses Mol* to view protein structures, you can find the documentation here : https://molstar.org/viewer-docs/"
+		)
+		st_molstar_docking(protein_input,
+				reference_files[0],
+				key="docking_vis",
+				options={"defaultPolymerReprType": "cartoon"},
+				height=900)
+	elif pocket_mode in ["Dogsitescorer", "p2rank", "Manual"]:
+		st.header("Protein Visualization", divider='orange')
+		st.write(
+			"DockM8 uses Mol* to view protein structures, you can find the documentation here : https://molstar.org/viewer-docs/"
+		)
+		st_molstar(protein_input, key="protein_vis", height=900)
