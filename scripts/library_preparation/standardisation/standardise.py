@@ -1,4 +1,3 @@
-import concurrent.futures
 import os
 import re
 import sys
@@ -22,20 +21,6 @@ class StandardizationError(Exception):
 
 	"""Custom exception for standardization errors."""
 	pass
-
-
-def is_running_in_streamlit():
-	try:
-		from streamlit.runtime.scriptrunner import get_script_run_ctx
-		return get_script_run_ctx() is not None
-	except ImportError:
-		return False
-
-
-if is_running_in_streamlit():
-	from stqdm import stqdm as tqdm
-else:
-	from tqdm import tqdm
 
 
 def standardize_molecule(molecule: Chem.Mol,
