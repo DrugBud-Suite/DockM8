@@ -41,7 +41,7 @@ def printlog(message):
 
 	if is_running_in_streamlit():
 		import streamlit as st
-		st.write(message)
+		st.markdown(f"*{message}*")
 	else:
 		print(msg)
 
