@@ -15,7 +15,10 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
+from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.parallel_executor import parallel_executor
+from scripts.utilities.file_splitting import split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -58,12 +61,12 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
 		vinardo_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
 		results = vinardo_rescoring_folder / f"{Path(split_file).stem}_{column_name}.sdf"
 		vinardo_cmd = (f"{software}/gnina"
-						f" --receptor {protein_file}"
-						f" --ligand {split_file}"
-						f" --out {results}"
-						" --score_only"
-						" --scoring vinardo"
-						" --cnn_scoring none")
+			f" --receptor {protein_file}"
+			f" --ligand {split_file}"
+			f" --out {results}"
+			" --score_only"
+			" --scoring vinardo"
+			" --cnn_scoring none")
 		try:
 			subprocess.call(vinardo_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
 		except Exception as e:
@@ -75,10 +78,10 @@ def vinardo_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
 	try:
 		vinardo_dataframes = [
 			PandasTools.LoadSDF(str(rescoring_folder / f"{column_name}_rescoring" / file),
-								idName="Pose ID",
-								molColName=None,
-								includeFingerprints=False,
-								embedProps=False)
+				idName="Pose ID",
+				molColName=None,
+				includeFingerprints=False,
+				embedProps=False)
 			for file in os.listdir(rescoring_folder / f"{column_name}_rescoring")
 			if file.startswith("split") and file.endswith(".sdf")]
 	except Exception as e:

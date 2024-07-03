@@ -12,7 +12,9 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import convert_molecules, delete_files, printlog
+from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.molecule_conversion import convert_molecules
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -92,7 +94,7 @@ def chemplp_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 		chemplp_results.loc[i, ["Pose ID"]] = f"{split[0]}_{split[1]}_{split[2]}"
 	chemplp_rescoring_results = chemplp_results[["Pose ID", column_name]]
 	chemplp_rescoring_results.to_csv(rescoring_folder / f"{column_name}_rescoring" / f"{column_name}_scores.csv",
-										index=False)
+				index=False)
 
 	# Remove files
 	plants_ligands_mol2.unlink()

@@ -12,7 +12,8 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import delete_files, printlog
+from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import delete_files
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -42,13 +43,13 @@ def oddt_nnscore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 	pickle_path = f"{software}/models/NNScore_pdbbind2016.pickle"
 	results = nnscore_rescoring_folder / "rescored_NNscore.sdf"
 	nnscore_rescoring_command = ("oddt_cli " + str(sdf) + " --receptor " + str(protein_file) + " -n " + str(n_cpus) +
-									" --score_file " + str(pickle_path) + " -O " + str(results))
+			" --score_file " + str(pickle_path) + " -O " + str(results))
 	subprocess.call(nnscore_rescoring_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
 	NNScore_results_df = PandasTools.LoadSDF(str(results),
-												idName="Pose ID",
-												molColName=None,
-												includeFingerprints=False,
-												removeHs=False)
+				idName="Pose ID",
+				molColName=None,
+				includeFingerprints=False,
+				removeHs=False)
 	NNScore_results_df.rename(columns={"nnscore": column_name}, inplace=True)
 	NNScore_results_df = NNScore_results_df[["Pose ID", column_name]]
 	NNScore_rescoring_results = nnscore_rescoring_folder / f"{column_name}_scores.csv"

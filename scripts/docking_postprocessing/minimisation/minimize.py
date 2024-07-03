@@ -18,7 +18,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import parallel_executor
+from scripts.utilities.parallel_executor import parallel_executor
 
 # SMARTS patterns for identifying polar hydrogen donors and unwanted hydrogens
 HDONER = "[$([O,S;+0]),$([N;$(Na),$(NC=[O,S]);H2]),$([N;$(N[S,P]=O)]);!H0]"
@@ -201,11 +201,11 @@ def minimize_all_ligands(pdb_path: str, ligfile_path: str, n_cpus: int = int(os.
 
 	# Parallelize ligand minimization using the provided parallel_executor function
 	minimized_ligands = parallel_executor(minimize_polar_hydrogens,
-											list(ligands),
-											n_cpus,
-											job_manager="concurrent_process",
-											protein_universe=protein_universe,
-											mda_to_rdkit=mda_to_rdkit)
+				list(ligands),
+				n_cpus,
+				job_manager="concurrent_process",
+				protein_universe=protein_universe,
+				mda_to_rdkit=mda_to_rdkit)
 
 	# Add the minimized ligands to the dataframe
 

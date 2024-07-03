@@ -14,7 +14,10 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
+from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.parallel_executor import parallel_executor
+from scripts.utilities.file_splitting import split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -72,9 +75,9 @@ def AAScore_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs) -> Data
 		try:
 			AAScore_dataframes = [
 				pd.read_csv(rescoring_folder / "AAScore_rescoring" / file,
-							delimiter="\t",
-							header=None,
-							names=["Pose ID", column_name])
+				delimiter="\t",
+				header=None,
+				names=["Pose ID", column_name])
 				for file in os.listdir(rescoring_folder / "AAScore_rescoring")
 				if file.startswith("split") and file.endswith(".csv")]
 		except Exception as e:

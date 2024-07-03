@@ -13,7 +13,10 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
+from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.parallel_executor import parallel_executor
+from scripts.utilities.file_splitting import split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -49,7 +52,7 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 		df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 		df = df[["Pose ID"]]
 		korpl_command = (f"{software}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " + str(split_file) +
-							" --sdf")
+				" --sdf")
 		process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 		stdout, stderr = process.communicate()
 		energies = []
