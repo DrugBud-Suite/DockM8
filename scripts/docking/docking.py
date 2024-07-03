@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import tempfile
 import warnings
 from pathlib import Path
 
@@ -28,9 +29,6 @@ from scripts.utilities.utilities import parallel_SDF_loader, printlog
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-DOCKING_PROGRAMS = ["PLANTS", "SMINA", "GNINA", "QVINA2", "QVINAW"]
-
-# Map docking program names to their respective functions
 DOCKING_PROGRAMS = {
 	"SMINA": [smina_docking, fetch_smina_poses],
 	"GNINA": [gnina_docking, fetch_gnina_poses],
@@ -40,7 +38,8 @@ DOCKING_PROGRAMS = {
 	"PSOVINA": [psovina_docking, fetch_psovina_poses], }
 
 
-def dockm8_docking(w_dir: Path,
+def dockm8_docking(library: pd.DataFrame or Path,
+					w_dir: Path,
 					protein_file: Path,
 					pocket_definition: dict,
 					software: Path,
@@ -48,11 +47,12 @@ def dockm8_docking(w_dir: Path,
 					exhaustiveness: int,
 					n_poses: int,
 					n_cpus: int,
-					job_manager="concurrent_process",
-					):
-	"""Dock ligands into a protein binding site using one or more docking programs.
+					job_manager="concurrent_process"):
+	"""
+    Dock ligands into a protein binding site using one or more docking programs.
 
     Args:
+        library (pd.DataFrame or Path): The prepared library as a DataFrame or path to an SDF file.
         w_dir (Path): The working directory where the docking results will be saved.
         protein_file (Path): The path to the protein file.
         pocket_definition (dict): A dictionary defining the pocket for docking.
@@ -64,12 +64,26 @@ def dockm8_docking(w_dir: Path,
         job_manager (str, optional): The job manager to use for parallel docking. Defaults to "concurrent_process".
     """
 	try:
+		# Create a temporary file if the input is a DataFrame
+		if isinstance(library, pd.DataFrame):
+			with tempfile.NamedTemporaryFile(suffix='.sdf', delete=False) as temp_file:
+				PandasTools.WriteSDF(library, temp_file.name, molColName="Molecule", idName="ID")
+				library_path = Path(temp_file.name)
+		else:
+			library_path = library
+
 		if n_cpus == 1:
 			printlog("Running docking using 1 CPU...")
 			for program in docking_programs:
 				docking_function, fetch_function = DOCKING_PROGRAMS[program]
 				if not (w_dir / program.lower()).exists():
-					docking_function(None, w_dir, protein_file, pocket_definition, software, exhaustiveness, n_poses)
+					docking_function(library_path,
+										w_dir,
+										protein_file,
+										pocket_definition,
+										software,
+										exhaustiveness,
+										n_poses)
 				if (w_dir / program.lower()).exists() and not (w_dir / program.lower() /
 																f"{program.lower()}_poses.sdf").exists():
 					fetch_function(w_dir, n_poses, software)
@@ -77,7 +91,7 @@ def dockm8_docking(w_dir: Path,
 			printlog(f"Running docking using {n_cpus} CPUs...")
 			split_final_library_path = w_dir / "split_final_library"
 			if not split_final_library_path.exists():
-				split_final_library_path = split_sdf_str(w_dir, w_dir / "final_library.sdf", n_cpus)
+				split_final_library_path = split_sdf_str(w_dir, library_path, n_cpus)
 			else:
 				printlog("Split final library folder already exists...")
 			split_files_sdfs = [
@@ -104,7 +118,14 @@ def dockm8_docking(w_dir: Path,
 	except Exception as e:
 		printlog("ERROR: Docking failed!")
 		printlog(e)
-	shutil.rmtree(w_dir / "split_final_library", ignore_errors=True)
+	finally:
+		# Clean up temporary file if it was created
+		if isinstance(library, pd.DataFrame):
+			library_path.unlink()
+
+	# Clean up split library folder
+	if split_final_library_path.exists():
+		shutil.rmtree(split_final_library_path)
 
 
 def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path, n_cpus: int):
