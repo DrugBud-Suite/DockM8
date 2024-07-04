@@ -11,19 +11,18 @@ from scripts.pocket_finding.dogsitescorer import find_pocket_dogsitescorer
 from scripts.pocket_finding.manual import parse_pocket_coordinates
 from scripts.pocket_finding.p2rank import find_pocket_p2rank
 from scripts.pocket_finding.radius_of_gyration import find_pocket_RoG
-from scripts.utilities.utilities import printlog
 from scripts.utilities.pocket_extraction import extract_pocket
 
 POCKET_DETECTION_OPTIONS = ["Reference", "RoG", "Dogsitescorer", "p2rank", "Manual"]
 
-
 def pocket_finder(mode: str,
-		software: Path = None,
-		receptor: Path = None,
-		ligand: Path = None,
-		radius: int = 10,
-		manual_pocket: str = None,
-		):
+					software: Path = None,
+					receptor: Path = None,
+					ligand: Path = None,
+					radius: int = 10,
+					manual_pocket: str = None,
+					dogsitescorer_method: str = 'Volume',
+					):
 	"""
 	Find and extract a docking pocket based on the specified mode.
 
@@ -35,7 +34,7 @@ def pocket_finder(mode: str,
 		- "p2rank": Find the docking pocket using the p2rank method.
 		- "Manual": Find the docking pocket based on manually provided pocket coordinates.
 
-	- software (Path, optional): The path to the p2rank software. Required if mode is "p2rank".
+	- software (Path, optional): The path to the software folder. Required if mode is "p2rank".
 
 	- receptor (Path, optional): The path to the receptor file. Required for all modes except "Manual".
 
@@ -45,22 +44,40 @@ def pocket_finder(mode: str,
 
 	- manual_pocket (str, optional): The manually provided pocket coordinates. Required if mode is "Manual".
 
+	- dogsitescorer_method (str, optional): The method to be used by DogSiteScorer. Default is 'Volume'.
+
 	Returns:
 	- pocket_definition: The definition of the docking pocket.
 
 	"""
-	# Determine the docking pocket
 	if mode == "Reference":
 		pocket_definition = find_pocket_default(ligand, receptor, radius)
+		pocket_path = extract_pocket(pocket_definition, receptor)
+		if pocket_path is None:
+			raise ValueError("Failed to extract pocket. The pocket might be empty.")
+		return pocket_definition
 	elif mode == "RoG":
 		pocket_definition = find_pocket_RoG(ligand, receptor)
+		pocket_path = extract_pocket(pocket_definition, receptor)
+		if pocket_path is None:
+			raise ValueError("Failed to extract pocket. The pocket might be empty.")
+		return pocket_definition
 	elif mode == "Dogsitescorer":
-		pocket_definition = find_pocket_dogsitescorer(receptor, method="volume")
+		pocket_definition = find_pocket_dogsitescorer(receptor, dogsitescorer_method)
+		pocket_path = extract_pocket(pocket_definition, receptor)
+		if pocket_path is None:
+			raise ValueError("Failed to extract pocket. The pocket might be empty.")
+		return pocket_definition
 	elif mode == "p2rank":
 		pocket_definition = find_pocket_p2rank(software, receptor, radius)
+		pocket_path = extract_pocket(pocket_definition, receptor)
+		if pocket_path is None:
+			raise ValueError("Failed to extract pocket. The pocket might be empty.")
+		return pocket_definition
 	elif mode == "Manual":
 		pocket_definition = parse_pocket_coordinates(manual_pocket)
-	printlog(f"Pocket definition: {pocket_definition}")
-	# Extract the pocket from the receptor
-	pocket_path = extract_pocket(pocket_definition, receptor)
+		pocket_path = extract_pocket(pocket_definition, receptor)
+		if pocket_path is None:
+			raise ValueError("Failed to extract pocket. The pocket might be empty.")
+		return pocket_definition
 	return pocket_definition
