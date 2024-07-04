@@ -1,5 +1,6 @@
-from pathlib import Path
 import sys
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from biopandas.pdb import PandasPdb
@@ -12,45 +13,41 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
+from pathlib import Path
+
 
 def extract_pocket(pocket_definition, protein_file: Path):
 	"""
-    Extracts the pocket from a protein file using provided pocket definition.
+	Extracts a pocket from a protein file using the provided pocket definition.
 
-    Args:
-        pocket_definition (dict): A dictionary containing the center coordinates and size of the pocket.
-            The dictionary has the following structure:
-            {
-                "center": [center_x, center_y, center_z],
-                "size": [size_x, size_y, size_z],
-            }
-        protein_file (Path): The path to the protein file in pdb format.
+	Args:
+		pocket_definition (dict): A dictionary containing the pocket definition, including the center and size.
+		protein_file (Path): The path to the protein file.
 
-    Returns:
-        dict: A dictionary containing the coordinates and size of the extracted pocket.
-            The dictionary has the following structure:
-            {
-                "center": [center_x, center_y, center_z],
-                "size": [size_x, size_y, size_z]
-            }
-    """
+	Returns:
+		Path: The path to the output file containing the extracted pocket in PDB format.
+			  Returns None if the extraction fails or the pocket is empty.
+	"""
 	center_x, center_y, center_z = pocket_definition["center"]
 	size_x, size_y, size_z = pocket_definition["size"]
-	radius = size_x             # Assuming the size is twice the radius
+	radius = size_x // 2
 
-	print(f"Extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}")
+	printlog(f"Extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}")
 
 	output_file = protein_file.with_name(protein_file.stem + "_pocket.pdb")
 
 	if not output_file.exists():
-		process_protein(protein_file, pocket_definition["center"], radius, output_file)
-		print(
+		success = process_protein(protein_file, pocket_definition["center"], radius, output_file)
+		if not success:
+			printlog(f"Failed to extract pocket from {protein_file.stem}. The pocket might be empty.")
+			return None
+		printlog(
 			f"Finished extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}"
 		)
 	else:
@@ -62,24 +59,29 @@ def extract_pocket(pocket_definition, protein_file: Path):
 
 def process_protein(protein_file, center_coordinates, cutoff, output_file):
 	"""
-    Process the protein to select cutoff residues around the given coordinates and generate a pocket file.
+	Process the protein file to extract a pocket based on the specified center coordinates and cutoff distance.
 
-    Args:
-        protein_file (str): Path to the protein file in PDB format.
-        center_coordinates (tuple): The x, y, z coordinates of the pocket center.
-        cutoff (float): Cutoff distance for selecting residues near the center coordinates.
-        output_file (Path): Path to the output pocket file.
-    """
-	# Read the protein file using PandasPdb
+	Args:
+		protein_file (str): The path to the protein file.
+		center_coordinates (tuple): The coordinates of the center of the pocket.
+		cutoff (float): The cutoff distance for selecting residues within the pocket.
+		output_file (str): The path to save the extracted pocket.
+
+	Returns:
+		bool: True if the pocket extraction is successful, False otherwise.
+	"""
 	ppdb = PandasPdb()
 	ppdb.read_pdb(str(protein_file))
 	protein_dataframe = ppdb.df["ATOM"]
-	# Select residues within the cutoff distance from the center coordinates
 	protein_cut = select_cutoff_residues(protein_dataframe, center_coordinates, cutoff)
-	# Update the protein dataframe with the selected residues
+
+	if protein_cut.empty:
+		printlog(f"Warning: No residues found within {cutoff} Å of the specified center. The pocket might be empty.")
+		return False
+
 	ppdb.df["ATOM"] = protein_cut
-	# Save the updated protein dataframe as a pocket file
 	ppdb.to_pdb(path=output_file, records=["ATOM"])
+	return True
 
 
 def select_cutoff_residues(protein_dataframe, center_coordinates, cutoff):
@@ -98,7 +100,7 @@ def select_cutoff_residues(protein_dataframe, center_coordinates, cutoff):
 	# Calculate the distance from each residue to the center coordinates
 	protein_dataframe["distance"] = protein_dataframe.apply(lambda row: calculate_distance([
 		row["x_coord"], row["y_coord"], row["z_coord"]], [center_x, center_y, center_z]),
-					axis=1)
+															axis=1)
 
 	# Select residues within the cutoff distance
 	residues_within_cutoff = protein_dataframe[protein_dataframe["distance"] < cutoff]
