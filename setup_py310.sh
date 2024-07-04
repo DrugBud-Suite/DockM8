@@ -131,7 +131,7 @@ else
     conda config --add channels bioconda
     conda config --add channels mx
 
-    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt tqdm pytest pdbfixer -q -y
+    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt tqdm pytest pdbfixer smina -q -y
 	conda install -c ikmckenz adme-pred-py
 
     echo -e """
@@ -141,7 +141,7 @@ else
     """
 
     pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf medchem -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf medchem molgrid -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 	pip install streamlit_molstar sh -q
 
@@ -240,10 +240,10 @@ if [[ ! -f $DOCKM8_FOLDER/software/Convex-PL ]]; then
     chmod +x Convex-PL
 fi
 
-if [[ ! -f $DOCKM8_FOLDER/software/smina.static ]]; then
+if [[ ! -f $DOCKM8_FOLDER/software/LinF9 ]]; then
     echo -e "\nDownloading Lin_F9!"
-    wget https://github.com/cyangNYU/Lin_F9_test/raw/master/smina.static --no-check-certificate -q --show-progress
-    chmod +x smina.static
+	wget -O LinF9 https://github.com/cyangNYU/Lin_F9_test/raw/master/smina.static --no-check-certificate -q --show-progress
+    chmod +x LinF9
 fi
 
 if [[ ! -d $DOCKM8_FOLDER/software/AA-Score-Tool-main ]]; then
