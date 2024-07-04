@@ -100,7 +100,7 @@ def test_docking_postprocessing_without_pose_busting(common_test_data, cleanup):
 	assert result == output_path
 	assert output_path.exists()
 	output_data = PandasTools.LoadSDF(str(output_path))
-	assert len(output_data) == 14
+	assert len(output_data) == 16
 
 
 def test_docking_postprocessing_with_no_cutoffs(common_test_data, cleanup):
