@@ -14,7 +14,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -88,7 +88,7 @@ def convert_molecules(input_file: Path, output_file: Path, input_format: str, ou
 						lines = file.readlines()
 						lines = [
 							line for line in lines if all(keyword not in line for keyword in [
-								"between atoms:", "BRANCH", "ENDBRANCH", "torsions", "Active", "ENDROOT", "ROOT", ])]
+							"between atoms:", "BRANCH", "ENDBRANCH", "torsions", "Active", "ENDROOT", "ROOT", ])]
 						lines = [line.replace(line, "TER\n") if line.startswith("TORSDOF") else line for line in lines]
 						with open(output_file, "w") as file:
 							file.writelines(lines)

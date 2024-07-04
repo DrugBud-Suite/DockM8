@@ -17,7 +17,8 @@ sys.path.append(str(dockm8_path))
 
 from scripts.utilities.file_splitting import split_pdbqt_str
 from scripts.utilities.molecule_conversion import convert_molecules
-from scripts.utilities.utilities import delete_files, printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.logging import printlog
 
 def qvinaw_docking(split_file: Path,
 	w_dir: Path,
@@ -62,9 +63,9 @@ def qvinaw_docking(split_file: Path,
 		print(e)
 
 	protein_file_pdbqt = convert_molecules(protein_file,
-				protein_file.with_suffix(".pdbqt"),
-				"pdb",
-				"pdbqt")
+		protein_file.with_suffix(".pdbqt"),
+		"pdb",
+		"pdbqt")
 	# Dock each ligand using QVINAW
 	for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
 		output_file = results_folder / (pdbqt_file.stem + "_QVINAW.pdbqt")
@@ -102,10 +103,10 @@ def qvinaw_docking(split_file: Path,
 				"QVINAW_Affinity": affinity,
 				"ID": pose_file.stem.split("_")[0], }
 		PandasTools.WriteSDF(qvinaw_poses,
-				str(qvinaw_docking_results),
-				molColName="Molecule",
-				idName="Pose ID",
-				properties=list(qvinaw_poses.columns))
+			str(qvinaw_docking_results),
+			molColName="Molecule",
+			idName="Pose ID",
+			properties=list(qvinaw_poses.columns))
 
 	except Exception as e:
 		printlog("ERROR: Failed to combine QVINAW SDF file!")
@@ -134,9 +135,9 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
 			for file in tqdm(os.listdir(w_dir / "qvinaw"), desc="Loading QVINAW poses"):
 				if file.startswith("split") or file.startswith("final_library") and file.endswith(".sdf"):
 					df = PandasTools.LoadSDF(str(w_dir / "qvinaw" / file),
-							idName="Pose ID",
-							molColName="Molecule",
-							strictParsing=False)
+						idName="Pose ID",
+						molColName="Molecule",
+						strictParsing=False)
 					qvinaw_dataframes.append(df)
 			qvinaw_df = pd.concat(qvinaw_dataframes)
 			qvinaw_df["ID"] = qvinaw_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -145,10 +146,10 @@ def fetch_qvinaw_poses(w_dir: Union[str, Path], *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(qvinaw_df,
-					str(w_dir / "qvinaw" / "qvinaw_poses.sdf"),
-					molColName="Molecule",
-					idName="Pose ID",
-					properties=list(qvinaw_df.columns))
+				str(w_dir / "qvinaw" / "qvinaw_poses.sdf"),
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(qvinaw_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined QVINAW poses SDF file!")

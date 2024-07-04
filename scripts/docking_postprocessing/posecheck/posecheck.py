@@ -13,15 +13,15 @@ sys.path.append(str(dockm8_path))
 
 import multiprocessing
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 
 def pose_checker(dataframe: pd.DataFrame,
-					protein_file: Path,
-					clash_cutoff: int = 5,
-					strain_cutoff: int = 5000,
-					n_cpus: int = int(os.cpu_count() * 0.9),
-				):
+		protein_file: Path,
+		clash_cutoff: int = 5,
+		strain_cutoff: int = 5000,
+		n_cpus: int = int(os.cpu_count() * 0.9),
+	):
 	try:
 		tic = time.perf_counter()
 		printlog("Checking poses using PoseCheck...")

@@ -23,7 +23,7 @@ from scripts.pocket_finding.p2rank import download_p2rank, find_pocket_p2rank
 from scripts.pocket_finding.pocket_finding import POCKET_DETECTION_OPTIONS
 from scripts.pocket_finding.radius_of_gyration import find_pocket_RoG
 from scripts.utilities.pocket_extraction import extract_pocket
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 menu()
 
@@ -34,8 +34,8 @@ if 'binding_site' not in st.session_state:
 
 if 'prepared_protein_path' not in st.session_state:
 	protein_input = st.text_input("Enter file path (.pdb):",
-			value=str(dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"),
-			help="Enter the complete file path to your protein data.")
+		value=str(dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"),
+		help="Enter the complete file path to your protein data.")
 else:
 	protein_input = st.session_state.prepared_protein_path
 
@@ -95,8 +95,8 @@ elif pocket_mode == "RoG":
 
 elif pocket_mode == "Dogsitescorer":
 	dogsitescorer_mode = st.selectbox(label="Choose which metric to select binding sites by:",
-										options=["Volume", "Druggability_Score", "Surface", "Depth"],
-										help="Choose the metric to select binding sites by.")
+				options=["Volume", "Druggability_Score", "Surface", "Depth"],
+				help="Choose the metric to select binding sites by.")
 	if st.button("Find Pockets"):
 		with st.spinner("Finding pocket..."):
 			try:
@@ -131,14 +131,14 @@ elif pocket_mode == "Manual" and st.session_state.get("mode") == "Single":
 	y_center = col2.number_input(label="Y Center", value=0.0, help="Enter the Y coordinate of the pocket center")
 	z_center = col3.number_input(label="Z Center", value=0.0, help="Enter the Z coordinate of the pocket center")
 	x_size = col1.number_input(label="X Size",
-			value=20.0,
-			help="Enter the size of the pocket in the X direction (in Angstroms)")
+		value=20.0,
+		help="Enter the size of the pocket in the X direction (in Angstroms)")
 	y_size = col2.number_input(label="Y Size",
-			value=20.0,
-			help="Enter the size of the pocket in the Y direction (in Angstroms)")
+		value=20.0,
+		help="Enter the size of the pocket in the Y direction (in Angstroms)")
 	z_size = col3.number_input(label="Z Size",
-			value=20.0,
-			help="Enter the size of the pocket in the Z direction (in Angstroms)")
+		value=20.0,
+		help="Enter the size of the pocket in the Z direction (in Angstroms)")
 
 	if st.button("Set Manual Pocket"):
 		st.session_state.binding_site = {'center': [x_center, y_center, z_center], 'size': [x_size, y_size, z_size]}
@@ -216,10 +216,10 @@ if st.session_state.binding_site:
 			"DockM8 uses Mol* to view protein structures, you can find the documentation here : https://molstar.org/viewer-docs/"
 		)
 		st_molstar_docking(protein_input,
-				reference_files[0],
-				key="docking_vis",
-				options={"defaultPolymerReprType": "cartoon"},
-				height=900)
+			reference_files[0],
+			key="docking_vis",
+			options={"defaultPolymerReprType": "cartoon"},
+			height=900)
 	elif pocket_mode in ["Dogsitescorer", "p2rank", "Manual"]:
 		st.header("Protein Visualization", divider='orange')
 		st.write(

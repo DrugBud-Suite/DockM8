@@ -13,7 +13,7 @@ from scripts.library_preparation.conformer_generation.confgen_GypsumDL import ge
 from scripts.library_preparation.conformer_generation.confgen_RDKit import generate_conformers_RDKit
 from scripts.library_preparation.protonation.protgen_GypsumDL import protonate_GypsumDL
 from scripts.library_preparation.standardisation.standardise import standardize_library
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -28,13 +28,13 @@ from pathlib import Path
 import tempfile
 
 def prepare_library(input_sdf: Path,
-                    id_column: str,
-                    protonation: str,
-                    conformers: str,
-                    software: Path,
-                    n_cpus: int,
-                    n_conformers: int = 1) -> pd.DataFrame:
-    """
+					id_column: str,
+					protonation: str,
+					conformers: str,
+					software: Path,
+					n_cpus: int,
+					n_conformers: int = 1) -> pd.DataFrame:
+	"""
     Prepares a docking library for further analysis.
 
     Args:
@@ -49,31 +49,31 @@ def prepare_library(input_sdf: Path,
     Returns:
         pd.DataFrame: A DataFrame containing the prepared library.
     """
-    # Load input SDF file into a DataFrame
-    input_df = PandasTools.LoadSDF(str(input_sdf), molColName="Molecule", idName=id_column)
+	# Load input SDF file into a DataFrame
+	input_df = PandasTools.LoadSDF(str(input_sdf), molColName="Molecule", idName=id_column)
 
-    # Standardization
-    standardized_df = standardize_library(input_df, id_column=id_column, smiles_column=None, n_cpus=n_cpus)
+	# Standardization
+	standardized_df = standardize_library(input_df, id_column=id_column, smiles_column=None, n_cpus=n_cpus)
 
-    # Protonation
-    if protonation == "GypsumDL":
-        protonated_df = protonate_GypsumDL(standardized_df, software, n_cpus)
-    elif protonation == "None":
-        protonated_df = standardized_df
-    else:
-        raise ValueError(f'Invalid protonation method specified: {protonation}. Must be either "None" or "GypsumDL".')
+	# Protonation
+	if protonation == "GypsumDL":
+		protonated_df = protonate_GypsumDL(standardized_df, software, n_cpus)
+	elif protonation == "None":
+		protonated_df = standardized_df
+	else:
+		raise ValueError(f'Invalid protonation method specified: {protonation}. Must be either "None" or "GypsumDL".')
 
-    # Conformer generation
-    if conformers == "MMFF":
-        final_df = generate_conformers_RDKit(protonated_df, n_cpus, forcefield='MMFF')
-    elif conformers == "UFF":
-        final_df = generate_conformers_RDKit(protonated_df, n_cpus, forcefield='UFF')
-    elif conformers == "GypsumDL":
-        final_df = generate_conformers_GypsumDL(protonated_df, software, n_cpus)
-    else:
-        raise ValueError(f'Invalid conformer method specified: {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".')
+	# Conformer generation
+	if conformers == "MMFF":
+		final_df = generate_conformers_RDKit(protonated_df, n_cpus, forcefield='MMFF')
+	elif conformers == "UFF":
+		final_df = generate_conformers_RDKit(protonated_df, n_cpus, forcefield='UFF')
+	elif conformers == "GypsumDL":
+		final_df = generate_conformers_GypsumDL(protonated_df, software, n_cpus)
+	else:
+		raise ValueError(f'Invalid conformer method specified: {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".')
 
-    # Keep only 'Molecule' and 'ID' columns
-    final_df = final_df[["Molecule", "ID"]]
+	# Keep only 'Molecule' and 'ID' columns
+	final_df = final_df[["Molecule", "ID"]]
 
-    return final_df
+	return final_df

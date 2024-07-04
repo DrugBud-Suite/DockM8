@@ -8,7 +8,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 
 def fetch_pdb_structure(pdb_id: str, output_dir: Path):

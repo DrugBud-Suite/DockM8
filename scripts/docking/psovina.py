@@ -17,17 +17,18 @@ sys.path.append(str(dockm8_path))
 
 from scripts.utilities.file_splitting import split_pdbqt_str
 from scripts.utilities.molecule_conversion import convert_molecules
-from scripts.utilities.utilities import delete_files, printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.logging import printlog
 
 
 def psovina_docking(split_file: Path,
-					w_dir: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					software: Path,
-					exhaustiveness: int,
-					n_poses: int,
-					):
+		w_dir: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		software: Path,
+		exhaustiveness: int,
+		n_poses: int,
+		):
 	"""
     Perform docking using the PSOVINA software for either a library of molecules or split files.
 
@@ -68,18 +69,18 @@ def psovina_docking(split_file: Path,
 	for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
 		output_file = results_folder / (pdbqt_file.stem + "_PSOVINA.pdbqt")
 		psovina_cmd = (f"{software / 'psovina'}"
-						f" --receptor {protein_file_pdbqt}"
-						f" --ligand {pdbqt_file}"
-						f" --out {output_file}"
-						f" --center_x {pocket_definition['center'][0]}"
-						f" --center_y {pocket_definition['center'][1]}"
-						f" --center_z {pocket_definition['center'][2]}"
-						f" --size_x {pocket_definition['size'][0]}"
-						f" --size_y {pocket_definition['size'][1]}"
-						f" --size_z {pocket_definition['size'][2]}"
-						f" --exhaustiveness {exhaustiveness}"
-						" --cpu 1 --seed 1 --energy_range 10"
-						f" --num_modes {n_poses}")
+			f" --receptor {protein_file_pdbqt}"
+			f" --ligand {pdbqt_file}"
+			f" --out {output_file}"
+			f" --center_x {pocket_definition['center'][0]}"
+			f" --center_y {pocket_definition['center'][1]}"
+			f" --center_z {pocket_definition['center'][2]}"
+			f" --size_x {pocket_definition['size'][0]}"
+			f" --size_y {pocket_definition['size'][1]}"
+			f" --size_z {pocket_definition['size'][2]}"
+			f" --exhaustiveness {exhaustiveness}"
+			" --cpu 1 --seed 1 --energy_range 10"
+			f" --num_modes {n_poses}")
 		subprocess.call(psovina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 	psovina_docking_results = psovina_folder / (Path(input_file).stem + "_psovina.sdf")
@@ -101,10 +102,10 @@ def psovina_docking(split_file: Path,
 				"PSOVINA_Affinity": affinity,
 				"ID": pose_file.stem.split("_")[0], }
 		PandasTools.WriteSDF(psovina_poses,
-								str(psovina_docking_results),
-								molColName="Molecule",
-								idName="Pose ID",
-								properties=list(psovina_poses.columns))
+				str(psovina_docking_results),
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(psovina_poses.columns))
 
 	except Exception as e:
 		printlog("ERROR: Failed to combine PSOVINA SDF file!")
@@ -133,9 +134,9 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
 			for file in tqdm(os.listdir(w_dir / "psovina"), desc="Loading PSOVINA poses"):
 				if file.endswith(".sdf"):
 					df = PandasTools.LoadSDF(str(w_dir / "psovina" / file),
-												idName="Pose ID",
-												molColName="Molecule",
-												strictParsing=False)
+							idName="Pose ID",
+							molColName="Molecule",
+							strictParsing=False)
 					psovina_dataframes.append(df)
 			psovina_df = pd.concat(psovina_dataframes)
 			psovina_df["ID"] = psovina_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -144,10 +145,10 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(psovina_df,
-									str(w_dir / "psovina" / "psovina_poses.sdf"),
-									molColName="Molecule",
-									idName="Pose ID",
-									properties=list(psovina_df.columns))
+					str(w_dir / "psovina" / "psovina_poses.sdf"),
+					molColName="Molecule",
+					idName="Pose ID",
+					properties=list(psovina_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined PSOVINA poses SDF file!")

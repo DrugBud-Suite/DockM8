@@ -9,16 +9,16 @@ sys.path.append(str(dockm8_path))
 from openmm.app import PDBFile
 from pdbfixer import PDBFixer
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 
 def fix_pdb_file(input_pdb_file: Path,
-		output_dir: Path = None,
-		fix_nonstandard_residues: bool = True,
-		fix_missing_residues: bool = True,
-		add_missing_hydrogens_pH: float = 7.0,
-		remove_hetero: bool = True,
-		remove_water: bool = True,
+	output_dir: Path = None,
+	fix_nonstandard_residues: bool = True,
+	fix_missing_residues: bool = True,
+	add_missing_hydrogens_pH: float = 7.0,
+	remove_hetero: bool = True,
+	remove_water: bool = True,
 	):
 	"""
     Fixes a PDB file by performing various modifications.

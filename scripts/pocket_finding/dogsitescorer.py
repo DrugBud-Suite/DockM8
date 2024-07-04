@@ -33,7 +33,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -57,7 +57,7 @@ class APIConsts:
 		RESPONSE_MSG = {
 			"status": "status_code",
 			"status_codes": {
-				"accepted": "accepted", "denied": "bad_request"},
+			"accepted": "accepted", "denied": "bad_request"},
 			"message": "message",
 			"url_of_id": "location", }
 		RESPONSE_MSG_FETCH_ID = {"message": "message", "id": "id"}
@@ -74,10 +74,10 @@ class APIConsts:
 
 @redo.retriable(attempts=30, sleeptime=1, sleepscale=1.1, max_sleeptime=20)
 def _send_request_get_results(request_type: str,
-								keys_list: List[str],
-								url: str,
-								task: str = "Fetching results from DoGSiteScorer API",
-								**kwargs) -> List[Union[str, Dict]]:
+		keys_list: List[str],
+		url: str,
+		task: str = "Fetching results from DoGSiteScorer API",
+		**kwargs) -> List[Union[str, Dict]]:
 	"""
 	Send a request and get the keyword values from json response.
 
@@ -112,7 +112,7 @@ def _send_request_get_results(request_type: str,
 			results.append(response_values[key])
 		except KeyError:
 			raise ValueError(f"{task} failed.\n" + f"Expected key {key} not found in the response.\n" +
-								f"The response message is as follows: {response_values}")
+					f"The response message is as follows: {response_values}")
 	return results
 
 def upload_pdb_file(filepath: Path) -> str:
@@ -134,9 +134,9 @@ def upload_pdb_file(filepath: Path) -> str:
 	with open(filepath.with_suffix(".pdb"), "rb") as f:
 		# Post API query and get the response
 		url_of_id = _send_request_get_results("post", [APIConsts.FileUpload.RESPONSE_MSG["url_of_id"]],
-												APIConsts.FileUpload.URL,
-												files={APIConsts.FileUpload.REQUEST_MSG: f},
-												)[0]
+					APIConsts.FileUpload.URL,
+					files={APIConsts.FileUpload.REQUEST_MSG: f},
+					)[0]
 
 	protein_id = _send_request_get_results("get", [APIConsts.FileUpload.RESPONSE_MSG_FETCH_ID["id"]], url_of_id)[0]
 	return protein_id
@@ -225,16 +225,16 @@ def submit_dogsitescorer_job_with_pdbid(pdb_code: str, chain_id: str, ligand: st
 	# Submit job to proteins.plus
 	# For details on parameters see: https://proteins.plus/help/dogsite_rest
 	r = requests.post("https://proteins.plus/api/dogsite_rest",
-						json={
-							"dogsite": {
-								"pdbCode": pdb_code,                                       # PDB code of protein
-								"analysisDetail": "1",                                     # 1 = include subpockets in results
-								"bindingSitePredictionGranularity": "1",                   # 1 = include drugablity scores
-								"ligand": ligand,                                          # if name is specified, ligand coverage is calculated
-								"chain": chain_id,                                         # if chain is specified, calculation is only performed on this chain
-							}},
-						headers={
-							"Content-type": "application/json", "Accept": "application/json"})
+			json={
+			"dogsite": {
+			"pdbCode": pdb_code,                                       # PDB code of protein
+			"analysisDetail": "1",                                     # 1 = include subpockets in results
+			"bindingSitePredictionGranularity": "1",                   # 1 = include drugablity scores
+			"ligand": ligand,                                          # if name is specified, ligand coverage is calculated
+			"chain": chain_id,                                         # if chain is specified, calculation is only performed on this chain
+			}},
+			headers={
+			"Content-type": "application/json", "Accept": "application/json"})
 
 	r.raise_for_status()
 

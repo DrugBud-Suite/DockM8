@@ -13,7 +13,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 
 def classy_pose_filter(dataframe: pd.DataFrame, protein_file: Path, model_file: Path, n_cpus: int) -> pd.DataFrame:
@@ -33,7 +33,7 @@ def classy_pose_filter(dataframe: pd.DataFrame, protein_file: Path, model_file: 
 		FileNotFoundError: If any of the input files cannot be found.
 	"""
 	dockm8_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()),
-						None).parent
+			None).parent
 	if model_file is None or model_file == 'SVM':
 		printlog("Using default Classy Pose model (SVM).")
 		model_file = dockm8_path / "software" / "models" / "classy_pose_SVM_paper.pkl"
@@ -78,9 +78,9 @@ def classy_pose_filter(dataframe: pd.DataFrame, protein_file: Path, model_file: 
 			prediction_test_prob = pred_probs[:, 1]
 	elif hasattr(model, "decision_function"):                                                    # For models like SVM
 		decision_scores = model.decision_function(test_data)
-		                                                                                              # Normalize decision scores to [0, 1] as an example normalization
+		# Normalize decision scores to [0, 1] as an example normalization
 		prediction_test_prob = (decision_scores - decision_scores.min()) / (decision_scores.max() -
-																			decision_scores.min())
+							decision_scores.min())
 	else:
 		prediction_test_prob = model.predict(test_data).ravel()                                     # Use predict directly if no probabilities are provided
 

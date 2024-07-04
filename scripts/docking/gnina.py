@@ -13,17 +13,18 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import delete_files, printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.logging import printlog
 
 
 def gnina_docking(split_file: Path,
-		w_dir: Path,
-		protein_file: str,
-		pocket_definition: Dict[str, list],
-		software: Path,
-		exhaustiveness: int,
-		n_poses: int,
-		):
+	w_dir: Path,
+	protein_file: str,
+	pocket_definition: Dict[str, list],
+	software: Path,
+	exhaustiveness: int,
+	n_poses: int,
+	):
 	"""
     Dock ligands from a splitted file into a protein using gnina.
 
@@ -51,24 +52,24 @@ def gnina_docking(split_file: Path,
 	log = gnina_folder / f"{os.path.basename(split_file).split('.')[0]}_gnina.log"
 	# Construct the gnina command
 	gnina_cmd = (f"{software / 'gnina'}"
-					f" --receptor {protein_file}"
-					f" --ligand {input_file}"
-					f" --out {results_path}"
-					f" --center_x {pocket_definition['center'][0]}"
-					f" --center_y {pocket_definition['center'][1]}"
-					f" --center_z {pocket_definition['center'][2]}"
-					f" --size_x {pocket_definition['size'][0]}"
-					f" --size_y {pocket_definition['size'][1]}"
-					f" --size_z {pocket_definition['size'][2]}"
-					f" --exhaustiveness {exhaustiveness}"
-					f" --log {log}"
-					" --cpu 1 --seed 1"
-					f" --num_modes {n_poses}"
-					" --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu")
+		f" --receptor {protein_file}"
+		f" --ligand {input_file}"
+		f" --out {results_path}"
+		f" --center_x {pocket_definition['center'][0]}"
+		f" --center_y {pocket_definition['center'][1]}"
+		f" --center_z {pocket_definition['center'][2]}"
+		f" --size_x {pocket_definition['size'][0]}"
+		f" --size_y {pocket_definition['size'][1]}"
+		f" --size_z {pocket_definition['size'][2]}"
+		f" --exhaustiveness {exhaustiveness}"
+		f" --log {log}"
+		" --cpu 1 --seed 1"
+		f" --num_modes {n_poses}"
+		" --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu")
 	try:
 		# Execute the gnina command
 		subprocess.call(gnina_cmd, shell=True          #, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-						)
+			)
 	except Exception as e:
 		printlog(f"GNINA docking failed: {e}")
 	return
@@ -91,9 +92,9 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			for file in tqdm(os.listdir(w_dir / "gnina"), desc="Loading GNINA poses"):
 				if file.startswith("split"):
 					df = PandasTools.LoadSDF(str(w_dir / "gnina" / file),
-												idName="ID",
-												molColName="Molecule",
-												strictParsing=False)
+							idName="ID",
+							molColName="Molecule",
+							strictParsing=False)
 					gnina_dataframes.append(df)
 			gnina_df = pd.concat(gnina_dataframes)
 			list_ = [*range(1, int(n_poses) + 1, 1)]
@@ -107,10 +108,10 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(gnina_df,
-									str(w_dir / "gnina" / "gnina_poses.sdf"),
-									molColName="Molecule",
-									idName="Pose ID",
-									properties=list(gnina_df.columns))
+					str(w_dir / "gnina" / "gnina_poses.sdf"),
+					molColName="Molecule",
+					idName="Pose ID",
+					properties=list(gnina_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined GNINA poses SDF file!")

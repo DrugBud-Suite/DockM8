@@ -11,7 +11,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -62,10 +62,10 @@ def generate_conformers_RDKit(df: pd.DataFrame, n_cpus: int, forcefield: str) ->
 		n_cpds_start = len(df)
 		# Generate conformers for each molecule in parallel using the conf_gen_RDKit function
 		results = parallel_executor(conf_gen_RDKit,
-									df['Molecule'].tolist(),
-									n_cpus,
-									'concurrent_process',
-									forcefield=forcefield)
+				df['Molecule'].tolist(),
+				n_cpus,
+				'concurrent_process',
+				forcefield=forcefield)
 
 		df['Molecule'] = results
 		# Remove molecules where conformer generation failed

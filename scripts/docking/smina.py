@@ -13,17 +13,18 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import delete_files, printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.logging import printlog
 
 
 def smina_docking(split_file: Path,
-		w_dir: Path,
-		protein_file: str,
-		pocket_definition: Dict[str, list],
-		software: Path,
-		exhaustiveness: int,
-		n_poses: int,
-		):
+	w_dir: Path,
+	protein_file: str,
+	pocket_definition: Dict[str, list],
+	software: Path,
+	exhaustiveness: int,
+	n_poses: int,
+	):
 	"""
     Dock ligands from a splitted file into a protein using smina.
 
@@ -50,23 +51,23 @@ def smina_docking(split_file: Path,
 		results_path = smina_folder / "docked.sdf"
 	# Construct the smina command
 	smina_cmd = (f'{software / "gnina"}'
-					f" --receptor {protein_file}"
-					f" --ligand {input_file}"
-					f" --out {results_path}"
-					f' --center_x {pocket_definition["center"][0]}'
-					f' --center_y {pocket_definition["center"][1]}'
-					f' --center_z {pocket_definition["center"][2]}'
-					f' --size_x {pocket_definition["size"][0]}'
-					f' --size_y {pocket_definition["size"][1]}'
-					f' --size_z {pocket_definition["size"][2]}'
-					f" --exhaustiveness {exhaustiveness}"
-					" --cpu 1 --seed 1"
-					f" --num_modes {n_poses}"
-					" --cnn_scoring none --no_gpu")
+		f" --receptor {protein_file}"
+		f" --ligand {input_file}"
+		f" --out {results_path}"
+		f' --center_x {pocket_definition["center"][0]}'
+		f' --center_y {pocket_definition["center"][1]}'
+		f' --center_z {pocket_definition["center"][2]}'
+		f' --size_x {pocket_definition["size"][0]}'
+		f' --size_y {pocket_definition["size"][1]}'
+		f' --size_z {pocket_definition["size"][2]}'
+		f" --exhaustiveness {exhaustiveness}"
+		" --cpu 1 --seed 1"
+		f" --num_modes {n_poses}"
+		" --cnn_scoring none --no_gpu")
 	try:
 		# Execute the smina command
 		subprocess.call(smina_cmd, shell=True          #, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-						)
+			)
 	except Exception as e:
 		printlog(f"SMINA docking failed: {e}")
 	return
@@ -89,9 +90,9 @@ def fetch_smina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			for file in tqdm(os.listdir(w_dir / "smina"), desc="Loading SMINA poses"):
 				if file.startswith("split"):
 					df = PandasTools.LoadSDF(str(w_dir / "smina" / file),
-												idName="ID",
-												molColName="Molecule",
-												strictParsing=False)
+							idName="ID",
+							molColName="Molecule",
+							strictParsing=False)
 					smina_dataframes.append(df)
 			smina_df = pd.concat(smina_dataframes)
 			list_ = [*range(1, int(n_poses) + 1, 1)]
@@ -105,10 +106,10 @@ def fetch_smina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(smina_df,
-									str(w_dir / "smina" / "smina_poses.sdf"),
-									molColName="Molecule",
-									idName="Pose ID",
-									properties=list(smina_df.columns))
+					str(w_dir / "smina" / "smina_poses.sdf"),
+					molColName="Molecule",
+					idName="Pose ID",
+					properties=list(smina_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined SMINA poses SDF file!")

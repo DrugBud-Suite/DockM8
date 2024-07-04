@@ -12,7 +12,7 @@ sys.path.append(str(dockm8_path))
 
 from scripts.protein_preparation.fetching.fetch_pdb import fetch_pdb_structure
 from scripts.protein_preparation.utils import extract_chain
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)

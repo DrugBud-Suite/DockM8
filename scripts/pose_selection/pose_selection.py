@@ -13,19 +13,19 @@ sys.path.append(str(dockm8_path))
 from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
 from scripts.pose_selection.clustering.clustering import run_clustering
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS, rescore_docking
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def select_poses(selection_method: str,
-					clustering_method: str,
-					w_dir: Path,
-					protein_file: Path,
-					software: Path,
-					all_poses: pd.DataFrame,
-					n_cpus: int):
+		clustering_method: str,
+		w_dir: Path,
+		protein_file: Path,
+		software: Path,
+		all_poses: pd.DataFrame,
+		n_cpus: int):
 	"""This function clusters all poses according to the metric selected using multiple CPU cores.
 
     Args:
