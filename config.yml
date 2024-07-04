@@ -17,8 +17,8 @@ decoy_generation:
 
 ## Input file configuration
 receptor(s):                                                        # List of paths to receptor files; include multiple rows when using ensemble mode
-    - "/home/tony/DockM8/tests/test_files/1fvv_p.pdb"                                 # Can also be a PDB code (will be downloaded from the PDB) or a UniProt ID (AlphaFold2 model will be used)
-docking_library: "/home/tony/DockM8/tests/test_files/library.sdf"   # Path to the file containing the compounds to dock (SDF format)
+    - "/home/tony/DockM8_v2/tests/test_files/1fvv_p.pdb"                                 # Can also be a PDB code (will be downloaded from the PDB) or a UniProt ID (AlphaFold2 model will be used)
+docking_library: "/home/tony/DockM8_v2/tests/test_files/library.sdf"   # Path to the file containing the compounds to dock (SDF format)
 
 ## Protein Preparation
 protein_preparation:
@@ -42,7 +42,7 @@ ligand_preparation:
 pocket_detection:
   method: "Reference"                                               # Method used for pocket detection. Options are : "Reference", "RoG", "Dogsitescorer", "P2Rank", "Manual"
   reference_ligand(s):                                              # List of paths to reference ligand files; include multiple rows when using ensemble mode (order is important). Only valid for "Reference" and "RoG" pocket detection method
-    - "/home/tony/DockM8/tests/test_files/1fvv_l.sdf"
+    - "/home/tony/DockM8_v2/tests/test_files/1fvv_l.sdf"
   radius: 10                                                        # Radius used for pocket detection (only for "Reference" method)
   manual_pocket: "center:x,y,z*size:x,y,z"                          # Manual pocket definition (only for "Manual" method). Format is "center:x,y,z*size:x,y,z". Ensure that the size is in Angstroms
 
@@ -59,7 +59,7 @@ post_docking:
   clash_cutoff: 5                                                   # Clash cutoff used for pose filtering.
   strain_cutoff: 5000                                               # Strain cutoff used for pose filtering.
   bust_poses: true                                                  # Control whether problematic poses are removed (true) or not (false). Can be slow for large datasets
-  classy_poses: false                                               # Control whether poses are classified as "good" or "bad" (true) or not (false). Can be slow for large datasets
+  classy_pose: false                                               # Control whether poses are classified as "good" or "bad" (true) or not (false). Can be slow for large datasets
   classy_pose_model: 'SVM'                                          # Options are : 'SVM' or 'LGBM'
 
 ## Pose selection configuration
