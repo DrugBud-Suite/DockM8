@@ -13,8 +13,6 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.logging import printlog
-
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -97,42 +95,61 @@ def str2bool(v):
 		raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Optional
+
+import pandas as pd
+from rdkit import Chem
+
+
 def parallel_SDF_loader(sdf_path: Path,
 						molColName: str,
 						idName: str,
-						n_cpus=os.cpu_count() - 2,
-						SMILES=None) -> pd.DataFrame:
+						n_cpus: Optional[int] = None,
+						SMILES: Optional[str] = None) -> pd.DataFrame:
 	"""
-    Loads a SDF file in parallel using joblib library.
+    Loads an SDF file in parallel using ThreadPoolExecutor.
 
     Args:
         sdf_path (Path): The path to the SDF file.
-        molColName (str): The name of the molecule column in the SDF file.
-        idName (str): The name of the ID column in the SDF file.
-        includeFingerprints (bool): Whether to include fingerprints in the loaded DataFrame.
-        strictParsing (bool): Whether to use strict parsing when loading the SDF file.
+        molColName (str): The name of the molecule column in the output DataFrame.
+        idName (str): The name of the ID column in the output DataFrame.
+        n_cpus (int, optional): The number of CPUs to use. Defaults to (CPU count - 2).
+        SMILES (str, optional): SMILES string (unused in current implementation).
 
     Returns:
         DataFrame: The loaded SDF file as a DataFrame.
     """
+	if n_cpus is None:
+		n_cpus = max(1, int(os.cpu_count() * 0.9))
+
+	def process_molecule(mol):
+		if mol is None:
+			return None
+		mol_props = {"Pose ID": mol.GetProp("_Name")}
+		mol_props.update({prop: mol.GetProp(prop) for prop in mol.GetPropNames()})
+		mol_props["Molecule"] = mol
+		return mol_props
+
 	try:
-		# Load the molecules from the SDF file
-		mols = [m for m in Chem.MultithreadedSDMolSupplier(sdf_path, numWriterThreads=n_cpus) if m is not None]
-		data = []
-		# Iterate over each molecule
-		for mol in mols:
-			# Get the properties of the molecule
-			mol_props = {"Pose ID": mol.GetProp("_Name")}
-			for prop in mol.GetPropNames():
-				mol_props[prop] = mol.GetProp(prop)
-				mol_props["Molecule"] = mol
-			# Append the properties to the list
-			data.append(mol_props)
-		df = pd.DataFrame(data).drop(columns=["mol_cond"], errors="ignore")
-		# Detect the columns that should be numeric
+		supplier = Chem.MultithreadedSDMolSupplier(str(sdf_path), numWriterThreads=n_cpus)
+
+		with ThreadPoolExecutor(max_workers=n_cpus) as executor:
+			future_to_mol = {executor.submit(process_molecule, mol): mol for mol in supplier}
+			data = [future.result() for future in as_completed(future_to_mol) if future.result() is not None]
+
+		df = pd.DataFrame(data)
+		df = df.drop(columns=["mol_cond"], errors="ignore")
+
+		# Convert numeric columns
 		for col in df.columns:
-			if col not in [idName, molColName, "ID", "Pose ID"]:
+			if col not in [idName, molColName, "ID", "Pose ID", "SMILES", SMILES]:
 				df[col] = pd.to_numeric(df[col], errors="coerce", downcast="float")
+
+		return df
+
 	except Exception as e:
-		printlog(f"Error occurred during loading of SDF file: {str(e)}")
-	return df
+		print(f"Error occurred during loading of SDF file: {str(e)}")
+		return pd.DataFrame()      # Return an empty DataFrame instead of None
