@@ -28,6 +28,7 @@ from scripts.rescoring.rescoring_functions.RFScoreVS import rfscorevs_rescoring
 from scripts.rescoring.rescoring_functions.RTMScore import RTMScore_rescoring
 from scripts.rescoring.rescoring_functions.SCORCH import SCORCH_rescoring
 from scripts.rescoring.rescoring_functions.vinardo import vinardo_rescoring
+from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff_rescoring
 from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -68,7 +69,9 @@ RESCORING_FUNCTIONS = {
 	"KORP-PL": {
 		"function": KORPL_rescoring, "column_name": "KORP-PL", "best_value": "min", "range": (200, -1000)},
 	"ConvexPLR": {
-		"function": ConvexPLR_rescoring, "column_name": "ConvexPLR", "best_value": "max", "range": (-10, 10)}, }
+		"function": ConvexPLR_rescoring, "column_name": "ConvexPLR", "best_value": "max", "range": (-10, 10)},
+	"ITScoreAff": {
+		"function": ITScoreAff_rescoring, "column_name": "ITScoreAff", "best_value": "min", "range": (-200, 100)}, }
 
 
 def rescore_poses(w_dir: Path,
