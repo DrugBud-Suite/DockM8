@@ -8,7 +8,8 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.pocket_finding.utils import get_ligand_coordinates
-from scripts.utilities.utilities import load_molecule, printlog
+from scripts.utilities.utilities import load_molecule
+from scripts.utilities.logging import printlog
 
 
 def find_pocket_default(ligand_file: Path, protein_file: Path, radius: int):

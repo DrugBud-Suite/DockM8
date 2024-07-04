@@ -24,7 +24,8 @@ from scripts.docking.qvinaw import fetch_qvinaw_poses, qvinaw_docking
 from scripts.docking.smina import fetch_smina_poses, smina_docking
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.parallel_executor import parallel_executor
-from scripts.utilities.utilities import parallel_SDF_loader, printlog
+from scripts.utilities.utilities import parallel_SDF_loader
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -39,15 +40,15 @@ DOCKING_PROGRAMS = {
 
 
 def dockm8_docking(library: pd.DataFrame or Path,
-					w_dir: Path,
-					protein_file: Path,
-					pocket_definition: dict,
-					software: Path,
-					docking_programs: list,
-					exhaustiveness: int,
-					n_poses: int,
-					n_cpus: int,
-					job_manager="concurrent_process"):
+		w_dir: Path,
+		protein_file: Path,
+		pocket_definition: dict,
+		software: Path,
+		docking_programs: list,
+		exhaustiveness: int,
+		n_poses: int,
+		n_cpus: int,
+		job_manager="concurrent_process"):
 	"""
     Dock ligands into a protein binding site using one or more docking programs.
 
@@ -78,14 +79,14 @@ def dockm8_docking(library: pd.DataFrame or Path,
 				docking_function, fetch_function = DOCKING_PROGRAMS[program]
 				if not (w_dir / program.lower()).exists():
 					docking_function(library_path,
-										w_dir,
-										protein_file,
-										pocket_definition,
-										software,
-										exhaustiveness,
-										n_poses)
+							w_dir,
+							protein_file,
+							pocket_definition,
+							software,
+							exhaustiveness,
+							n_poses)
 				if (w_dir / program.lower()).exists() and not (w_dir / program.lower() /
-																f"{program.lower()}_poses.sdf").exists():
+							f"{program.lower()}_poses.sdf").exists():
 					fetch_function(w_dir, n_poses, software)
 		else:
 			printlog(f"Running docking using {n_cpus} CPUs...")
@@ -102,18 +103,18 @@ def dockm8_docking(library: pd.DataFrame or Path,
 				docking_function, fetch_function = DOCKING_PROGRAMS[program]
 				if not (w_dir / program.lower()).exists() or not any((w_dir / program.lower()).iterdir()):
 					parallel_executor(docking_function,
-										split_files_sdfs,
-										n_cpus,
-										job_manager,
-										w_dir=w_dir,
-										protein_file=protein_file,
-										pocket_definition=pocket_definition,
-										software=software,
-										exhaustiveness=exhaustiveness,
-										n_poses=n_poses)
+							split_files_sdfs,
+							n_cpus,
+							job_manager,
+							w_dir=w_dir,
+							protein_file=protein_file,
+							pocket_definition=pocket_definition,
+							software=software,
+							exhaustiveness=exhaustiveness,
+							n_poses=n_poses)
 
 				if (w_dir / program.lower()).exists() and not (w_dir / program.lower() /
-																f"{program.lower()}_poses.sdf").exists():
+							f"{program.lower()}_poses.sdf").exists():
 					fetch_function(w_dir, n_poses, software)
 	except Exception as e:
 		printlog("ERROR: Docking failed!")
@@ -144,18 +145,18 @@ def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path, n_
 	all_poses = pd.DataFrame()
 	for program in docking_programs:
 		df = parallel_SDF_loader(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf",
-									molColName="Molecule",
-									idName="Pose ID",
-									n_cpus=n_cpus)
+				molColName="Molecule",
+				idName="Pose ID",
+				n_cpus=n_cpus)
 
 		all_poses = pd.concat([all_poses, df])
 	try:
 		# Write the combined poses to an SDF file
 		PandasTools.WriteSDF(all_poses,
-								f"{w_dir}/allposes.sdf",
-								molColName="Molecule",
-								idName="Pose ID",
-								properties=list(all_poses.columns))
+				f"{w_dir}/allposes.sdf",
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(all_poses.columns))
 
 		printlog("All poses succesfully checked and combined!")
 	except Exception as e:
