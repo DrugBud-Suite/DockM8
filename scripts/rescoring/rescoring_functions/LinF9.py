@@ -56,8 +56,8 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 	def LinF9_rescoring_splitted(split_file, protein_file):
 		LinF9_folder = rescoring_folder / "LinF9_rescoring"
 		results = LinF9_folder / f"{split_file.stem}_LinF9.sdf"
-		LinF9_cmd = (f"{software}/smina.static" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
-			f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
+		LinF9_cmd = (f"{software}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
+						f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
 		try:
 			subprocess.call(LinF9_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
 		except Exception as e:
@@ -69,10 +69,10 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 	try:
 		LinF9_dataframes = [
 			PandasTools.LoadSDF(str(rescoring_folder / "LinF9_rescoring" / file),
-				idName="Pose ID",
-				molColName=None,
-				includeFingerprints=False,
-				embedProps=False)
+			idName="Pose ID",
+			molColName=None,
+			includeFingerprints=False,
+			embedProps=False)
 			for file in os.listdir(rescoring_folder / "LinF9_rescoring")
 			if file.startswith("split") and file.endswith("_LinF9.sdf")]
 	except Exception as e:
