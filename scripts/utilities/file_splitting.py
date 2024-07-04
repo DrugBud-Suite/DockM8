@@ -130,9 +130,6 @@ def split_sdf_single(dir, sdf_file):
 	return split_files_folder
 
 
-from pathlib import Path
-
-
 def split_sdf_single_str(dir, sdf_file):
 	"""
 	Split an SDF file into individual compounds and save them as separate files.
