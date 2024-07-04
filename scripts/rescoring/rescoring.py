@@ -29,6 +29,7 @@ from scripts.rescoring.rescoring_functions.RTMScore import RTMScore_rescoring
 from scripts.rescoring.rescoring_functions.SCORCH import SCORCH_rescoring
 from scripts.rescoring.rescoring_functions.vinardo import vinardo_rescoring
 from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff_rescoring
+from scripts.rescoring.rescoring_functions.DLIGAND2 import DLIGAND2_rescoring
 from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -71,7 +72,9 @@ RESCORING_FUNCTIONS = {
 	"ConvexPLR": {
 		"function": ConvexPLR_rescoring, "column_name": "ConvexPLR", "best_value": "max", "range": (-10, 10)},
 	"ITScoreAff": {
-		"function": ITScoreAff_rescoring, "column_name": "ITScoreAff", "best_value": "min", "range": (-200, 100)}, }
+		"function": ITScoreAff_rescoring, "column_name": "ITScoreAff", "best_value": "min", "range": (-200, 100)}, 
+	"DLIGAND2": {
+		"function": DLIGAND2_rescoring, "column_name": "DLIGAND2", "best_value": "min", "range": (-200, 100)},}
 
 
 def rescore_poses(w_dir: Path,
