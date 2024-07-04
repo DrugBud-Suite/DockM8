@@ -1,12 +1,13 @@
 import os
+import stat
 import subprocess
 import sys
-import time
-import warnings
-from pathlib import Path
-import urllib.request
 import tarfile
 import tempfile
+import time
+import urllib.request
+import warnings
+from pathlib import Path
 
 import pandas as pd
 from rdkit.Chem import PandasTools
@@ -16,11 +17,11 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.logging import printlog
-from scripts.utilities.utilities import delete_files
-from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.file_splitting import split_sdf_str
+from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
+from scripts.utilities.parallel_executor import parallel_executor
+from scripts.utilities.utilities import delete_files
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -41,6 +42,12 @@ def check_and_download_itscoreAff():
 
 		printlog("Extraction complete. Removing tarball...")
 		os.remove(download_path)
+
+		# Change permissions of the executable
+		executable_path = itscore_folder / "ITScoreAff"
+		os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IEXEC)
+		printlog(f"Changed permissions for {executable_path}")
+
 		printlog("ITScoreAff_v1.0 setup complete.")
 	else:
 		printlog("ITScoreAff_v1.0 folder already exists.")
@@ -90,14 +97,6 @@ def ITScoreAff_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 			itscoreAff_command = f"{software}/ITScoreAff_v1.0/ITScoreAff {protein_mol2} {ligand_mol2}"
 			process = subprocess.Popen(itscoreAff_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 			stdout, stderr = process.communicate()
-
-			# Debug logging
-			printlog(f"Debug: ITScoreAff command: {itscoreAff_command}")
-			printlog(f"Debug: ITScoreAff output for {split_file}:")
-			printlog(stdout.decode())
-			if stderr:
-				printlog(f"Debug: ITScoreAff stderr for {split_file}:")
-				printlog(stderr.decode())
 
 			scores = []
 			output = stdout.decode().splitlines()
