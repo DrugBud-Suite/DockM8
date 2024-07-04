@@ -131,7 +131,7 @@ else
     conda config --add channels bioconda
     conda config --add channels mx
 
-    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pytest pdbfixer reduce -q -y
+    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt tqdm pytest pdbfixer -q -y
 	conda install -c ikmckenz adme-pred-py
 
     echo -e """
