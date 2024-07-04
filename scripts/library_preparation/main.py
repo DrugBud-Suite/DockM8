@@ -1,7 +1,7 @@
 import sys
 import warnings
 from pathlib import Path
-
+import pandas as pd
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
@@ -13,7 +13,7 @@ from scripts.library_preparation.conformer_generation.confgen_GypsumDL import ge
 from scripts.library_preparation.conformer_generation.confgen_RDKit import generate_conformers_RDKit
 from scripts.library_preparation.protonation.protgen_GypsumDL import protonate_GypsumDL
 from scripts.library_preparation.standardisation.standardise import standardize_library
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -22,58 +22,58 @@ PROTONATION_OPTIONS = ["GypsumDL", "None"]
 CONFORMER_OPTIONS = ["RDKit", "MMFF", "GypsumDL"]
 
 
-def prepare_library(input_sdf: str,
-					output_dir: Path,
+import pandas as pd
+from rdkit.Chem import PandasTools
+from pathlib import Path
+import tempfile
+
+def prepare_library(input_sdf: Path,
 					id_column: str,
 					protonation: str,
 					conformers: str,
 					software: Path,
 					n_cpus: int,
-					n_conformers: int = 1,
-					):
+					n_conformers: int = 1) -> pd.DataFrame:
 	"""
     Prepares a docking library for further analysis.
 
     Args:
-        input_sdf (str): The path to the input SDF file containing the docking library.
+        input_sdf (Path): The path to the input SDF file containing the docking library.
         id_column (str): The name of the column in the SDF file that contains the compound IDs.
-        protonation (str): The method to use for protonation. Can be 'GypsumDL', or 'None' for no protonation.
+        protonation (str): The method to use for protonation.
+        conformers (str): The method to use for conformer generation.
+        software (Path): The path to the required software.
         n_cpus (int): The number of CPUs to use for parallelization.
+        n_conformers (int): The number of conformers to generate (default is 1).
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the prepared library.
     """
-	standardized_sdf = output_dir / "standardized_library.sdf"
+	# Load input SDF file into a DataFrame
+	input_df = PandasTools.LoadSDF(str(input_sdf), molColName="Molecule", idName=id_column)
 
-	if not standardized_sdf.is_file():
-		standardize_library(input_sdf, output_dir, id_column, n_cpus)
+	# Standardization
+	standardized_df = standardize_library(input_df, id_column=id_column, smiles_column=None, n_cpus=n_cpus)
 
+	# Protonation
 	if protonation == "GypsumDL":
-		protonated_sdf = output_dir / "protonated_library.sdf"
-		if not protonated_sdf.is_file():
-			protonate_GypsumDL(standardized_sdf, output_dir, software, n_cpus)
+		protonated_df = protonate_GypsumDL(standardized_df, software, n_cpus)
 	elif protonation == "None":
-		protonated_sdf = standardized_sdf
+		protonated_df = standardized_df
 	else:
-		raise ValueError(f'Invalid protonation method specified : {protonation}. Must be either "None" or "GypsumDL".')
+		raise ValueError(f'Invalid protonation method specified: {protonation}. Must be either "None" or "GypsumDL".')
 
-	if conformers == "RDKit" or conformers == "MMFF":
-		generate_conformers_RDKit(protonated_sdf, output_dir, n_cpus)
+	# Conformer generation
+	if conformers == "MMFF":
+		final_df = generate_conformers_RDKit(protonated_df, n_cpus, forcefield='MMFF')
+	elif conformers == "UFF":
+		final_df = generate_conformers_RDKit(protonated_df, n_cpus, forcefield='UFF')
 	elif conformers == "GypsumDL":
-		generate_conformers_GypsumDL(protonated_sdf, output_dir, software, n_cpus, n_conformers)
+		final_df = generate_conformers_GypsumDL(protonated_df, software, n_cpus)
 	else:
-		raise ValueError(
-			f'Invalid conformer method specified : {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".')
+		raise ValueError(f'Invalid conformer method specified: {conformers}. Must be either "RDKit", "MMFF" or "GypsumDL".')
 
-	printlog("Cleaning up files...")
+	# Keep only 'Molecule' and 'ID' columns
+	final_df = final_df[["Molecule", "ID"]]
 
-	final_library_df = PandasTools.LoadSDF(str(output_dir / "generated_conformers.sdf"),
-											molColName="Molecule",
-											idName="ID")
-	final_library_df[["Molecule", "ID"]]
-	PandasTools.WriteSDF(final_library_df, str(output_dir / "final_library.sdf"), molColName="Molecule", idName="ID")
-
-	# Delete the temporary files generated during the library preparation process
-	(output_dir / "standardized_library.sdf").unlink(missing_ok=True)
-	(output_dir / "protonated_library.sdf").unlink(missing_ok=True)
-	(output_dir / "generated_conformers.sdf").unlink(missing_ok=True)
-
-	printlog("Preparation of compound library finished.")
-	return output_dir / "final_library.sdf"
+	return final_df

@@ -14,7 +14,10 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import delete_files, parallel_executor, printlog, split_sdf_str
+from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.parallel_executor import parallel_executor
+from scripts.utilities.file_splitting import split_sdf_str
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -54,7 +57,7 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 		LinF9_folder = rescoring_folder / "LinF9_rescoring"
 		results = LinF9_folder / f"{split_file.stem}_LinF9.sdf"
 		LinF9_cmd = (f"{software}/smina.static" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
-						f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
+			f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
 		try:
 			subprocess.call(LinF9_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
 		except Exception as e:
@@ -66,10 +69,10 @@ def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 	try:
 		LinF9_dataframes = [
 			PandasTools.LoadSDF(str(rescoring_folder / "LinF9_rescoring" / file),
-								idName="Pose ID",
-								molColName=None,
-								includeFingerprints=False,
-								embedProps=False)
+				idName="Pose ID",
+				molColName=None,
+				includeFingerprints=False,
+				embedProps=False)
 			for file in os.listdir(rescoring_folder / "LinF9_rescoring")
 			if file.startswith("split") and file.endswith("_LinF9.sdf")]
 	except Exception as e:

@@ -1,115 +1,123 @@
 import math
 import os
-import shutil
 import subprocess
 import sys
+import tempfile
 import warnings
 from pathlib import Path
-from subprocess import DEVNULL, STDOUT
 
 import pandas as pd
-from rdkit import Chem
-from rdkit.Chem import AllChem, PandasTools
+from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import parallel_executor, printlog, split_sdf_str
+from scripts.utilities.file_splitting import split_sdf_str
+from scripts.utilities.logging import printlog
+from scripts.utilities.parallel_executor import parallel_executor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-
-def protonate_GypsumDL(input_sdf: Path, output_dir: Path, software: Path, n_cpus: int):
+def protonate_GypsumDL(df: pd.DataFrame,
+						software: Path,
+						n_cpus: int,
+						min_ph: float = 6.5,
+						max_ph: float = 7.5,
+						pka_precision: float = 1.0) -> pd.DataFrame:
 	"""
-    Generates protonation states using GypsumDL.
+	Generates protonation states using GypsumDL.
 
-    Args:
-        input_sdf (str): Path to the input SDF file.
-        output_dir (str): Path to the output directory.
-        software (str): Path to the GypsumDL software.
-        n_cpus (int): Number of CPUs to use for the calculation.
+	Args:
+		df (pd.DataFrame): Input DataFrame containing molecules.
+		software (Path): Path to the GypsumDL software.
+		n_cpus (int): Number of CPUs to use for the calculation.
+		min_ph (float, optional): Minimum pH for protonation. Defaults to 6.5.
+		max_ph (float, optional): Maximum pH for protonation. Defaults to 7.5.
+		pka_precision (float, optional): pKa precision for protonation. Defaults to 1.0.
 
-    Raises:
-        Exception: If failed to generate protomers.
+	Returns:
+		pd.DataFrame: DataFrame with protonated molecules.
 
-    """
+	Raises:
+		Exception: If failed to generate protomers.
+	"""
 	printlog("Generating protomers using GypsumDL...")
-	split_files_folder = split_sdf_str(output_dir / "GypsumDL_split", input_sdf, 10)
-	split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-	global gypsum_dl_run
+	with tempfile.TemporaryDirectory() as temp_dir:
+		temp_dir_path = Path(temp_dir)
+		input_sdf = temp_dir_path / "input.sdf"
+		output_dir = temp_dir_path / "output"
+		output_dir.mkdir(exist_ok=True)
 
-	def gypsum_dl_run(split_file, output_dir, cpus):
-		results_dir = output_dir / "GypsumDL_results"
-		try:
-			gypsum_dl_command = (f"{sys.executable} {software}/gypsum_dl-1.2.1/run_gypsum_dl.py "
-									f"-s {split_file} "
-									f"-o {results_dir} "
-									f"--job_manager multiprocessing "
-									f"-p {cpus} "
-									f"-m 1 "
-									f"-t 10 "
-									f"--min_ph 6.5 "
-									f"--max_ph 7.5 "
-									f"--pka_precision 1 "
-									f"--skip_alternate_ring_conformations "
-									f"--skip_making_tautomers "
-									f"--skip_enumerate_chiral_mol "
-									f"--skip_enumerate_double_bonds "
-									f"--max_variants_per_compound 1 "
-									f"--separate_output_files "
-									f"--2d_output_only")
-			subprocess.call(gypsum_dl_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-		except Exception as e:
-			printlog("ERROR: Failed to generate protomers and conformers!")
-			printlog(e)
-		return
+		# Write input DataFrame to SDF
+		PandasTools.WriteSDF(df, str(input_sdf), molColName="Molecule", idName="ID")
 
-	parallel_executor(gypsum_dl_run, split_files_sdfs, 3, output_dir=output_dir, cpus=math.ceil(n_cpus // 3))
+		# Split SDF function (you'll need to implement this)
+		split_files_folder = split_sdf_str(output_dir / "GypsumDL_split", input_sdf, 10)
+		split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-	results_dfs = []
+		global gypsum_dl_run	
 
-	for file in os.listdir(output_dir / "GypsumDL_results"):
-		if file.endswith(".sdf"):
-			sdf_df = PandasTools.LoadSDF(str(output_dir / "GypsumDL_results" / file),
-											molColName="Molecule",
-											idName="ID")
-			results_dfs.append(sdf_df)
+		def gypsum_dl_run(split_file: Path, output_dir: Path, cpus: int):
+			results_dir = output_dir / "GypsumDL_results"
+			try:
+				gypsum_dl_command = (f"{sys.executable} {software}/gypsum_dl-1.2.1/run_gypsum_dl.py "
+										f"-s {split_file} "
+										f"-o {results_dir} "
+										f"--job_manager multiprocessing "
+										f"-p {cpus} "
+										f"-m 1 "
+										f"-t 10 "
+										f"--min_ph {min_ph} "
+										f"--max_ph {max_ph} "
+										f"--pka_precision {pka_precision} "
+										f"--skip_alternate_ring_conformations "
+										f"--skip_making_tautomers "
+										f"--skip_enumerate_chiral_mol "
+										f"--skip_enumerate_double_bonds "
+										f"--max_variants_per_compound 1 "
+										f"--separate_output_files "
+										f"--2d_output_only")
+				subprocess.call(gypsum_dl_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+			except Exception as e:
+				print(f"ERROR: Failed to generate protomers! {e}")
+			return
 
-	final_df = pd.concat(results_dfs)
+		# Parallel execution function (you'll need to implement this)
+		parallel_executor(gypsum_dl_run, split_files_sdfs, 3, output_dir=output_dir, cpus=math.ceil(n_cpus // 3))
 
-	# Remove the row containing GypsumDL parameters from the DataFrame
-	final_df = final_df[final_df["ID"] != "EMPTY MOLECULE DESCRIBING GYPSUM-DL PARAMETERS"]
+		results_dfs = []
 
-	# Select only the 'Molecule' and 'ID' columns from the DataFrame
-	final_df = final_df[["Molecule", "ID"]]
+		for file in os.listdir(output_dir / "GypsumDL_results"):
+			if file.endswith(".sdf"):
+				sdf_df = PandasTools.LoadSDF(str(output_dir / "GypsumDL_results" / file),
+												molColName="Molecule",
+												idName="ID")
+				results_dfs.append(sdf_df)
 
-	# Load the input SDF file and count the number of compounds
-	input_df = PandasTools.LoadSDF(str(input_sdf), molColName="Molecule", idName="ID")
-	input_compound_count = len(input_df)
+		final_df = pd.concat(results_dfs)
 
-	# Check if the number of compounds in final_df matches the input
-	final_compound_count = len(final_df)
+		# Remove the row containing GypsumDL parameters from the DataFrame
+		final_df = final_df[final_df["ID"] != "EMPTY MOLECULE DESCRIBING GYPSUM-DL PARAMETERS"]
 
-	if final_compound_count != input_compound_count:
-		printlog(
-			"Some compounds were not able to be protonated. Adding those compounds using the input SDF file instead.")
-		input_ids = set(input_df["ID"])
-		final_ids = set(final_df["ID"])
-		missing_ids = input_ids - final_ids
-		missing_compounds = input_df[input_df["ID"].isin(missing_ids)]
-		final_df = pd.concat([final_df, missing_compounds])
+		# Select only the 'Molecule' and 'ID' columns from the DataFrame
+		final_df = final_df[["Molecule", "ID"]]
 
-	output_file = output_dir / "protonated_library.sdf"
+		# Check if the number of compounds in final_df matches the input
+		input_compound_count = len(df)
+		final_compound_count = len(final_df)
 
-	PandasTools.WriteSDF(final_df, str(output_file), molColName="Molecule", idName="ID")
-	shutil.rmtree(output_dir / "GypsumDL_results", ignore_errors=True)
-	shutil.rmtree(output_dir / "GypsumDL_split", ignore_errors=True)
+		if final_compound_count != input_compound_count:
+			printlog(
+				"Some compounds were not able to be protonated. Adding those compounds using the input DataFrame instead."
+			)
+			input_ids = set(df["ID"])
+			final_ids = set(final_df["ID"])
+			missing_ids = input_ids - final_ids
+			missing_compounds = df[df["ID"].isin(missing_ids)]
+			final_df = pd.concat([final_df, missing_compounds])
 
-	(output_dir / "gypsum_dl_success.sdf").unlink(missing_ok=True)
-	(output_dir / "gypsum_dl_failed.smi").unlink(missing_ok=True)
-
-	return output_file
+	return final_df

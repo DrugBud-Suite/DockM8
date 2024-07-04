@@ -15,17 +15,19 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import convert_molecules, delete_files, printlog, split_pdbqt_str
-
+from scripts.utilities.file_splitting import split_pdbqt_str
+from scripts.utilities.molecule_conversion import convert_molecules
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.logging import printlog
 
 def qvina2_docking(split_file: Path,
-		w_dir: Path,
-		protein_file: Path,
-		pocket_definition: Dict[str, list],
-		software: Path,
-		exhaustiveness: int,
-		n_poses: int,
-		):
+	w_dir: Path,
+	protein_file: Path,
+	pocket_definition: Dict[str, list],
+	software: Path,
+	exhaustiveness: int,
+	n_poses: int,
+	):
 	"""
     Perform docking using the QVINA2 software for either a library of molecules or split files.
 
@@ -61,28 +63,28 @@ def qvina2_docking(split_file: Path,
 		print(e)
 
 	protein_file_pdbqt = convert_molecules(protein_file,
-											protein_file.with_suffix(".pdbqt"),
-											"pdb",
-											"pdbqt")
+		protein_file.with_suffix(".pdbqt"),
+		"pdb",
+		"pdbqt")
 	log = qvina2_folder / f"{os.path.basename(split_file).split('.')[0]}_qvina2.log"
 	# Dock each ligand using QVINA2
 	for pdbqt_file in pdbqt_folder.glob("*.pdbqt"):
 		output_file = results_folder / (pdbqt_file.stem + "_QVINA2.pdbqt")
 		qvina2_cmd = (f"{software / 'qvina2.1'}"
-						f" --receptor {protein_file_pdbqt}"
-						f" --ligand {pdbqt_file}"
-						f" --out {output_file}"
-						f" --center_x {pocket_definition['center'][0]}"
-						f" --center_y {pocket_definition['center'][1]}"
-						f" --center_z {pocket_definition['center'][2]}"
-						f" --size_x {pocket_definition['size'][0]}"
-						f" --size_y {pocket_definition['size'][1]}"
-						f" --size_z {pocket_definition['size'][2]}"
-						f" --exhaustiveness {exhaustiveness}"
-						" --cpu 1 --seed 1 --energy_range 10"
-						f" --num_modes {n_poses}")
+			f" --receptor {protein_file_pdbqt}"
+			f" --ligand {pdbqt_file}"
+			f" --out {output_file}"
+			f" --center_x {pocket_definition['center'][0]}"
+			f" --center_y {pocket_definition['center'][1]}"
+			f" --center_z {pocket_definition['center'][2]}"
+			f" --size_x {pocket_definition['size'][0]}"
+			f" --size_y {pocket_definition['size'][1]}"
+			f" --size_z {pocket_definition['size'][2]}"
+			f" --exhaustiveness {exhaustiveness}"
+			" --cpu 1 --seed 1 --energy_range 10"
+			f" --num_modes {n_poses}")
 		subprocess.call(qvina2_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-						)
+			)
 
 	qvina2_docking_results = qvina2_folder / (Path(input_file).stem + "_qvina2.sdf")
 	# Process the docked poses
@@ -103,10 +105,10 @@ def qvina2_docking(split_file: Path,
 				"QVINA2_Affinity": affinity,
 				"ID": pose_file.stem.split("_")[0], }
 		PandasTools.WriteSDF(qvina2_poses,
-								str(qvina2_docking_results),
-								molColName="Molecule",
-								idName="Pose ID",
-								properties=list(qvina2_poses.columns))
+			str(qvina2_docking_results),
+			molColName="Molecule",
+			idName="Pose ID",
+			properties=list(qvina2_poses.columns))
 
 	except Exception as e:
 		printlog("ERROR: Failed to combine QVINA2 SDF file!")
@@ -132,9 +134,9 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
 			for file in tqdm(os.listdir(w_dir / "qvina2"), desc="Loading QVINA2 poses"):
 				if file.startswith("split") or file.startswith("final_library") and file.endswith(".sdf"):
 					df = PandasTools.LoadSDF(str(w_dir / "qvina2" / file),
-												idName="Pose ID",
-												molColName="Molecule",
-												strictParsing=False)
+						idName="Pose ID",
+						molColName="Molecule",
+						strictParsing=False)
 					qvina2_dataframes.append(df)
 			qvina2_df = pd.concat(qvina2_dataframes)
 			qvina2_df["ID"] = qvina2_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -143,10 +145,10 @@ def fetch_qvina2_poses(w_dir: Union[str, Path], *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(qvina2_df,
-									str(w_dir / "qvina2" / "qvina2_poses.sdf"),
-									molColName="Molecule",
-									idName="Pose ID",
-									properties=list(qvina2_df.columns))
+				str(w_dir / "qvina2" / "qvina2_poses.sdf"),
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(qvina2_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined QVINA2 poses SDF file!")

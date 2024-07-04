@@ -15,7 +15,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -63,9 +63,9 @@ def minimize_receptor(receptor: Path, solvent: bool = True) -> Path:
 	try:
 		preliminary_cutoff = 1.0 * nanometers
 		system = forcefield.createSystem(modeller.topology,
-											nonbondedMethod=PME,
-											nonbondedCutoff=preliminary_cutoff,
-											constraints=HBonds)
+					nonbondedMethod=PME,
+					nonbondedCutoff=preliminary_cutoff,
+					constraints=HBonds)
 
 		# Check box size and adjust cutoff
 		box_vectors = system.getDefaultPeriodicBoxVectors()
@@ -74,9 +74,9 @@ def minimize_receptor(receptor: Path, solvent: bool = True) -> Path:
 		if safe_cutoff != preliminary_cutoff:
 			# Re-create system with new cutoff
 			system = forcefield.createSystem(modeller.topology,
-												nonbondedMethod=PME,
-												nonbondedCutoff=safe_cutoff,
-												constraints=HBonds)
+						nonbondedMethod=PME,
+						nonbondedCutoff=safe_cutoff,
+						constraints=HBonds)
 	except Exception as e:
 		printlog(f"Error creating system prior to minimization: {e}")
 		raise ValueError(f"Error creating system prior to minimization: {e}")

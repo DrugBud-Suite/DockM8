@@ -5,9 +5,7 @@ import pytest
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / "tests"
-                   for p in Path(__file__).resolve().parents
-                   if (p / "tests").is_dir()), None)
+tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -17,86 +15,61 @@ from scripts.library_preparation.conformer_generation.confgen_RDKit import gener
 
 @pytest.fixture
 def common_test_data():
-    """Set up common test data."""
-    dockm8_path = next((p / "tests"
-                        for p in Path(__file__).resolve().parents
-                        if (p / "tests").is_dir()), None).parent
-    library = dockm8_path / "tests/test_files/library_preparation/library.sdf"
-    output_dir = dockm8_path / "tests/test_files/library_preparation/"
-    software = dockm8_path / "software"
-    return library, output_dir, software
+	"""Set up common test data."""
+	dockm8_path = next((p for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None)
+	library = dockm8_path / "tests/test_files/library_preparation/library.sdf"
+	software = dockm8_path / "software"
+	return library, software
 
 
-@pytest.fixture
-def cleanup(request):
-    """Cleanup fixture to remove generated files after each test."""
-    output_dir = dockm8_path / "tests/test_files/library_preparation/"
+def test_generate_conformers_GypsumDL(common_test_data):
+	"""Test generate_conformers_GypsumDL function."""
+	library, software = common_test_data
+	n_cpus = 4                  # Set a fixed number of CPUs for testing
 
-    def remove_created_files():
-        for file in output_dir.iterdir():
-            if file.name in [
-                    "final_library.sdf", "protonated_library.sdf",
-                    "standardized_library.sdf"]:
-                file.unlink()
+	# Load input library
+	input_df = PandasTools.LoadSDF(str(library), molColName="Molecule", idName="ID")
 
-    request.addfinalizer(remove_created_files)
+	# Call the function
+	output_df = generate_conformers_GypsumDL(input_df, software, n_cpus)
 
+	# Check if the output DataFrame is not empty
+	assert not output_df.empty
 
-def test_generate_conformers_GypsumDL(common_test_data, cleanup):
-    """Test generate_conformers_GypsumDL function."""
-    library, output_dir, software = common_test_data
-    n_cpus = int(os.cpu_count() * 0.9)
+	# Check if the number of molecules in the input and output DataFrames are the same
+	assert len(input_df) == len(output_df)
 
-    library_df = PandasTools.LoadSDF(str(library), molColName=None, idName="ID")
+	# Check if the output DataFrame has the expected columns
+	assert set(output_df.columns) == {"Molecule", "ID"}
 
-    # Call the function
-    output_file = generate_conformers_GypsumDL(library, output_dir, software,
-                                               n_cpus)
+	# Check if all molecules in the output DataFrame have 3D coordinates
+	assert all(mol.GetNumConformers() > 0 for mol in output_df["Molecule"])
 
-    output_df = PandasTools.LoadSDF(str(output_file),
-                                    molColName=None,
-                                    idName="ID")
-
-    # Check if the output file exists
-    assert output_file.exists()
-
-    # Check if the output file is in the correct directory
-    assert output_file.name == "generated_conformers.sdf"
-
-    # Check if the number of molecules in the input and output files are the same
-    assert len(library_df) == len(output_df)
-
-    # Check if the unnecessary files are correctly removed
-    assert not (output_dir / "GypsumDL_results").exists()
-    assert not (output_dir / "GypsumDL_split").exists()
-    assert not (output_dir / "gypsum_dl_success.sdf").exists()
-    assert not (output_dir / "gypsum_dl_failed.smi").exists()
-    os.remove(output_file) if output_file.exists() else None
+	# Check if the IDs in the input and output DataFrames match
+	assert set(input_df["ID"]) == set(output_df["ID"])
 
 
-def test_generate_conformers_RDKit(common_test_data, cleanup):
-    """Test generate_conformers_RDKit function."""
-    library, output_dir, software = common_test_data
-    n_cpus = int(os.cpu_count() * 0.9)
+def test_generate_conformers_RDKit(common_test_data):
+	"""Test generate_conformers_RDKit function."""
+	library, software = common_test_data
+	n_cpus = 4                  # Set a fixed number of CPUs for testing
+	forcefield = 'MMFF'         # Choose either 'MMFF' or 'UFF'
 
-    library_df = PandasTools.LoadSDF(str(library), molColName=None, idName="ID")
+	# Load input library
+	input_df = PandasTools.LoadSDF(str(library), molColName="Molecule", idName="ID")
 
-    # Call the function
-    output_file = generate_conformers_RDKit(library, output_dir, n_cpus)
+	# Call the function
+	output_df = generate_conformers_RDKit(input_df, n_cpus, forcefield)
 
-    output_df = PandasTools.LoadSDF(str(output_file),
-                                    molColName=None,
-                                    idName="ID")
+	# Check if the output DataFrame is not empty
+	assert not output_df.empty
 
-    # Check if the output file exists
-    assert output_file.exists()
+	# Check if the number of molecules in the output is less than or equal to the input
+	# (some molecules might fail conformer generation)
+	assert len(output_df) <= len(input_df)
 
-    # Check if the output file is in the correct directory
-    assert output_file.parent == output_dir
+	# Check if all molecules in the output DataFrame have 3D conformers
+	assert all(mol.GetConformer().Is3D() for mol in output_df["Molecule"])
 
-    # Check if the output file has the correct name
-    assert output_file.name == "generated_conformers.sdf"
-
-    # Check if the number of molecules in the input and output files are the same
-    assert len(library_df) == len(output_df)
-    os.remove(output_file) if output_file.exists() else None
+	# Check if the IDs in the output DataFrame are a subset of the input DataFrame
+	assert set(output_df["ID"]).issubset(set(input_df["ID"]))

@@ -28,7 +28,7 @@ from scripts.rescoring.rescoring_functions.RFScoreVS import rfscorevs_rescoring
 from scripts.rescoring.rescoring_functions.RTMScore import RTMScore_rescoring
 from scripts.rescoring.rescoring_functions.SCORCH import SCORCH_rescoring
 from scripts.rescoring.rescoring_functions.vinardo import vinardo_rescoring
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)

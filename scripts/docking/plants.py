@@ -13,17 +13,18 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.utilities import convert_molecules, delete_files, printlog
-
+from scripts.utilities.molecule_conversion import convert_molecules
+from scripts.utilities.utilities import delete_files
+from scripts.utilities.logging import printlog
 
 def plants_docking(split_file: Path,
-					w_dir: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					software: Path,
-					exhaustiveness: int,
-					n_poses: int,
-					):
+		w_dir: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		software: Path,
+		exhaustiveness: int,
+		n_poses: int,
+		):
 	"""
     Perform docking using the PLANTS software, optionally handling either a full library or individual split files.
 
@@ -59,10 +60,10 @@ def plants_docking(split_file: Path,
 	# Generate PLANTS config file
 	plants_docking_config_path = plants_folder / f"{split_file.stem}.config"
 	plants_config = generate_plants_config(plants_protein_mol2,
-											plants_ligands_mol2,
-											pocket_definition,
-											n_poses,
-											results_dir)
+				plants_ligands_mol2,
+				pocket_definition,
+				n_poses,
+				results_dir)
 	with plants_docking_config_path.open("w") as config_writer:
 		config_writer.writelines(plants_config)
 
@@ -86,10 +87,10 @@ def plants_docking(split_file: Path,
 
 
 def generate_plants_config(protein_mol2: Path,
-							ligands_mol2: Path,
-							pocket_definition: dict,
-							n_poses: int,
-							output_dir: Path):
+		ligands_mol2: Path,
+		pocket_definition: dict,
+		n_poses: int,
+		output_dir: Path):
 	"""
     Helper function to generate PLANTS configuration.
 
@@ -166,11 +167,11 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path, *a
 					try:
 						convert_molecules(file_path, file_path.with_suffix(".sdf"), "mol2", "sdf")
 						plants_poses = PandasTools.LoadSDF(str(file_path.with_suffix(".sdf")),
-															idName="ID",
-															molColName="Molecule")
+									idName="ID",
+									molColName="Molecule")
 						plants_scores = pd.read_csv(str(file_path).replace(
 							"docked_ligands.mol2", "ranking.csv")).rename(columns={
-								"LIGAND_ENTRY": "ID", "TOTAL_SCORE": "CHEMPLP"})[["ID", "CHEMPLP"]]
+							"LIGAND_ENTRY": "ID", "TOTAL_SCORE": "CHEMPLP"})[["ID", "CHEMPLP"]]
 						plants_df = pd.merge(plants_scores, plants_poses, on="ID")
 						plants_df["ID"] = plants_df["ID"].str.split("_").str[0]
 						list_ = [*range(1, int(n_poses) + 1, 1)]
@@ -187,10 +188,10 @@ def fetch_plants_poses(w_dir: Union[str, Path], n_poses: int, software: Path, *a
 		try:
 			plants_df = pd.concat(plants_dataframes)
 			PandasTools.WriteSDF(plants_df,
-									str(w_dir / "plants" / "plants_poses.sdf"),
-									molColName="Molecule",
-									idName="Pose ID",
-									properties=list(plants_df.columns))
+					str(w_dir / "plants" / "plants_poses.sdf"),
+					molColName="Molecule",
+					idName="Pose ID",
+					properties=list(plants_df.columns))
 
 			files = Path(os.getcwd()).glob("*.pid")
 			for file in files:

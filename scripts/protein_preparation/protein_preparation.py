@@ -13,23 +13,23 @@ from scripts.protein_preparation.fixing.pdb_fixer import fix_pdb_file
 from scripts.protein_preparation.protonation.protonate_protoss import protonate_protein_protoss
 from scripts.protein_preparation.structure_assessment.edia import get_best_chain_edia
 from scripts.protein_preparation.minimization.minimization import minimize_receptor
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 import requests
 
 
 def prepare_protein(protein_file_or_code: str or Path,
-					output_dir: Path = None,
-					select_best_chain: bool = True,
-					minimize: bool = True,
-					with_solvent: bool = False,
-					fix_protein: bool = True,
-					fix_nonstandard_residues: bool = True,
-					fix_missing_residues: bool = True,
-					add_missing_hydrogens_pH: float = 7.0,
-					remove_hetero: bool = True,
-					remove_water: bool = True,
-					protonate: bool = True,
-					) -> Path:
+		output_dir: Path = None,
+		select_best_chain: bool = True,
+		minimize: bool = True,
+		with_solvent: bool = False,
+		fix_protein: bool = True,
+		fix_nonstandard_residues: bool = True,
+		fix_missing_residues: bool = True,
+		add_missing_hydrogens_pH: float = 7.0,
+		remove_hetero: bool = True,
+		remove_water: bool = True,
+		protonate: bool = True,
+		) -> Path:
 	"""
     Prepare a protein structure by performing various modifications.
 
@@ -117,14 +117,14 @@ def prepare_protein(protein_file_or_code: str or Path,
 			remove_water) and not minimize:
 			# Fix the PDB file
 			fixed_pdb = fix_pdb_file(fetched_pdb,
-										output_dir,
-										fix_nonstandard_residues,
-										fix_missing_residues,
-										add_missing_hydrogens_pH,
-										remove_hetero,
-										remove_water)
+					output_dir,
+					fix_nonstandard_residues,
+					fix_missing_residues,
+					add_missing_hydrogens_pH,
+					remove_hetero,
+					remove_water)
 		elif (fix_nonstandard_residues or fix_missing_residues or add_missing_hydrogens_pH is not None or
-				remove_hetero or remove_water) and minimize:
+			remove_hetero or remove_water) and minimize:
 			fixed_pdb = minimized_pdb
 		else:
 			fixed_pdb = fetched_pdb

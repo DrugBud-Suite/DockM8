@@ -9,7 +9,8 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.pocket_finding.utils import get_ligand_coordinates
-from scripts.utilities.utilities import load_molecule, printlog
+from scripts.utilities.utilities import load_molecule
+from scripts.utilities.logging import printlog
 
 
 def find_pocket_RoG(ligand_file: Path, protein_file: Path):
@@ -39,7 +40,7 @@ def find_pocket_RoG(ligand_file: Path, protein_file: Path):
 	pocket_coordinates = {
 		"center": [center_x, center_y, center_z],
 		"size": [
-			round(2.857 * float(radius_of_gyration), 2),
-			round(2.857 * float(radius_of_gyration), 2),
-			round(2.857 * float(radius_of_gyration), 2), ], }
+		round(2.857 * float(radius_of_gyration), 2),
+		round(2.857 * float(radius_of_gyration), 2),
+		round(2.857 * float(radius_of_gyration), 2), ], }
 	return pocket_coordinates

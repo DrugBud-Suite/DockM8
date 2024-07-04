@@ -12,7 +12,7 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
-from scripts.utilities.utilities import printlog
+from scripts.utilities.logging import printlog
 from scripts.consensus.score_manipulation import standardize_scores, rank_scores
 from scripts.consensus.consensus_methods.ECR_best import ECR_best
 from scripts.consensus.consensus_methods.ECR_avg import ECR_avg
@@ -30,32 +30,32 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 CONSENSUS_METHODS = {
 	'avg_ECR': {
-		'function': avg_ECR, 'type': 'rank'},
+	'function': avg_ECR, 'type': 'rank'},
 	'avg_R_ECR': {
-		'function': avg_R_ECR, 'type': 'rank'},
+	'function': avg_R_ECR, 'type': 'rank'},
 	'ECR_avg': {
-		'function': ECR_avg, 'type': 'rank'},
+	'function': ECR_avg, 'type': 'rank'},
 	'ECR_best': {
-		'function': ECR_best, 'type': 'rank'},
+	'function': ECR_best, 'type': 'rank'},
 	'RbR_avg': {
-		'function': RbR_avg, 'type': 'rank'},
+	'function': RbR_avg, 'type': 'rank'},
 	'RbR_best': {
-		'function': RbR_best, 'type': 'rank'},
+	'function': RbR_best, 'type': 'rank'},
 	'RbV_avg': {
-		'function': RbV_avg, 'type': 'score'},
+	'function': RbV_avg, 'type': 'score'},
 	'RbV_best': {
-		'function': RbV_best, 'type': 'score'},
+	'function': RbV_best, 'type': 'score'},
 	'Zscore_avg': {
-		'function': Zscore_avg, 'type': 'score'},
+	'function': Zscore_avg, 'type': 'score'},
 	'Zscore_best': {
-		'function': Zscore_best, 'type': 'score'}}
+	'function': Zscore_best, 'type': 'score'}}
 
 
 def apply_consensus_methods(w_dir: str,
-							selection_method: str,
-							consensus_methods: str,
-							rescoring_functions: list,
-							standardization_type: str):
+		selection_method: str,
+		consensus_methods: str,
+		rescoring_functions: list,
+		standardization_type: str):
 	"""
     Applies consensus methods to rescored data and saves the results to a CSV file.
 
@@ -131,24 +131,24 @@ def apply_consensus_methods(w_dir: str,
 			# Save the consensus results to a CSV file or SDF file depending on the selection method
 			if selection_method in [
 				"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-					RESCORING_FUNCTIONS.keys()):
+				RESCORING_FUNCTIONS.keys()):
 				poses = PandasTools.LoadSDF(str(w_dir / "clustering" / f"{selection_method}_clustered.sdf"),
-											molColName="Molecule",
-											idName="Pose ID")
+						molColName="Molecule",
+						idName="Pose ID")
 
 				poses["ID"] = poses["Pose ID"].str.split("_").str[0]
 				poses = poses[["ID", "Molecule"]]
 				consensus_dataframe = pd.merge(consensus_dataframe, poses, on="ID", how="left")
 				PandasTools.WriteSDF(consensus_dataframe,
-										str(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf"),
-										molColName="Molecule",
-										idName="ID",
-										properties=list(consensus_dataframe.columns))
+						str(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf"),
+						molColName="Molecule",
+						idName="ID",
+						properties=list(consensus_dataframe.columns))
 
 			else:
 				consensus_dataframe.to_csv(Path(w_dir) / "consensus" /
-											f"{selection_method}_{consensus_method}_results.csv",
-											index=False)
+						f"{selection_method}_{consensus_method}_results.csv",
+						index=False)
 		return
 
 
@@ -180,11 +180,11 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-				RESCORING_FUNCTIONS.keys()):
+			RESCORING_FUNCTIONS.keys()):
 			consensus_file = PandasTools.LoadSDF(str(w_dir / "consensus" /
-														f"{selection_method}_{consensus_method}_results.sdf"),
-													molColName="Molecule",
-													idName="ID")
+						f"{selection_method}_{consensus_method}_results.sdf"),
+						molColName="Molecule",
+						idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -207,11 +207,11 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-				RESCORING_FUNCTIONS.keys()):
+			RESCORING_FUNCTIONS.keys()):
 			consensus_file = PandasTools.LoadSDF(str(w_dir / "consensus" /
-														f"{selection_method}_{consensus_method}_results.sdf"),
-													molColName="Molecule",
-													idName="ID")
+						f"{selection_method}_{consensus_method}_results.sdf"),
+						molColName="Molecule",
+						idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -222,12 +222,12 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 	# Save the common compounds and CSV or SDF file
 	if selection_method in [
 		"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-			RESCORING_FUNCTIONS.keys()):
+		RESCORING_FUNCTIONS.keys()):
 		PandasTools.WriteSDF(common_compounds_df,
-								str(Path(receptors[0]).parent / "ensemble_results.sdf"),
-								molColName="Molecule",
-								idName="ID",
-								properties=list(common_compounds_df.columns))
+				str(Path(receptors[0]).parent / "ensemble_results.sdf"),
+				molColName="Molecule",
+				idName="ID",
+				properties=list(common_compounds_df.columns))
 
 	else:
 		common_compounds_df.to_csv(Path(receptors[0]).parent / "ensemble_results.csv", index=False)
