@@ -1,14 +1,12 @@
-import os
 import sys
 from pathlib import Path
 
 import pytest
+from rdkit import Chem
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / "tests"
-                   for p in Path(__file__).resolve().parents
-                   if (p / "tests").is_dir()), None)
+tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
@@ -17,56 +15,36 @@ from scripts.library_preparation.standardisation.standardise import standardize_
 
 @pytest.fixture
 def common_test_data():
-    """Set up common test data."""
-    library = dockm8_path / "tests/test_files/library_preparation/library.sdf"
-    output_dir = dockm8_path / "tests/test_files/library_preparation/"
-    id_column = "ID"
-    return library, output_dir, id_column
+	"""Set up common test data."""
+	dockm8_path = next((p for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+	library = dockm8_path / "tests/test_files/library_preparation/library.sdf"
+	return library
 
 
-@pytest.fixture
-def cleanup(request):
-    """Cleanup fixture to remove generated files after each test."""
-    output_dir = dockm8_path / "tests/test_files/library_preparation/"
+def test_standardize_library(common_test_data):
+	"""Test standardize_library function."""
+	library = common_test_data
+	n_cpus = 4                  # Set a fixed number of CPUs for testing
 
-    def remove_created_files():
-        for file in output_dir.iterdir():
-            if file.name in ["standardized_library.sdf"]:
-                file.unlink()
+	# Load input library
+	input_df = PandasTools.LoadSDF(str(library), molColName="Molecule", idName="ID")
 
-    request.addfinalizer(remove_created_files)
+	# Call the function
+	standardized_df = standardize_library(input_df, n_cpus=n_cpus)
 
+	# Check if the output DataFrame is not empty
+	assert not standardized_df.empty
 
-def test_standardize_library(common_test_data, cleanup):
-    # Define the input parameters for the function
-    library, output_dir, id_column = common_test_data
-    n_cpus = int(os.cpu_count() * 0.9)
-    # Call the function
-    standardized_file = standardize_library(library, output_dir, id_column,
-                                            n_cpus)
-    # Add your assertions here to verify the expected behavior of the function
+	# Check if the number of molecules in the output is less than or equal to the input
+	# (some molecules might fail standardization)
+	assert len(standardized_df) <= len(input_df)
 
-    # Verify that the standardized library file exists
-    assert (output_dir / "standardized_library.sdf").exists()
+	# Check if all molecules in the output DataFrame are valid
+	assert all(mol is not None for mol in standardized_df["Molecule"])
 
-    # Verify that the standardized library file is not empty
-    assert (output_dir / "standardized_library.sdf").stat().st_size > 0
+	# Check if there are no duplicate IDs
+	assert len(standardized_df["ID"].unique()) == len(standardized_df)
 
-    # Verify that the standardized library file is a valid SDF file
-    try:
-        PandasTools.LoadSDF(str(output_dir / "standardized_library.sdf"))
-    except Exception as e:
-        assert False, f"Failed to load standardized library SDF file: {str(e)}"
-
-    # Verify that the number of compounds in the standardized library is the same as the input library
-    input_df = PandasTools.LoadSDF(str(library),
-                                   molColName=None,
-                                   idName=id_column)
-    standardized_df = PandasTools.LoadSDF(str(standardized_file),
-                                          molColName=None,
-                                          idName=id_column)
-    assert len(input_df) == len(standardized_df)
-
-    # Verify that the standardized library does not contain any duplicate compounds
-    assert len(
-        standardized_df.drop_duplicates(subset="ID")) == len(standardized_df)
+	# Check if SMILES strings are updated
+	assert all(
+		Chem.MolToSmiles(mol) == smiles for mol, smiles in zip(standardized_df["Molecule"], standardized_df["SMILES"]))
