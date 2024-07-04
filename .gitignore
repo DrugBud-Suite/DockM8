@@ -193,8 +193,5 @@ tests/test_files/1obv.pdb
 tests/test_files/P00520.pdb
 tests/test_files/4kd1_p/
 tests/test_files/1fvv_p/
-software/ITScoreAff_v1.0/ITScoreAff
-software/ITScoreAff_v1.0/License.txt
-software/ITScoreAff_v1.0/README
-software/ITScoreAff_v1.0/example/4llx_decoys.mol2
-software/ITScoreAff_v1.0/example/4llx_protein.mol2
+software/ITScoreAff_v1.0/
+software/DLIGAND2/
