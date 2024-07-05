@@ -150,6 +150,29 @@ else
     # Finished installing pip packages
     ###############################################################
     """
+
+	echo -e """
+    ###############################################################
+    # Installing FABind environment
+    ###############################################################
+    """
+
+	conda create -n fabind python=3.8 -y
+    conda deactivate
+    conda activate fabind
+	conda install -c conda-forge graph-tool -y -q
+	conda install pytorch==1.12.0 torchvision==0.13.0 torchaudio==0.12.0 cpuonly -c pytorch -y -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_cluster-1.6.0%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_scatter-2.1.0%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_sparse-0.6.15%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_spline_conv-1.2.1%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/pyg_lib-0.2.0%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install torch-geometric==2.4.0 -q
+	pip install torchdrug==0.1.2 torchmetrics==0.10.2 tqdm mlcrate pyarrow accelerate Bio lmdb fair-esm tensorboard -q
+	pip install wandb spyrmsd -q
+	pip install rdkit-pypi==2021.03.4 -q
+	conda install -c conda-forge openbabel -y -q
+	pip install setuptools==69.5.1 -q
 fi
 
 ###############################################################
