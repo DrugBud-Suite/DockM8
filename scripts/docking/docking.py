@@ -16,17 +16,18 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
+from scripts.docking.FABind import fabind_docking, fetch_fabind_poses
 from scripts.docking.gnina import fetch_gnina_poses, gnina_docking
+from scripts.docking.PANTHER import fetch_panther_poses, panther_docking
 from scripts.docking.plants import fetch_plants_poses, plants_docking
 from scripts.docking.psovina import fetch_psovina_poses, psovina_docking
 from scripts.docking.qvina2 import fetch_qvina2_poses, qvina2_docking
 from scripts.docking.qvinaw import fetch_qvinaw_poses, qvinaw_docking
 from scripts.docking.smina import fetch_smina_poses, smina_docking
-from scripts.docking.FABind import fetch_fabind_poses, fabind_docking
 from scripts.utilities.file_splitting import split_sdf_str
+from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.utilities import parallel_SDF_loader
-from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -38,7 +39,8 @@ DOCKING_PROGRAMS = {
 	"QVINAW": [qvinaw_docking, fetch_qvinaw_poses],
 	"QVINA2": [qvina2_docking, fetch_qvina2_poses],
 	"PSOVINA": [psovina_docking, fetch_psovina_poses],
-	"FABIND+": [fabind_docking, fetch_fabind_poses]}
+	"FABIND+": [fabind_docking, fetch_fabind_poses],
+	"PANTHER": [panther_docking, fetch_panther_poses]}
 
 
 def dockm8_docking(library: pd.DataFrame or Path,
