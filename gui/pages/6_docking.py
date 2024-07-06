@@ -23,17 +23,17 @@ st.title("Docking", anchor='center')
 # Check for prepared docking library
 if 'library_to_dock' not in st.session_state:
 	library_to_prepare_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
-												value=str(dockm8_path / "tests" / "test_files" /
-															"prepared_library.sdf"),
-												help="Choose a ligand library file (.sdf format)")
+				value=str(dockm8_path / "tests" / "test_files" /
+					"prepared_library.sdf"),
+				help="Choose a ligand library file (.sdf format)")
 	# Button to load the library
 	if st.button('Load Library', key='load_library_button'):
 		with st.spinner('Loading library...'):
 			if Path(library_to_prepare_input).is_file():
 				st.session_state.library_to_dock = PandasTools.LoadSDF(library_to_prepare_input,
-																		smilesName='SMILES',
-																		molColName='Molecule',
-																		idName='ID')
+								smilesName='SMILES',
+								molColName='Molecule',
+								idName='ID')
 				st.write(f'Ligand library loaded with {len(st.session_state.library_to_dock)} compounds.')
 			else:
 				st.error('File does not exist.')
@@ -42,7 +42,7 @@ if 'library_to_dock' not in st.session_state:
 if 'prepared_protein_path' not in st.session_state:
 	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
-									help="Enter the complete file path to your prepared protein file.")
+			help="Enter the complete file path to your prepared protein file.")
 	if protein_path and Path(protein_path).is_file():
 		st.session_state.prepared_protein_path = protein_path
 		st.success(f"Protein file loaded: {protein_path}")
@@ -86,7 +86,7 @@ st.markdown("""
 }
 </style>
 """,
-			unsafe_allow_html=True)
+	unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -100,7 +100,7 @@ with col1:
             <span class="metric-value">{len(st.session_state.library_to_dock)}</span>
         </div>
         """,
-					unsafe_allow_html=True)
+			unsafe_allow_html=True)
 	else:
 		st.markdown("""
         <div class="metric-container">
@@ -108,7 +108,7 @@ with col1:
             <span class="metric-value">Not loaded</span>
         </div>
         """,
-					unsafe_allow_html=True)
+			unsafe_allow_html=True)
 
 	protein_path = st.session_state.get('prepared_protein_path', 'Not loaded')
 	st.markdown(f"""
@@ -117,7 +117,7 @@ with col1:
         <span class="metric-value">{Path(protein_path).name if protein_path != 'Not loaded' else protein_path}</span>
     </div>
     """,
-				unsafe_allow_html=True)
+		unsafe_allow_html=True)
 
 with col2:
 	if 'binding_site' in st.session_state:
@@ -133,7 +133,7 @@ with col2:
                     <span class="metric-value">{st.session_state.binding_site['center'][i]:.2f} Å</span>
                 </div>
                 """,
-							unsafe_allow_html=True)
+					unsafe_allow_html=True)
 
 		with subcol2:
 			for i, dim in enumerate(['Width', 'Height', 'Depth']):
@@ -143,7 +143,7 @@ with col2:
                     <span class="metric-value">{st.session_state.binding_site['size'][i]:.2f} Å</span>
                 </div>
                 """,
-							unsafe_allow_html=True)
+					unsafe_allow_html=True)
 	else:
 		st.markdown("<div class='subheader'>Binding Site</div>", unsafe_allow_html=True)
 		st.markdown("""
@@ -152,20 +152,26 @@ with col2:
             <span class="metric-value">Not defined</span>
         </div>
         """,
-					unsafe_allow_html=True)
+			unsafe_allow_html=True)
 
 # Docking programs
 st.subheader("Docking Programs", divider="orange")
 docking_programs = st.multiselect(label="Choose the docking programs you want to use:",
-									default=["GNINA"],
-									options=DOCKING_PROGRAMS,
-									help="Select one or more docking programs. Multiple selections are allowed.")
+			default=["GNINA"],
+			options=DOCKING_PROGRAMS,
+			help="Select one or more docking programs. Multiple selections are allowed.")
 st.session_state.docking_programs = docking_programs
 
 if "PLANTS" in docking_programs and not os.path.exists(f"{st.session_state['software']}/PLANTS"):
 	st.warning(
-		"PLANTS was not found in the software folder. Please visit http://www.tcd.uni-konstanz.de/research/plants.php to download and install it."
+		"PLANTS was not found in the software folder. Please visit http://www.tcd.uni-konstanz.de/research/plants.php to download it."
 	)
+if "PANTHER" in docking_programs and not os.path.exists(f"{st.session_state['software']}/shaep"):
+	st.warning(
+		"SHAEP executable was not found in the software folder. Please visit https://users.abo.fi/mivainio/shaep/download.php to download it."
+	)
+if "FABIND+" in docking_programs and 'binding_site' in st.session_state:
+	st.warning("FABIND+ is a blind docking algorithm and does not require a binding site. Any previously defined binding site will be ignored (only for FABIND+).")
 
 # Docking parameters
 st.subheader("Docking Parameters", divider="orange")
@@ -174,11 +180,11 @@ col1, col2 = st.columns(2)
 
 with col1:
 	n_poses = st.slider(label="Number of Poses",
-						min_value=1,
-						max_value=100,
-						step=5,
-						value=10,
-						help="Specify the number of poses to generate for each ligand.")
+			min_value=1,
+			max_value=100,
+			step=5,
+			value=10,
+			help="Specify the number of poses to generate for each ligand.")
 
 with col2:
 	exhaustiveness = st.select_slider(
@@ -186,7 +192,7 @@ with col2:
 		options=[1, 2, 4, 8, 16, 32, 64],
 		value=8,
 		help=
-		"Set the exhaustiveness of the docking search. Higher values can significantly increase the runtime. Only applies to GNINA, SMINA, QVINA2, and QVINAW."
+		"Set the exhaustiveness of the docking search. Higher values can significantly increase the runtime. Only applies to GNINA, SMINA, QVINA2, QVINAW and PSOVINA."
 	)
 
 # Add a button to run the docking
@@ -203,14 +209,14 @@ if st.button('Run Docking', key='run_docking_button'):
 
 				# Run docking
 				dockm8_docking(library=st.session_state.library_to_dock,
-								w_dir=w_dir,
-								protein_file=protein_file,
-								pocket_definition=st.session_state.binding_site,
-								software=software,
-								docking_programs=docking_programs,
-								exhaustiveness=exhaustiveness,
-								n_poses=n_poses,
-								n_cpus=n_cpus)
+					w_dir=w_dir,
+					protein_file=protein_file,
+					pocket_definition=st.session_state.binding_site,
+					software=software,
+					docking_programs=docking_programs,
+					exhaustiveness=exhaustiveness,
+					n_poses=n_poses,
+					n_cpus=n_cpus)
 
 				# Concatenate all poses
 				concat_all_poses(w_dir, docking_programs, protein_file, n_cpus)
