@@ -108,11 +108,19 @@ def panther_docking(split_file: Path,
 		printlog(f"PANTHER Negative Image Generation failed: {e}")
 
 	try:
-		# Run SHAEP
-		shaep_output_sdf = panther_folder / f"shaep_results_{split_name}.sdf"
-		shaep_output_txt = panther_folder / f"shaep_results_{split_name}.txt"
-		shaep_cmd = f"{software}/shaep -q {negative_image} {conformers_file} -s {shaep_output_sdf} --nStructures {n_poses} --output-file {shaep_output_txt} -j 1"
-		subprocess.call(shaep_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+		# Check if SHAEP executable exists
+		shaep_executable = software / "shaep"
+		if not shaep_executable.is_file():
+			printlog(
+				"SHAEP executable not found. Please download SHAEP and ensure it is in DockM8's software folder. SHAEP can be found here: https://users.abo.fi/mivainio/shaep/download.php"
+			)
+		else:
+			# Run SHAEP
+			shaep_output_sdf = panther_folder / f"shaep_results_{split_name}.sdf"
+			shaep_output_txt = panther_folder / f"shaep_results_{split_name}.txt"
+			shaep_cmd = f"{software}/shaep -q {negative_image} {conformers_file} -s {shaep_output_sdf} --nStructures {n_poses} --output-file {shaep_output_txt} -j 1"
+			subprocess.call(shaep_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 	except Exception as e:
 		printlog(f"SHAEP similarity calculation to negative image failed: {e}")
 
