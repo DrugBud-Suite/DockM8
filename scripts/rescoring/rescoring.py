@@ -31,6 +31,7 @@ from scripts.rescoring.rescoring_functions.vinardo import vinardo_rescoring
 from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff_rescoring
 from scripts.rescoring.rescoring_functions.DLIGAND2 import DLIGAND2_rescoring
 from scripts.rescoring.rescoring_functions.CENsible import CENsible_rescoring
+from scripts.rescoring.rescoring_functions.PANTHER import PANTHER_rescoring
 from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -77,15 +78,22 @@ RESCORING_FUNCTIONS = {
 	"DLIGAND2": {
 		"function": DLIGAND2_rescoring, "column_name": "DLIGAND2", "best_value": "min", "range": (-200, 100)},
 	"CENsible": {
-		"function": CENsible_rescoring, "column_name": "CENsible", "best_value": "max", "range": (0, 20)}, }
+		"function": CENsible_rescoring, "column_name": "CENsible", "best_value": "max", "range": (0, 20)},
+	"PANTHER": {
+		"function": PANTHER_rescoring, "column_name": "PANTHER", "best_value": "max", "range": (0, 10)},
+	"PANTHER-ESP": {
+		"function": PANTHER_rescoring, "column_name": "PANTHER-ESP", "best_value": "max", "range": (0, 10)},
+	"PANTHER-Shape": {
+		"function": PANTHER_rescoring, "column_name": "PANTHER-Shape", "best_value": "max", "range": (0, 10)}}
 
 
 def rescore_poses(w_dir: Path,
-		protein_file: Path,
-		software: Path,
-		clustered_sdf: Path,
-		functions: List[str],
-		n_cpus: int) -> None:
+	protein_file: Path,
+	pocket_definition: dict,
+	software: Path,
+	clustered_sdf: Path,
+	functions: List[str],
+	n_cpus: int) -> None:
 	"""
     Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into
     smaller files, and then runs the specified software on each of these files in parallel. The results are then combined into a single
@@ -115,11 +123,12 @@ def rescore_poses(w_dir: Path,
 		if not (rescoring_folder / f"{function}_rescoring" / f"{function}_scores.csv").is_file():
 			try:
 				function_info["function"](clustered_sdf,
-						n_cpus,
-						function_info["column_name"],
-						protein_file=protein_file,
-						software=software,
-						rescoring_folder=rescoring_folder)
+					n_cpus,
+					function_info["column_name"],
+					protein_file=protein_file,
+					pocket_definition=pocket_definition,
+					software=software,
+					rescoring_folder=rescoring_folder)
 
 			except Exception as e:
 				printlog(e)
@@ -161,7 +170,7 @@ def rescore_poses(w_dir: Path,
 	return
 
 
-def rescore_docking(w_dir: Path, protein_file: Path, software: Path, function: str, n_cpus: int) -> None:
+def rescore_docking(w_dir: Path, protein_file: Path, pocket_definition: dict, software: Path, function: str, n_cpus: int) -> None:
 	"""
     Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into
     smaller files, and then runs the specified software on each of these files in parallel. The results are then combined into a single
@@ -187,11 +196,12 @@ def rescore_docking(w_dir: Path, protein_file: Path, software: Path, function: s
 	function_info = RESCORING_FUNCTIONS.get(function)
 
 	function_info["function"](all_poses,
-			n_cpus,
-			function_info["column_name"],
-			protein_file=protein_file,
-			software=software,
-			rescoring_folder=w_dir)
+		n_cpus,
+		function_info["column_name"],
+		protein_file=protein_file,
+		pocket_definition=pocket_definition,
+		software=software,
+		rescoring_folder=w_dir)
 
 	score_file = f"{w_dir}/{function}_rescoring/{function}_scores.csv"
 
