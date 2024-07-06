@@ -173,6 +173,15 @@ else
 	pip install rdkit-pypi==2021.03.4 -q
 	conda install -c conda-forge openbabel -y -q
 	pip install setuptools==69.5.1 -q
+
+	echo -e """
+    ###############################################################
+    # Installing PANTHER environment
+    ###############################################################
+    """
+
+	conda create -n panther python=2.7 -y
+    conda deactivate
 fi
 
 ###############################################################
