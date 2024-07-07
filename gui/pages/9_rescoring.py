@@ -17,7 +17,7 @@ from scripts.rescoring.rescoring import RESCORING_FUNCTIONS, rescore_poses
 
 menu()
 
-if 'rescoring_functions' in st.session_state:
+if 'rescoring_functions' not in st.session_state:
 	st.session_state.rescoring_functions = None
 
 st.title("Rescoring")
@@ -27,7 +27,7 @@ st.subheader("Scoring Functions", divider="orange")
 selected_functions = []
 
 cols = st.columns(3)
-for i, (function_name, function_value) in enumerate(RESCORING_FUNCTIONS.items()):
+for i, (function_name, function_class) in enumerate(RESCORING_FUNCTIONS.items()):
 	with cols[i % 3]:
 		if cols[i % 3].toggle(function_name, key=f"checkbox_{function_name}"):
 			selected_functions.append(function_name)
@@ -60,11 +60,13 @@ if st.button("Run Rescoring"):
 				software = st.session_state.software if 'software' in st.session_state else Path(dockm8_path /
 																									'software')
 				n_cpus = st.session_state.n_cpus if 'n_cpus' in st.session_state else os.cpu_count()
+				pocket_definition = st.session_state.pocket_definition if 'pocket_definition' in st.session_state else None
 
 				clustered_sdf = w_dir / "clustering" / f"{st.session_state.pose_selection_method}_clustered.sdf"
 
 				rescore_poses(w_dir=w_dir,
 								protein_file=protein_file,
+								pocket_definition=pocket_definition,
 								software=software,
 								clustered_sdf=clustered_sdf,
 								functions=selected_functions,
