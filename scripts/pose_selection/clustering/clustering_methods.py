@@ -14,6 +14,8 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
+from scripts.utilities.logging import printlog
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -60,7 +62,7 @@ def kmedoids_S_clustering(input_dataframe: pd.DataFrame) -> pd.DataFrame:
 		merged_df = merged_df[["Pose ID"]]
 		return merged_df
 	except Exception as e:
-		print(f"Error in kmedoids_S_clustering: {e}")
+		printlog(f"Error in kmedoids_S_clustering: {e}")
 		traceback.print_exc()
 		return None
 

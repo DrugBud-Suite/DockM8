@@ -16,11 +16,11 @@ from scripts.utilities.utilities import delete_files
 
 
 def panther_docking(split_file: Path,
-					w_dir: Path,
-					protein_file: str,
-					pocket_coordinates: dict,
-					software: Path,
-					n_poses: int):
+		w_dir: Path,
+		protein_file: str,
+		pocket_coordinates: dict,
+		software: Path,
+		n_poses: int):
 	"""
 	Performs docking using the PANTHER software.
 
@@ -86,10 +86,10 @@ def panther_docking(split_file: Path,
 		negative_image = panther_folder / f"negative_image_{split_name}.mol2"
 		panther_cmd = f"conda run -n panther python {software}/panther/panther.py {panther_input} {negative_image}"
 		process = subprocess.Popen(panther_cmd,
-									shell=True,
-									stdout=subprocess.PIPE,
-									stderr=subprocess.PIPE,
-									universal_newlines=True)
+				shell=True,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				universal_newlines=True)
 		stdout, stderr = process.communicate()
 		# Extract mol2 data from the output
 		mol2_start = stdout.find("@<TRIPOS>MOLECULE")
@@ -148,9 +148,9 @@ def fetch_panther_poses(w_dir: Union[str, Path], n_poses: int):
 
 			for shaep_results in shaep_results_files:
 				df = PandasTools.LoadSDF(str(shaep_results),
-											molColName="Molecule",
-											smilesName="SMILES",
-											strictParsing=False)
+						molColName="Molecule",
+						smilesName="SMILES",
+						strictParsing=False)
 
 				# Sort by Similarity_best in descending order and create new rank
 				df = df.sort_values('Similarity_best', ascending=False)
@@ -184,10 +184,9 @@ def fetch_panther_poses(w_dir: Union[str, Path], n_poses: int):
 									molColName="Molecule",
 									idName="Pose ID",
 									properties=list(combined_poses.columns))
-			print(f"Successfully wrote combined poses to {output_file}")
 
 		except Exception as e:
-			print(f"ERROR: Failed to process PANTHER poses: {str(e)}")
+			printlog(f"ERROR: Failed to process PANTHER poses: {str(e)}")
 			return None
 		else:
 			delete_files(Path(w_dir) / "panther", "panther_poses.sdf")

@@ -12,6 +12,8 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
+from scripts.utilities.logging import printlog
+
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -126,7 +128,7 @@ def split_sdf_single(dir, sdf_file):
 		output_file = split_files_folder / f"split_{i + 1}.sdf"
 		# Write the single compound DataFrame to an SDF file
 		PandasTools.WriteSDF(compound_df, str(output_file), molColName="Molecule", idName="ID")
-	print(f"Split SDF file into {len(df)} files, each containing 1 compound")
+	printlog(f"Split SDF file into {len(df)} files, each containing 1 compound")
 	return split_files_folder
 
 

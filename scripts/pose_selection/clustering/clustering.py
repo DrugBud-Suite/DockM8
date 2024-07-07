@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def calculate_and_cluster(df: pd.DataFrame, selection_method: str, clustering_method: str,
-		protein_file: str) -> pd.DataFrame:
+	protein_file: str) -> pd.DataFrame:
 	"""
     Calculates a clustering metric and performs clustering on a given dataframe.
 
@@ -86,10 +86,10 @@ def calculate_and_cluster(df: pd.DataFrame, selection_method: str, clustering_me
 
 
 def run_clustering(all_poses: pd.DataFrame,
-		selection_method: str,
-		clustering_method: str,
-		protein_file: Path,
-		n_cpus: int) -> pd.DataFrame:
+	selection_method: str,
+	clustering_method: str,
+	protein_file: Path,
+	n_cpus: int) -> pd.DataFrame:
 	"""
     Runs the clustering process on the input DataFrame using multiple CPU cores.
 
@@ -111,13 +111,13 @@ def run_clustering(all_poses: pd.DataFrame,
 			try:
 				# Schedule the clustering job for each ID
 				job = executor.schedule(calculate_and_cluster,
-						args=(all_poses[all_poses["ID"] == current_id],
-						selection_method,
-						clustering_method,
-						protein_file,
-						),
-						timeout=120,
-						)
+					args=(all_poses[all_poses["ID"] == current_id],
+					selection_method,
+					clustering_method,
+					protein_file,
+					),
+					timeout=120,
+					)
 				jobs.append(job)
 			except pebble.TimeoutError as e:
 				printlog("Timeout error in pebble job creation: " + str(e))
@@ -133,7 +133,7 @@ def run_clustering(all_poses: pd.DataFrame,
 				res = job.result()
 				clustered_dataframes.append(res)
 			except Exception as e:
-				print(e)
+				printlog("Error in pebble job execution: " + str(e))
 				pass
 	clustered_poses = pd.concat(clustered_dataframes)
 	return clustered_poses

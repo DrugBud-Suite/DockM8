@@ -63,9 +63,9 @@ def minimize_receptor(receptor: Path, solvent: bool = True) -> Path:
 	try:
 		preliminary_cutoff = 1.0 * nanometers
 		system = forcefield.createSystem(modeller.topology,
-					nonbondedMethod=PME,
-					nonbondedCutoff=preliminary_cutoff,
-					constraints=HBonds)
+			nonbondedMethod=PME,
+			nonbondedCutoff=preliminary_cutoff,
+			constraints=HBonds)
 
 		# Check box size and adjust cutoff
 		box_vectors = system.getDefaultPeriodicBoxVectors()
@@ -74,9 +74,9 @@ def minimize_receptor(receptor: Path, solvent: bool = True) -> Path:
 		if safe_cutoff != preliminary_cutoff:
 			# Re-create system with new cutoff
 			system = forcefield.createSystem(modeller.topology,
-						nonbondedMethod=PME,
-						nonbondedCutoff=safe_cutoff,
-						constraints=HBonds)
+				nonbondedMethod=PME,
+				nonbondedCutoff=safe_cutoff,
+				constraints=HBonds)
 	except Exception as e:
 		printlog(f"Error creating system prior to minimization: {e}")
 		raise ValueError(f"Error creating system prior to minimization: {e}")
@@ -100,7 +100,7 @@ def minimize_receptor(receptor: Path, solvent: bool = True) -> Path:
 		end_time = time.time()
 		time_taken = end_time - start_time
 
-		print("Receptor minimization complete. Time taken: ", time_taken)
+		printlog("Receptor minimization complete. Time taken: ", time_taken)
 
 		# Get the minimized positions
 		minimized_positions = simulation.context.getState(getPositions=True).getPositions()

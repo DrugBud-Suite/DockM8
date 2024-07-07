@@ -20,11 +20,11 @@ from scripts.utilities.utilities import delete_files
 
 
 def fabind_docking(split_file: Path,
-					w_dir: Path,
-					protein_file: str,
-					pocket_definition: dict,
-					software: Path,
-					n_poses: int):
+		w_dir: Path,
+		protein_file: str,
+		pocket_definition: dict,
+		software: Path,
+		n_poses: int):
 	# Create necessary folders
 	fabind_folder = w_dir / "fabind"
 	fabind_folder.mkdir(parents=True, exist_ok=True)
@@ -70,23 +70,21 @@ def fabind_docking(split_file: Path,
 		f"--pdb_file_dir {pdb_dir} "
 		f"--save_pt_dir {temp_files_dir}")
 	inference_cmd = (f"{conda_activate_cmd} python {software}/FABind/FABind_plus/fabind/inference_fabind.py "
-						f"--ckpt {software}/FABind/FABind_plus/ckpt/fabind_plus_best_ckpt.bin "
-						f"--batch_size 8 "
-						f"--post-optim "
-						f"--write-mol-to-file "
-						f"--sdf-output-path-post-optim {fabind_folder} "
-						f"--index-csv {index_csv} "
-						f"--preprocess-dir {temp_files_dir} ")
+			f"--ckpt {software}/FABind/FABind_plus/ckpt/fabind_plus_best_ckpt.bin "
+			f"--batch_size 8 "
+			f"--post-optim "
+			f"--write-mol-to-file "
+			f"--sdf-output-path-post-optim {fabind_folder} "
+			f"--index-csv {index_csv} "
+			f"--preprocess-dir {temp_files_dir} ")
 
 	# Execute commands
-	print("Preprocessing molecules...")
+	printlog("Preprocessing molecules...")
 	subprocess.run(preprocess_mol_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-	print("Preprocessing protein...")
+	printlog("Preprocessing protein...")
 	subprocess.run(preprocess_protein_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-	print("Running FABind+ inference...")
+	printlog("Running FABind+ inference...")
 	subprocess.run(inference_cmd, shell=True)
-
-	print("Docking completed successfully!")
 
 
 def fetch_fabind_poses(w_dir: Union[str, Path]):
@@ -120,7 +118,7 @@ def fetch_fabind_poses(w_dir: Union[str, Path]):
 						df["Pose ID"] = f"{ligand_id}_FABind_1"
 						fabind_dataframes.append(df)
 					except Exception as e:
-						print(f"WARNING: Failed to load {file}: {str(e)}")
+						printlog(f"WARNING: Failed to load {file}: {str(e)}")
 						continue
 
 			if not fabind_dataframes:
@@ -129,7 +127,7 @@ def fetch_fabind_poses(w_dir: Union[str, Path]):
 			fabind_df = pd.concat(fabind_dataframes, ignore_index=True)
 
 		except Exception as e:
-			print(f"ERROR: Failed to load or process FABind poses: {str(e)}")
+			printlog(f"ERROR: Failed to load or process FABind poses: {str(e)}")
 			return None
 
 		try:
@@ -138,10 +136,9 @@ def fetch_fabind_poses(w_dir: Union[str, Path]):
 									molColName="Molecule",
 									idName="Pose ID",
 									properties=list(fabind_df.columns))
-			print(f"Successfully wrote combined poses to {output_file}")
 
 		except Exception as e:
-			print(f"ERROR: Failed to write combined FABind poses SDF file: {str(e)}")
+			printlog(f"ERROR: Failed to write combined FABind poses SDF file: {str(e)}")
 			return None
 		else:
 			delete_files(w_dir / "fabind", ["fabind_poses.sdf"])

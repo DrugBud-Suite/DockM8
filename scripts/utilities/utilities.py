@@ -2,8 +2,9 @@ import argparse
 import os
 import sys
 import warnings
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 import pandas as pd
 from rdkit import Chem
@@ -12,6 +13,8 @@ from rdkit import Chem
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
+
+from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -95,15 +98,6 @@ def str2bool(v):
 		raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
-import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from pathlib import Path
-from typing import Optional
-
-import pandas as pd
-from rdkit import Chem
-
-
 def parallel_SDF_loader(sdf_path: Path,
 						molColName: str,
 						idName: str,
@@ -151,5 +145,5 @@ def parallel_SDF_loader(sdf_path: Path,
 		return df
 
 	except Exception as e:
-		print(f"Error occurred during loading of SDF file: {str(e)}")
+		printlog(f"Error occurred during loading of SDF file: {str(e)}")
 		return pd.DataFrame()      # Return an empty DataFrame instead of None
