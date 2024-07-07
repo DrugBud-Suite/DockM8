@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 import sys
 
-import pandas as pd
 from pandas import DataFrame
 
 import pytest
@@ -12,7 +11,7 @@ tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p /
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff_rescoring
+from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff
 
 
 @pytest.fixture
@@ -27,23 +26,18 @@ def test_data():
 
 
 def test_ITScoreAff_rescoring(test_data):
-	# Define the input arguments for the function
 	w_dir, protein_file, software, clustered_sdf, n_cpus = test_data
-	column_name = "ITScoreAff"
 	rescoring_folder = w_dir / f"rescoring_{clustered_sdf.stem}"
 
-	# Call the function
-	result_file = ITScoreAff_rescoring(clustered_sdf,
-										n_cpus,
-										column_name,
-										rescoring_folder=rescoring_folder,
-										software=software,
-										protein_file=protein_file)
+	itscoreAff = ITScoreAff()
 
-	# Assert the result
-	assert result_file.exists()
-	result = pd.read_csv(result_file)
+	result = itscoreAff.rescore(clustered_sdf,
+								n_cpus,
+								rescoring_folder=rescoring_folder,
+								software=software,
+								protein_file=protein_file)
+
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns
-	assert "ITScoreAff" in result.columns
+	assert itscoreAff.column_name in result.columns
 	assert len(result) > 0
