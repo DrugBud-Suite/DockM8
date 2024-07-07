@@ -264,6 +264,7 @@ def run_dockm8(config):
 			else:
 				pass
 			optimal_rescoring_functions = list(optimal_conditions["scoring"].split("_"))
+			optimal_rescoring_functions = [func for func in optimal_rescoring_functions if func in RESCORING_FUNCTIONS]
 			config["pose_selection"]["pose_selection_method"] = optimal_conditions["clustering"]
 			# Save optimal conditions to a file
 			with open(config["receptor(s)"][0].parent / "DeepCoy" / "optimal_conditions.txt", "w") as file:
