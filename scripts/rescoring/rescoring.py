@@ -32,6 +32,7 @@ from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff_rescorin
 from scripts.rescoring.rescoring_functions.DLIGAND2 import DLIGAND2_rescoring
 from scripts.rescoring.rescoring_functions.CENsible import CENsible_rescoring
 from scripts.rescoring.rescoring_functions.PANTHER import PANTHER_rescoring
+from scripts.rescoring.rescoring_functions.GenScore import GenScore_rescoring
 from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -84,7 +85,13 @@ RESCORING_FUNCTIONS = {
 	"PANTHER-ESP": {
 		"function": PANTHER_rescoring, "column_name": "PANTHER-ESP", "best_value": "max", "range": (0, 10)},
 	"PANTHER-Shape": {
-		"function": PANTHER_rescoring, "column_name": "PANTHER-Shape", "best_value": "max", "range": (0, 10)}}
+		"function": PANTHER_rescoring, "column_name": "PANTHER-Shape", "best_value": "max", "range": (0, 10)},
+	"GenScore-scoring": {
+		"function": GenScore_rescoring, "column_name": "GenScore-scoring", "best_value": "max", "range": (0, 200)},
+	"GenScore-docking": {
+		"function": GenScore_rescoring, "column_name": "GenScore-docking", "best_value": "max", "range": (0, 200)},
+	"GenScore-balanced": {
+		"function": GenScore_rescoring, "column_name": "GenScore-balanced", "best_value": "max", "range": (0, 200)}, }
 
 
 def rescore_poses(w_dir: Path,
