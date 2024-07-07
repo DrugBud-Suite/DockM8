@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 import pandas as pd
-from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 class ScoringFunction(ABC):

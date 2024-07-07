@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -15,7 +16,6 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-from scripts.utilities.utilities import delete_files
 
 
 class GenScore(ScoringFunction):
@@ -38,41 +38,41 @@ class GenScore(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		rescoring_folder = kwargs.get("rescoring_folder")
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 		pocket_file = str(protein_file).replace(".pdb", "_pocket.pdb")
 
-		(rescoring_folder / f"{self.column_name}_rescoring").mkdir(parents=True, exist_ok=True)
+		with tempfile.TemporaryDirectory() as temp_dir:
+			split_files = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_sdfs = [Path(temp_dir) / f for f in os.listdir(split_files) if f.endswith(".sdf")]
 
-		split_files_folder = split_sdf_str(rescoring_folder / f"{self.column_name}_rescoring", sdf, n_cpus)
-		split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
-		global genscore_rescoring_splitted
-		def genscore_rescoring_splitted(split_file):
-			try:
-				cmd = (f"cd {software}/GenScore/example/ &&"
-					"conda run -n genscore python genscore.py"
-					f" -p {pocket_file}"
-					f" -l {split_file}"
-					f" -o {rescoring_folder / f'{self.column_name}_rescoring' / split_file.stem}"
-					f" -m {self.model}"
-					f" -e {self.encoder}")
+			global genscore_rescoring_splitted
 
-				subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			def genscore_rescoring_splitted(split_file):
+				try:
+					output_file = Path(temp_dir) / f"{split_file.stem}_genscore.csv"
+					cmd = (f"cd {software}/GenScore/example/ &&"
+							"conda run -n genscore python genscore.py"
+							f" -p {pocket_file}"
+							f" -l {split_file}"
+							f" -o {output_file}"
+							f" -m {self.model}"
+							f" -e {self.encoder}")
 
-				return rescoring_folder / f"{self.column_name}_rescoring" / f"{split_file.stem}.csv"
-			except Exception as e:
-				printlog(f"Error occurred while running GenScore on {split_file}: {e}")
-				return None
+					subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-		rescoring_results = parallel_executor(genscore_rescoring_splitted, split_files_sdfs, n_cpus)
+					return output_file
+				except Exception as e:
+					printlog(f"Error occurred while running GenScore on {split_file}: {e}")
+					return None
 
-		genscore_dataframes = []
-		for result_file in rescoring_results:
-			if result_file and Path(result_file).is_file():
-				df = pd.read_csv(result_file)
-				genscore_dataframes.append(df)
-				os.remove(result_file)
+			rescoring_results = parallel_executor(genscore_rescoring_splitted, split_files_sdfs, n_cpus)
+
+			genscore_dataframes = []
+			for result_file in rescoring_results:
+				if result_file and Path(result_file).is_file():
+					df = pd.read_csv(result_file)
+					genscore_dataframes.append(df)
 
 		if not genscore_dataframes:
 			printlog(f"ERROR: No valid results found for {self.column_name} rescoring!")
@@ -80,10 +80,7 @@ class GenScore(ScoringFunction):
 
 		genscore_rescoring_results = pd.concat(genscore_dataframes)
 		genscore_rescoring_results.rename(columns={"id": "Pose ID", "score": self.column_name}, inplace=True)
-		genscore_scores_path = rescoring_folder / f"{self.column_name}_rescoring" / f"{self.column_name}_scores.csv"
-		genscore_rescoring_results.to_csv(genscore_scores_path, index=False)
-
-		delete_files(rescoring_folder / f"{self.column_name}_rescoring", f"{self.column_name}_scores.csv")
+		genscore_rescoring_results["Pose ID"] = genscore_rescoring_results["Pose ID"].str.rsplit("-", n=1).str[0]
 
 		toc = time.perf_counter()
 		printlog(f"Rescoring with {self.column_name} complete in {toc - tic:0.4f}!")

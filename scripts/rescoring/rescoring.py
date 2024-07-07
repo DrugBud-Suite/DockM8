@@ -2,7 +2,7 @@ import sys
 import time
 import warnings
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import pandas as pd
 from rdkit import RDLogger
@@ -66,114 +66,104 @@ RESCORING_FUNCTIONS = {
 	"Vinardo": Vinardo(), }
 
 
-def rescore_poses(w_dir: Path,
-		protein_file: Path,
-		pocket_definition: dict,
-		software: Path,
-		clustered_sdf: Path,
-		functions: List[str],
-		n_cpus: int) -> None:
+def rescore_poses(sdf: Path,
+					protein_file: Path,
+					pocket_definition: dict,
+					software: Path,
+					functions: List[str],
+					n_cpus: int,
+					output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""
     Rescores ligand poses using the specified scoring functions.
     """
 	RDLogger.DisableLog("rdApp.*")
 	tic = time.perf_counter()
-	rescoring_folder_name = Path(clustered_sdf).stem
-	rescoring_folder = w_dir / f"rescoring_{rescoring_folder_name}"
-	rescoring_folder.mkdir(parents=True, exist_ok=True)
 
 	skipped_functions = []
+	results = []
 	for function in functions:
 		scoring_function = RESCORING_FUNCTIONS.get(function)
-		if not (rescoring_folder / f"{function}_rescoring" / f"{function}_scores.csv").is_file():
+		if scoring_function:
 			try:
-				scoring_function.rescore(clustered_sdf,
-						n_cpus,
-						protein_file=protein_file,
-						pocket_definition=pocket_definition,
-						software=software,
-						rescoring_folder=rescoring_folder)
+				result = scoring_function.rescore(sdf,
+													n_cpus,
+													protein_file=protein_file,
+													pocket_definition=pocket_definition,
+													software=software)
+				results.append(result)
 			except Exception as e:
 				printlog(e)
 				printlog(f"Failed for {function}")
 		else:
 			skipped_functions.append(function)
+
 	if skipped_functions:
 		printlog(f'Skipping functions: {", ".join(skipped_functions)}')
 
-	score_files = [f"{function}_scores.csv" for function in functions]
-	csv_files = [file for file in (rescoring_folder.rglob("*.csv")) if file.name in score_files]
-	csv_dfs = []
-	for file in csv_files:
-		df = pd.read_csv(file)
-		if "Unnamed: 0" in df.columns:
-			df = df.drop(columns=["Unnamed: 0"])
-		csv_dfs.append(df)
+	if len(results) == 1:
+		combined_results = results[0]
+	elif len(results) > 1:
+		combined_results = results[0]
+		for df in tqdm(results[1:], desc="Combining scores", unit="files"):
+			combined_results = pd.merge(combined_results, df, on="Pose ID", how="inner")
 
-	if len(csv_dfs) == 1:
-		combined_dfs = csv_dfs[0]
-	elif len(csv_dfs) > 1:
-		combined_dfs = csv_dfs[0]
-		for df in tqdm(csv_dfs[1:], desc="Combining scores", unit="files"):
-			combined_dfs = pd.merge(combined_dfs, df, on="Pose ID", how="inner")
-
-	first_column = combined_dfs.pop("Pose ID")
-	combined_dfs.insert(0, "Pose ID", first_column)
-	columns = combined_dfs.columns
+	first_column = combined_results.pop("Pose ID")
+	combined_results.insert(0, "Pose ID", first_column)
+	columns = combined_results.columns
 	col = columns[1:]
 	for c in col.tolist():
 		if c == "Pose ID":
 			continue
-		if combined_dfs[c].dtype != float:
-			combined_dfs[c] = combined_dfs[c].apply(pd.to_numeric, errors="coerce")
+		if combined_results[c].dtype != float:
+			combined_results[c] = combined_results[c].apply(pd.to_numeric, errors="coerce")
 
-	combined_dfs.to_csv(rescoring_folder / "allposes_rescored.csv", index=False)
+	if output_file:
+		combined_results.to_csv(output_file, index=False)
+
 	toc = time.perf_counter()
 	printlog(f"Rescoring complete in {toc - tic:0.4f}!")
 
+	return combined_results
 
-def rescore_docking(w_dir: Path,
-		protein_file: Path,
-		pocket_definition: dict,
-		software: Path,
-		function: str,
-		n_cpus: int) -> pd.DataFrame:
-	"""
+
+def rescore_docking(
+    sdf: Path,
+    protein_file: Path,
+    pocket_definition: dict,
+    software: Path,
+    function: str,
+    n_cpus: int
+) -> pd.DataFrame:
+    """
     Rescores docking poses using the specified scoring function.
     """
-	RDLogger.DisableLog("rdApp.*")
-	tic = time.perf_counter()
+    RDLogger.DisableLog("rdApp.*")
+    tic = time.perf_counter()
 
-	all_poses = Path(f"{w_dir}/allposes.sdf")
-	scoring_function = RESCORING_FUNCTIONS.get(function)
+    scoring_function = RESCORING_FUNCTIONS.get(function)
 
-	if scoring_function is None:
-		raise ValueError(f"Unknown scoring function: {function}")
+    if scoring_function is None:
+        raise ValueError(f"Unknown scoring function: {function}")
 
-	score_df = scoring_function.rescore(all_poses,
-				n_cpus,
-				protein_file=protein_file,
-				pocket_definition=pocket_definition,
-				software=software,
-				rescoring_folder=w_dir)
+    score_df = scoring_function.rescore(
+        sdf,
+        n_cpus,
+        protein_file=protein_file,
+        pocket_definition=pocket_definition,
+        software=software
+    )
 
-	score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
-	score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
-	score_df["ID"] = score_df["Pose ID"].str.split("_").str[0].astype(str)
+    score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
+    score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
+    score_df["ID"] = score_df["Pose ID"].str.split("_").str[0].astype(str)
 
-	if scoring_function.best_value == "min":
-		best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmin()
-	else:
-		best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmax()
+    if scoring_function.best_value == "min":
+        best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmin()
+    else:
+        best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmax()
 
-	score_file = w_dir / f"{function}_rescoring" / f"{function}_scores.csv"
-	if score_file.exists():
-		score_file.unlink()
-	score_folder = w_dir / f"{function}_rescoring"
-	if score_folder.exists():
-		score_folder.rmdir()
-
-	best_poses = pd.DataFrame(score_df.loc[best_pose_indices, "Pose ID"])
-	toc = time.perf_counter()
-	printlog(f"Rescoring complete in {toc - tic:0.4f}!")
-	return best_poses
+    best_poses = pd.DataFrame(score_df.loc[best_pose_indices, "Pose ID"])
+    
+    toc = time.perf_counter()
+    printlog(f"Rescoring complete in {toc - tic:0.4f}!")
+    return best_poses
