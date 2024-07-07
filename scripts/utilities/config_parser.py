@@ -373,8 +373,8 @@ def check_config(config):
 		)
 		config["pose_selection"]["clustering_method"] = "KMedoids"
 
+	# Validate rescoring methods
 	rescoring_methods = config.get("rescoring", [])
-	# Validate each rescoring method
 	valid_rescoring_methods = list(RESCORING_FUNCTIONS.keys())
 	for method in rescoring_methods:
 		if method not in valid_rescoring_methods:
