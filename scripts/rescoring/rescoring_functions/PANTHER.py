@@ -15,7 +15,6 @@ sys.path.append(str(dockm8_path))
 
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
-from scripts.utilities.molecule_conversion import convert_molecules
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.utilities import delete_files
 
@@ -41,9 +40,9 @@ def PANTHER_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 	split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 	negative_image = generate_negative_image(rescoring_folder / f"{column_name}_rescoring",
-												software,
-												protein_file,
-												pocket_definition)
+				software,
+				protein_file,
+				pocket_definition)
 
 	global panther_rescoring_splitted
 
@@ -78,19 +77,19 @@ def PANTHER_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 
 	# Run PANTHER rescoring in parallel
 	rescoring_results = parallel_executor(panther_rescoring_splitted,
-											split_files_sdfs,
-											n_cpus,
-											negative_image=negative_image)
+				split_files_sdfs,
+				n_cpus,
+				negative_image=negative_image)
 
 	# Process the results
 	panther_dataframes = []
 	for result_file in rescoring_results:
 		if result_file and Path(result_file).is_file():
 			df = PandasTools.LoadSDF(str(result_file),
-										idName="Pose ID",
-										molColName=None,
-										includeFingerprints=False,
-										embedProps=False)
+					idName="Pose ID",
+					molColName=None,
+					includeFingerprints=False,
+					embedProps=False)
 			panther_dataframes.append(df)
 
 	if not panther_dataframes:
@@ -102,7 +101,7 @@ def PANTHER_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 		"Pose ID", "Similarity_best", "Similarity_ESP", "Similarity_shape"]]
 	panther_rescoring_results.rename(columns={
 		"Similarity_best": "PANTHER", "Similarity_ESP": "PANTHER-ESP", "Similarity_shape": "PANTHER-Shape"},
-										inplace=True)
+				inplace=True)
 	panther_rescoring_results = panther_rescoring_results[["Pose ID", column_name]]
 	panther_scores_path = rescoring_folder / f"{column_name}_rescoring" / f"{column_name}_scores.csv"
 	panther_rescoring_results.to_csv(panther_scores_path, index=False)
@@ -143,10 +142,10 @@ def generate_negative_image(rescoring_folder, software, protein_file, pocket_def
 		negative_image = rescoring_folder / "negative_image.mol2"
 		panther_cmd = f"conda run -n panther python {software}/panther/panther.py {panther_input} {negative_image}"
 		process = subprocess.Popen(panther_cmd,
-									shell=True,
-									stdout=subprocess.PIPE,
-									stderr=subprocess.PIPE,
-									universal_newlines=True)
+				shell=True,
+				stdout=subprocess.PIPE,
+				stderr=subprocess.PIPE,
+				universal_newlines=True)
 		stdout, stderr = process.communicate()
 		# Extract mol2 data from the output
 		mol2_start = stdout.find("@<TRIPOS>MOLECULE")
