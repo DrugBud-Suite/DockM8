@@ -45,7 +45,7 @@ st.markdown("""
     }
     </style>
     """,
-			unsafe_allow_html=True)
+	unsafe_allow_html=True)
 
 for group, methods in method_groups.items():
 	st.subheader(group, divider="orange")
@@ -105,12 +105,12 @@ if st.button("Run Pose Selection"):
 
 				for selection_method in selected_methods:
 					select_poses(selection_method=selection_method,
-									clustering_method=clustering_algorithm,
-									w_dir=w_dir,
-									protein_file=protein_file,
-									software=software,
-									all_poses=all_poses,
-									n_cpus=n_cpus)
+						clustering_method=clustering_algorithm,
+						w_dir=w_dir,
+						protein_file=protein_file,
+						software=software,
+						all_poses=all_poses,
+						n_cpus=n_cpus)
 				st.success(f"Pose selection completed successfully for methods: {', '.join(selected_methods)}")
 			except Exception as e:
 				st.error(f"An error occurred during pose selection: {str(e)}")
