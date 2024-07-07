@@ -9,8 +9,6 @@ tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p /
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-print("DockM8 is in : " + str(dockm8_path))
-
 from scripts.pocket_finding.pocket_finding import pocket_finder
 
 # Ignore deprecation warnings

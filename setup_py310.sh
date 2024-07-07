@@ -131,7 +131,7 @@ else
     conda config --add channels bioconda
     conda config --add channels mx
 
-    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt tqdm pytest pdbfixer smina -q -y
+    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt tqdm pytest pdbfixer smina omegaconf roma -q -y
 	conda install -c ikmckenz adme-pred-py
 
     echo -e """
@@ -144,14 +144,60 @@ else
     pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf medchem molgrid -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 	pip install streamlit_molstar sh -q
+	pip install roma torch-lightning==1.9.1 omegaconf terrace dgllife -q
 
     echo -e """
     ###############################################################
     # Finished installing pip packages
     ###############################################################
     """
-fi
 
+	echo -e """
+    ###############################################################
+    # Installing FABind environment
+    ###############################################################
+    """
+
+	conda create -n fabind python=3.8 -y
+    conda deactivate
+    conda activate fabind
+	conda install -c conda-forge graph-tool -y -q
+	conda install pytorch==1.12.0 torchvision==0.13.0 torchaudio==0.12.0 cpuonly -c pytorch -y -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_cluster-1.6.0%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_scatter-2.1.0%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_sparse-0.6.15%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/torch_spline_conv-1.2.1%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/pyg_lib-0.2.0%2Bpt112cpu-cp38-cp38-linux_x86_64.whl -q
+	pip install torch-geometric==2.4.0 -q
+	pip install torchdrug==0.1.2 torchmetrics==0.10.2 tqdm mlcrate pyarrow accelerate Bio lmdb fair-esm tensorboard -q
+	pip install wandb spyrmsd -q
+	pip install rdkit-pypi==2021.03.4 -q
+	conda install -c conda-forge openbabel -y -q
+	pip install setuptools==69.5.1 -q
+
+	echo -e """
+    ###############################################################
+    # Installing PANTHER environment
+    ###############################################################
+    """
+	conda deactivate
+	conda create -n panther python=2.7 -y
+    conda deactivate
+
+	echo -e """
+    ###############################################################
+    # Installing GenScore environment
+    ###############################################################
+    """
+	conda deactivate
+	conda create -n genscore python=3.8 -y
+    conda activate genscore
+	conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cpuonly -c pytorch -y -q
+	conda install MDAnalysis==2.0.0 prody==2.1.0 pandas rdkit==2021.03.5 openbabel scikit-learn scipy seaborn numpy joblib matplotlib -y -q
+	pip torch-geometric==2.0.3 -q
+	pip install https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl -q
+	pip install https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl -q
+fi
 ###############################################################
 DOCKM8_FOLDER=""
 if [[ -f dockm8.py ]]; then

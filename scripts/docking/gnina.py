@@ -68,8 +68,7 @@ def gnina_docking(split_file: Path,
 		" --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu")
 	try:
 		# Execute the gnina command
-		subprocess.call(gnina_cmd, shell=True          #, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-			)
+		subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 	except Exception as e:
 		printlog(f"GNINA docking failed: {e}")
 	return
@@ -92,9 +91,9 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			for file in tqdm(os.listdir(w_dir / "gnina"), desc="Loading GNINA poses"):
 				if file.startswith("split"):
 					df = PandasTools.LoadSDF(str(w_dir / "gnina" / file),
-							idName="ID",
-							molColName="Molecule",
-							strictParsing=False)
+						idName="ID",
+						molColName="Molecule",
+						strictParsing=False)
 					gnina_dataframes.append(df)
 			gnina_df = pd.concat(gnina_dataframes)
 			list_ = [*range(1, int(n_poses) + 1, 1)]
@@ -108,10 +107,10 @@ def fetch_gnina_poses(w_dir: Union[str, Path], n_poses: int, *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(gnina_df,
-					str(w_dir / "gnina" / "gnina_poses.sdf"),
-					molColName="Molecule",
-					idName="Pose ID",
-					properties=list(gnina_df.columns))
+				str(w_dir / "gnina" / "gnina_poses.sdf"),
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(gnina_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined GNINA poses SDF file!")

@@ -22,13 +22,13 @@ from scripts.utilities.logging import printlog
 
 
 def psovina_docking(split_file: Path,
-		w_dir: Path,
-		protein_file: Path,
-		pocket_definition: Dict[str, list],
-		software: Path,
-		exhaustiveness: int,
-		n_poses: int,
-		):
+	w_dir: Path,
+	protein_file: Path,
+	pocket_definition: Dict[str, list],
+	software: Path,
+	exhaustiveness: int,
+	n_poses: int,
+	):
 	"""
     Perform docking using the PSOVINA software for either a library of molecules or split files.
 
@@ -60,8 +60,8 @@ def psovina_docking(split_file: Path,
 	try:
 		convert_molecules(input_file, str(pdbqt_folder), "sdf", "pdbqt")
 	except Exception as e:
-		print("Failed to convert sdf file to .pdbqt")
-		print(e)
+		printlog("Failed to convert sdf file to .pdbqt")
+		printlog(e)
 
 	protein_file_pdbqt = convert_molecules(protein_file, protein_file.with_suffix(".pdbqt"), "pdb", "pdbqt")
 	log = psovina_folder / f"{os.path.basename(split_file).split('.')[0]}_psovina.log"
@@ -102,10 +102,10 @@ def psovina_docking(split_file: Path,
 				"PSOVINA_Affinity": affinity,
 				"ID": pose_file.stem.split("_")[0], }
 		PandasTools.WriteSDF(psovina_poses,
-				str(psovina_docking_results),
-				molColName="Molecule",
-				idName="Pose ID",
-				properties=list(psovina_poses.columns))
+			str(psovina_docking_results),
+			molColName="Molecule",
+			idName="Pose ID",
+			properties=list(psovina_poses.columns))
 
 	except Exception as e:
 		printlog("ERROR: Failed to combine PSOVINA SDF file!")
@@ -134,9 +134,9 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
 			for file in tqdm(os.listdir(w_dir / "psovina"), desc="Loading PSOVINA poses"):
 				if file.endswith(".sdf"):
 					df = PandasTools.LoadSDF(str(w_dir / "psovina" / file),
-							idName="Pose ID",
-							molColName="Molecule",
-							strictParsing=False)
+						idName="Pose ID",
+						molColName="Molecule",
+						strictParsing=False)
 					psovina_dataframes.append(df)
 			psovina_df = pd.concat(psovina_dataframes)
 			psovina_df["ID"] = psovina_df["Pose ID"].apply(lambda x: x.split("_")[0])
@@ -145,10 +145,10 @@ def fetch_psovina_poses(w_dir: Union[str, Path], *args):
 			printlog(e)
 		try:
 			PandasTools.WriteSDF(psovina_df,
-					str(w_dir / "psovina" / "psovina_poses.sdf"),
-					molColName="Molecule",
-					idName="Pose ID",
-					properties=list(psovina_df.columns))
+				str(w_dir / "psovina" / "psovina_poses.sdf"),
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(psovina_df.columns))
 
 		except Exception as e:
 			printlog("ERROR: Failed to write combined PSOVINA poses SDF file!")

@@ -1,3 +1,4 @@
+import sys
 import warnings
 from pathlib import Path
 
@@ -5,6 +6,12 @@ from Bio.PDB import PDBIO, PDBParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
 
 warnings.filterwarnings("ignore", category=PDBConstructionWarning)
+
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
+from scripts.utilities.logging import printlog
 
 
 def extract_chain(pdb_file: Path, chain_id: str):
@@ -25,6 +32,6 @@ def extract_chain(pdb_file: Path, chain_id: str):
 					pdbio.save(str(output_file))
 					return output_file
 	except FileNotFoundError:
-		print(f"Error: PDB file '{pdb_file}' not found.")
+		printlog(f"Error: PDB file '{pdb_file}' not found.")
 	except Exception as e:
-		print(f"Error in extracting chains from {pdb_file}: {e}")
+		printlog(f"Error in extracting chains from {pdb_file}: {e}")

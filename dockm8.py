@@ -58,77 +58,77 @@ def dockm8(software: Path,
 	):
 	# Set working directory based on the receptor file
 	w_dir = Path(receptor).parent / Path(receptor).stem
-	print("The working directory has been set to:", w_dir)
+	printlog("The working directory has been set to:", w_dir)
 	(w_dir).mkdir(exist_ok=True)
 
 	# Prepare the protein for docking (e.g., adding hydrogens)
 	prepared_receptor = prepare_protein(protein_file_or_code=receptor,
-		output_dir=w_dir,
-		select_best_chain=prepare_proteins["select_best_chain"],
-		minimize=prepare_proteins["minimize"],
-		with_solvent=prepare_proteins["with_solvent"],
-		fix_nonstandard_residues=prepare_proteins["fix_nonstandard_residues"],
-		fix_missing_residues=prepare_proteins["fix_missing_residues"],
-		remove_hetero=prepare_proteins["remove_heteroatoms"],
-		remove_water=prepare_proteins["remove_water"],
-		add_missing_hydrogens_pH=prepare_proteins["add_hydrogens"],
-		protonate=prepare_proteins["protonation"])
+										output_dir=w_dir,
+										select_best_chain=prepare_proteins["select_best_chain"],
+										minimize=prepare_proteins["minimize"],
+										with_solvent=prepare_proteins["with_solvent"],
+										fix_nonstandard_residues=prepare_proteins["fix_nonstandard_residues"],
+										fix_missing_residues=prepare_proteins["fix_missing_residues"],
+										remove_hetero=prepare_proteins["remove_heteroatoms"],
+										remove_water=prepare_proteins["remove_water"],
+										add_missing_hydrogens_pH=prepare_proteins["add_hydrogens"],
+										protonate=prepare_proteins["protonation"])
 
 	# Prepare the ligands for docking (e.g., adding hydrogens, generating conformers)
 	prepared_library = prepare_library(input_sdf=docking_library,
-				id_column="ID",
-				protonation=ligand_preparation["protonation"],
-				conformers=ligand_preparation["conformers"],
-				software=software,
-				n_cpus=n_cpus,
-				n_conformers=ligand_preparation["n_conformers"])
+										id_column="ID",
+										protonation=ligand_preparation["protonation"],
+										conformers=ligand_preparation["conformers"],
+										software=software,
+										n_cpus=n_cpus,
+										n_conformers=ligand_preparation["n_conformers"])
 
 	# Determine the docking pocket
 	pocket_definition = pocket_finder(mode=pocket_detection["method"],
-				software=software,
-				receptor=prepared_receptor,
-				ligand=reference_ligand,
-				radius=pocket_detection["radius"],
-				manual_pocket=pocket_detection["manual_pocket"])
+										software=software,
+										receptor=prepared_receptor,
+										ligand=reference_ligand,
+										radius=pocket_detection["radius"],
+										manual_pocket=pocket_detection["manual_pocket"])
 
 	# Perform the docking operation
 	if not (w_dir / "allposes.sdf").exists():
 		dockm8_docking(library=prepared_library,
-			w_dir=w_dir,
-			protein_file=prepared_receptor,
-			pocket_definition=pocket_definition,
-			software=software,
-			docking_programs=docking["docking_programs"],
-			n_poses=docking["n_poses"],
-			exhaustiveness=docking["exhaustiveness"],
-			n_cpus=n_cpus)
+						w_dir=w_dir,
+						protein_file=prepared_receptor,
+						pocket_definition=pocket_definition,
+						software=software,
+						docking_programs=docking["docking_programs"],
+						n_poses=docking["n_poses"],
+						exhaustiveness=docking["exhaustiveness"],
+						n_cpus=n_cpus)
 
 		# Concatenate all poses into a single file
 		concat_all_poses(w_dir=w_dir,
-			docking_programs=docking["docking_programs"],
-			protein_file=prepared_receptor,
-			n_cpus=n_cpus)
+							docking_programs=docking["docking_programs"],
+							protein_file=prepared_receptor,
+							n_cpus=n_cpus)
 
 	processed_poses = docking_postprocessing(input_sdf=w_dir / "allposes.sdf",
-		output_path=w_dir / "allposes_processed.sdf",
-		protein_file=prepared_receptor,
-		minimize_poses=post_docking["minimize"],
-		bust_poses=post_docking["bust_poses"],
-		strain_cutoff=post_docking["strain_cutoff"],
-		clash_cutoff=post_docking["clash_cutoff"],
-		classy_pose=post_docking["classy_pose"],
-		classy_pose_model=post_docking["classy_pose_model"],
-		n_cpus=n_cpus)
+												output_path=w_dir / "allposes_processed.sdf",
+												protein_file=prepared_receptor,
+												minimize_poses=post_docking["minimize"],
+												bust_poses=post_docking["bust_poses"],
+												strain_cutoff=post_docking["strain_cutoff"],
+												clash_cutoff=post_docking["clash_cutoff"],
+												classy_pose=post_docking["classy_pose"],
+												classy_pose_model=post_docking["classy_pose_model"],
+												n_cpus=n_cpus)
 
 	# Load all poses from SDF file and perform clustering
-	print("Loading all poses SDF file...")
+	printlog("Loading all poses SDF file...")
 	tic = time.perf_counter()
 	all_poses = PandasTools.LoadSDF(str(processed_poses),
-		idName="Pose ID",
-		molColName="Molecule",
-		includeFingerprints=False)
+									idName="Pose ID",
+									molColName="Molecule",
+									includeFingerprints=False)
 	toc = time.perf_counter()
-	print(f"Finished loading all poses SDF in {toc-tic:0.4f}!")
+	printlog(f"Finished loading all poses SDF in {toc-tic:0.4f}!")
 
 	# Select Poses
 	pose_selection_methods = pose_selection["pose_selection_method"]

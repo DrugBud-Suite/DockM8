@@ -26,7 +26,7 @@ def download_p2rank(software: Path):
 	Returns:
 		None
 	"""
-	print("p2rank executable not found. Downloading...")
+	printlog("p2rank executable not found. Downloading...")
 
 	# Use GitHub API to get latest release info
 	repo_url = "https://api.github.com/repos/rdk/p2rank/releases/latest"
@@ -41,7 +41,7 @@ def download_p2rank(software: Path):
 			break
 
 	if tarball_url is None:
-		print("No tarball found in the latest release.")
+		printlog("No tarball found in the latest release.")
 		return
 
 	# Download p2rank tarball

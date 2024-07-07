@@ -59,8 +59,8 @@ def qvina2_docking(split_file: Path,
 	try:
 		convert_molecules(input_file, str(pdbqt_folder), "sdf", "pdbqt")
 	except Exception as e:
-		print("Failed to convert sdf file to .pdbqt")
-		print(e)
+		printlog("Failed to convert sdf file to .pdbqt")
+		printlog(e)
 
 	protein_file_pdbqt = convert_molecules(protein_file,
 		protein_file.with_suffix(".pdbqt"),

@@ -161,11 +161,10 @@ def CENsible_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 
 	parallel_executor(CENsible_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
 
-	print("Combining CENsible scores")
 	scores_folder = rescoring_folder / f"{column_name}_rescoring"
 	score_files = list(scores_folder.glob("*_score.csv"))
 	if not score_files:
-		print("No CSV files found with names ending in '_score.csv' in the specified folder.")
+		printlog("No CSV files found with names ending in '_score.csv' in the specified folder.")
 		return None
 	else:
 		combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)

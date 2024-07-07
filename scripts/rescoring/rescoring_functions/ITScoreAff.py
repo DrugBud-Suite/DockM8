@@ -111,20 +111,16 @@ def ITScoreAff_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 							f"Warning: Could not convert '{parts[2]}' to float for file {split_file}. Skipping this score."
 						)
 						scores.append(None)
-			print(f"Scores for {split_file}: {scores}")
-			print(len(scores))
-			print(len(df))
 			df[column_name] = scores
 			output_csv = str(rescoring_folder / f"{column_name}_rescoring" / (str(split_file.stem) + "_scores.csv"))
 			df.to_csv(output_csv, index=False)
 
 		parallel_executor(ITScoreAff_rescoring_splitted, split_files_sdfs, n_cpus, protein_mol2=protein_mol2)
 
-	print("Combining ITScoreAff scores")
 	scores_folder = rescoring_folder / f"{column_name}_rescoring"
 	score_files = list(scores_folder.glob("*_scores.csv"))
 	if not score_files:
-		print("No CSV files found with names ending in '_scores.csv' in the specified folder.")
+		printlog("No CSV files found with names ending in '_scores.csv' in the specified folder.")
 		return None
 	else:
 		combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)

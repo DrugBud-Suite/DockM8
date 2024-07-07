@@ -1,0 +1,65 @@
+# Library core atom settings.
+# Element Radius: 1-3 characters. Longer names are matched first. 
+# Example: Atom: H3D
+# Library radiuses: H 0.1
+# > H3D radius = 0.1
+# Library radiuses: H 0.1, H3 0.3
+# > H3D radius = 0.3
+# Library radiuses: H 0.1, H3D 0.2
+# > H3D radius = 0.2
+
+N 1.25
+C 1.9
+O 1.25
+S 1.90
+P 2.0
+H 0.0
+MG 0.6
+FE 0.6
+ZN 0.6
+
+AllOthers 2 # All other atoms. 
+
+:::-::: # This line in precisely this form is actually important. Do Not Delete!
+# Amino acid specific radii. These WILL OVERRULE settings above where applicable.
+# AA SEQID MODIFIERTYPE VALUE ATOM 
+# AA code should match the ones in the given .pdb file. Thus even possible exotic ones may be used. 
+# SEQID = 000 if condition used for all Amino acids in the .pdb. IF AA + SEQID combination can not be found, only SEQID is searched instead, and a warning will be printed. 
+# MODIFIERTYPE = 1, if value in VALUE field should added/substracted from radius. Otherwise VALUE will be set as the radius for specified atom
+# VALUE: If MODIFIERTYPE = 1, positive or negative values will be added / substracted specified atom in the specified amino acid. 
+# ^or all atoms if ATOM field is 000. And all such amino acids if SEQID = 000
+# Examples:
+# ARG 000 1 -0.14 N
+# ^substract 0.14 from the radius of every N in every ARG
+# ARG 000 1 -0.14 "N"
+# ^substract 0.14 from the radius of main chain N in every ARG
+# ARG 122 1 0.02 H
+# ^add 0.02 to the radius of all N in ARG122
+# ARG 122 1 0.02 H3
+# ^add 0.02 to the radius of atoms matching H3* in ARG122 (H3, H3x)
+# ARG 122 0 0.2 H
+# ^set radius of H atoms in ARG122 to 0.2
+# NOTE: Settings for all amino acids of a specific type will overrule library core atom settings. 
+# NOTE: Settings of specific AA will overrule settings for amino acid type. For instance, 
+# ARG 000 1 -0.14 000
+# ARG 123 1  0.23 N
+# ^this will reduce all radiuses of all atoms in all arginines by 0.14 and THEN increase the radius of N in ARG123 by 0.23
+#GLU 000 0 2.1 C
+#ILE 000 0 2.7 C
+#VAL 000 0 2.7 C
+#LEU 000 0 1.1 H
+#ALA 000 0 2.7 C
+
+
+:::-::: # This line in precisely this form is actually important. Do Not Delete!
+# Atom specific radii.These WILL OVERRULE settings above where applicable. 
+# ATOMID MODIFIERTYPE VALUE
+# like AA specific settings, but based on atom serial field of the pdb file. 
+# For example: 
+# 123 0 0.2 
+# ^atom 123 will have a radius of 0.2
+# 123 1 -0.2 
+# ^this, however, will reduce the radius of 123 by 0.2. IF radius is already modified anywhere above, these will still apply and thus if you modify the amino acid to which 123 belongs (with ARG 123 0  1.23 000 for example), the substraction/addition will take place only AFTER that modification has already been applied
+
+
+

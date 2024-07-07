@@ -1,0 +1,48 @@
+
+# molecule-specific atoms. atom_name[angle, configuration, distance,{condition}] 
+# condition is optional. Syntax: 
+# {if_element_then_angle, configuration, distance}
+# ^if an atom of element is found bound to the given atom: angle, configuration, distance will be used instead of the ones specified prior to the condition. 
+
+# configuration:: currently recognized: planar and tetra(hedral)
+# distance:: don = donor; acc = acceptor; oh = one donor, two acceptors; 
+
+# NAD = NAD; NAI = NADH; NAP = NADP; NDP = NADPH; FAD = FAD; FAI = FADH2
+
+nad: o2b[109.5, tetra, oh]; o3b[109.5, tetra, oh]; o2d[109.5, tetra, oh];o3d[109.5, tetra, oh]; o3[109.5, tetra, acc]; 
+nad: o5b[109.5, tetra, acc]; o4b[109.5, tetra, acc]; o4d[109.5, tetra, acc]; o5d[109.5, tetra, acc]; n7n[109.5, tetra, don]; 
+nad: n6a[109.5, tetra, acc]; o7n[120, planar, acc]; n1a[120, planar, acc]; n3a[120, planar, acc]; n7a[120, planar, acc];
+nad: o1n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o1a[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2a[120, planar, acc, {if_h_then_109.5, tetra, oh}];
+
+nai: o2b[109.5, tetra, oh]; o3b[109.5, tetra, oh]; o2d[109.5, tetra, oh];o3d[109.5, tetra, oh]; o3[109.5, tetra, acc]; 
+nai: o5b[109.5, tetra, acc]; o4b[109.5, tetra, acc]; o4d[109.5, tetra, acc]; o5d[109.5, tetra, acc]; n7n[109.5, tetra, don]; 
+nai: n6a[109.5, tetra, acc]; o7n[120, planar, acc]; n1a[120, planar, acc]; n3a[120, planar, acc]; n7a[120, planar, acc];
+nai: o1n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o1a[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2a[120, planar, acc, {if_h_then_109.5, tetra, oh}];
+
+fad: o2[120, planar, acc]; o4[120, planar, acc]; n3[120, planar, don]; n1[120, planar, acc]; n5[120, planar, acc]; o5'[109.5, tetra, acc]; o3p[109.5, tetra, acc]; o4b[109.5, tetra, acc]; 
+fad: o5b[109.5, tetra, acc]; o2'[109.5, tetra, oh]; o3'[109.5, tetra, oh]; o4'[109.5, tetra, oh]; o2b[109.5, tetra, oh]; o3b[109.5, tetra, oh]; n6a[109.5, tetra, don]; n1a[120, planar, acc]; n3a[120, planar, acc]; n7a[120, planar, acc];
+fad: o1p[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2p[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o1a[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2a[120, planar, acc, {if_h_then_109.5, tetra, oh}];
+
+fda: o2[120, planar, acc]; o4[120, planar, acc]; n3[120, planar, don]; n1[120, planar, don]; n5[120, planar, don]; o5'[109.5, tetra, acc]; o3p[109.5, tetra, acc]; o4b[109.5, tetra, acc]; o5b[109.5, tetra, acc]; o2'[109.5, tetra, oh]; o3'[109.5, tetra, oh]; o4'[109.5, tetra, oh]; o2b[109.5, tetra, oh]; o3b[109.5, tetra, oh]; n6a[109.5, tetra, don]; n1a[120, planar, acc]; n3a[120, planar, acc]; n7a[120, planar, acc];
+fda: o1p[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2p[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o1a[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2a[120, planar, acc, {if_h_then_109.5, tetra, oh}];
+
+
+ndp: n6a[109.5, tetra, don]; n7n[109.5, tetra, don]; o2b[109.5, tetra, acc]; o4b[109.5, tetra, acc]; o5b[109.5, tetra, acc]; o3[109.5, tetra, acc]; o5d[109.5, tetra, acc]; o4d[109.5, tetra, acc];o3b[109.5, tetra, oh]; o3d[109.5, tetra, oh]; o2d[109.5, tetra, oh]; o7n[120, planar, acc]; n1a[120, planar, acc]; n3a[120, planar, acc]; n7a[120, planar, acc];
+ndp: o1n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o1a[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2a[120, planar, acc, {if_h_then_109.5, tetra, oh}];o1x[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2x[120, planar, acc, {if_h_then_109.5, tetra, oh}];o3x[120, planar, acc, {if_h_then_109.5, tetra, oh}]; 
+
+nap: n6a[109.5, tetra, don]; n7n[109.5, tetra, don]; o2b[109.5, tetra, acc]; o4b[109.5, tetra, acc]; o5b[109.5, tetra, acc]; o3[109.5, tetra, acc]; o5d[109.5, tetra, acc]; o4d[109.5, tetra, acc];o3b[109.5, tetra, oh]; o3d[109.5, tetra, oh]; o2d[109.5, tetra, oh]; o7n[120, planar, acc]; n1a[120, planar, acc]; n3a[120, planar, acc]; n7a[120, planar, acc];
+nap: o1n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2n[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o1a[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2a[120, planar, acc, {if_h_then_109.5, tetra, oh}];o1x[120, planar, acc, {if_h_then_109.5, tetra, oh}]; o2x[120, planar, acc, {if_h_then_109.5, tetra, oh}];o3x[120, planar, acc, {if_h_then_109.5, tetra, oh}]; 
+
+
+::metals::      # element[coordination bond length, (coord. bond max. length), conformation]
+# currently recognized conformations: octa(hedral) and tribipy (trigonal bipyramid)
+fe[2.45,(3.0),octa]
+mg[2.45,(3.0),octa]
+mn[2.45,(3.0),octa]
+co[2.45,(3.0),octa]
+zn[2.45,(3.0),octa]
+cu[2.45,(3.0),tribipy]
+ca[2.45,(3.0),octa]
+
+
+

@@ -52,7 +52,7 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 		df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 		df = df[["Pose ID"]]
 		korpl_command = (f"{software}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " + str(split_file) +
-				" --sdf")
+			" --sdf")
 		process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 		stdout, stderr = process.communicate()
 		energies = []
@@ -69,12 +69,11 @@ def KORPL_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
 
 	parallel_executor(KORPL_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
 
-	print("Combining KORPL scores")
 	scores_folder = rescoring_folder / f"{column_name}_rescoring"
 	# Get a list of all files with names ending in "_scores.csv"
 	score_files = list(scores_folder.glob("*_scores.csv"))
 	if not score_files:
-		print("No CSV files found with names ending in '_scores.csv' in the specified folder.")
+		printlog("No CSV files found with names ending in '_scores.csv' in the specified folder.")
 	else:
 		# Read and concatenate the CSV files into a single DataFrame
 		combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)

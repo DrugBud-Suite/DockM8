@@ -109,7 +109,7 @@ def get_best_chain_edia(pdb_code: str, output_dir: Path):
 		average_scores = scores_df.groupby("Chain")["EDIAm"].mean()
 		average_scores = average_scores.sort_values(ascending=False)
 		for chain, score in average_scores.items():
-			print(f"Chain {chain}: EDIA score = {score}")
+			printlog(f"Chain {chain}: EDIA score = {score}")
 		best_chain = average_scores.idxmax()
 		# Delete the scores CSV file
 		scores_csv.unlink()
