@@ -39,40 +39,40 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Updated RESCORING_FUNCTIONS dictionary using class instances
 RESCORING_FUNCTIONS = {
-	"GNINA-Affinity": Gnina("affinity"),
-	"CNN-Score": Gnina("cnn_score"),
-	"CNN-Affinity": Gnina("cnn_affinity"),
-	"Vinardo": Vinardo(),
-	"AD4": AD4(),
-	"RFScoreVS": RFScoreVS(),
-	"PLP": PLP(),
-	"CHEMPLP": CHEMPLP(),
-	"NNScore": NNScore(),
-	"PLECScore": PLECScore(),
-	"LinF9": LinF9(),
 	"AAScore": AAScore(),
-	"SCORCH": SCORCH(),
-	"RTMScore": RTMScore(),
-	"KORP-PL": KORPL(),
-	"ConvexPLR": ConvexPLR(),
-	"ITScoreAff": ITScoreAff(),
-	"DLIGAND2": DLIGAND2(),
+	"AD4": AD4(),
 	"CENsible": CENsible(),
+	"CHEMPLP": CHEMPLP(),
+	"CNN-Affinity": Gnina("cnn_affinity"),
+	"CNN-Score": Gnina("cnn_score"),
+	"ConvexPLR": ConvexPLR(),
+	"DLIGAND2": DLIGAND2(),
+	"GenScore-balanced": GenScore("balanced"),
+	"GenScore-docking": GenScore("docking"),
+	"GenScore-scoring": GenScore("scoring"),
+	"GNINA-Affinity": Gnina("affinity"),
+	"ITScoreAff": ITScoreAff(),
+	"KORP-PL": KORPL(),
+	"LinF9": LinF9(),
+	"NNScore": NNScore(),
 	"PANTHER": PANTHER("PANTHER"),
 	"PANTHER-ESP": PANTHER("PANTHER-ESP"),
 	"PANTHER-Shape": PANTHER("PANTHER-Shape"),
-	"GenScore-scoring": GenScore("scoring"),
-	"GenScore-docking": GenScore("docking"),
-	"GenScore-balanced": GenScore("balanced"), }
+	"PLECScore": PLECScore(),
+	"PLP": PLP(),
+	"RFScoreVS": RFScoreVS(),
+	"RTMScore": RTMScore(),
+	"SCORCH": SCORCH(),
+	"Vinardo": Vinardo(), }
 
 
 def rescore_poses(w_dir: Path,
-					protein_file: Path,
-					pocket_definition: dict,
-					software: Path,
-					clustered_sdf: Path,
-					functions: List[str],
-					n_cpus: int) -> None:
+		protein_file: Path,
+		pocket_definition: dict,
+		software: Path,
+		clustered_sdf: Path,
+		functions: List[str],
+		n_cpus: int) -> None:
 	"""
     Rescores ligand poses using the specified scoring functions.
     """
@@ -88,11 +88,11 @@ def rescore_poses(w_dir: Path,
 		if not (rescoring_folder / f"{function}_rescoring" / f"{function}_scores.csv").is_file():
 			try:
 				scoring_function.rescore(clustered_sdf,
-											n_cpus,
-											protein_file=protein_file,
-											pocket_definition=pocket_definition,
-											software=software,
-											rescoring_folder=rescoring_folder)
+						n_cpus,
+						protein_file=protein_file,
+						pocket_definition=pocket_definition,
+						software=software,
+						rescoring_folder=rescoring_folder)
 			except Exception as e:
 				printlog(e)
 				printlog(f"Failed for {function}")
@@ -133,11 +133,11 @@ def rescore_poses(w_dir: Path,
 
 
 def rescore_docking(w_dir: Path,
-					protein_file: Path,
-					pocket_definition: dict,
-					software: Path,
-					function: str,
-					n_cpus: int) -> pd.DataFrame:
+		protein_file: Path,
+		pocket_definition: dict,
+		software: Path,
+		function: str,
+		n_cpus: int) -> pd.DataFrame:
 	"""
     Rescores docking poses using the specified scoring function.
     """
@@ -151,11 +151,11 @@ def rescore_docking(w_dir: Path,
 		raise ValueError(f"Unknown scoring function: {function}")
 
 	score_df = scoring_function.rescore(all_poses,
-										n_cpus,
-										protein_file=protein_file,
-										pocket_definition=pocket_definition,
-										software=software,
-										rescoring_folder=w_dir)
+				n_cpus,
+				protein_file=protein_file,
+				pocket_definition=pocket_definition,
+				software=software,
+				rescoring_folder=w_dir)
 
 	score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
 	score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
