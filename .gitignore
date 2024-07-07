@@ -196,6 +196,9 @@ tests/test_files/1fvv_p/
 software/ITScoreAff_v1.0/
 software/DLIGAND2/
 software/LinF9
+software/FABind
+software/plantain
+software/GenScore
 software/censible/
 tests/test_files/fabind_test/
 software/shaep
