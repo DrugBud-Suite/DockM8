@@ -51,7 +51,7 @@ class CENsible(ScoringFunction):
 			subprocess.run([sys.executable, "-m", "pip", "install", "-r", censible_folder / "requirements_predict.txt"])
 			printlog("CENsible setup complete.")
 		else:
-			printlog("CENsible folder already exists.")
+			pass
 		return censible_folder
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
@@ -90,9 +90,9 @@ class CENsible(ScoringFunction):
 						obabel_path,
 						"--use_cpu"]
 					process = subprocess.Popen(censible_command,
-							stdout=subprocess.PIPE,
-							stderr=subprocess.PIPE,
-							text=True)
+						stdout=subprocess.PIPE,
+						stderr=subprocess.PIPE,
+						text=True)
 					stdout, stderr = process.communicate()
 					score = None
 					for line in stdout.split('\n'):

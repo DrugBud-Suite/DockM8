@@ -56,7 +56,7 @@ class ITScoreAff(ScoringFunction):
 
 			printlog("ITScoreAff_v1.0 setup complete.")
 		else:
-			printlog("ITScoreAff_v1.0 folder already exists.")
+			pass
 
 		return itscore_folder
 
@@ -82,9 +82,9 @@ class ITScoreAff(ScoringFunction):
 
 				itscoreAff_command = f"{self.itscore_folder}/ITScoreAff {protein_mol2} {ligand_mol2}"
 				process = subprocess.Popen(itscoreAff_command,
-						stdout=subprocess.PIPE,
-						stderr=subprocess.PIPE,
-						shell=True)
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE,
+					shell=True)
 				stdout, stderr = process.communicate()
 
 				scores = []
@@ -102,7 +102,7 @@ class ITScoreAff(ScoringFunction):
 							scores.append(None)
 				df[self.column_name] = scores
 				output_csv = str(rescoring_folder / f"{self.column_name}_rescoring" /
-						(str(split_file.stem) + "_scores.csv"))
+					(str(split_file.stem) + "_scores.csv"))
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(ITScoreAff_rescoring_splitted, split_files_sdfs, n_cpus, protein_mol2=protein_mol2)

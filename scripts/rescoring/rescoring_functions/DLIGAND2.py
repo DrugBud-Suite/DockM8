@@ -52,7 +52,7 @@ class DLIGAND2(ScoringFunction):
 			printlog(f"Changed permissions for {executable_path}")
 			printlog("DLIGAND2 setup complete.")
 		else:
-			printlog("DLIGAND2 folder already exists.")
+			pass
 		return dligand2_folder
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
