@@ -38,12 +38,12 @@ class KORPL(ScoringFunction):
 		(rescoring_folder / f"{self.column_name}_rescoring").mkdir(parents=True, exist_ok=True)
 		split_files_folder = split_sdf_str((rescoring_folder / f"{self.column_name}_rescoring"), sdf, n_cpus)
 		split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
-
+		global KORPL_rescoring_splitted
 		def KORPL_rescoring_splitted(split_file, protein_file):
 			df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 			df = df[["Pose ID"]]
 			korpl_command = (f"{software}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " +
-								str(split_file) + " --sdf")
+					str(split_file) + " --sdf")
 			process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 			stdout, stderr = process.communicate()
 			energies = []
@@ -55,7 +55,7 @@ class KORPL(ScoringFunction):
 					energies.append(energy)
 			df[self.column_name] = energies
 			output_csv = str(rescoring_folder / f"{self.column_name}_rescoring" /
-								(str(split_file.stem) + "_scores.csv"))
+					(str(split_file.stem) + "_scores.csv"))
 			df.to_csv(output_csv, index=False)
 			return
 

@@ -39,7 +39,7 @@ class RFScoreVS(ScoringFunction):
 
 		split_files_folder = split_sdf_str(rescoring_folder / f"{self.column_name}_rescoring", sdf, n_cpus)
 		split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
-
+		global rf_score_vs_splitted
 		def rf_score_vs_splitted(split_file, protein_file):
 			rfscorevs_cmd = f"{software}/rf-score-vs --receptor {protein_file} {split_file} -O {rfscorevs_rescoring_folder / Path(split_file).stem}_RFScoreVS_scores.csv -n 1"
 			subprocess.call(rfscorevs_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
@@ -60,7 +60,7 @@ class RFScoreVS(ScoringFunction):
 			return pd.DataFrame()
 
 		rfscorevs_results.to_csv(rescoring_folder / f"{self.column_name}_rescoring" / f"{self.column_name}_scores.csv",
-									index=False)
+				index=False)
 		delete_files(rescoring_folder / f"{self.column_name}_rescoring", f"{self.column_name}_scores.csv")
 		toc = time.perf_counter()
 		printlog(f"Rescoring with RFScoreVS complete in {toc-tic:0.4f}!")

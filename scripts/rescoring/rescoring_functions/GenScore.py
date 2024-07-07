@@ -47,16 +47,16 @@ class GenScore(ScoringFunction):
 
 		split_files_folder = split_sdf_str(rescoring_folder / f"{self.column_name}_rescoring", sdf, n_cpus)
 		split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
-
+		global genscore_rescoring_splitted
 		def genscore_rescoring_splitted(split_file):
 			try:
 				cmd = (f"cd {software}/GenScore/example/ &&"
-						"conda run -n genscore python genscore.py"
-						f" -p {pocket_file}"
-						f" -l {split_file}"
-						f" -o {rescoring_folder / f'{self.column_name}_rescoring' / split_file.stem}"
-						f" -m {self.model}"
-						f" -e {self.encoder}")
+					"conda run -n genscore python genscore.py"
+					f" -p {pocket_file}"
+					f" -l {split_file}"
+					f" -o {rescoring_folder / f'{self.column_name}_rescoring' / split_file.stem}"
+					f" -m {self.model}"
+					f" -e {self.encoder}")
 
 				subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 

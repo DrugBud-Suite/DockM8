@@ -67,7 +67,7 @@ class CENsible(ScoringFunction):
 		(rescoring_folder / f"{self.column_name}_rescoring").mkdir(parents=True, exist_ok=True)
 		split_files_folder = split_sdf_single_str((rescoring_folder / f"{self.column_name}_rescoring"), sdf)
 		split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
-
+		global censible_rescoring_splitted
 		def censible_rescoring_splitted(split_file, protein_file):
 			df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 			df = df[["Pose ID"]]
@@ -90,9 +90,9 @@ class CENsible(ScoringFunction):
 						obabel_path,
 						"--use_cpu"]
 					process = subprocess.Popen(censible_command,
-												stdout=subprocess.PIPE,
-												stderr=subprocess.PIPE,
-												text=True)
+							stdout=subprocess.PIPE,
+							stderr=subprocess.PIPE,
+							text=True)
 					stdout, stderr = process.communicate()
 					score = None
 					for line in stdout.split('\n'):

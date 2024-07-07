@@ -63,7 +63,7 @@ class DLIGAND2(ScoringFunction):
 		(rescoring_folder / f"{self.column_name}_rescoring").mkdir(parents=True, exist_ok=True)
 		split_files_folder = split_sdf_single_str((rescoring_folder / f"{self.column_name}_rescoring"), sdf)
 		split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
-
+		global dligand2_rescoring_splitted
 		def dligand2_rescoring_splitted(split_file, protein_file):
 			df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 			df = df[["Pose ID"]]

@@ -41,17 +41,17 @@ class Vinardo(ScoringFunction):
 
 		vinardo_rescoring_folder = rescoring_folder / f"{self.column_name}_rescoring"
 		vinardo_rescoring_folder.mkdir(parents=True, exist_ok=True)
-
+		global vinardo_rescoring_splitted
 		def vinardo_rescoring_splitted(split_file, protein_file):
 			vinardo_rescoring_folder = rescoring_folder / f"{self.column_name}_rescoring"
 			results = vinardo_rescoring_folder / f"{Path(split_file).stem}_{self.column_name}.sdf"
 			vinardo_cmd = (f"{software}/gnina"
-							f" --receptor {protein_file}"
-							f" --ligand {split_file}"
-							f" --out {results}"
-							" --score_only"
-							" --scoring vinardo"
-							" --cnn_scoring none")
+				f" --receptor {protein_file}"
+				f" --ligand {split_file}"
+				f" --out {results}"
+				" --score_only"
+				" --scoring vinardo"
+				" --cnn_scoring none")
 			try:
 				subprocess.call(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 			except Exception as e:
@@ -63,10 +63,10 @@ class Vinardo(ScoringFunction):
 		try:
 			vinardo_dataframes = [
 				PandasTools.LoadSDF(str(rescoring_folder / f"{self.column_name}_rescoring" / file),
-									idName="Pose ID",
-									molColName=None,
-									includeFingerprints=False,
-									embedProps=False)
+					idName="Pose ID",
+					molColName=None,
+					includeFingerprints=False,
+					embedProps=False)
 				for file in os.listdir(rescoring_folder / f"{self.column_name}_rescoring")
 				if file.startswith("split") and file.endswith(".sdf")]
 		except Exception as e:

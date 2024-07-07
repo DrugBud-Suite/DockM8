@@ -57,10 +57,10 @@ class PANTHER(ScoringFunction):
 			negative_image = rescoring_folder / "negative_image.mol2"
 			panther_cmd = f"conda run -n panther python {software}/panther/panther.py {panther_input} {negative_image}"
 			process = subprocess.Popen(panther_cmd,
-										shell=True,
-										stdout=subprocess.PIPE,
-										stderr=subprocess.PIPE,
-										universal_newlines=True)
+					shell=True,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE,
+					universal_newlines=True)
 			stdout, stderr = process.communicate()
 			mol2_start = stdout.find("@<TRIPOS>MOLECULE")
 			mol2_end = stdout.rfind("INFO:")
@@ -91,10 +91,10 @@ class PANTHER(ScoringFunction):
 		split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 		negative_image = self.generate_negative_image(rescoring_folder / f"{self.column_name}_rescoring",
-														software,
-														protein_file,
-														pocket_definition)
-
+					software,
+					protein_file,
+					pocket_definition)
+		global panther_rescoring_splitted
 		def panther_rescoring_splitted(split_file, negative_image):
 			try:
 				# Convert SDF to MOL2
@@ -126,19 +126,19 @@ class PANTHER(ScoringFunction):
 
 		# Run PANTHER rescoring in parallel
 		rescoring_results = parallel_executor(panther_rescoring_splitted,
-												split_files_sdfs,
-												n_cpus,
-												negative_image=negative_image)
+					split_files_sdfs,
+					n_cpus,
+					negative_image=negative_image)
 
 		# Process the results
 		panther_dataframes = []
 		for result_file in rescoring_results:
 			if result_file and Path(result_file).is_file():
 				df = PandasTools.LoadSDF(str(result_file),
-											idName="Pose ID",
-											molColName=None,
-											includeFingerprints=False,
-											embedProps=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
 				panther_dataframes.append(df)
 
 		if not panther_dataframes:
@@ -150,7 +150,7 @@ class PANTHER(ScoringFunction):
 			"Pose ID", "Similarity_best", "Similarity_ESP", "Similarity_shape"]]
 		panther_rescoring_results.rename(columns={
 			"Similarity_best": "PANTHER", "Similarity_ESP": "PANTHER-ESP", "Similarity_shape": "PANTHER-Shape"},
-											inplace=True)
+					inplace=True)
 		panther_rescoring_results = panther_rescoring_results[["Pose ID", self.column_name]]
 		panther_scores_path = rescoring_folder / f"{self.column_name}_rescoring" / f"{self.column_name}_scores.csv"
 		panther_rescoring_results.to_csv(panther_scores_path, index=False)
