@@ -24,13 +24,47 @@ st.title("Rescoring")
 
 st.subheader("Scoring Functions", divider="orange")
 
+st.warning(
+	"Disclaimer: Slower scoring functions are not necessarily more accurate. The choice of scoring function should be based on your specific use case and requirements."
+)
+
+# Categorize scoring functions
+scoring_categories = {
+	"Empirical": {
+		"Faster": ["CHEMPLP", "PLP", "Vinardo", "LinF9"], "Slower": ["GNINA-Affinity", "AAScore"]},
+	"Semi-Empirical": {
+		"Faster": ["AD4"], "Slower": []},
+	"Knowledge-based": {
+		"Faster": ["KORP-PL", "DLIGAND2", "ITScoreAff", "ConvexPLR"], "Slower": []},
+	"Shape Similarity": {
+		"Faster": ["PANTHER", "PANTHER-ESP", "PANTHER-Shape"], "Slower": []},
+	"Machine Learning": {
+		"Faster": ["GenScore-scoring", "GenScore-docking", "GenScore-balanced"],
+		"Slower": ["RFScoreVS", "SCORCH", "CENsible", "RTMScore", "PLECScore", "NNScore"]}}
+
 selected_functions = []
 
-cols = st.columns(3)
-for i, (function_name, function_class) in enumerate(RESCORING_FUNCTIONS.items()):
-	with cols[i % 3]:
-		if cols[i % 3].toggle(function_name, key=f"checkbox_{function_name}"):
-			selected_functions.append(function_name)
+# Filter out empty categories
+non_empty_categories = {
+	category: speed_dict
+	for category,
+	speed_dict in scoring_categories.items()
+	if any(func for speed, funcs in speed_dict.items() for func in funcs if func in RESCORING_FUNCTIONS)}
+
+# Create columns for each non-empty category
+cols = st.columns(len(non_empty_categories))
+
+for i, (category, speed_dict) in enumerate(non_empty_categories.items()):
+	with cols[i]:
+		st.markdown(f"**{category}**")
+
+		for speed in ["Faster", "Slower"]:
+			functions = [func for func in speed_dict[speed] if func in RESCORING_FUNCTIONS]
+			if functions:
+				st.markdown(f"*{speed}*")
+				for function_name in functions:
+					if st.toggle(function_name, key=f"toggle_{speed}_{function_name}"):
+						selected_functions.append(function_name)
 
 st.write("Selected scoring functions:", ", ".join(selected_functions) if selected_functions else "None")
 
@@ -38,13 +72,13 @@ st.session_state.rescoring_functions = selected_functions
 
 st.subheader("Score Manipulation", divider="orange")
 normalize_scores = st.toggle(label="Normalize scores",
-								value=True,
-								help="Normalize scores to a range of 0-1",
-								key="normalize_scores")
+		value=True,
+		help="Normalize scores to a range of 0-1",
+		key="normalize_scores")
 mw_scores = st.toggle(label="Normalize to MW",
-						value=False,
-						help="Scale the scores to molecular weight of the compound",
-						key="mw_scores")
+		value=False,
+		help="Scale the scores to molecular weight of the compound",
+		key="mw_scores")
 
 st.subheader("Run Rescoring", divider="orange")
 if st.button("Run Rescoring"):
@@ -58,19 +92,19 @@ if st.button("Run Rescoring"):
 				w_dir = st.session_state.w_dir
 				protein_file = st.session_state.prepared_protein_path
 				software = st.session_state.software if 'software' in st.session_state else Path(dockm8_path /
-																									'software')
+										'software')
 				n_cpus = st.session_state.n_cpus if 'n_cpus' in st.session_state else os.cpu_count()
 				pocket_definition = st.session_state.pocket_definition if 'pocket_definition' in st.session_state else None
 
 				clustered_sdf = w_dir / "clustering" / f"{st.session_state.pose_selection_method}_clustered.sdf"
 
 				rescore_poses(w_dir=w_dir,
-								protein_file=protein_file,
-								pocket_definition=pocket_definition,
-								software=software,
-								clustered_sdf=clustered_sdf,
-								functions=selected_functions,
-								n_cpus=n_cpus)
+					protein_file=protein_file,
+					pocket_definition=pocket_definition,
+					software=software,
+					clustered_sdf=clustered_sdf,
+					functions=selected_functions,
+					n_cpus=n_cpus)
 				st.success(f"Rescoring completed successfully for functions: {', '.join(selected_functions)}")
 			except Exception as e:
 				st.error(f"An error occurred during rescoring: {str(e)}")
