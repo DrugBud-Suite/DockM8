@@ -1,10 +1,9 @@
-import os
 import subprocess
 import sys
 import time
+import os
 import warnings
 from pathlib import Path
-import tempfile
 
 import pandas as pd
 
@@ -30,7 +29,8 @@ class RTMScore(ScoringFunction):
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
+		temp_dir = self.create_temp_dir()
+		try:
 			RTMScore_rescoring_results = Path(temp_dir) / f"{self.column_name}_scores.csv"
 			try:
 				RTMScore_command = (f'cd {temp_dir} && python {software}/RTMScore-main/example/rtmscore.py' +
@@ -53,6 +53,13 @@ class RTMScore(ScoringFunction):
 			df = df.rename(columns={"id": "Pose ID", "score": f"{self.column_name}"})
 			df["Pose ID"] = df["Pose ID"].str.rsplit("-", n=1).str[0]
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with RTMScore complete in {toc-tic:0.4f}!")
-		return df
+			toc = time.perf_counter()
+			printlog(f"Rescoring with RTMScore complete in {toc-tic:0.4f}!")
+			return df
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# rtmscore = RTMScore()
+# results = rtmscore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

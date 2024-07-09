@@ -3,7 +3,6 @@ import sys
 import time
 import warnings
 from pathlib import Path
-import tempfile
 
 import pandas as pd
 
@@ -33,18 +32,17 @@ class PLP(ScoringFunction):
 		plants_search_speed = "speed1"
 		ants = "20"
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			temp_dir_path = Path(temp_dir)
-
+		temp_dir = self.create_temp_dir()
+		try:
 			# Convert protein file to .mol2 using open babel
-			plants_protein_mol2 = temp_dir_path / "protein.mol2"
+			plants_protein_mol2 = Path(temp_dir) / "protein.mol2"
 			convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2")
-
 			# Convert prepared ligand file to .mol2 using open babel
-			plants_ligands_mol2 = temp_dir_path / "ligands.mol2"
+			plants_ligands_mol2 = Path(temp_dir) / "ligands.mol2"
 			convert_molecules(sdf, plants_ligands_mol2, "sdf", "mol2")
 
-			plp_rescoring_config_path_txt = temp_dir_path / "config.txt"
+			# Generate plants config file
+			plp_rescoring_config_path_txt = Path(temp_dir) / "config.txt"
 			plp_config = [
 				"# search algorithm\n",
 				f"search_speed {plants_search_speed}\n",
@@ -68,7 +66,7 @@ class PLP(ScoringFunction):
 				f"protein_file {plants_protein_mol2}\n",
 				f"ligand_file {plants_ligands_mol2}\n",
 				"# output\n",
-				f"output_dir {temp_dir_path / 'results'}\n",
+				f"output_dir {Path(temp_dir) / 'results'}\n",
 				"# write single mol2 files (e.g. for RMSD calculation)\n",
 				"write_multi_mol2 1\n",
 				"# binding site definition\n",
@@ -91,7 +89,7 @@ class PLP(ScoringFunction):
 			subprocess.call(plp_rescoring_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 			# Fetch results
-			results_csv_location = temp_dir_path / "results" / "ranking.csv"
+			results_csv_location = Path(temp_dir) / "results" / "ranking.csv"
 			plp_results = pd.read_csv(results_csv_location, sep=",", header=0)
 			plp_results.rename(columns={"TOTAL_SCORE": self.column_name}, inplace=True)
 			for i, row in plp_results.iterrows():
@@ -99,6 +97,13 @@ class PLP(ScoringFunction):
 				plp_results.loc[i, ["Pose ID"]] = f"{split[0]}_{split[1]}_{split[2]}"
 			PLP_rescoring_results = plp_results[["Pose ID", self.column_name]]
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with PLP complete in {toc-tic:0.4f}!")
-		return PLP_rescoring_results
+			toc = time.perf_counter()
+			printlog(f"Rescoring with PLP complete in {toc-tic:0.4f}!")
+			return PLP_rescoring_results
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# plp = PLP()
+# results = plp.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

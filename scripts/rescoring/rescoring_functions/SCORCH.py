@@ -3,7 +3,6 @@ import sys
 import time
 import warnings
 from pathlib import Path
-import tempfile
 
 import pandas as pd
 
@@ -30,26 +29,32 @@ class SCORCH(ScoringFunction):
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			temp_dir_path = Path(temp_dir)
-			SCORCH_protein = temp_dir_path / "protein.pdbqt"
-			convert_molecules(str(protein_file).replace(".pdb", "_pocket.pdb"), SCORCH_protein, "pdb", "pdbqt")
-
+		temp_dir = self.create_temp_dir()
+		try:
+			SCORCH_protein = Path(temp_dir) / "protein.pdbqt"
+			convert_molecules(Path(str(protein_file)), SCORCH_protein, "pdb", "pdbqt")
 			# Convert ligands to pdbqt
-			split_files_folder = temp_dir_path / "split_ligands"
+			split_files_folder = Path(temp_dir) / f"split_{Path(sdf).stem}"
 			split_files_folder.mkdir(exist_ok=True)
 			convert_molecules(sdf, split_files_folder, "sdf", "pdbqt")
-
 			# Run SCORCH
-			SCORCH_command = f"cd {software}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {temp_dir_path}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
-			subprocess.call(SCORCH_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
-			# Clean data
-			SCORCH_scores = pd.read_csv(temp_dir_path / "scoring_results.csv")
+			SCORCH_command = f"cd {software}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {temp_dir}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
+			subprocess.call(SCORCH_command, shell=True                        #, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+							)
+			                                                                     # Clean data
+			SCORCH_scores = pd.read_csv(Path(temp_dir) / "scoring_results.csv")
 			SCORCH_scores = SCORCH_scores.rename(columns={
 				"Ligand_ID": "Pose ID", "SCORCH_pose_score": self.column_name})
 			SCORCH_scores = SCORCH_scores[[self.column_name, "Pose ID"]]
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with SCORCH complete in {toc-tic:0.4f}!")
-		return SCORCH_scores
+			toc = time.perf_counter()
+			printlog(f"Rescoring with SCORCH complete in {toc-tic:0.4f}!")
+			return SCORCH_scores
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# scorch = SCORCH()
+# results = scorch.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

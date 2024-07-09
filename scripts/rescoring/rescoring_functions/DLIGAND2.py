@@ -29,13 +29,33 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class DLIGAND2(ScoringFunction):
 
+	"""
+	DLIGAND2 class represents a scoring function based on the DLIGAND2 algorithm.
+
+	Attributes:
+		dligand2_folder (Path): The path to the DLIGAND2 folder.
+
+	Methods:
+		__init__(): Initializes the DLIGAND2 object.
+		check_and_download_dligand2(): Checks if the DLIGAND2 folder exists and downloads it if not found.
+		rescore(sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame: Performs rescoring using DLIGAND2 algorithm.
+
+	"""
+
 	def __init__(self):
 		super().__init__("DLIGAND2", "DLIGAND2", "min", (-200, 100))
 		self.dligand2_folder = self.check_and_download_dligand2()
 
 	def check_and_download_dligand2(self):
+		"""
+		Checks if the DLIGAND2 folder exists and downloads it if not found.
+
+		Returns:
+			Path: The path to the DLIGAND2 folder.
+
+		"""
 		dligand2_folder = dockm8_path / "software" / "DLIGAND2"
-		if not os.path.exists(dligand2_folder):
+		if not dligand2_folder.exists():
 			printlog("DLIGAND2 folder not found. Downloading...")
 			download_url = "https://github.com/yuedongyang/DLIGAND2/archive/refs/heads/master.zip"
 			download_path = dockm8_path / "software" / "DLIGAND2.zip"
@@ -54,11 +74,13 @@ class DLIGAND2(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		protein_file = kwargs.get("protein_file")
+		protein_file = Path(kwargs.get("protein_file"))
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			split_files = split_sdf_single_str(Path(temp_dir), sdf)
-			split_files_sdfs = [Path(temp_dir) / f for f in os.listdir(split_files) if f.endswith(".sdf")]
+		temp_dir = self.create_temp_dir()
+		try:
+			split_files_folder = split_sdf_single_str(Path(temp_dir), sdf)
+			split_files_sdfs = [
+				Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			global dligand2_rescoring_splitted
 
@@ -82,16 +104,25 @@ class DLIGAND2(ScoringFunction):
 						energy = None
 				os.unlink(temp_mol2.name)
 				df[self.column_name] = [energy]
-				return df
+				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_score.csv"))
+				df.to_csv(output_csv, index=False)
 
 			os.environ["DATAPATH"] = str(self.dligand2_folder / "bin")
-			results = parallel_executor(dligand2_rescoring_splitted,
-										split_files_sdfs,
-										n_cpus,
-										protein_file=protein_file)
+			parallel_executor(dligand2_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
 
-		combined_scores_df = pd.concat(results, ignore_index=True)
+			score_files = list(Path(temp_dir).glob("*_score.csv"))
+			if not score_files:
+				printlog("No CSV files found with names ending in '_score.csv' in the specified folder.")
+				return pd.DataFrame()
+			combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with DLIGAND2 complete in {toc-tic:0.4f}!")
-		return combined_scores_df
+			toc = time.perf_counter()
+			printlog(f"Rescoring with DLIGAND2 complete in {toc-tic:0.4f}!")
+			return combined_scores_df
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# dligand2 = DLIGAND2()
+# results = dligand2.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

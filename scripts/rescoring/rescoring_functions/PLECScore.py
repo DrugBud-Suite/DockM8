@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import tempfile
 import time
 import warnings
 from pathlib import Path
@@ -30,7 +29,8 @@ class PLECScore(ScoringFunction):
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
+		temp_dir = self.create_temp_dir()
+		try:
 			pickle_path = f"{software}/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle"
 			results = Path(temp_dir) / "rescored_PLECnn.sdf"
 			plecscore_rescoring_command = ("oddt_cli " + str(sdf) + " --receptor " + str(protein_file) + " -n " +
@@ -44,6 +44,13 @@ class PLECScore(ScoringFunction):
 			PLECScore_results_df.rename(columns={"PLECnn_p5_l1_s65536": self.column_name}, inplace=True)
 			PLECScore_results_df = PLECScore_results_df[["Pose ID", self.column_name]]
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with PLECScore complete in {toc-tic:0.4f}!")
-		return PLECScore_results_df
+			toc = time.perf_counter()
+			printlog(f"Rescoring with PLECScore complete in {toc-tic:0.4f}!")
+			return PLECScore_results_df
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# plecscore = PLECScore()
+# results = plecscore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

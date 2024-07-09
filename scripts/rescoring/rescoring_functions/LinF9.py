@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-import tempfile
 import time
 import warnings
 from pathlib import Path
@@ -33,9 +32,11 @@ class LinF9(ScoringFunction):
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			split_files = split_sdf_str(Path(temp_dir), sdf, n_cpus)
-			split_files_sdfs = [Path(temp_dir) / f for f in os.listdir(split_files) if f.endswith(".sdf")]
+		temp_dir = self.create_temp_dir()
+		try:
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_sdfs = [
+				Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			global LinF9_rescoring_splitted
 
@@ -47,28 +48,41 @@ class LinF9(ScoringFunction):
 					subprocess.call(LinF9_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
 					printlog(f"LinF9 rescoring failed: {e}")
-				return results
+				return
 
-			rescoring_results = parallel_executor(LinF9_rescoring_splitted,
-													split_files_sdfs,
-													n_cpus,
-													protein_file=protein_file)
+			parallel_executor(LinF9_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
 
-			LinF9_dataframes = [
-				PandasTools.LoadSDF(str(file),
-									idName="Pose ID",
-									molColName=None,
-									includeFingerprints=False,
-									embedProps=False) for file in rescoring_results if file.is_file()]
+			try:
+				LinF9_dataframes = [
+					PandasTools.LoadSDF(str(Path(temp_dir) / file),
+										idName="Pose ID",
+										molColName=None,
+										includeFingerprints=False,
+										embedProps=False)
+					for file in os.listdir(temp_dir)
+					if file.startswith("split") and file.endswith("_LinF9.sdf")]
+			except Exception as e:
+				printlog("ERROR: Failed to Load LinF9 rescoring SDF file!")
+				printlog(e)
+				return pd.DataFrame()
 
-		if not LinF9_dataframes:
-			printlog("ERROR: Failed to Load LinF9 rescoring SDF file!")
-			return pd.DataFrame()
+			try:
+				LinF9_rescoring_results = pd.concat(LinF9_dataframes)
+			except Exception as e:
+				printlog("ERROR: Could not combine LinF9 rescored poses")
+				printlog(e)
+				return pd.DataFrame()
 
-		LinF9_rescoring_results = pd.concat(LinF9_dataframes)
-		LinF9_rescoring_results.rename(columns={"minimizedAffinity": self.column_name}, inplace=True)
-		LinF9_rescoring_results = LinF9_rescoring_results[["Pose ID", self.column_name]]
+			LinF9_rescoring_results.rename(columns={"minimizedAffinity": self.column_name}, inplace=True)
+			LinF9_rescoring_results = LinF9_rescoring_results[["Pose ID", self.column_name]]
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with LinF9 complete in {toc-tic:0.4f}!")
-		return LinF9_rescoring_results
+			toc = time.perf_counter()
+			printlog(f"Rescoring with LinF9 complete in {toc-tic:0.4f}!")
+			return LinF9_rescoring_results
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# linf9 = LinF9()
+# results = linf9.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

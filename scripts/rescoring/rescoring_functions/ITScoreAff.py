@@ -3,7 +3,6 @@ import stat
 import subprocess
 import sys
 import tarfile
-import tempfile
 import time
 import urllib.request
 import warnings
@@ -35,49 +34,46 @@ class ITScoreAff(ScoringFunction):
 
 	def check_and_download_itscoreAff(self):
 		itscore_folder = dockm8_path / "software" / "ITScoreAff_v1.0"
-
-		if not os.path.exists(itscore_folder):
+		if not itscore_folder.exists():
 			printlog("ITScoreAff_v1.0 folder not found. Downloading...")
 			download_url = "http://huanglab.phys.hust.edu.cn/ITScoreAff/ITScoreAff_v1.0.tar.gz"
 			download_path = dockm8_path / "software" / "ITScoreAff_v1.0.tar.gz"
 			urllib.request.urlretrieve(download_url, download_path)
 			printlog("Download complete. Extracting...")
-
 			with tarfile.open(download_path, "r:gz") as tar:
 				tar.extractall(path=dockm8_path / "software")
-
 			printlog("Extraction complete. Removing tarball...")
 			os.remove(download_path)
-
 			executable_path = itscore_folder / "ITScoreAff"
 			os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IEXEC)
 			printlog(f"Changed permissions for {executable_path}")
-
 			printlog("ITScoreAff_v1.0 setup complete.")
-
 		return itscore_folder
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		protein_file = kwargs.get("protein_file")
+		protein_file = Path(kwargs.get("protein_file"))
+		software = kwargs.get("software")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			split_files = split_sdf_str(Path(temp_dir), sdf, n_cpus)
-			split_files_sdfs = [Path(temp_dir) / f for f in os.listdir(split_files) if f.endswith(".sdf")]
+		temp_dir = self.create_temp_dir()
+		try:
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_sdfs = [
+				Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			protein_mol2 = Path(temp_dir) / 'protein.mol2'
-			convert_molecules(protein_file, protein_mol2, protein_file.suffix[1:], 'mol2')
+			convert_molecules(protein_file, protein_mol2, 'pdb', 'mol2')
 
 			global ITScoreAff_rescoring_splitted
 
-			def ITScoreAff_rescoring_splitted(split_file, protein_mol2):
+			def ITScoreAff_rescoring_splitted(split_file: Path, protein_mol2: Path):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
 
 				ligand_mol2 = Path(temp_dir) / f'{split_file.stem}.mol2'
 				convert_molecules(split_file, ligand_mol2, 'sdf', 'mol2')
 
-				itscoreAff_command = f"{self.itscore_folder}/ITScoreAff {protein_mol2} {ligand_mol2}"
+				itscoreAff_command = f"cd {temp_dir} && {software}/ITScoreAff_v1.0/ITScoreAff ./{protein_mol2.name} ./{ligand_mol2.name}"
 				process = subprocess.Popen(itscoreAff_command,
 											stdout=subprocess.PIPE,
 											stderr=subprocess.PIPE,
@@ -86,7 +82,7 @@ class ITScoreAff(ScoringFunction):
 
 				scores = []
 				output = stdout.decode().splitlines()
-				for line in output[1:]:                                                                             # Skip the header line
+				for line in output[1:]:
 					parts = line.split()
 					if len(parts) >= 3:
 						try:
@@ -98,15 +94,25 @@ class ITScoreAff(ScoringFunction):
 							)
 							scores.append(None)
 				df[self.column_name] = scores
-				return df
+				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
+				df.to_csv(output_csv, index=False)
 
-			results = parallel_executor(ITScoreAff_rescoring_splitted,
-										split_files_sdfs,
-										n_cpus,
-										protein_mol2=protein_mol2)
+			parallel_executor(ITScoreAff_rescoring_splitted, split_files_sdfs, n_cpus, protein_mol2=protein_mol2)
 
-		combined_scores_df = pd.concat(results, ignore_index=True)
+			score_files = list(Path(temp_dir).glob("*_scores.csv"))
+			if not score_files:
+				printlog("No CSV files found with names ending in '_scores.csv' in the specified folder.")
+				return pd.DataFrame()
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with ITScoreAff complete in {toc-tic:0.4f}!")
-		return combined_scores_df
+			combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)
+
+			toc = time.perf_counter()
+			printlog(f"Rescoring with ITScoreAff complete in {toc-tic:0.4f}!")
+			return combined_scores_df
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# itscoreAff = ITScoreAff()
+# results = itscoreAff.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

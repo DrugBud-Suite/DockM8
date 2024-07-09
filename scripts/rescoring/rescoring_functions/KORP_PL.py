@@ -1,10 +1,9 @@
-import os
 import subprocess
 import sys
 import time
 import warnings
 from pathlib import Path
-import tempfile
+import os
 
 import pandas as pd
 from rdkit.Chem import PandasTools
@@ -33,9 +32,11 @@ class KORPL(ScoringFunction):
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			split_files = split_sdf_str(Path(temp_dir), sdf, n_cpus)
-			split_files_sdfs = [Path(temp_dir) / f for f in os.listdir(split_files) if f.endswith(".sdf")]
+		temp_dir = self.create_temp_dir()
+		try:
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_sdfs = [
+				Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			global KORPL_rescoring_splitted
 
@@ -54,12 +55,26 @@ class KORPL(ScoringFunction):
 						energy = round(float(parts[1].split("=")[1]), 2)
 						energies.append(energy)
 				df[self.column_name] = energies
-				return df
+				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
+				df.to_csv(output_csv, index=False)
 
-			results = parallel_executor(KORPL_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(KORPL_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
 
-		combined_scores_df = pd.concat(results, ignore_index=True)
+			print("Combining KORPL scores")
+			score_files = list(Path(temp_dir).glob("*_scores.csv"))
+			if not score_files:
+				print("No CSV files found with names ending in '_scores.csv' in the specified folder.")
+				return pd.DataFrame()
+			else:
+				combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with KORPL complete in {toc-tic:0.4f}!")
-		return combined_scores_df
+			toc = time.perf_counter()
+			printlog(f"Rescoring with KORPL complete in {toc-tic:0.4f}!")
+			return combined_scores_df
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# korpl = KORPL()
+# results = korpl.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

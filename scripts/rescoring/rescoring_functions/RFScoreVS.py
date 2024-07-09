@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-import tempfile
 import time
 import warnings
 from pathlib import Path
@@ -32,26 +31,25 @@ class RFScoreVS(ScoringFunction):
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			split_files = split_sdf_str(Path(temp_dir), sdf, n_cpus)
-			split_files_sdfs = [Path(temp_dir) / f for f in os.listdir(split_files) if f.endswith(".sdf")]
+		temp_dir = self.create_temp_dir()
+		try:
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			global rf_score_vs_splitted
 
 			def rf_score_vs_splitted(split_file, protein_file):
-				output_file = Path(temp_dir) / f"{split_file.stem}_RFScoreVS_scores.csv"
-				rfscorevs_cmd = f"{software}/rf-score-vs --receptor {protein_file} {split_file} -O {output_file} -n 1"
+				rfscorevs_cmd = f"{software}/rf-score-vs --receptor {protein_file} {split_file} -O {Path(temp_dir) / Path(split_file).stem}_RFScoreVS_scores.csv -n 1"
 				subprocess.call(rfscorevs_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-				return output_file
+				return
 
-			rescoring_results = parallel_executor(rf_score_vs_splitted,
-													split_files_sdfs,
-													n_cpus,
-													protein_file=protein_file)
+			parallel_executor(rf_score_vs_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
 
 			try:
 				rfscorevs_dataframes = [
-					pd.read_csv(file, delimiter=",", header=0) for file in rescoring_results if file.is_file()]
+					pd.read_csv(Path(temp_dir) / file, delimiter=",", header=0)
+					for file in os.listdir(temp_dir)
+					if file.startswith("split") and file.endswith(".csv")]
 				rfscorevs_results = pd.concat(rfscorevs_dataframes)
 				rfscorevs_results.rename(columns={"name": "Pose ID", "RFScoreVS_v2": self.column_name}, inplace=True)
 			except Exception as e:
@@ -59,6 +57,13 @@ class RFScoreVS(ScoringFunction):
 				printlog(e)
 				return pd.DataFrame()
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with RFScoreVS complete in {toc-tic:0.4f}!")
-		return rfscorevs_results
+			toc = time.perf_counter()
+			printlog(f"Rescoring with RFScoreVS complete in {toc-tic:0.4f}!")
+			return rfscorevs_results
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# rfscorevs = RFScoreVS()
+# results = rfscorevs.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

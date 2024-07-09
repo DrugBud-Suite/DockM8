@@ -1,7 +1,6 @@
 import os
 import subprocess
 import sys
-import tempfile
 import time
 from pathlib import Path
 
@@ -85,9 +84,10 @@ class PANTHER(ScoringFunction):
 		protein_file = kwargs.get("protein_file")
 		pocket_definition = kwargs.get("pocket_definition")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
-			split_files = split_sdf_str(Path(temp_dir), sdf, n_cpus)
-			split_files_sdfs = [Path(temp_dir) / f for f in os.listdir(split_files) if f.endswith(".sdf")]
+		temp_dir = self.create_temp_dir()
+		try:
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			negative_image = self.generate_negative_image(temp_dir, software, protein_file, pocket_definition)
 
@@ -108,8 +108,8 @@ class PANTHER(ScoringFunction):
 						)
 					else:
 						# Run SHAEP
-						shaep_output_sdf = Path(temp_dir) / f"{split_file.stem}_{self.column_name}.sdf"
-						shaep_output_txt = Path(temp_dir) / f"{split_file.stem}_{self.column_name}.txt"
+						shaep_output_sdf = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
+						shaep_output_txt = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.txt"
 						shaep_cmd = f"{software}/shaep -q {negative_image} {mol2_file} -s {shaep_output_sdf} --output-file {shaep_output_txt} --noOptimization"
 						subprocess.call(shaep_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -128,25 +128,35 @@ class PANTHER(ScoringFunction):
 													negative_image=negative_image)
 
 			# Process the results
-			panther_dataframes = [
-				PandasTools.LoadSDF(str(file),
-									idName="Pose ID",
-									molColName=None,
-									includeFingerprints=False,
-									embedProps=False) for file in rescoring_results if file and Path(file).is_file()]
+			panther_dataframes = []
+			for result_file in rescoring_results:
+				if result_file and Path(result_file).is_file():
+					df = PandasTools.LoadSDF(str(result_file),
+												idName="Pose ID",
+												molColName=None,
+												includeFingerprints=False,
+												embedProps=False)
+					panther_dataframes.append(df)
 
-		if not panther_dataframes:
-			printlog(f"ERROR: No valid results found for {self.column_name} rescoring!")
-			return pd.DataFrame()
+			if not panther_dataframes:
+				printlog(f"ERROR: No valid results found for {self.column_name} rescoring!")
+				return pd.DataFrame()
 
-		panther_rescoring_results = pd.concat(panther_dataframes)
-		panther_rescoring_results = panther_rescoring_results[[
-			"Pose ID", "Similarity_best", "Similarity_ESP", "Similarity_shape"]]
-		panther_rescoring_results.rename(columns={
-			"Similarity_best": "PANTHER", "Similarity_ESP": "PANTHER-ESP", "Similarity_shape": "PANTHER-Shape"},
-											inplace=True)
-		panther_rescoring_results = panther_rescoring_results[["Pose ID", self.column_name]]
+			panther_rescoring_results = pd.concat(panther_dataframes)
+			panther_rescoring_results = panther_rescoring_results[[
+				"Pose ID", "Similarity_best", "Similarity_ESP", "Similarity_shape"]]
+			panther_rescoring_results.rename(columns={
+				"Similarity_best": "PANTHER", "Similarity_ESP": "PANTHER-ESP", "Similarity_shape": "PANTHER-Shape"},
+												inplace=True)
+			panther_rescoring_results = panther_rescoring_results[["Pose ID", self.column_name]]
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with {self.column_name} complete in {toc - tic:0.4f}!")
-		return panther_rescoring_results
+			toc = time.perf_counter()
+			printlog(f"Rescoring with {self.column_name} complete in {toc - tic:0.4f}!")
+			return panther_rescoring_results
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# panther = PANTHER("PANTHER")  # or "PANTHER-ESP" or "PANTHER-Shape"
+# results = panther.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path, pocket_definition=pocket_def)

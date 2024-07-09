@@ -1,6 +1,5 @@
 import subprocess
 import sys
-import tempfile
 import time
 import warnings
 from pathlib import Path
@@ -30,7 +29,8 @@ class NNScore(ScoringFunction):
 		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
-		with tempfile.TemporaryDirectory() as temp_dir:
+		temp_dir = self.create_temp_dir()
+		try:
 			pickle_path = f"{software}/models/NNScore_pdbbind2016.pickle"
 			results = Path(temp_dir) / "rescored_NNscore.sdf"
 			nnscore_rescoring_command = ("oddt_cli " + str(sdf) + " --receptor " + str(protein_file) + " -n " +
@@ -44,6 +44,13 @@ class NNScore(ScoringFunction):
 			NNScore_results_df.rename(columns={"nnscore": self.column_name}, inplace=True)
 			NNScore_results_df = NNScore_results_df[["Pose ID", self.column_name]]
 
-		toc = time.perf_counter()
-		printlog(f"Rescoring with NNscore complete in {toc-tic:0.4f}!")
-		return NNScore_results_df
+			toc = time.perf_counter()
+			printlog(f"Rescoring with NNscore complete in {toc-tic:0.4f}!")
+			return NNScore_results_df
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# nnscore = NNScore()
+# results = nnscore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
