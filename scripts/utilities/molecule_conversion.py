@@ -35,66 +35,65 @@ def convert_molecules(input_file: Path, output_file: Path, input_format: str, ou
     """
 	# For protein conversion to pdbqt file format using OpenBabel
 	if input_format == "pdb" and output_format == "pdbqt":
+		# try:
+		# 	mol = Chem.MolFromPDBFile(str(input_file), sanitize=False, removeHs=False)
+		# 	lines = [x.strip() for x in open(input_file).readlines()]
+		# 	out_lines = []
+		# 	for line in lines:
+		# 		if "ROOT" in line or "ENDROOT" in line or "TORSDOF" in line:
+		# 			out_lines.append("%s\n" % line)
+		# 			continue
+		# 		if not line.startswith("ATOM"):
+		# 			continue
+		# 		line = line[:66]
+		# 		atom_index = int(line[6:11])
+		# 		atom = mol.GetAtoms()[atom_index - 1]
+		# 		line = "%s    +0.000 %s\n" % (line, atom.GetSymbol().ljust(2))
+		# 		out_lines.append(line)
+		# 	with open(output_file, 'w') as fout:
+		# 		for line in out_lines:
+		# 			fout.write(line)
+		# 	return output_file
+		# except Exception as e:
+		# 	printlog(f"Error occurred during conversion using RDkit: {str(e)}. Trying with Meeko...")
 		try:
-			mol = Chem.MolFromPDBFile(str(input_file), sanitize=False, removeHs=False)
-			lines = [x.strip() for x in open(input_file).readlines()]
-			out_lines = []
-			for line in lines:
-				if "ROOT" in line or "ENDROOT" in line or "TORSDOF" in line:
-					out_lines.append("%s\n" % line)
-					continue
-				if not line.startswith("ATOM"):
-					continue
-				line = line[:66]
-				atom_index = int(line[6:11])
-				atom = mol.GetAtoms()[atom_index - 1]
-				line = "%s    +0.000 %s\n" % (line, atom.GetSymbol().ljust(2))
-				out_lines.append(line)
-			with open(output_file, 'w') as fout:
-				for line in out_lines:
-					fout.write(line)
+			# Run the pdb2pqr command
+			subprocess.call(
+				f"pdb2pqr --ff=AMBER --ffout=AMBER --keep-chain --nodebump {input_file} {input_file.with_suffix('.pqr')} -q",
+				shell=True,
+				stdout=subprocess.DEVNULL,
+				stderr=subprocess.DEVNULL)
+			# Run the mk_prepare_receptor.py script
+			subprocess.call(
+				f"{dockm8_path}/scripts/utilities/mk_prepare_receptor.py --pdb {input_file.with_suffix('.pqr')} -o {output_file} --skip_gpf",
+				shell=True,
+				stdout=subprocess.DEVNULL,
+				stderr=subprocess.DEVNULL)
+			os.remove(input_file.with_suffix(".pqr")) if os.path.exists(input_file.with_suffix(".pqr")) else None
 			return output_file
 		except Exception as e:
-			printlog(f"Error occurred during conversion using RDkit: {str(e)}. Trying with OpenBabel...")
+			printlog(f"Error occurred during conversion using PDB2PQR and Meeko: {str(e)}. Trying with OpenBabel...")
 			try:
-				# Run the pdb2pqr command
-				subprocess.call(
-					f"pdb2pqr --ff=AMBER --ffout=AMBER --keep-chain --nodebump {input_file} {input_file.with_suffix('.pqr')} -q",
-					shell=True,
-					stdout=subprocess.DEVNULL,
-					stderr=subprocess.DEVNULL)
-				# Run the mk_prepare_receptor.py script
-				subprocess.call(
-					f"{dockm8_path}/scripts/utilities/mk_prepare_receptor.py --pdb {input_file.with_suffix('.pqr')} -o {output_file} --skip_gpf",
-					shell=True,
-					stdout=subprocess.DEVNULL,
-					stderr=subprocess.DEVNULL)
-				os.remove(input_file.with_suffix(".pqr")) if os.path.exists(input_file.with_suffix(".pqr")) else None
-				return output_file
-			except Exception as e:
-				printlog(
-					f"Error occurred during conversion using PDB2PQR and Meeko: {str(e)}. Trying with OpenBabel...")
-				try:
-					obConversion = openbabel.OBConversion()
-					mol = openbabel.OBMol()
-					obConversion.ReadFile(mol, str(input_file))
-					obConversion.SetInAndOutFormats("pdb", "pdbqt")
-					# Calculate Gasteiger charges
-					charge_model = openbabel.OBChargeModel.FindType("gasteiger")
-					charge_model.ComputeCharges(mol)
-					obConversion.WriteFile(mol, str(output_file))
-					# Remove all torsions from pdbqt output
-					with open(output_file, "r") as file:
-						lines = file.readlines()
-						lines = [
-							line for line in lines if all(keyword not in line for keyword in [
+				obConversion = openbabel.OBConversion()
+				mol = openbabel.OBMol()
+				obConversion.ReadFile(mol, str(input_file))
+				obConversion.SetInAndOutFormats("pdb", "pdbqt")
+				# Calculate Gasteiger charges
+				charge_model = openbabel.OBChargeModel.FindType("gasteiger")
+				charge_model.ComputeCharges(mol)
+				obConversion.WriteFile(mol, str(output_file))
+				# Remove all torsions from pdbqt output
+				with open(output_file, "r") as file:
+					lines = file.readlines()
+					lines = [
+						line for line in lines if all(keyword not in line for keyword in [
 							"between atoms:", "BRANCH", "ENDBRANCH", "torsions", "Active", "ENDROOT", "ROOT", ])]
-						lines = [line.replace(line, "TER\n") if line.startswith("TORSDOF") else line for line in lines]
-						with open(output_file, "w") as file:
-							file.writelines(lines)
-				except Exception as e:
-					printlog(f"Error occurred during conversion using OpenBabel: {str(e)}")
-				return output_file
+					lines = [line.replace(line, "TER\n") if line.startswith("TORSDOF") else line for line in lines]
+					with open(output_file, "w") as file:
+						file.writelines(lines)
+			except Exception as e:
+				printlog(f"Error occurred during conversion using OpenBabel: {str(e)}")
+			return output_file
 	# For compound conversion to pdbqt file format using RDKit and Meeko
 	if input_format == "sdf" and output_format == "pdbqt":
 		try:
