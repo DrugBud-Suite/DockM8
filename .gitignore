@@ -215,3 +215,4 @@ tests/test_files/docking/output/qvina2_docking_results.sdf
 tests/test_files/docking/output/qvinaw_docking_results.sdf
 tests/test_files/docking/output/smina_docking_results.sdf
 TODO.txt
+software/plantain
