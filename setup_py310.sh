@@ -379,6 +379,13 @@ if if [[ ! -f $DOCKM8_FOLDER/software/MGL_Tools* ]]; then
 	rmdir -r $DOCKM8_FOLDER/software/mgltools_x86_64Linux2_1.5.7
 fi
 
+if if [[ ! -f $DOCKM8_FOLDER/software/FABind ]]; then
+    echo -e "\nDownloading FABind!"
+    cd $DOCKM8_FOLDER/software/
+    git clone https://github.com/QizhiPei/FABind.git --recursive
+fi
+
+
 echo -e """
 ###############################################################
 # DockM8 installation complete

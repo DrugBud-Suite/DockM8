@@ -19,6 +19,8 @@ from scripts.utilities.logging import printlog
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+pybel.ob.obErrorLog.StopLogging()
+
 
 def convert_molecules(input_file: Path, output_file: Path, input_format: str, output_format: str):
 	"""
@@ -35,27 +37,27 @@ def convert_molecules(input_file: Path, output_file: Path, input_format: str, ou
     """
 	# For protein conversion to pdbqt file format using OpenBabel
 	if input_format == "pdb" and output_format == "pdbqt":
-		# try:
-		# 	mol = Chem.MolFromPDBFile(str(input_file), sanitize=False, removeHs=False)
-		# 	lines = [x.strip() for x in open(input_file).readlines()]
-		# 	out_lines = []
-		# 	for line in lines:
-		# 		if "ROOT" in line or "ENDROOT" in line or "TORSDOF" in line:
-		# 			out_lines.append("%s\n" % line)
-		# 			continue
-		# 		if not line.startswith("ATOM"):
-		# 			continue
-		# 		line = line[:66]
-		# 		atom_index = int(line[6:11])
-		# 		atom = mol.GetAtoms()[atom_index - 1]
-		# 		line = "%s    +0.000 %s\n" % (line, atom.GetSymbol().ljust(2))
-		# 		out_lines.append(line)
-		# 	with open(output_file, 'w') as fout:
-		# 		for line in out_lines:
-		# 			fout.write(line)
-		# 	return output_file
-		# except Exception as e:
-		# 	printlog(f"Error occurred during conversion using RDkit: {str(e)}. Trying with Meeko...")
+		try:
+			mol = Chem.MolFromPDBFile(str(input_file), sanitize=False, removeHs=False)
+			lines = [x.strip() for x in open(input_file).readlines()]
+			out_lines = []
+			for line in lines:
+				if "ROOT" in line or "ENDROOT" in line or "TORSDOF" in line:
+					out_lines.append("%s\n" % line)
+					continue
+				if not line.startswith("ATOM"):
+					continue
+				line = line[:66]
+				atom_index = int(line[6:11])
+				atom = mol.GetAtoms()[atom_index - 1]
+				line = "%s    +0.000 %s\n" % (line, atom.GetSymbol().ljust(2))
+				out_lines.append(line)
+			with open(output_file, 'w') as fout:
+				for line in out_lines:
+					fout.write(line)
+			return output_file
+		except Exception as e:
+			printlog(f"Error occurred during conversion using RDkit: {str(e)}. Trying with Meeko...")
 		try:
 			# Run the pdb2pqr command
 			subprocess.call(
@@ -97,6 +99,7 @@ def convert_molecules(input_file: Path, output_file: Path, input_format: str, ou
 	# For compound conversion to pdbqt file format using RDKit and Meeko
 	if input_format == "sdf" and output_format == "pdbqt":
 		try:
+			pdbqt_files = []
 			for mol in Chem.SDMolSupplier(str(input_file), removeHs=False):
 				preparator = MoleculePreparation(min_ring_size=10)
 				mol = Chem.AddHs(mol)
@@ -107,11 +110,13 @@ def convert_molecules(input_file: Path, output_file: Path, input_format: str, ou
 				# Write the pdbqt string to the file
 				with open(output_path, "w") as f:
 					f.write(pdbqt_string[0])
+				pdbqt_files.append(output_path)
 		except Exception as e:
 			printlog(f"Error occurred during conversion using Meeko: {str(e)}")
-		return output_file
+		return pdbqt_files
 	# For general conversion using Pybel
 	else:
+		pybel.ob.obErrorLog.StopLogging()
 		try:
 			output = pybel.Outputfile(output_format, str(output_file), overwrite=True)
 			for mol in pybel.readfile(input_format, str(input_file)):
