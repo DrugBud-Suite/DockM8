@@ -44,7 +44,7 @@ class KORPL(ScoringFunction):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
 				korpl_command = (f"{software}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " +
-									str(split_file) + " --sdf")
+						str(split_file) + " --sdf")
 				process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 				stdout, stderr = process.communicate()
 				energies = []
@@ -58,7 +58,11 @@ class KORPL(ScoringFunction):
 				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
 				df.to_csv(output_csv, index=False)
 
-			parallel_executor(KORPL_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(KORPL_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			print("Combining KORPL scores")
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))

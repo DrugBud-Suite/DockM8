@@ -43,22 +43,26 @@ class LinF9(ScoringFunction):
 			def LinF9_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{split_file.stem}_LinF9.sdf"
 				LinF9_cmd = (f"{software}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
-								f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
+					f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
 				try:
 					subprocess.call(LinF9_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
 					printlog(f"LinF9 rescoring failed: {e}")
 				return
 
-			parallel_executor(LinF9_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(LinF9_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			try:
 				LinF9_dataframes = [
 					PandasTools.LoadSDF(str(Path(temp_dir) / file),
-										idName="Pose ID",
-										molColName=None,
-										includeFingerprints=False,
-										embedProps=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
 					for file in os.listdir(temp_dir)
 					if file.startswith("split") and file.endswith("_LinF9.sdf")]
 			except Exception as e:

@@ -24,8 +24,8 @@ class StandardizationError(Exception):
 
 
 def standardize_molecule(molecule: Chem.Mol,
-							remove_salts: bool = True,
-							standardize_tautomers: bool = True) -> Tuple[Optional[Chem.Mol], Optional[str]]:
+		remove_salts: bool = True,
+		standardize_tautomers: bool = True) -> Tuple[Optional[Chem.Mol], Optional[str]]:
 	"""Standardize a single molecule using MolVS.
 
 	Args:
@@ -74,12 +74,12 @@ def standardize_ids(df: pd.DataFrame, id_column: str = 'ID') -> pd.DataFrame:
 
 
 def standardize_library(df: pd.DataFrame,
-						id_column: str = 'ID',
-						smiles_column: str = 'SMILES',
-						remove_salts: bool = True,
-						standardize_tautomers: bool = True,
-						standardize_ids_flag: bool = True,
-						n_cpus: int = int(os.cpu_count() * 0.9)) -> pd.DataFrame:
+		id_column: str = 'ID',
+		smiles_column: str = 'SMILES',
+		remove_salts: bool = True,
+		standardize_tautomers: bool = True,
+		standardize_ids_flag: bool = True,
+		n_cpus: int = int(os.cpu_count() * 0.9)) -> pd.DataFrame:
 	"""
     Standardizes a docking library using MolVS.
 
@@ -111,6 +111,7 @@ def standardize_library(df: pd.DataFrame,
 								df['Molecule'].tolist(),
 								n_cpus,
 								'concurrent_process',
+								display_name="Molecule Standardization",
 								remove_salts=remove_salts,
 								standardize_tautomers=standardize_tautomers)
 

@@ -43,7 +43,11 @@ class RFScoreVS(ScoringFunction):
 				subprocess.call(rfscorevs_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				return
 
-			parallel_executor(rf_score_vs_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(rf_score_vs_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			try:
 				rfscorevs_dataframes = [

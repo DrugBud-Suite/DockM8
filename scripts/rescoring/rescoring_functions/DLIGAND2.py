@@ -108,7 +108,11 @@ class DLIGAND2(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			os.environ["DATAPATH"] = str(self.dligand2_folder / "bin")
-			parallel_executor(dligand2_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(dligand2_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_score.csv"))
 			if not score_files:

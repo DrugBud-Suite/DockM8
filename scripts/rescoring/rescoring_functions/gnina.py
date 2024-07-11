@@ -51,27 +51,31 @@ class Gnina(ScoringFunction):
 			def gnina_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
 				gnina_cmd = (f"{software}/gnina"
-								f" --receptor {protein_file}"
-								f" --ligand {split_file}"
-								f" --out {results}"
-								" --cpu 1"
-								" --score_only"
-								f" --cnn {cnn} --no_gpu")
+					f" --receptor {protein_file}"
+					f" --ligand {split_file}"
+					f" --out {results}"
+					" --cpu 1"
+					" --score_only"
+					f" --cnn {cnn} --no_gpu")
 				try:
 					subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
 					printlog(f"{self.column_name} rescoring failed: " + str(e))
 				return
 
-			parallel_executor(gnina_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(gnina_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			try:
 				gnina_dataframes = [
 					PandasTools.LoadSDF(str(Path(temp_dir) / file),
-										idName="Pose ID",
-										molColName=None,
-										includeFingerprints=False,
-										embedProps=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
 					for file in os.listdir(temp_dir)
 					if file.startswith("split") and file.endswith(".sdf")]
 			except Exception as e:
@@ -88,7 +92,7 @@ class Gnina(ScoringFunction):
 
 			gnina_rescoring_results.rename(columns={
 				"minimizedAffinity": "GNINA-Affinity", "CNNscore": "CNN-Score", "CNNaffinity": "CNN-Affinity"},
-											inplace=True)
+					inplace=True)
 
 			gnina_rescoring_results = gnina_rescoring_results[["Pose ID", self.column_name]]
 

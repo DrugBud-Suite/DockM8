@@ -41,7 +41,11 @@ def apply_medchem_rules(molecule_df: pd.DataFrame, selected_rules: list, n_cpus:
 	batch_args = [(batch, selected_rules) for batch in batches]
 
 	# Process batches in parallel
-	results = parallel_executor(process_batch, batch_args, n_cpus=n_cpus, job_manager="concurrent_process")
+	results = parallel_executor(process_batch,
+								batch_args,
+								n_cpus=n_cpus,
+								job_manager="concurrent_process",
+								display_name="Applying MedChem Rules")
 
 	# Combine results
 	processed_df = pd.concat(results, ignore_index=True)
@@ -60,20 +64,20 @@ def apply_medchem_rules(molecule_df: pd.DataFrame, selected_rules: list, n_cpus:
 
 MEDCHEM_RULES = {
 	'rule_of_five': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight ≤ 500
         • LogP ≤ 5
         • Hydrogen Bond Donors ≤ 5
         • Hydrogen Bond Acceptors ≤ 10
         ''',
-		'description':
-			'Leadlike / Druglike / Small molecule / Library design',
-		'alias':
-			'Rule Of Five'},
+	'description':
+   'Leadlike / Druglike / Small molecule / Library design',
+	'alias':
+   'Rule Of Five'},
 	'rule_of_five_beyond': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight ≤ 1000
         • LogP between -2 and 10
         • Hydrogen Bond Donors ≤ 6
@@ -81,38 +85,38 @@ MEDCHEM_RULES = {
         • Total Polar Surface Area ≤ 250
         • Rotatable Bonds ≤ 20
         ''',
-		'description':
-			'Leadlike / Druglike / Small molecule / Library design',
-		'alias':
-			'Beyond Rule Of Five'},
+	'description':
+   'Leadlike / Druglike / Small molecule / Library design',
+	'alias':
+   'Beyond Rule Of Five'},
 	'rule_of_four': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight ≥ 400
         • LogP ≥ 4
         • Number of Rings ≥ 4
         • Hydrogen Bond Acceptors ≥ 4
         ''',
-		'description':
-			'Protein-Protein Interaction inhibitor / Druglike',
-		'alias':
-			'Rule of Four'},
+	'description':
+   'Protein-Protein Interaction inhibitor / Druglike',
+	'alias':
+   'Rule of Four'},
 	'rule_of_three': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight ≤ 300
         • LogP ≤ 3
         • Hydrogen Bond Acceptors ≤ 3
         • Hydrogen Bond Donors ≤ 3
         • Rotatable Bonds ≤ 3
         ''',
-		'description':
-			'Fragment / Building block',
-		'alias':
-			'Rule of Three (Fragments)'},
+	'description':
+   'Fragment / Building block',
+	'alias':
+   'Rule of Three (Fragments)'},
 	'rule_of_three_extended': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight ≤ 300
         • LogP between -3 and 3
         • Hydrogen Bond Acceptors ≤ 6
@@ -120,44 +124,44 @@ MEDCHEM_RULES = {
         • Rotatable Bonds ≤ 3
         • Total Polar Surface Area ≤ 60
         ''',
-		'description':
-			'Fragment / Building block',
-		'alias':
-			'Extended Rule of Three (Fragments)'},
+	'description':
+   'Fragment / Building block',
+	'alias':
+   'Extended Rule of Three (Fragments)'},
 	'rule_of_two': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight ≤ 200
         • LogP ≤ 2
         • Hydrogen Bond Acceptors ≤ 4
         • Hydrogen Bond Donors ≤ 2
         ''',
-		'description':
-			'Fragment / Reagent / Building block',
-		'alias':
-			'Rule of Two'},
+	'description':
+   'Fragment / Reagent / Building block',
+	'alias':
+   'Rule of Two'},
 	'rule_of_ghose': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 160 and 480
         • LogP between -0.4 and 5.6
         • Number of Atoms between 20 and 70
         • Molar Refractivity between 40 and 130
         ''',
-		'description':
-			'Leadlike / Druglike / Small molecule / Library design',
-		'alias':
-			'Ghose Filter'},
+	'description':
+   'Leadlike / Druglike / Small molecule / Library design',
+	'alias':
+   'Ghose Filter'},
 	'rule_of_veber': {
-		'rules': '''
+	'rules': '''
         • Rotatable Bonds ≤ 10
         • Total Polar Surface Area < 140
         ''',
-		'description': 'Druglike / Leadlike / Small molecule / Oral bioavailability',
-		'alias': 'Veber Filter'},
+	'description': 'Druglike / Leadlike / Small molecule / Oral bioavailability',
+	'alias': 'Veber Filter'},
 	'rule_of_reos': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 200 and 500
         • LogP between -5 and 5
         • Hydrogen Bond Acceptors between 0 and 10
@@ -166,13 +170,13 @@ MEDCHEM_RULES = {
         • Rotatable Bonds between 0 and 8
         • Heavy Atoms between 15 and 50
         ''',
-		'description':
-			'Druglike / Small molecule / Library design / High-Throughput Screening',
-		'alias':
-			'REOS Filter'},
+	'description':
+   'Druglike / Small molecule / Library design / High-Throughput Screening',
+	'alias':
+   'REOS Filter'},
 	'rule_of_chemaxon_druglikeness': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight < 400
         • LogP < 5
         • Hydrogen Bond Acceptors ≤ 10
@@ -180,69 +184,69 @@ MEDCHEM_RULES = {
         • Rotatable Bonds < 5
         • Number of Rings > 0
         ''',
-		'description':
-			'Leadlike / Druglike / Small molecule',
-		'alias':
-			'ChemAxon Druglikeness Filter'},
+	'description':
+   'Leadlike / Druglike / Small molecule',
+	'alias':
+   'ChemAxon Druglikeness Filter'},
 	'rule_of_egan': {
-		'rules': '''
+	'rules': '''
         • Total Polar Surface Area between 0 and 132
         • LogP between -1 and 6
         ''',
-		'description': 'Druglike / Small molecule / ADMET / Absorption / Permeability',
-		'alias': 'Egan Filter'},
+	'description': 'Druglike / Small molecule / ADMET / Absorption / Permeability',
+	'alias': 'Egan Filter'},
 	'rule_of_pfizer_3_75': {
-		'rules': 'Not (Total Polar Surface Area < 75 AND LogP > 3)',
-		'description': 'Druglike / Toxicity / In vivo / Small molecule',
-		'alias': 'Pfizer Filter'},
+	'rules': 'Not (Total Polar Surface Area < 75 AND LogP > 3)',
+	'description': 'Druglike / Toxicity / In vivo / Small molecule',
+	'alias': 'Pfizer Filter'},
 	'rule_of_gsk_4_400': {
-		'rules': '''
+	'rules': '''
         • Molecular Weight ≤ 400
         • LogP ≤ 4
         ''',
-		'description': 'Druglike / ADMET / Small molecule',
-		'alias': 'GSK Filter'},
+	'description': 'Druglike / ADMET / Small molecule',
+	'alias': 'GSK Filter'},
 	'rule_of_oprea': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Hydrogen Bond Donors between 0 and 2
         • Hydrogen Bond Acceptors between 2 and 9
         • Rotatable Bonds between 2 and 8
         • Number of Rings between 1 and 4
         ''',
-		'description':
-			'Druglike / Small molecule',
-		'alias':
-			'Oprea Filter'},
+	'description':
+   'Druglike / Small molecule',
+	'alias':
+   'Oprea Filter'},
 	'rule_of_xu': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Hydrogen Bond Donors ≤ 5
         • Hydrogen Bond Acceptors ≤ 10
         • Rotatable Bonds between 2 and 35
         • Number of Rings between 1 and 7
         • Heavy Atoms between 10 and 50
         ''',
-		'description':
-			'Druglike / Small molecule / Library design',
-		'alias':
-			'Xu Filter'},
+	'description':
+   'Druglike / Small molecule / Library design',
+	'alias':
+   'Xu Filter'},
 	'rule_of_cns': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 135 and 582
         • LogP between -0.2 and 6.1
         • Total Polar Surface Area between 3 and 118
         • Hydrogen Bond Donors ≤ 3
         • Hydrogen Bond Acceptors ≤ 5
         ''',
-		'description':
-			'Druglike / Central Nervous System / Blood-Brain Barrier / Small molecule',
-		'alias':
-			'CNS-focused Filter'},
+	'description':
+   'Druglike / Central Nervous System / Blood-Brain Barrier / Small molecule',
+	'alias':
+   'CNS-focused Filter'},
 	'rule_of_respiratory': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 240 and 520
         • LogP between -2 and 4.7
         • Hydrogen Bonds between 6 and 12
@@ -250,13 +254,13 @@ MEDCHEM_RULES = {
         • Rotatable Bonds between 3 and 8
         • Number of Rings between 1 and 5
         ''',
-		'description':
-			'Druglike / Respiratory / Small molecule / Nasal / Inhalatory',
-		'alias':
-			'Respiratory-focused Filter'},
+	'description':
+   'Druglike / Respiratory / Small molecule / Nasal / Inhalatory',
+	'alias':
+   'Respiratory-focused Filter'},
 	'rule_of_zinc': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 60 and 600
         • LogP between -4 and 6
         • Hydrogen Bond Donors ≤ 6
@@ -270,13 +274,13 @@ MEDCHEM_RULES = {
         • Hydrogen-Carbon Ratio ≤ 2.0
         • Molecular Charge between -4 and 4
         ''',
-		'description':
-			'Druglike / Small molecule / Library design / ZINC database',
-		'alias':
-			'ZINC Druglikeness Filter'},
+	'description':
+   'Druglike / Small molecule / Library design / ZINC database',
+	'alias':
+   'ZINC Druglikeness Filter'},
 	'rule_of_leadlike_soft': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 150 and 400
         • LogP between -3 and 4
         • Hydrogen Bond Donors ≤ 4
@@ -293,13 +297,13 @@ MEDCHEM_RULES = {
         • Number of Charged Atoms ≤ 4
         • Number of Stereo Centers ≤ 2
         ''',
-		'description':
-			'Leadlike / Small molecule / Library design / ADMET',
-		'alias':
-			'Soft Leadlike Filter'},
+	'description':
+   'Leadlike / Small molecule / Library design / ADMET',
+	'alias':
+   'Soft Leadlike Filter'},
 	'rule_of_druglike_soft': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 100 and 600
         • LogP between -3 and 6
         • Hydrogen Bond Donors ≤ 7
@@ -315,13 +319,13 @@ MEDCHEM_RULES = {
         • Molecular Charge between -4 and 4
         • Number of Charged Atoms ≤ 4
         ''',
-		'description':
-			'Druglike / Small molecule / Library design',
-		'alias':
-			'Soft Druglike Filter'},
+	'description':
+   'Druglike / Small molecule / Library design',
+	'alias':
+   'Soft Druglike Filter'},
 	'rule_of_generative_design': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 200 and 600
         • LogP between -3 and 6
         • Hydrogen Bond Donors ≤ 7
@@ -339,13 +343,13 @@ MEDCHEM_RULES = {
         • Total Number of Atoms < 70
         • Number of Heavy Metals < 1
         ''',
-		'description':
-			'Druglike / Small molecule / De novo design / Generative models / Permissive',
-		'alias':
-			'Generative Design Filter'},
+	'description':
+   'Druglike / Small molecule / De novo design / Generative models / Permissive',
+	'alias':
+   'Generative Design Filter'},
 	'rule_of_generative_design_strict': {
-		'rules':
-			'''
+	'rules':
+   '''
         • Molecular Weight between 200 and 600
         • LogP between -3 and 6
         • Hydrogen Bond Donors ≤ 7
@@ -366,7 +370,7 @@ MEDCHEM_RULES = {
         • No spider-like side chains
         • Fraction of atoms in ring systems ≥ 0.25
         ''',
-		'description':
-			'Druglike / Small molecule / De novo design / Generative models / Restricted long chains / Limited stereo centers',
-		'alias':
-			'Strict Generative Design Filter'}}
+	'description':
+   'Druglike / Small molecule / De novo design / Generative models / Restricted long chains / Limited stereo centers',
+	'alias':
+   'Strict Generative Design Filter'}}

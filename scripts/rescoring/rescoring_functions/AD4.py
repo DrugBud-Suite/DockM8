@@ -55,7 +55,11 @@ class AD4(ScoringFunction):
 					printlog(f"{self.column_name} rescoring failed: {e}")
 				return
 
-			parallel_executor(AD4_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(AD4_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			try:
 				AD4_dataframes = [

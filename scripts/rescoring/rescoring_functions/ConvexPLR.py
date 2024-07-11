@@ -60,7 +60,11 @@ class ConvexPLR(ScoringFunction):
 				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
 				df.to_csv(output_csv, index=False)
 
-			parallel_executor(ConvexPLR_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(ConvexPLR_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))
 			combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)

@@ -64,7 +64,10 @@ class GenScore(ScoringFunction):
 					printlog(f"Error occurred while running GenScore on {split_file}: {e}")
 					return None
 
-			rescoring_results = parallel_executor(genscore_rescoring_splitted, split_files_sdfs, n_cpus)
+			rescoring_results = parallel_executor(genscore_rescoring_splitted,
+													split_files_sdfs,
+													n_cpus,
+													display_name=self.column_name)
 
 			genscore_dataframes = []
 			for result_file in rescoring_results:

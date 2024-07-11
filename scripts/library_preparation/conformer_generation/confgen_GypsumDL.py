@@ -79,7 +79,12 @@ def generate_conformers_GypsumDL(df: pd.DataFrame, software: Path, n_cpus: int) 
 			return
 
 		# Running GypsumDL in parallel)
-		parallel_executor(gypsum_dl_run, split_files_sdfs, 3, output_dir=output_dir, cpus=math.ceil(n_cpus // 3))
+		parallel_executor(gypsum_dl_run,
+							list_of_objects=split_files_sdfs,
+							n_cpus=3,
+							display_name="Conformer Generation with GypsumDL",
+							output_dir=output_dir,
+							cpus=math.ceil(n_cpus // 3))
 
 		results_dfs = []
 

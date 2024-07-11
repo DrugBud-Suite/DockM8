@@ -72,7 +72,7 @@ class CENsible(ScoringFunction):
 			printlog("Extraction complete. Removing zip file...")
 			os.remove(download_path)
 			subprocess.run([sys.executable, "-m", "pip", "install", "-r", censible_folder / "requirements_predict.txt"],
-							check=True)
+				check=True)
 			printlog("CENsible setup complete.")
 		return censible_folder
 
@@ -117,9 +117,9 @@ class CENsible(ScoringFunction):
 							obabel_path,
 							"--use_cpu"]
 						process = subprocess.Popen(censible_command,
-													stdout=subprocess.PIPE,
-													stderr=subprocess.PIPE,
-													text=True)
+								stdout=subprocess.PIPE,
+								stderr=subprocess.PIPE,
+								text=True)
 						stdout, stderr = process.communicate()
 						score = None
 						for line in stdout.split('\n'):
@@ -135,7 +135,11 @@ class CENsible(ScoringFunction):
 				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_score.csv"))
 				df.to_csv(output_csv, index=False)
 
-			parallel_executor(censible_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			parallel_executor(censible_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_score.csv"))
 			if not score_files:
@@ -168,7 +172,7 @@ class CENsible(ScoringFunction):
 		except subprocess.CalledProcessError:
 			try:
 				return subprocess.run(['where', name], capture_output=True, text=True,
-										check=True).stdout.strip().split('\n')[0]
+						check=True).stdout.strip().split('\n')[0]
 			except subprocess.CalledProcessError:
 				return None
 

@@ -74,13 +74,14 @@ class DockingFunction(ABC):
 			printlog(f"Docking with {self.name}.")
 			# Perform docking
 			results = parallel_executor(self.dock_batch,
-					batches,
-					n_cpus=n_cpus_to_use,
-					job_manager=job_manager,
-					protein_file=protein_file,
-					pocket_definition=pocket_definition,
-					exhaustiveness=exhaustiveness,
-					n_poses=n_poses)
+										batches,
+										n_cpus=n_cpus_to_use,
+										job_manager=job_manager,
+										display_name=f"{self.name} docking",
+										protein_file=protein_file,
+										pocket_definition=pocket_definition,
+										exhaustiveness=exhaustiveness,
+										n_poses=n_poses)
 
 			# Process results
 			processed_results = []
@@ -94,10 +95,10 @@ class DockingFunction(ABC):
 			# Write output SDF if requested
 			if output_sdf:
 				PandasTools.WriteSDF(combined_results,
-						str(output_sdf),
-						molColName="Molecule",
-						idName="Pose ID",
-						properties=list(combined_results.columns))
+					str(output_sdf),
+					molColName="Molecule",
+					idName="Pose ID",
+					properties=list(combined_results.columns))
 
 			return combined_results
 

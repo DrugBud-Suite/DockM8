@@ -58,10 +58,10 @@ class PantherDocking(DockingFunction):
 
 		try:
 			process = subprocess.Popen(panther_cmd,
-										shell=True,
-										stdout=subprocess.PIPE,
-										stderr=subprocess.PIPE,
-										universal_newlines=True)
+					shell=True,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE,
+					universal_newlines=True)
 			stdout, stderr = process.communicate()
 
 			# Extract mol2 data from the output
@@ -95,12 +95,12 @@ class PantherDocking(DockingFunction):
 		return conformers_file
 
 	def run_shaep(self,
-					conformers_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int,
-					negative_image: Path) -> Path:
+		conformers_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int,
+		negative_image: Path) -> Path:
 
 		temp_dir = self.create_temp_dir()
 
@@ -125,14 +125,14 @@ class PantherDocking(DockingFunction):
 		return shaep_output_sdf
 
 	def dock(self,
-				library: Path,
-				protein_file: Path,
-				pocket_definition: dict,
-				exhaustiveness: int,
-				n_poses: int,
-				n_cpus: int,
-				job_manager: str = "concurrent_process",
-				output_sdf: Path = None) -> pd.DataFrame:
+		library: Path,
+		protein_file: Path,
+		pocket_definition: dict,
+		exhaustiveness: int,
+		n_poses: int,
+		n_cpus: int,
+		job_manager: str = "concurrent_process",
+		output_sdf: Path = None) -> pd.DataFrame:
 
 		temp_dir = self.create_temp_dir()
 
@@ -159,6 +159,7 @@ class PantherDocking(DockingFunction):
 													batch_files,
 													n_cpus=n_cpus,
 													job_manager=job_manager,
+													display_name="Conformer Generation",
 													temp_dir=temp_dir)
 
 			print(conformer_results)
@@ -173,6 +174,7 @@ class PantherDocking(DockingFunction):
 												conformer_results,
 												n_cpus=2,
 												job_manager=job_manager,
+												display_name="PANTHER Docking",
 												protein_file=protein_file,
 												pocket_definition=pocket_definition,
 												exhaustiveness=exhaustiveness,
@@ -192,10 +194,10 @@ class PantherDocking(DockingFunction):
 			# Write output SDF if requested
 			if output_sdf:
 				PandasTools.WriteSDF(combined_results,
-										str(output_sdf),
-										molColName="Molecule",
-										idName="Pose ID",
-										properties=list(combined_results.columns))
+						str(output_sdf),
+						molColName="Molecule",
+						idName="Pose ID",
+						properties=list(combined_results.columns))
 
 			return combined_results
 

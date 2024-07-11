@@ -67,7 +67,8 @@ def calculate_properties(df: pd.DataFrame, properties: list, n_cpus=int(os.cpu_c
 		results = parallel_executor(calculate_single_property,
 									property_args,
 									n_cpus=n_cpus,
-									job_manager="concurrent_process")
+									job_manager="concurrent_process",
+									display_name=f"Calculating {property_name}")
 
 		df[property_name] = results
 		df[property_name] = df[property_name].astype(float)

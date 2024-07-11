@@ -201,11 +201,12 @@ def minimize_all_ligands(pdb_path: str, ligfile_path: str, n_cpus: int = int(os.
 
 	# Parallelize ligand minimization using the provided parallel_executor function
 	minimized_ligands = parallel_executor(minimize_polar_hydrogens,
-				list(ligands),
-				n_cpus,
-				job_manager="concurrent_process",
-				protein_universe=protein_universe,
-				mda_to_rdkit=mda_to_rdkit)
+											list(ligands),
+											n_cpus,
+											job_manager="concurrent_process",
+											display_name="Ligand Minimization",
+											protein_universe=protein_universe,
+											mda_to_rdkit=mda_to_rdkit)
 
 	# Add the minimized ligands to the dataframe
 

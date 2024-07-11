@@ -93,7 +93,7 @@ class AAScore(ScoringFunction):
 									stderr=subprocess.STDOUT)
 
 				# Execute the rescoring in parallel
-				parallel_executor(AAScore_rescoring_splitted, split_files_sdfs, n_cpus)
+				parallel_executor(AAScore_rescoring_splitted, split_files_sdfs, n_cpus, display_name=self.column_name)
 
 				# Combine results
 				result_files = list(Path(temp_dir).glob("*_AAScore.csv"))

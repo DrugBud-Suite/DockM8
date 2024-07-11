@@ -42,7 +42,11 @@ def apply_alerts_rules(molecule_df: pd.DataFrame, selected_alerts: list, n_cpus:
 	batch_args = [(batch, selected_alerts) for batch in batches]
 
 	# Process batches in parallel
-	results = parallel_executor(process_batch, batch_args, n_cpus=n_cpus, job_manager="concurrent_process")
+	results = parallel_executor(process_batch,
+								batch_args,
+								n_cpus=n_cpus,
+								job_manager="concurrent_process",
+								display_name="Applying Alerts Rules")
 
 	# Combine results
 	processed_df = pd.concat(results, ignore_index=True)

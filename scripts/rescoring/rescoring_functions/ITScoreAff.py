@@ -75,9 +75,9 @@ class ITScoreAff(ScoringFunction):
 
 				itscoreAff_command = f"cd {temp_dir} && {software}/ITScoreAff_v1.0/ITScoreAff ./{protein_mol2.name} ./{ligand_mol2.name}"
 				process = subprocess.Popen(itscoreAff_command,
-											stdout=subprocess.PIPE,
-											stderr=subprocess.PIPE,
-											shell=True)
+						stdout=subprocess.PIPE,
+						stderr=subprocess.PIPE,
+						shell=True)
 				stdout, stderr = process.communicate()
 
 				scores = []
@@ -97,7 +97,11 @@ class ITScoreAff(ScoringFunction):
 				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
 				df.to_csv(output_csv, index=False)
 
-			parallel_executor(ITScoreAff_rescoring_splitted, split_files_sdfs, n_cpus, protein_mol2=protein_mol2)
+			parallel_executor(ITScoreAff_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_mol2=protein_mol2)
 
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))
 			if not score_files:
