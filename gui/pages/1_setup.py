@@ -23,11 +23,13 @@ st.subheader("Project Name", divider="orange")
 project_name = st.text_input("Enter project name", value="DockM8_testing", help="Enter a name for your DockM8 project")
 
 # Prompt for project save location (optional)
-use_custom_location = st.toggle("Use custom save location", value=False)
+use_custom_location = st.toggle(
+	f"Use custom save location (otherwise results are stored in : **{str(Path.home() / 'DockM8_projects' / project_name)}**",
+	value=False)
 if use_custom_location:
 	w_dir = st.text_input("Choose a project save location",
-							value=str(Path.home() / "DockM8_projects" / project_name),
-							help="Type the directory where DockM8 will store the project results")
+			value=str(Path.home() / "DockM8_projects" / project_name),
+			help="Type the directory where DockM8 will store the project results")
 else:
 	w_dir = str(Path.home() / "DockM8_projects" / project_name)
 
@@ -57,11 +59,11 @@ else:
 	threshold = None
 
 n_cpus = st.slider("Number of CPUs",
-					min_value=1,
-					max_value=os.cpu_count(),
-					step=1,
-					value=int(os.cpu_count() * 0.9),
-					help="Number of CPUs to use for calculations")
+		min_value=1,
+		max_value=os.cpu_count(),
+		step=1,
+		value=int(os.cpu_count() * 0.9),
+		help="Number of CPUs to use for calculations")
 
 software = st.text_input(
 	"Choose a software directory",
