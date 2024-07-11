@@ -36,10 +36,19 @@ class PLP(ScoringFunction):
 		try:
 			# Convert protein file to .mol2 using open babel
 			plants_protein_mol2 = Path(temp_dir) / "protein.mol2"
-			convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2")
+			try:
+				convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", software)
+			except Exception as e:
+				printlog(f"Error converting protein file to .mol2: {str(e)}")
+				return pd.DataFrame()
+
 			# Convert prepared ligand file to .mol2 using open babel
 			plants_ligands_mol2 = Path(temp_dir) / "ligands.mol2"
-			convert_molecules(sdf, plants_ligands_mol2, "sdf", "mol2")
+			try:
+				convert_molecules(sdf, plants_ligands_mol2, "sdf", "mol2", software)
+			except Exception as e:
+				printlog(f"Error converting ligand file to .mol2: {str(e)}")
+				return pd.DataFrame()
 
 			# Generate plants config file
 			plp_rescoring_config_path_txt = Path(temp_dir) / "config.txt"
@@ -86,10 +95,22 @@ class PLP(ScoringFunction):
 
 			# Run PLANTS docking
 			plp_rescoring_command = f"{software}/PLANTS --mode rescore {plp_rescoring_config_path_config}"
-			subprocess.call(plp_rescoring_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+			try:
+				subprocess.run(plp_rescoring_command,
+								shell=True,
+								check=True,
+								stdout=subprocess.DEVNULL,
+								stderr=subprocess.STDOUT)
+			except subprocess.CalledProcessError as e:
+				printlog(f"Error running PLANTS docking: {str(e)}")
+				return pd.DataFrame()
 
 			# Fetch results
 			results_csv_location = Path(temp_dir) / "results" / "ranking.csv"
+			if not results_csv_location.exists():
+				printlog(f"Results file not found: {results_csv_location}")
+				return pd.DataFrame()
+
 			plp_results = pd.read_csv(results_csv_location, sep=",", header=0)
 			plp_results.rename(columns={"TOTAL_SCORE": self.column_name}, inplace=True)
 			for i, row in plp_results.iterrows():

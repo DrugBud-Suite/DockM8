@@ -100,7 +100,15 @@ class CENsible(ScoringFunction):
 				df = df[["Pose ID"]]
 
 				with tempfile.NamedTemporaryFile(suffix=".pdb", delete=False) as temp_pdb:
-					convert_molecules(split_file, Path(temp_pdb.name), "sdf", "pdb")
+					try:
+						convert_molecules(split_file, Path(temp_pdb.name), "sdf", "pdb", software)
+					except Exception as e:
+						printlog(f"Error converting molecules: {str(e)}")
+						df[self.column_name] = [None]
+						output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_score.csv"))
+						df.to_csv(output_csv, index=False)
+						return
+
 					with tempfile.TemporaryDirectory() as temp_subdir:
 						temp_protein = Path(temp_subdir) / protein_file.name
 						shutil.copy(protein_file, temp_protein)
@@ -117,9 +125,9 @@ class CENsible(ScoringFunction):
 							obabel_path,
 							"--use_cpu"]
 						process = subprocess.Popen(censible_command,
-								stdout=subprocess.PIPE,
-								stderr=subprocess.PIPE,
-								text=True)
+													stdout=subprocess.PIPE,
+													stderr=subprocess.PIPE,
+													text=True)
 						stdout, stderr = process.communicate()
 						score = None
 						for line in stdout.split('\n'):
@@ -153,8 +161,6 @@ class CENsible(ScoringFunction):
 		finally:
 			self.remove_temp_dir(temp_dir)
 
-	# Other methods (check_and_download_censible, find_executable) remain unchanged
-
 	@staticmethod
 	def find_executable(name):
 		"""
@@ -172,7 +178,7 @@ class CENsible(ScoringFunction):
 		except subprocess.CalledProcessError:
 			try:
 				return subprocess.run(['where', name], capture_output=True, text=True,
-						check=True).stdout.strip().split('\n')[0]
+					check=True).stdout.strip().split('\n')[0]
 			except subprocess.CalledProcessError:
 				return None
 

@@ -32,18 +32,40 @@ class SCORCH(ScoringFunction):
 		temp_dir = self.create_temp_dir()
 		try:
 			SCORCH_protein = Path(temp_dir) / "protein.pdbqt"
-			convert_molecules(Path(str(protein_file)), SCORCH_protein, "pdb", "pdbqt")
+			try:
+				convert_molecules(Path(str(protein_file)), SCORCH_protein, "pdb", "pdbqt", software)
+			except Exception as e:
+				printlog(f"Error converting protein file to .pdbqt: {str(e)}")
+				return pd.DataFrame()
+
 			# Convert ligands to pdbqt
 			split_files_folder = Path(temp_dir) / f"split_{Path(sdf).stem}"
 			split_files_folder.mkdir(exist_ok=True)
-			convert_molecules(sdf, split_files_folder, "sdf", "pdbqt")
-			# Run SCORCH
+			try:
+				convert_molecules(sdf, split_files_folder, "sdf", "pdbqt", software)
+			except Exception as e:
+				printlog(f"Error converting ligand file to .pdbqt: {str(e)}")
+				return pd.DataFrame()
 
+			# Run SCORCH
 			SCORCH_command = f"cd {software}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {temp_dir}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
-			subprocess.call(SCORCH_command, shell=True                        #, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
-							)
-			                                                                     # Clean data
-			SCORCH_scores = pd.read_csv(Path(temp_dir) / "scoring_results.csv")
+			try:
+				subprocess.run(SCORCH_command,
+								shell=True,
+								check=True,
+								stdout=subprocess.DEVNULL,
+								stderr=subprocess.STDOUT)
+			except subprocess.CalledProcessError as e:
+				printlog(f"Error running SCORCH command: {str(e)}")
+				return pd.DataFrame()
+
+			# Clean data
+			results_file = Path(temp_dir) / "scoring_results.csv"
+			if not results_file.exists():
+				printlog(f"Results file not found: {results_file}")
+				return pd.DataFrame()
+
+			SCORCH_scores = pd.read_csv(results_file)
 			SCORCH_scores = SCORCH_scores.rename(columns={
 				"Ligand_ID": "Pose ID", "SCORCH_pose_score": self.column_name})
 			SCORCH_scores = SCORCH_scores[[self.column_name, "Pose ID"]]

@@ -75,6 +75,7 @@ class DLIGAND2(ScoringFunction):
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
 		protein_file = Path(kwargs.get("protein_file"))
+		software = kwargs.get("software")
 
 		temp_dir = self.create_temp_dir()
 		try:
@@ -89,12 +90,20 @@ class DLIGAND2(ScoringFunction):
 				df = df[["Pose ID"]]
 
 				with tempfile.NamedTemporaryFile(suffix=".mol2", delete=False) as temp_mol2:
-					convert_molecules(split_file, Path(temp_mol2.name), "sdf", "mol2")
+					try:
+						convert_molecules(split_file, Path(temp_mol2.name), "sdf", "mol2", software)
+					except Exception as e:
+						printlog(f"Error converting molecules: {str(e)}")
+						df[self.column_name] = [None]
+						output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_score.csv"))
+						df.to_csv(output_csv, index=False)
+						return
+
 					dligand2_command = f"cd {self.dligand2_folder}/bin && ./dligand2.gnu -etype 2 -P {protein_file} -L {temp_mol2.name}"
 					process = subprocess.Popen(dligand2_command,
-												stdout=subprocess.PIPE,
-												stderr=subprocess.PIPE,
-												shell=True)
+							stdout=subprocess.PIPE,
+							stderr=subprocess.PIPE,
+							shell=True)
 					stdout, stderr = process.communicate()
 					output = stdout.decode().strip()
 					try:
@@ -109,10 +118,10 @@ class DLIGAND2(ScoringFunction):
 
 			os.environ["DATAPATH"] = str(self.dligand2_folder / "bin")
 			parallel_executor(dligand2_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_file=protein_file)
+					split_files_sdfs,
+					n_cpus,
+					display_name=self.column_name,
+					protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_score.csv"))
 			if not score_files:

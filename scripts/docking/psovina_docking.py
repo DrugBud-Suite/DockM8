@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 from meeko import PDBQTMolecule, RDKitMolCreate
@@ -30,14 +30,21 @@ class PsovinaDocking(DockingFunction):
 
 		# Convert molecules to pdbqt format
 		try:
-			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt")
+			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt", self.software_path)
+			if isinstance(pdbqt_files, Path):
+				pdbqt_files = [pdbqt_files]
 		except Exception as e:
 			printlog(f"Failed to convert sdf file to .pdbqt: {e}")
 			self.remove_temp_dir(temp_dir)
 			return None
 
 		protein_file_pdbqt = temp_dir / "protein.pdbqt"
-		convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt")
+		try:
+			convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt", self.software_path)
+		except Exception as e:
+			printlog(f"Failed to convert protein file to .pdbqt: {e}")
+			self.remove_temp_dir(temp_dir)
+			return None
 
 		output_files = []
 		for file in pdbqt_files:
@@ -56,9 +63,9 @@ class PsovinaDocking(DockingFunction):
 							" --cpu 1 --seed 1 --energy_range 10"
 							f" --num_modes {n_poses}")
 			try:
-				subprocess.call(psovina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+				subprocess.run(psovina_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				output_files.append(output_file)
-			except Exception as e:
+			except subprocess.CalledProcessError as e:
 				printlog(f"PSOVINA docking failed: {e}")
 				self.remove_temp_dir(temp_dir)
 				return None

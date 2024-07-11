@@ -1,6 +1,6 @@
 import subprocess
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 import pandas as pd
 from rdkit import RDLogger
@@ -28,9 +28,20 @@ class PlantsDocking(DockingFunction):
 
 		# Convert molecules to mol2 format
 		plants_protein_mol2 = temp_dir / "protein.mol2"
-		convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2")
+		try:
+			convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", self.software_path)
+		except Exception as e:
+			printlog(f"ERROR: Failed to convert protein file to mol2: {str(e)}")
+			self.remove_temp_dir(temp_dir)
+			return None
+
 		plants_ligands_mol2 = temp_dir / f"{batch_file.stem}.mol2"
-		convert_molecules(batch_file, plants_ligands_mol2, "sdf", "mol2")
+		try:
+			convert_molecules(batch_file, plants_ligands_mol2, "sdf", "mol2", self.software_path)
+		except Exception as e:
+			printlog(f"ERROR: Failed to convert ligands file to mol2: {str(e)}")
+			self.remove_temp_dir(temp_dir)
+			return None
 
 		# Generate PLANTS config file
 		plants_docking_config_path = temp_dir / "plants_config.txt"
@@ -44,10 +55,13 @@ class PlantsDocking(DockingFunction):
 		# Run PLANTS docking
 		try:
 			plants_docking_command = f'{self.software_path / "PLANTS"} --mode screen {plants_docking_config_path}'
-			subprocess.call(plants_docking_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-		except Exception as e:
-			printlog("ERROR: PLANTS docking command failed...")
-			printlog(e)
+			subprocess.run(plants_docking_command,
+							shell=True,
+							check=True,
+							stdout=subprocess.DEVNULL,
+							stderr=subprocess.STDOUT)
+		except subprocess.CalledProcessError as e:
+			printlog(f"ERROR: PLANTS docking command failed: {str(e)}")
 			self.remove_temp_dir(temp_dir)
 			return None
 
@@ -55,10 +69,9 @@ class PlantsDocking(DockingFunction):
 		results_mol2 = results_folder / "docked_ligands.mol2"
 		results_sdf = results_mol2.with_suffix(".sdf")
 		try:
-			convert_molecules(results_mol2, results_sdf, "mol2", "sdf")
+			convert_molecules(results_mol2, results_sdf, "mol2", "sdf", self.software_path)
 		except Exception as e:
-			printlog("ERROR: Failed to convert PLANTS poses file to .sdf!")
-			printlog(e)
+			printlog(f"ERROR: Failed to convert PLANTS poses file to .sdf: {str(e)}")
 			self.remove_temp_dir(temp_dir)
 			return None
 
