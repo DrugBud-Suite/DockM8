@@ -26,16 +26,15 @@ def log_dataframe_length_change(previous_length, current_length, process_name):
 
 
 def docking_postprocessing(input_sdf: Path,
-		output_path: Path,
-		protein_file: Path,
-		minimize_poses: bool,
-		bust_poses: bool,
-		strain_cutoff: int,
-		clash_cutoff: int,
-		classy_pose: bool,
-		classy_pose_model: str,
-		n_cpus: int,
-		) -> Path:
+							output_path: Path,
+							protein_file: Path,
+							minimize_poses: bool,
+							bust_poses: bool,
+							strain_cutoff: int,
+							clash_cutoff: int,
+							classy_pose: bool,
+							classy_pose_model: str,
+							n_cpus: int) -> Path:
 	"""
     Perform postprocessing on docking results.
 
@@ -65,21 +64,21 @@ def docking_postprocessing(input_sdf: Path,
 
 	if (strain_cutoff is not None) and (clash_cutoff is not None):
 		sdf_dataframe = pose_checker(sdf_dataframe, protein_file, clash_cutoff, strain_cutoff, n_cpus)
-		log_dataframe_length_change(initial_length, len(sdf_dataframe), "PoseChecker")
-		initial_length = len(sdf_dataframe)
+	log_dataframe_length_change(initial_length, len(sdf_dataframe), "PoseChecker")
+	initial_length = len(sdf_dataframe)
 
 	if bust_poses:
 		sdf_dataframe = pose_buster(sdf_dataframe, protein_file, n_cpus)
-		log_dataframe_length_change(initial_length, len(sdf_dataframe), "PoseBusters")
-		initial_length = len(sdf_dataframe)
+	log_dataframe_length_change(initial_length, len(sdf_dataframe), "PoseBusters")
+	initial_length = len(sdf_dataframe)
 
 	if classy_pose:
 		sdf_dataframe = classy_pose_filter(sdf_dataframe, protein_file, classy_pose_model, n_cpus)
-		log_dataframe_length_change(initial_length, len(sdf_dataframe), "ClassyPose")
+	log_dataframe_length_change(initial_length, len(sdf_dataframe), "ClassyPose")
 
 	PandasTools.WriteSDF(sdf_dataframe,
-			str(output_path),
-			molColName="Molecule",
-			idName="Pose ID",
-			properties=list(sdf_dataframe.columns))
+							str(output_path),
+							molColName="Molecule",
+							idName="Pose ID",
+							properties=list(sdf_dataframe.columns))
 	return output_path
