@@ -22,7 +22,7 @@ def test_data():
 	library_file = dockm8_path / "tests/test_files/docking/prepared_library.sdf"
 	ligand_file = dockm8_path / "tests/test_files/docking/prepared_ligand.sdf"
 	software = dockm8_path / "software"
-	n_cpus = 2
+	n_cpus = 4                  # Increased to test both conformer generation and SHAEP parallelization
 	output_dir = dockm8_path / "tests/test_files/docking/output"
 	output_dir.mkdir(exist_ok=True)
 	pocket_definition = {"center": [-9.67, 207.73, 113.41], "size": [20.0, 20.0, 20.0]}
@@ -37,12 +37,12 @@ def test_PantherDocking(test_data):
 	# Test the full docking process with the library
 	output_sdf = output_dir / "panther_docking_results.sdf"
 	docking_results = panther.dock(library=library_file,
-									protein_file=protein_file,
-									pocket_definition=pocket_definition,
-									exhaustiveness=8,
-									n_poses=10,
-									n_cpus=n_cpus,
-									output_sdf=output_sdf)
+			protein_file=protein_file,
+			pocket_definition=pocket_definition,
+			exhaustiveness=8,
+			n_poses=10,
+			n_cpus=n_cpus,
+			output_sdf=output_sdf)
 
 	assert isinstance(docking_results, pd.DataFrame)
 	assert "Pose ID" in docking_results.columns
