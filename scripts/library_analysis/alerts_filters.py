@@ -1,27 +1,59 @@
+import sys
+from pathlib import Path
+
 import medchem as mc
 import pandas as pd
 import os
 
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
 
-def apply_alerts_rules(molecule_df: pd.DataFrame, selected_alerts, list, n_cpus: int = int(os.cpu_count() * 0.9)):
-	"""
-	Apply a set of alerts rules to filter a DataFrame of molecules.
+from scripts.utilities.parallel_executor import parallel_executor
 
-	Args:
-		molecule_df (pd.DataFrame): DataFrame containing the molecules to be filtered.
-		selected_alerts: The set of alerts rules to be applied.
-		list: A list parameter (not specified in the code, please provide more information).
-		n_cpus (int): Number of CPUs to be used for parallel processing. Defaults to 90% of the available CPUs.
 
-	Returns:
-		Tuple: A tuple containing the filtered DataFrame, the number of molecules filtered out, and the number of remaining molecules.
-	"""
+def process_batch(args):
+	batch, selected_alerts = args
 	rule_filters = mc.structural.CommonAlertsFilters(alerts_set=selected_alerts)
-	processed_df = rule_filters(mols=molecule_df['Molecule'].tolist(), n_jobs=n_cpus, progress=True)
-	filtered_df = processed_df[processed_df['pass_all'] != False]
-	filtered_df = filtered_df[filtered_df['pass_all'] != 'False']
-	filtered_df = filtered_df.drop(columns=['pass_all', 'pass_any'])
-	filtered_df = filtered_df.drop(columns=selected_alerts)
+	processed_batch = rule_filters(mols=batch['Molecule'].tolist(), n_jobs=1, progress=False)
+	return processed_batch
+
+
+def apply_alerts_rules(molecule_df: pd.DataFrame, selected_alerts: list, n_cpus: int = int(os.cpu_count() * 0.9)):
+	"""
+    Apply a set of alerts rules to filter a DataFrame of molecules.
+
+    Args:
+        molecule_df (pd.DataFrame): DataFrame containing the molecules to be filtered.
+        selected_alerts (list): The set of alerts rules to be applied.
+        n_cpus (int): Number of CPUs to be used for parallel processing.
+        batch_size (int): Size of each batch for processing.
+
+    Returns:
+        Tuple: A tuple containing the filtered DataFrame, the number of molecules filtered out, and the number of remaining molecules.
+    """
+	batch_size = max(1, len(molecule_df) // (n_cpus*4))
+
+	# Split the dataframe into batches
+	batches = [molecule_df[i:i + batch_size] for i in range(0, len(molecule_df), batch_size)]
+
+	# Prepare arguments for parallel processing
+	batch_args = [(batch, selected_alerts) for batch in batches]
+
+	# Process batches in parallel
+	results = parallel_executor(process_batch, batch_args, n_cpus=n_cpus, job_manager="concurrent_process")
+
+	# Combine results
+	processed_df = pd.concat(results, ignore_index=True)
+
+	# Merge the processed results with the original DataFrame
+	merged_df = pd.concat([molecule_df.reset_index(drop=True), processed_df], axis=1)
+
+	# Filter the merged DataFrame
+	filtered_df = merged_df[(merged_df['pass_filter'] != False) & (merged_df['pass_filter'] != 'False')]
+	filtered_df = filtered_df[molecule_df.columns]
+
 	num_filtered = len(molecule_df) - len(filtered_df)
 	num_remaining = len(filtered_df)
 	return filtered_df, num_filtered, num_remaining

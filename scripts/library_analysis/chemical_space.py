@@ -1,5 +1,5 @@
 import os
-
+from rdkit import Chem
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -10,6 +10,11 @@ from umap import UMAP
 
 
 def visualize_chemical_space(df, method='UMAP', fingerprint='ECFP4'):
+	# Compute SMILES if not present in df
+	if 'SMILES' not in df.columns:
+		df['SMILES'] = df['Molecule'].apply(lambda mol: Chem.MolToSmiles(mol) if mol is not None else None)
+
+	# Continue with the rest of the code
 	# Compute fingerprints
 	if fingerprint == 'ECFP4':
 		fp_list = ECFPFingerprint(fp_size=2048, radius=2, n_jobs=int(os.cpu_count() * 0.9)).transform(df['SMILES'])
