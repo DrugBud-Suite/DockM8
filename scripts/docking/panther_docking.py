@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict
 
@@ -6,8 +7,15 @@ import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import PandasTools
 
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
 from scripts.docking.docking_function import DockingFunction
+from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
+from scripts.utilities.parallel_executor import parallel_executor
 
 
 class PantherDocking(DockingFunction):
@@ -71,34 +79,30 @@ class PantherDocking(DockingFunction):
 			self.remove_temp_dir(temp_dir)
 			return None
 
-	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
-
-		temp_dir = self.create_temp_dir()
-
-		# Prepare input files
-		ligs_decs_1_conf_prepped = temp_dir / f"{batch_file}-prepped.mol2"
+	def generate_conformers(self, batch_file: Path, temp_dir: Path) -> Path:
+		ligs_decs_1_conf_prepped = temp_dir / f"{batch_file.stem}-prepped.mol2"
 		obabel_charge_cmd = f"obabel -isdf {batch_file} -O {ligs_decs_1_conf_prepped} --partialcharge mmff94"
-		conformers_file = temp_dir / f"{batch_file}-prepped.mol2"
+		conformers_file = temp_dir / f"{batch_file.stem}-prepped-conformers.mol2"
 		obabel_conformers_cmd = f"obabel -imol2 {ligs_decs_1_conf_prepped} -omol2 -O {conformers_file} --confab --conf 100000 --rcutoff 1"
 
 		try:
 			subprocess.call(obabel_charge_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			subprocess.call(obabel_conformers_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		except Exception as e:
-			printlog(f"PANTHER conformer generation failed: {e}")
-			self.remove_temp_dir(temp_dir)
+			printlog(f"PANTHER conformer generation failed for {batch_file}: {e}")
 			return None
 
-		# Generate negative image if it doesn't exist
-		if self.negative_image is None:
-			self.negative_image = self.generate_negative_image(protein_file, pocket_definition)
-			if self.negative_image is None:
-				return None
+		return conformers_file
+
+	def run_shaep(self,
+					conformers_file: Path,
+					protein_file: Path,
+					pocket_definition: Dict[str, list],
+					exhaustiveness: int,
+					n_poses: int,
+					negative_image: Path) -> Path:
+
+		temp_dir = self.create_temp_dir()
 
 		# Run SHAEP
 		shaep_executable = self.software_path / "shaep"
@@ -107,9 +111,9 @@ class PantherDocking(DockingFunction):
 			self.remove_temp_dir(temp_dir)
 			return None
 
-		shaep_output_sdf = temp_dir / f"{batch_file}_shaep_results.sdf"
-		shaep_output_txt = temp_dir / f"{batch_file}_shaep_results.txt"
-		shaep_cmd = f"{shaep_executable} -q {self.negative_image} {conformers_file} -s {shaep_output_sdf} --nStructures {n_poses} --output-file {shaep_output_txt}"
+		shaep_output_sdf = temp_dir / f"{conformers_file.stem}_shaep_results.sdf"
+		shaep_output_txt = temp_dir / f"{conformers_file.stem}_shaep_results.txt"
+		shaep_cmd = f"{shaep_executable} -q {negative_image} {conformers_file} -s {shaep_output_sdf} --nStructures {n_poses} --output-file {shaep_output_txt}"
 
 		try:
 			subprocess.call(shaep_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -119,6 +123,84 @@ class PantherDocking(DockingFunction):
 			return None
 
 		return shaep_output_sdf
+
+	def dock(self,
+				library: Path,
+				protein_file: Path,
+				pocket_definition: dict,
+				exhaustiveness: int,
+				n_poses: int,
+				n_cpus: int,
+				job_manager: str = "concurrent_process",
+				output_sdf: Path = None) -> pd.DataFrame:
+
+		temp_dir = self.create_temp_dir()
+
+		try:
+			# Generate negative image once
+			self.negative_image = self.generate_negative_image(protein_file, pocket_definition)
+			if self.negative_image is None:
+				printlog("Failed to generate negative image. Aborting docking process.")
+				return pd.DataFrame()
+
+			# Handle input as DataFrame or file
+			if isinstance(library, pd.DataFrame):
+				library_path = temp_dir / "temp_library.sdf"
+				PandasTools.WriteSDF(library, str(library_path), molColName="Molecule", idName="ID")
+			else:
+				library_path = library
+
+			# Split the input SDF file
+			split_files_folder = split_sdf_str(temp_dir, library_path, n_cpus)
+			batch_files = list(split_files_folder.glob("*.sdf"))
+
+			# Perform parallel conformer generation
+			conformer_results = parallel_executor(self.generate_conformers,
+													batch_files,
+													n_cpus=n_cpus,
+													job_manager=job_manager,
+													temp_dir=temp_dir)
+
+			print(conformer_results)
+
+			# Remove any None results (failed conformer generations)
+			conformer_results = [result for result in conformer_results if result is not None]
+
+			# Perform SHAEP docking with 2 CPUs
+			shaep_results = []
+
+			batch_results = parallel_executor(self.run_shaep,
+												conformer_results,
+												n_cpus=2,
+												job_manager=job_manager,
+												protein_file=protein_file,
+												pocket_definition=pocket_definition,
+												exhaustiveness=exhaustiveness,
+												n_poses=n_poses,
+												negative_image=self.negative_image)
+			shaep_results.extend(batch_results)
+
+			# Process results
+			processed_results = []
+			for result_file in shaep_results:
+				if result_file and Path(result_file).exists():
+					processed_results.append(self.process_docking_result(result_file, n_poses))
+
+			# Combine results
+			combined_results = pd.concat(processed_results, ignore_index=True)
+
+			# Write output SDF if requested
+			if output_sdf:
+				PandasTools.WriteSDF(combined_results,
+										str(output_sdf),
+										molColName="Molecule",
+										idName="Pose ID",
+										properties=list(combined_results.columns))
+
+			return combined_results
+
+		finally:
+			self.remove_temp_dir(temp_dir)
 
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog('rdApp.*')

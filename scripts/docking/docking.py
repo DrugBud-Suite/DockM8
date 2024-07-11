@@ -26,7 +26,6 @@ from scripts.docking.qvinaw_docking import QvinawDocking
 from scripts.docking.smina_docking import SminaDocking
 from scripts.docking.plantain_docking import PlantainDocking
 from scripts.utilities.logging import printlog
-from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -105,14 +104,13 @@ def dockm8_docking(library: pd.DataFrame or Path,
 			library_path.unlink()
 
 
-def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path, n_cpus: int):
+def concat_all_poses(output_path: Path, docking_programs: list, n_cpus: int):
 	"""
     Concatenates all poses from the specified docking programs.
 
     Args:
-    w_dir (Path): Working directory where the docking program output files are located.
+    output_path (Path): Path where the combined SDF file will be saved.
     docking_programs (list): List of strings specifying the names of the docking programs used.
-    protein_file (Path): Path to the protein file used for docking.
     n_cpus (int): Number of CPUs to use for parallel processing.
 
     Returns:
@@ -121,7 +119,7 @@ def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path, n_
 	# Create an empty DataFrame to store all poses
 	all_poses = pd.DataFrame()
 	for program in docking_programs:
-		df = parallel_SDF_loader(f"{w_dir}/{program.lower()}/{program.lower()}_poses.sdf",
+		df = parallel_SDF_loader(f"{output_path.parent}/{program.lower()}_poses.sdf",
 									molColName="Molecule",
 									idName="Pose ID",
 									n_cpus=n_cpus)
@@ -130,7 +128,7 @@ def concat_all_poses(w_dir: Path, docking_programs: list, protein_file: Path, n_
 	try:
 		# Write the combined poses to an SDF file
 		PandasTools.WriteSDF(all_poses,
-								f"{w_dir}/allposes.sdf",
+								str(output_path),
 								molColName="Molecule",
 								idName="Pose ID",
 								properties=list(all_poses.columns))
