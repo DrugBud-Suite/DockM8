@@ -4,7 +4,6 @@ import traceback
 from pathlib import Path
 import pandas as pd
 import streamlit as st
-from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
 gui_path = next((p / "gui" for p in Path(__file__).resolve().parents if (p / "gui").is_dir()), None)
