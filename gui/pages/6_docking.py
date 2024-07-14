@@ -15,35 +15,45 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 
 from gui.menu import PAGES, menu
 from scripts.docking.docking import DOCKING_PROGRAMS, concat_all_poses
+from scripts.docking.docking_function import DockingFunction
 
 menu()
 
 st.title("Docking", anchor='center')
 
+if 'w_dir' in st.session_state and ('library_to_dock' not in st.session_state or
+									'prepared_protein_path' not in st.session_state):
+	st.session_state.library_to_dock = Path(st.session_state.w_dir) / "prepared_library.sdf"
+	if not Path(st.session_state.library_to_dock).is_file():
+		st.warning(
+			f"Could not find {st.session_state.library_to_dock} in the working directory. Ensure it is in the working directory or enter it's path manually :"
+		)
+
+	st.session_state.prepared_protein_path = Path(st.session_state.w_dir) / "prepared_protein.pdb"
+	if not Path(st.session_state.prepared_protein_path).is_file():
+		st.warning(
+			f"Could not find {st.session_state.prepared_protein_path} in the working directory. Ensure it is in the working directory."
+		)
+
 # Check for prepared docking library
 if 'library_to_dock' not in st.session_state:
-	library_to_prepare_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
-												value=str(dockm8_path / "tests" / "test_files" /
-															"prepared_library.sdf"),
-												help="Choose a ligand library file (.sdf format)")
-	# Button to load the library
-	if st.button('Load Library', key='load_library_button'):
-		with st.spinner('Loading library...'):
-			if Path(library_to_prepare_input).is_file():
-				st.session_state.library_to_dock = PandasTools.LoadSDF(library_to_prepare_input,
-																		smilesName='SMILES',
-																		molColName='Molecule',
-																		idName='ID')
-				st.write(f'Ligand library loaded with {len(st.session_state.library_to_dock)} compounds.')
-			else:
-				st.error('File does not exist.')
+	library_to_dock_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
+											value=str(dockm8_path / "tests" / "test_files" / "prepared_library.sdf"),
+											help="Choose a ligand library file (.sdf format)")
+	if not Path(library_to_dock_input).is_file():
+		st.error("File does not exist.")
+	else:
+		st.session_state.library_to_dock = library_to_dock_input
+		st.success(f"Library loaded: {library_to_dock_input}")
 
 # Check for prepared protein file
 if 'prepared_protein_path' not in st.session_state:
 	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
 									help="Enter the complete file path to your prepared protein file.")
-	if protein_path and Path(protein_path).is_file():
+	if not Path(protein_path).is_file():
+		st.error("File does not exist.")
+	else:
 		st.session_state.prepared_protein_path = protein_path
 		st.success(f"Protein file loaded: {protein_path}")
 
@@ -223,7 +233,7 @@ if col1.button('Run Docking', key='run_docking_button'):
 				all_poses = []
 				for program in docking_programs:
 					docking_class = DOCKING_PROGRAMS[program]
-					docking_function = docking_class(software)
+					docking_function: DockingFunction = docking_class(software)
 
 					if st.session_state.save_docking_results:
 						output_sdf = docking_dir / f"{program.lower()}_poses.sdf"
@@ -238,7 +248,7 @@ if col1.button('Run Docking', key='run_docking_button'):
 						concat_all_poses(all_poses_path,
 											docking_programs,
 											st.session_state.get('n_cpus', int(os.cpu_count() * 0.9)))
-						st.session_state.all_poses_path = all_poses_path
+						st.session_state.poses_for_postprocessing = all_poses_path
 						st.success("Docking completed successfully!")
 						st.info(f"All poses have been combined and saved to: {all_poses_path}")
 
@@ -254,7 +264,7 @@ if col1.button('Run Docking', key='run_docking_button'):
 						all_poses.append(results)
 						all_poses = pd.concat(all_poses, ignore_index=True)
 						st.success("Docking completed successfully!")
-						st.session_state.all_poses = all_poses
+						st.session_state.poses_for_postprocessing = all_poses
 
 			except Exception as e:
 				st.error(f"An error occurred during docking: {str(e)}")
