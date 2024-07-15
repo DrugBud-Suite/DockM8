@@ -24,8 +24,8 @@ class StandardizationError(Exception):
 
 
 def standardize_molecule(molecule: Chem.Mol,
-		remove_salts: bool = True,
-		standardize_tautomers: bool = True) -> Tuple[Optional[Chem.Mol], Optional[str]]:
+							remove_salts: bool = True,
+							standardize_tautomers: bool = True) -> Tuple[Optional[Chem.Mol], Optional[str]]:
 	"""Standardize a single molecule using MolVS.
 
 	Args:
@@ -74,12 +74,11 @@ def standardize_ids(df: pd.DataFrame, id_column: str = 'ID') -> pd.DataFrame:
 
 
 def standardize_library(df: pd.DataFrame,
-		id_column: str = 'ID',
-		smiles_column: str = 'SMILES',
-		remove_salts: bool = True,
-		standardize_tautomers: bool = True,
-		standardize_ids_flag: bool = True,
-		n_cpus: int = int(os.cpu_count() * 0.9)) -> pd.DataFrame:
+						smiles_column: str = 'SMILES',
+						remove_salts: bool = True,
+						standardize_tautomers: bool = True,
+						standardize_ids_flag: bool = True,
+						n_cpus: int = int(os.cpu_count() * 0.9)) -> pd.DataFrame:
 	"""
     Standardizes a docking library using MolVS.
 
@@ -99,21 +98,24 @@ def standardize_library(df: pd.DataFrame,
 
 	# Convert SMILES strings to RDKit molecules
 	if 'Molecule' not in df.columns:
-		df['Molecule'] = df[smiles_column].apply(Chem.MolFromSmiles)
+		try:
+			df['Molecule'] = df[smiles_column].apply(Chem.MolFromSmiles)
+		except Exception as e:
+			raise ValueError(f"Failed to find a column containing molecule data: {str(e)}")
 
 	# Standardize IDs if the flag is set
 	if standardize_ids_flag:
-		df = standardize_ids(df, id_column)
+		df = standardize_ids(df, 'ID')
 
 	# Standardize the molecules using MolVS
 
 	results = parallel_executor(standardize_molecule,
-								df['Molecule'].tolist(),
-								n_cpus,
-								'concurrent_process',
-								display_name="Molecule Standardization",
-								remove_salts=remove_salts,
-								standardize_tautomers=standardize_tautomers)
+			df['Molecule'].tolist(),
+			n_cpus,
+			'concurrent_process',
+			display_name="Molecule Standardization",
+			remove_salts=remove_salts,
+			standardize_tautomers=standardize_tautomers)
 
 	# Separate molecules and error messages
 	standardized_molecules, error_messages = zip(*results)
