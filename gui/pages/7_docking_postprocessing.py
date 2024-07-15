@@ -16,6 +16,7 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 from gui.menu import PAGES, menu
 from gui.utils import save_dataframe_to_sdf
 from scripts.docking_postprocessing.docking_postprocessing import docking_postprocessing
+from gui.utils import save_dataframe_to_sdf
 
 menu()
 
@@ -55,6 +56,33 @@ if 'software' not in st.session_state:
 	st.session_state.software = dockm8_path / "software"
 
 st.subheader("Pose Minimization", divider="orange")
+col1, col2 = st.columns(2)
+minimize_poses = col1.toggle(label="Minimize docking poses",
+								value=False,
+								help="Minimize poses after docking",
+								key="minimize_poses")
+if minimize_poses:
+	minimize_poses_config = {}
+	minimize_poses_config['force_field'] = col1.selectbox(label="Choose the force field for minimization",
+															options=("UFF", "MMFF94", "MMFF94s"),
+															index=2)
+	minimize_poses_config['n_steps'] = col1.number_input(label="Number of minimization steps",
+															min_value=1,
+															max_value=5000,
+															value=1000,
+															step=10,
+															help="Number of minimization steps to perform")
+	minimize_poses_config['distance_constraing'] = col1.number_input(
+		label="Distance constraint (Å)",
+		min_value=0.1,
+		max_value=2.0,
+		value=1.0,
+		step=0.1,
+		help="Distance constraint in Å for minimization")
+minimize_poses_H = col2.toggle(label="Minimize Hydrogens of docking poses",
+								value=False,
+								help="Minimize H positions of poses after docking",
+								key="minimize_poses_H")
 col1, col2 = st.columns(2)
 minimize_poses = col1.toggle(label="Minimize docking poses",
 								value=False,

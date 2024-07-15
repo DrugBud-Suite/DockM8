@@ -15,10 +15,25 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 from gui.menu import PAGES, menu
 from scripts.docking.docking import DOCKING_PROGRAMS, concat_all_poses
 from scripts.docking.docking_function import DockingFunction
+from scripts.docking.docking_function import DockingFunction
 
 menu()
 
 st.title("Docking", anchor='center')
+
+if 'w_dir' in st.session_state and ('library_to_dock' not in st.session_state or
+									'prepared_protein_path' not in st.session_state):
+	st.session_state.library_to_dock = Path(st.session_state.w_dir) / "prepared_library.sdf"
+	if not Path(st.session_state.library_to_dock).is_file():
+		st.warning(
+			f"Could not find {st.session_state.library_to_dock} in the working directory. Ensure it is in the working directory or enter it's path manually :"
+		)
+
+	st.session_state.prepared_protein_path = Path(st.session_state.w_dir) / "prepared_protein.pdb"
+	if not Path(st.session_state.prepared_protein_path).is_file():
+		st.warning(
+			f"Could not find {st.session_state.prepared_protein_path} in the working directory. Ensure it is in the working directory."
+		)
 
 # Check for prepared docking library
 if 'library_to_dock' not in st.session_state:
@@ -43,6 +58,9 @@ if 'prepared_protein_path' not in st.session_state:
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
 									value=default_path_protein,
 									help="Enter the complete file path to your prepared protein file.")
+	if not Path(protein_path).is_file():
+		st.error("File does not exist.")
+	else:
 	if not Path(protein_path).is_file():
 		st.error("File does not exist.")
 	else:

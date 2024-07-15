@@ -56,12 +56,12 @@ def pose_buster(dataframe: pd.DataFrame, protein_file: Path, n_cpus: int = (os.c
 
 	# Use parallel_executor to process chunks
 	results = parallel_executor(process_chunk,
-								chunks,
-								n_cpus,
-								job_manager="concurrent_process",
-								display_name="PoseBusters",
-								config_path=config_path,
-								protein_file=protein_file)
+			chunks,
+			n_cpus,
+			job_manager="concurrent_process",
+			display_name="PoseBusters",
+			config_path=config_path,
+			protein_file=protein_file)
 
 	# Filter out None results and concatenate valid DataFrames
 	valid_results = [df for df in results if df is not None]
