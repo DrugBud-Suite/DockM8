@@ -18,7 +18,7 @@ def ECR_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) ->
         selected_columns (list): List of column names to be used for ECR calculation.
 
     Returns:
-        pd.DataFrame: Dataframe with two columns: 'ID' and `Method2_ECR_{clustering_metric}`. Each row represents an ID and its corresponding average ECR rank across the clustered poses.
+        pd.DataFrame: Dataframe with two columns: 'ID' and `Method2_ECR`. Each row represents an ID and its corresponding average ECR rank across the clustered poses.
     """
 	# Select the 'ID' column and the selected columns from the input dataframe
 	df = df[["ID"] + selected_columns]
@@ -36,6 +36,6 @@ def ECR_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) ->
 	df = df.groupby("ID", as_index=False).mean(numeric_only=True)
 	# Normalize the ECR column
 	df["ECR"] = (df["ECR"] - df["ECR"].min()) / (df["ECR"].max() - df["ECR"].min())
-	df = df.rename(columns={"ECR": f"ECR_avg_{clustering_metric}"})
-	# Return the dataframe with 'ID' and 'ECR_avg_{clustering_metric}' columns
-	return df[["ID", f"ECR_avg_{clustering_metric}"]]
+	df = df.rename(columns={"ECR": "ECR_avg"})
+	# Return the dataframe with 'ID' and 'ECR_avg' columns
+	return df[["ID", "ECR_avg"]]

@@ -34,6 +34,6 @@ def Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list)
 	df = df[["ID", "Zscore"]]
 	# Normalize the Zscore column
 	df["Zscore"] = (df["Zscore"] - df["Zscore"].min()) / (df["Zscore"].max() - df["Zscore"].min())
-	df = df.rename(columns={"Zscore": f"Zscore_avg_{clustering_metric}"})
-	# Return DataFrame with 'ID' and 'avg_S_Zscore_{clustering_metric}' columns
-	return df[["ID", f"Zscore_avg_{clustering_metric}"]]
+	df = df.rename(columns={"Zscore": "Zscore_avg"})
+	# Return DataFrame with 'ID' and 'avg_S_Zscore' columns
+	return df[["ID", "Zscore_avg"]]

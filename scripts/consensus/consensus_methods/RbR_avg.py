@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def RbR_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def RbR_avg(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	"""
     Calculates the Rank by Rank (RbR) consensus score for each ID in the input dataframe. Averaging of the score is done across all selected poses.
 
@@ -30,5 +30,5 @@ def RbR_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) ->
 	df = df.groupby('ID', as_index=False).mean(numeric_only=True)
 	# Normalize the RbR column
 	df['RbR'] = (df['RbR'].max() - df['RbR']) / (df['RbR'].max() - df['RbR'].min())
-	df = df.rename(columns={'RbR': f'RbR_avg_{clustering_metric}'})
-	return df[['ID', f'RbR_avg_{clustering_metric}']]
+	df = df.rename(columns={'RbR': 'RbR_avg'})
+	return df[['ID', 'RbR_avg']]
