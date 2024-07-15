@@ -1,11 +1,15 @@
+import os
+import shutil
 import sys
+import tempfile
 import time
 import warnings
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pandas as pd
 from rdkit import RDLogger
+from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
@@ -32,6 +36,7 @@ from scripts.rescoring.rescoring_functions.RFScoreVS import RFScoreVS
 from scripts.rescoring.rescoring_functions.RTMScore import RTMScore
 from scripts.rescoring.rescoring_functions.SCORCH import SCORCH
 from scripts.rescoring.rescoring_functions.vinardo import Vinardo
+from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -66,10 +71,43 @@ RESCORING_FUNCTIONS = {
 	"Vinardo": Vinardo(), }
 
 
+def create_temp_dir(name: str) -> Path:
+	"""
+	Creates a temporary directory for the scoring function.
+
+	Args:
+		name (str): The name of the scoring function.
+
+	Returns:
+		Path: The path to the temporary directory.
+	"""
+	os.makedirs(Path.home() / "dockm8_temp_files", exist_ok=True)
+	return Path(tempfile.mkdtemp(dir=Path.home() / "dockm8_temp_files", prefix=f"dockm8_{name}_"))
+
+
+def remove_temp_dir(temp_dir: Path):
+	"""
+	Removes the temporary directory.
+
+	Args:
+		temp_dir (Path): The path to the temporary directory.
+	"""
+	shutil.rmtree(str(temp_dir), ignore_errors=True)
+
+
+def save_dataframe_to_sdf(dataframe, file_path, molecule_column='Molecule', id_column='ID'):
+	"""Helper function to save DataFrame to SDF format."""
+	PandasTools.WriteSDF(dataframe,
+							file_path,
+							molColName=molecule_column,
+							idName=id_column,
+							properties=list(dataframe.columns))
+
+
 def rescore_poses(protein_file: Path,
 					pocket_definition: dict,
 					software: Path,
-					clustered_sdf: Path,
+					poses: Union[Path, pd.DataFrame],
 					functions: List[str],
 					n_cpus: int,
 					output_file: Optional[Path] = None) -> pd.DataFrame:
@@ -81,7 +119,7 @@ def rescore_poses(protein_file: Path,
 		protein_file (Path): Path to the protein file.
 		pocket_definition (dict): Dictionary defining the pocket.
 		software (Path): Path to the software.
-		clustered_sdf (Path): Path to the clustered SDF file.
+		poses (Union[Path, pd.DataFrame]): Path to the clustered SDF file or DataFrame of poses.
 		functions (List[str]): List of scoring function names.
 		n_cpus (int): Number of CPUs to use for parallel processing.
 		output_file (Optional[Path], optional): Path to the output file. Defaults to None.
@@ -92,79 +130,97 @@ def rescore_poses(protein_file: Path,
 	RDLogger.DisableLog("rdApp.*")
 	tic = time.perf_counter()
 
-	existing_results = pd.DataFrame()
-	functions_to_run = functions.copy()
-
-	if output_file and output_file.exists():
-		existing_results = pd.read_csv(output_file)
-		printlog(f"Found existing results in {output_file}")
-		existing_functions = [col for col in existing_results.columns if col != "Pose ID"]
-		functions_to_run = [f for f in functions if f not in existing_functions]
-		printlog(f"Functions to run: {', '.join(functions_to_run)}")
-
-	results = []
-	skipped_functions = []
-	for function in functions_to_run:
-		scoring_function = RESCORING_FUNCTIONS.get(function)
-		if scoring_function:
-			try:
-				result = scoring_function.rescore(str(clustered_sdf),
-													n_cpus,
-													software=str(software),
-													protein_file=str(protein_file),
-													pocket_definition=pocket_definition)
-				results.append(result)
-			except Exception as e:
-				printlog(e)
-				printlog(f"Failed for {function}")
+	# Process input
+	temp_dir = create_temp_dir("rescore_poses")
+	try:
+		if isinstance(poses, Path):
+			sdf = poses
+		elif isinstance(poses, pd.DataFrame):
+			sdf = temp_dir / "temp_clustered.sdf"
+			PandasTools.WriteSDF(poses, sdf, molColName='Molecule', idName='Pose ID', properties=list(poses.columns))
 		else:
-			skipped_functions.append(function)
+			raise ValueError("poses must be a Path or DataFrame")
 
-	if skipped_functions:
-		printlog(f'Skipping functions: {", ".join(skipped_functions)}')
+		existing_results = pd.DataFrame()
+		functions_to_run = functions.copy()
 
-	if results:
-		if len(results) == 1:
-			new_results = results[0]
+		if output_file and output_file.exists():
+			existing_results = pd.read_csv(output_file)
+			printlog(f"Found existing results in {output_file}")
+			existing_functions = [col for col in existing_results.columns if col != "Pose ID"]
+			functions_to_run = [f for f in functions if f not in existing_functions]
+			printlog(f"Functions to run: {', '.join(functions_to_run)}")
+
+		results = []
+		skipped_functions = []
+		for function in functions_to_run:
+			scoring_function: ScoringFunction = RESCORING_FUNCTIONS.get(function)
+			if scoring_function:
+				try:
+					result = scoring_function.rescore(str(sdf),
+														n_cpus,
+														software=str(software),
+														protein_file=str(protein_file),
+														pocket_definition=pocket_definition)
+					results.append(result)
+				except Exception as e:
+					printlog(e)
+					printlog(f"Failed for {function}")
+			else:
+				skipped_functions.append(function)
+
+		if skipped_functions:
+			printlog(f'Skipping functions: {", ".join(skipped_functions)}')
+
+		if results:
+			if len(results) == 1:
+				new_results = results[0]
+			else:
+				new_results = results[0]
+				for df in tqdm(results[1:], desc="Combining scores", unit="files"):
+					new_results = pd.merge(new_results, df, on="Pose ID", how="inner")
+
+			if not existing_results.empty:
+				combined_df = pd.merge(existing_results, new_results, on="Pose ID", how="outer")
+			else:
+				combined_df = new_results
 		else:
-			new_results = results[0]
-			for df in tqdm(results[1:], desc="Combining scores", unit="files"):
-				new_results = pd.merge(new_results, df, on="Pose ID", how="inner")
+			combined_df = existing_results
 
-		if not existing_results.empty:
-			combined_df = pd.merge(existing_results, new_results, on="Pose ID", how="outer")
-		else:
-			combined_df = new_results
-	else:
-		combined_df = existing_results
+		# Ensure "Pose ID" is the first column
+		columns = combined_df.columns.tolist()
+		columns.insert(0, columns.pop(columns.index("Pose ID")))
+		combined_df = combined_df[columns]
 
-	# Ensure "Pose ID" is the first column
-	columns = combined_df.columns.tolist()
-	columns.insert(0, columns.pop(columns.index("Pose ID")))
-	combined_df = combined_df[columns]
+		# Convert columns to float where possible
+		for col in combined_df.columns:
+			if col != "Pose ID":
+				combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce')
 
-	# Convert columns to float where possible
-	for col in combined_df.columns:
-		if col != "Pose ID":
-			combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce')
+		if output_file:
+			combined_df.to_csv(output_file, index=False)
+			printlog(f"Rescoring results written to {output_file}")
 
-	if output_file:
-		combined_df.to_csv(output_file, index=False)
-		printlog(f"Rescoring results written to {output_file}")
+		toc = time.perf_counter()
+		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
 
-	toc = time.perf_counter()
-	printlog(f"Rescoring complete in {toc - tic:0.4f}!")
+		return combined_df
 
-	return combined_df
+	finally:
+		remove_temp_dir(temp_dir)
 
 
-def rescore_docking(sdf: Path, protein_file: Path, pocket_definition: dict, software: Path, function: str,
+def rescore_docking(poses: Union[Path, pd.DataFrame],
+					protein_file: Path,
+					pocket_definition: dict,
+					software: Path,
+					function: str,
 					n_cpus: int) -> pd.DataFrame:
 	"""
-	Rescores the docking poses in an SDF file using a specified scoring function.
+	Rescores the docking poses using a specified scoring function.
 
 	Args:
-		sdf (Path): The path to the SDF file containing the docking poses.
+		poses (Union[Path, pd.DataFrame]): The path to the SDF file containing the docking poses or a DataFrame of poses.
 		protein_file (Path): The path to the protein file.
 		pocket_definition (dict): A dictionary defining the pocket for docking.
 		software (Path): The path to the software used for docking.
@@ -180,28 +236,45 @@ def rescore_docking(sdf: Path, protein_file: Path, pocket_definition: dict, soft
 	RDLogger.DisableLog("rdApp.*")
 	tic = time.perf_counter()
 
-	scoring_function = RESCORING_FUNCTIONS.get(function)
+	temp_dir = create_temp_dir("rescore_docking")
+	try:
+		# Process input
+		if isinstance(poses, Path):
+			sdf = poses
+		elif isinstance(poses, pd.DataFrame):
+			sdf = temp_dir / "temp_clustered.sdf"
+			PandasTools.WriteSDF(poses,
+									sdf,
+									molColName='Molecule',
+									idName='Pose ID',
+									properties=list(poses.columns))
+		else:
+			raise ValueError("poses must be a Path or DataFrame")
+		scoring_function: ScoringFunction = RESCORING_FUNCTIONS.get(function)
 
-	if scoring_function is None:
-		raise ValueError(f"Unknown scoring function: {function}")
+		if scoring_function is None:
+			raise ValueError(f"Unknown scoring function: {function}")
 
-	score_df = scoring_function.rescore(sdf,
-										n_cpus,
-										software=software,
-										protein_file=protein_file,
-										pocket_definition=pocket_definition)
+		score_df = scoring_function.rescore(str(sdf),
+											n_cpus,
+											software=software,
+											protein_file=protein_file,
+											pocket_definition=pocket_definition)
 
-	score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
-	score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
-	score_df["ID"] = score_df["Pose ID"].str.split("_").str[0].astype(str)
+		score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
+		score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
+		score_df["ID"] = score_df["Pose ID"].str.split("_").str[0].astype(str)
 
-	if scoring_function.best_value == "min":
-		best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmin()
-	else:
-		best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmax()
+		if scoring_function.best_value == "min":
+			best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmin()
+		else:
+			best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmax()
 
-	best_poses = pd.DataFrame(score_df.loc[best_pose_indices, "Pose ID"])
+		best_poses = pd.DataFrame(score_df.loc[best_pose_indices, "Pose ID"])
 
-	toc = time.perf_counter()
-	printlog(f"Rescoring complete in {toc - tic:0.4f}!")
-	return best_poses
+		toc = time.perf_counter()
+		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
+		return best_poses
+
+	finally:
+		remove_temp_dir(temp_dir)
