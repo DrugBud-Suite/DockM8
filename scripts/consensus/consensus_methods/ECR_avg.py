@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def ECR_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def ECR_avg(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	"""
     Calculates the Exponential Consensus Ranking (ECR) score for each ID in the input dataframe. Averaging of the score is done across all selected poses.
 
