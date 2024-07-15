@@ -4,7 +4,6 @@ import traceback
 from pathlib import Path
 import pandas as pd
 import streamlit as st
-from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
 gui_path = next((p / "gui" for p in Path(__file__).resolve().parents if (p / "gui").is_dir()), None)
@@ -15,6 +14,7 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 
 from gui.menu import PAGES, menu
 from scripts.docking.docking import DOCKING_PROGRAMS, concat_all_poses
+from scripts.docking.docking_function import DockingFunction
 
 menu()
 
@@ -22,28 +22,30 @@ st.title("Docking", anchor='center')
 
 # Check for prepared docking library
 if 'library_to_dock' not in st.session_state:
-	library_to_prepare_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
-												value=str(dockm8_path / "tests" / "test_files" /
-															"prepared_library.sdf"),
-												help="Choose a ligand library file (.sdf format)")
-	# Button to load the library
-	if st.button('Load Library', key='load_library_button'):
-		with st.spinner('Loading library...'):
-			if Path(library_to_prepare_input).is_file():
-				st.session_state.library_to_dock = PandasTools.LoadSDF(library_to_prepare_input,
-																		smilesName='SMILES',
-																		molColName='Molecule',
-																		idName='ID')
-				st.write(f'Ligand library loaded with {len(st.session_state.library_to_dock)} compounds.')
-			else:
-				st.error('File does not exist.')
+	default_path_library = Path(
+		st.session_state.w_dir
+	) / "prepared_library.sdf" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_library.sdf"
+	library_to_dock_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
+											value=default_path_library,
+											help="Choose a ligand library file (.sdf format)")
+	if not Path(library_to_dock_input).is_file():
+		st.error("File does not exist.")
+	else:
+		st.session_state.library_to_dock = library_to_dock_input
+		st.success(f"Library loaded: {library_to_dock_input}")
 
 # Check for prepared protein file
 if 'prepared_protein_path' not in st.session_state:
+	default_path_protein = Path(
+		st.session_state.w_dir
+	) / "prepared_protein.pdb" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_protein.pdb"
 	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
+									value=default_path_protein,
 									help="Enter the complete file path to your prepared protein file.")
-	if protein_path and Path(protein_path).is_file():
+	if not Path(protein_path).is_file():
+		st.error("File does not exist.")
+	else:
 		st.session_state.prepared_protein_path = protein_path
 		st.success(f"Protein file loaded: {protein_path}")
 
@@ -201,68 +203,93 @@ with col2:
 		"Set the exhaustiveness of the docking search. Higher values can significantly increase the runtime. Only applies to GNINA, SMINA, QVINA2, QVINAW and PSOVINA."
 	)
 
-col1, col2 = st.columns(2)
-st.session_state.save_docking_results = col2.toggle(
-	label="Save All Docking Results to SDF file in the working directory",
-	value=True,
-	key='save_docking_results_toggle')
+st.subheader("Run Docking", divider="orange")
 
-# Add a button to run the docking
+
+def determine_working_directory() -> Path:
+	if 'w_dir' in st.session_state:
+		all_poses_path = Path(st.session_state.w_dir) / "allposes.sdf"
+		return all_poses_path
+	elif isinstance(st.session_state.library_to_dock, Path):
+		all_poses_path = st.session_state.library_to_dock.parent / "allposes.sdf"
+		return all_poses_path
+	elif isinstance(st.session_state.library_to_dock, pd.DataFrame):
+		custom_dir = st.text_input("Enter a custom save location:")
+		# If user enters a file path
+		if custom_dir.endswith(".sdf"):
+			all_poses_path = Path(custom_dir)
+			all_poses_path.parent.mkdir(exist_ok=True, parents=True)
+			return all_poses_path
+		elif "." in custom_dir and custom_dir.split(".")[-1] != "sdf":
+			st.error("Please enter a valid .sdf file path or a directory.")
+		# If user enters a directory path
+		else:
+			all_poses_path = Path(custom_dir) / "allposes.sdf"
+			all_poses_path.parent.mkdir(exist_ok=True, parents=True)
+			return all_poses_path
+	st.error(
+		"Unable to determine working directory. Please set a working directory or use a file path for the library.")
+	return None
+
+
+def run_docking():
+	all_poses = []
+	for program in docking_programs:
+		docking_class = DOCKING_PROGRAMS[program]
+		docking_function: DockingFunction = docking_class(st.session_state.software)
+
+		common_params = {
+			"library": st.session_state.library_to_dock,
+			"protein_file": st.session_state.prepared_protein_path,
+			"pocket_definition": st.session_state.binding_site,
+			"exhaustiveness": st.session_state.get('exhaustiveness', 8),
+			"n_poses": st.session_state.get('n_poses', 10),
+			"n_cpus": st.session_state.get('n_cpus', int(os.cpu_count() * 0.9)), }
+
+		if st.session_state.save_docking_results:
+			allposes_save_path = st.session_state.poses_for_postprocessing
+			output_sdf = allposes_save_path.parent / f"{program.lower()}_poses.sdf"
+			docking_function.dock(**common_params, output_sdf=output_sdf)
+		else:
+			results = docking_function.dock(**common_params)
+			all_poses.append(results)
+
+	if st.session_state.save_docking_results:
+		allposes_save_path = st.session_state.poses_for_postprocessing
+		concat_all_poses(allposes_save_path, docking_programs, common_params["n_cpus"])
+		st.session_state.poses_for_postprocessing = allposes_save_path
+		st.info(f"All poses have been combined and saved to: {allposes_save_path}")
+	else:
+		st.session_state.poses_for_postprocessing = pd.concat(all_poses, ignore_index=True)
+
+
+# UI Layout
+col1, col2 = st.columns(2)
+st.session_state.save_docking_results = col2.toggle(label="Save All Docking Results to SDF file",
+													value=True,
+													key='save_docking_results_toggle')
+
+if st.session_state.save_docking_results:
+	# Determine and set working directory
+	allposes_save_path = determine_working_directory()
+	if allposes_save_path:
+		st.session_state.poses_for_postprocessing = allposes_save_path
+
+# Run Docking Button
 if col1.button('Run Docking', key='run_docking_button'):
 	if not docking_programs:
 		st.error("Please select at least one docking program.")
 	else:
-		with st.spinner('Running docking... This may take a while.'):
-			try:
-				w_dir = Path(st.session_state.get('w_dir', dockm8_path / "tests" / "test_files"))
-				protein_file = Path(st.session_state.prepared_protein_path)
-				software = Path(st.session_state.get('software', dockm8_path / "software"))
-				docking_dir = w_dir / "docking"
-				docking_dir.mkdir(exist_ok=True)
+		try:
+			run_docking()
+			st.success("Docking completed successfully!")
+		except Exception as e:
+			st.error(f"An error occurred during docking: {str(e)}")
+			st.error(traceback.format_exc())
 
-				all_poses = []
-				for program in docking_programs:
-					docking_class = DOCKING_PROGRAMS[program]
-					docking_function = docking_class(software)
-
-					if st.session_state.save_docking_results:
-						output_sdf = docking_dir / f"{program.lower()}_poses.sdf"
-						docking_function.dock(library=st.session_state.library_to_dock,
-												protein_file=protein_file,
-												pocket_definition=st.session_state.binding_site,
-												exhaustiveness=st.session_state.get('exhaustiveness', 8),
-												n_poses=st.session_state.get('n_poses', 10),
-												n_cpus=st.session_state.get('n_cpus', int(os.cpu_count() * 0.9)),
-												output_sdf=output_sdf)
-						all_poses_path = docking_dir / "allposes.sdf"
-						concat_all_poses(all_poses_path,
-											docking_programs,
-											st.session_state.get('n_cpus', int(os.cpu_count() * 0.9)))
-						st.session_state.all_poses_path = all_poses_path
-						st.success("Docking completed successfully!")
-						st.info(f"All poses have been combined and saved to: {all_poses_path}")
-
-					else:
-						results = docking_function.dock(library=st.session_state.library_to_dock,
-														protein_file=protein_file,
-														pocket_definition=st.session_state.binding_site,
-														exhaustiveness=st.session_state.get('exhaustiveness', 8),
-														n_poses=st.session_state.get('n_poses', 10),
-														n_cpus=st.session_state.get('n_cpus',
-																					int(os.cpu_count() * 0.9)),
-														)
-						all_poses.append(results)
-						all_poses = pd.concat(all_poses, ignore_index=True)
-						st.success("Docking completed successfully!")
-						st.session_state.all_poses = all_poses
-
-			except Exception as e:
-				st.error(f"An error occurred during docking: {str(e)}")
-				st.error(traceback.format_exc())
-
-# Add a button to proceed to the next step
+# Proceed to Postprocessing Button
 if st.button('Proceed to Docking Postprocessing', key='proceed_to_docking_postprocessing_button'):
-	if 'docking_results' in st.session_state:
+	if 'poses_for_postprocessing' in st.session_state:
 		st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[6]))
 	else:
 		st.warning("Please run docking before proceeding to postprocessing.")
