@@ -95,8 +95,8 @@ elif pocket_mode == "RoG":
 
 elif pocket_mode == "Dogsitescorer":
 	dogsitescorer_mode = st.selectbox(label="Choose which metric to select binding sites by:",
-				options=["Volume", "Druggability_Score", "Surface", "Depth"],
-				help="Choose the metric to select binding sites by.")
+		options=["Volume", "Druggability_Score", "Surface", "Depth"],
+		help="Choose the metric to select binding sites by.")
 	if st.button("Find Pockets"):
 		with st.spinner("Finding pocket..."):
 			try:
@@ -109,7 +109,7 @@ elif pocket_mode == "Dogsitescorer":
 
 elif pocket_mode == "p2rank":
 	pocket_radius = st.number_input("Binding Site Radius", min_value=0.0, value=10.0, step=0.1)
-	software = st.session_state.software if 'software' in st.session_state else Path(dockm8_path / 'software')
+	software = st.session_state.get('software', Path(dockm8_path / 'software'))
 	with st.spinner("Finding pocket..."):
 		if not os.path.exists(software / "p2rank" / "prank"):
 			p2rank_path = download_p2rank(software)

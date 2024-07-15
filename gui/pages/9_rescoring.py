@@ -23,8 +23,8 @@ if 'selected_poses' not in st.session_state:
 		st.session_state.w_dir
 	) / "selected_poses.sdf" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "allposes.sdf"
 	library_to_rescore_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
-				value=default_path_library,
-				help="Choose a ligand library file (.sdf format)")
+		value=default_path_library,
+		help="Choose a ligand library file (.sdf format)")
 	if not Path(library_to_rescore_input).is_file():
 		st.error("File does not exist.")
 	else:
@@ -38,8 +38,8 @@ if 'prepared_protein_path' not in st.session_state:
 	) / "prepared_protein.pdb" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_protein.pdb"
 	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
-			value=default_path_protein,
-			help="Enter the complete file path to your prepared protein file.")
+		value=default_path_protein,
+		help="Enter the complete file path to your prepared protein file.")
 	if not Path(protein_path).is_file():
 		st.error("File does not exist.")
 	else:
@@ -111,13 +111,13 @@ st.session_state.rescoring_functions = selected_functions
 
 st.subheader("Score Manipulation", divider="orange")
 normalize_scores = st.toggle(label="Normalize scores",
-		value=True,
-		help="Normalize scores to a range of 0-1",
-		key="normalize_scores")
+	value=True,
+	help="Normalize scores to a range of 0-1",
+	key="normalize_scores")
 mw_scores = st.toggle(label="Normalize to MW",
-		value=False,
-		help="Scale the scores to molecular weight of the compound",
-		key="mw_scores")
+	value=False,
+	help="Scale the scores to molecular weight of the compound",
+	key="mw_scores")
 
 st.subheader("Run Rescoring", divider="orange")
 
@@ -165,13 +165,14 @@ def run_rescoring():
 
 col1, col2 = st.columns(2)
 st.session_state.save_rescoring_results = col2.toggle(label="Save Rescored Poses to SDF file",
-				value=True,
-				key='save_rescoring_results_toggle')
+	value=True,
+	key='save_rescoring_results_toggle')
 
 if st.session_state.save_rescoring_results:
 	rescored_poses_save_path = determine_working_directory()
 	if rescored_poses_save_path:
 		st.session_state.rescored_poses = rescored_poses_save_path
+		col2.write(f'Rescored poses will be saved to: **{rescored_poses_save_path}**')
 
 if st.button("Run Rescoring"):
 	if not st.session_state.rescoring_functions:

@@ -26,8 +26,8 @@ if 'poses_for_selection' not in st.session_state:
 		st.session_state.w_dir
 	) / "postprocessed_poses.sdf" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "postprocessed_poses.sdf"
 	library_to_select_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
-											value=default_path_library,
-											help="Choose a ligand library file (.sdf format)")
+				value=default_path_library,
+				help="Choose a ligand library file (.sdf format)")
 	if not Path(library_to_select_input).is_file():
 		st.error("File does not exist.")
 	else:
@@ -41,8 +41,8 @@ if 'prepared_protein_path' not in st.session_state:
 	) / "prepared_protein.pdb" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_protein.pdb"
 	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
-									value=default_path_protein,
-									help="Enter the complete file path to your prepared protein file.")
+			value=default_path_protein,
+			help="Enter the complete file path to your prepared protein file.")
 	if not Path(protein_path).is_file():
 		st.error("File does not exist.")
 	else:
@@ -67,7 +67,7 @@ def group_methods():
 	return {
 		"Clustering Methods": list(CLUSTERING_METRICS.keys()),
 		"Best Pose Methods": [
-			"bestpose", "bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINA2", "bestpose_QVINAW"],
+		"bestpose", "bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINA2", "bestpose_QVINAW"],
 		"Rescoring Functions": list(RESCORING_FUNCTIONS.keys())}
 
 
@@ -85,7 +85,7 @@ st.markdown("""
     }
     </style>
     """,
-			unsafe_allow_html=True)
+	unsafe_allow_html=True)
 
 for group, methods in method_groups.items():
 	st.subheader(group, divider="orange")
@@ -172,13 +172,14 @@ def run_pose_selection():
 
 col1, col2 = st.columns(2)
 st.session_state.save_selection_results = col2.toggle(label="Save Selected Poses to SDF file",
-														value=True,
-														key='save_selection_results_toggle')
+				value=True,
+				key='save_selection_results_toggle')
 
 if st.session_state.save_selection_results:
 	selected_poses_save_path = determine_working_directory()
 	if selected_poses_save_path:
 		st.session_state.selected_poses = selected_poses_save_path
+		col2.write(f'Selected poses will be saved to: **{selected_poses_save_path}**')
 
 if st.button("Run Pose Selection"):
 	try:

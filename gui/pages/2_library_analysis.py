@@ -28,11 +28,6 @@ menu()
 
 st.title('Library Analysis and Filtering', anchor='center')
 
-# Search for 'DockM8' in parent directories
-gui_path = next((p / 'gui' for p in Path(__file__).resolve().parents if (p / 'gui').is_dir()), None)
-dockm8_path = gui_path.parent
-sys.path.append(str(dockm8_path))
-
 # Setup the path input and initial configuration
 input_library = st.text_input(label='Enter the path to the ligand library file (.sdf format)',
 								value=str(dockm8_path / 'tests' / 'test_files' / 'library.sdf'),
@@ -80,19 +75,12 @@ if 'ligand_library' in st.session_state:
 				st.error(f"An error occurred during property calculation: {str(e)}")
 				st.error(traceback.format_exc())
 
-	# Save calculated properties to SDF
+	# Filter dataframe
 	if 'calculated_ligand_library' in st.session_state:
 		with st.spinner('Filtering dataframe...'):
 			filtered_dataframe = filter_dataframe(st.session_state.calculated_ligand_library)
 			st.write(f'Filtered library contains {len(filtered_dataframe)} compounds. ')
 			st.session_state.filtered_ligand_library = filtered_dataframe
-
-		save_path = st.text_input('Enter path to save calculated properties SDF:',
-									value=str(dockm8_path / 'tests' / 'test_files' / 'library_calculated.sdf'))
-		library_to_save = st.session_state.filtered_ligand_library if 'filtered_ligand_library' in st.session_state else st.session_state.calculated_ligand_library
-		if st.button('Save Calculated Properties to SDF', key='save_calculated_properties_button'):
-			save_dataframe_to_sdf(library_to_save, save_path)
-			st.success(f'Saved library with calculated properties to {save_path}')
 
 # Medicinal Chemistry Filters
 if 'ligand_library' in st.session_state:
@@ -102,11 +90,10 @@ if 'ligand_library' in st.session_state:
 		library_to_filter_medchem = st.session_state.filtered_ligand_library
 	elif 'calculated_ligand_library' in st.session_state:
 		library_to_filter_medchem = st.session_state.calculated_ligand_library
-	elif 'ligand_library' in st.session_state:
-		library_to_filter_medchem = st.session_state.ligand_library
 	else:
-		st.write('Please load a library first.')
-	selected_rules = []
+		library_to_filter_medchem = st.session_state.ligand_library
+
+	selected_medchem_rules = []
 	cols = st.columns(4)
 	col_index = 0
 
@@ -116,29 +103,19 @@ if 'ligand_library' in st.session_state:
 		rule_description = f'{rule_info["alias"]}: {rule_info["rules"]} - {rule_info["description"]}'
 		with cols[col_index]:
 			if st.toggle(rule_label, help=rule_description):
-				selected_rules.append(rule_key)
+				selected_medchem_rules.append(rule_key)
 		col_index = (col_index+1) % 4
 
 	# Apply MedChem filters
 	if st.button('Apply Medicinal Chemistry Filters'):
 		with st.spinner('Applying medicinal chemistry filters...'):
 			try:
-				medchem_filtered_df, num_filtered, num_remaining = apply_medchem_rules(library_to_filter_medchem, selected_rules, st.session_state.n_cpus if 'n_cpus' in st.session_state else int(os.cpu_count()*0.9))
+				medchem_filtered_df, num_filtered, num_remaining = apply_medchem_rules(library_to_filter_medchem, selected_medchem_rules, st.session_state.n_cpus if 'n_cpus' in st.session_state else int(os.cpu_count()*0.9))
 				st.write(f'Filtering complete. {num_filtered} compounds filtered, {num_remaining} compounds remaining.')
-				st.warning(medchem_filtered_df.columns)
 				st.session_state.filtered_ligand_library = medchem_filtered_df
-				st.session_state.show_save_medchem = True
 			except Exception as e:
 				st.error(f"An error occurred during filtering: {str(e)}")
 				st.error(traceback.format_exc())
-
-	# Save filtered library to SDF
-	if st.session_state.get('show_save_medchem', False):
-		save_path = st.text_input('Enter path to save filtered library SDF:',
-									value=str(dockm8_path / 'tests' / 'test_files' / 'library_medchem_filtered.sdf'))
-		if st.button('Save Filtered Library to SDF', key='save_medchem_filtered_library_button'):
-			save_dataframe_to_sdf(st.session_state.filtered_ligand_library, save_path)
-			st.success(f'Saved library to {save_path}')
 
 # PAINS and Undesirable Compound Filtering
 if 'ligand_library' in st.session_state:
@@ -148,11 +125,10 @@ if 'ligand_library' in st.session_state:
 		library_to_filter_pains = st.session_state.filtered_ligand_library
 	elif 'calculated_ligand_library' in st.session_state:
 		library_to_filter_pains = st.session_state.calculated_ligand_library
-	elif 'ligand_library' in st.session_state:
-		library_to_filter_pains = st.session_state.ligand_library
 	else:
-		st.write('Please load a library first.')
-	selected_rules = []
+		library_to_filter_pains = st.session_state.ligand_library
+
+	selected_alerts_rules = []
 	cols = st.columns(4)
 	col_index = 0
 
@@ -160,48 +136,30 @@ if 'ligand_library' in st.session_state:
 	for rule_key, rule_info in ALERTS_RULES.items():
 		with cols[col_index]:
 			if st.toggle(rule_key, help=rule_info):
-				selected_rules.append(rule_key)
+				selected_alerts_rules.append(rule_key)
 		col_index = (col_index+1) % 4
 
 	# Apply PAINS and structural alerts filters
 	if st.button('Apply Structural Alerts Filters'):
 		with st.spinner('Applying structural alerts filters...'):
 			try:
-				alerts_filtered_df, num_filtered, num_remaining = apply_alerts_rules(st.session_state.ligand_library, selected_rules, st.session_state.n_cpus if 'n_cpus' in st.session_state else int(os.cpu_count()*0.9))
+				alerts_filtered_df, num_filtered, num_remaining = apply_alerts_rules(library_to_filter_pains, selected_alerts_rules, st.session_state.n_cpus if 'n_cpus' in st.session_state else int(os.cpu_count()*0.9))
 				st.write(f'Filtering complete. {num_filtered} compounds filtered, {num_remaining} compounds remaining.')
 				st.session_state.filtered_ligand_library = alerts_filtered_df
-				st.session_state.show_save_alerts = True
 			except Exception as e:
 				st.error(f"An error occurred during filtering: {str(e)}")
 				st.error(traceback.format_exc())
 
-	# Save filtered library to SDF
-	if st.session_state.get('show_save_alerts', False):
-		save_path = st.text_input('Enter path to save filtered library SDF:',
-									value=str(dockm8_path / 'tests' / 'test_files' / 'library_alerts_filtered.sdf'))
-		if st.button('Save Filtered Library to SDF', key='save_alerts_filtered_library_button'):
-			save_dataframe_to_sdf(st.session_state.filtered_ligand_library, save_path)
-			st.success(f'Saved library to {save_path}')
-	# Query the ChemFH server for indesirable compounds
-	# if st.button('Query the ChemFH server for indesirable compounds'):
-	# 	with st.spinner('Querying ChemFH server...'):
-	# 		try:
-	# 			result = query_chemfh(library_to_filter_pains)
-	# 			st.dataframe(result)
-	# 		except Exception as e:
-	# 			st.error(f"An error occurred during filtering: {str(e)}")
-	# 			st.error(traceback.format_exc())
-
+# Chemical Space Visualisation
 if 'ligand_library' in st.session_state:
 	st.subheader('Chemical Space Visualisation', divider='orange')
 	if 'filtered_ligand_library' in st.session_state:
 		library_to_visualise = st.session_state.filtered_ligand_library
 	elif 'calculated_ligand_library' in st.session_state:
 		library_to_visualise = st.session_state.calculated_ligand_library
-	elif 'ligand_library' in st.session_state:
-		library_to_visualise = st.session_state.ligand_library
 	else:
-		st.write('Please load a library first.')
+		library_to_visualise = st.session_state.ligand_library
+
 	st.write('##### Select the fingerprint and plot type you want to use:')
 	method = st.selectbox('Select Dimensionality Reduction Method:', ['UMAP', 'T-SNE', 'PCA'])
 	fingerprint = st.selectbox('Select Fingerprint Type:', ['ECFP4', 'FCFP4', 'MACCS', 'Torsion'])
@@ -231,12 +189,12 @@ if 'ligand_library' in st.session_state:
 				# Give a brief delay to ensure the server starts before displaying the link
 				st.write('Server is starting, please wait...')
 				button_html = '''
-				<a href='http://127.0.0.1:8700/' target='_blank' style='text-decoration: none;'>
-					<button style='color: white; background-color: #FF871F; border: none; padding: 5px 20px; 
-					text-align: center; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; 
-					border-radius: 8px;'>Open Visualisation</button>
-				</a>
-				'''
+                <a href='http://127.0.0.1:8700/' target='_blank' style='text-decoration: none;'>
+                    <button style='color: white; background-color: #FF871F; border: none; padding: 5px 20px; 
+                    text-align: center; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; 
+                    border-radius: 8px;'>Open Visualisation</button>
+                </a>
+                '''
 				st.markdown(button_html, unsafe_allow_html=True)
 			except Exception as e:
 				st.error(f"An error occurred during visualisation: {str(e)}")
@@ -246,25 +204,54 @@ if 'ligand_library' in st.session_state:
 if 'ligand_library' in st.session_state:
 	st.subheader('Save Final Library and Proceed', divider='orange')
 
-	if 'filtered_ligand_library' in st.session_state:
-		library_to_pass_to_preparation = st.session_state.filtered_ligand_library
-	elif 'calculated_ligand_library' in st.session_state:
-		library_to_pass_to_preparation = st.session_state.calculated_ligand_library
-	elif 'ligand_library' in st.session_state:
-		library_to_pass_to_preparation = st.session_state.ligand_library
-	else:
-		st.write('Please load a library first.')
+	def determine_working_directory() -> Path:
+		if 'w_dir' in st.session_state:
+			final_library_save_path = Path(st.session_state.w_dir) / "filtered_library.sdf"
+			return final_library_save_path
+		elif 'ligand_library' in st.session_state:
+			final_library_save_path = Path(input_library).parent / "filtered_library.sdf"
+			return final_library_save_path
+		else:
+			custom_dir = st.text_input("Enter a custom save location:")
+			if custom_dir.endswith(".sdf"):
+				final_library_save_path = Path(custom_dir)
+			else:
+				final_library_save_path = Path(custom_dir) / "filtered_library.sdf"
+			final_library_save_path.parent.mkdir(exist_ok=True, parents=True)
+			return final_library_save_path
+
+	def save_final_library():
+		if 'filtered_ligand_library' in st.session_state:
+			library_to_save = st.session_state.filtered_ligand_library
+		elif 'calculated_ligand_library' in st.session_state:
+			library_to_save = st.session_state.calculated_ligand_library
+		else:
+			library_to_save = st.session_state.ligand_library
+
+		if st.session_state.save_final_library:
+			output_sdf = st.session_state.final_library_path
+			save_dataframe_to_sdf(library_to_save, output_sdf)
+			st.success(f'Saved library to {output_sdf}')
+
+		st.session_state.library_to_pass_to_preparation = library_to_save
 
 	col1, col2 = st.columns(2)
 
-	if 'filtered_ligand_library' in st.session_state:
-		save_path = st.text_input('Enter path to save final filtered library SDF:',
-									value=str(dockm8_path / 'tests' / 'test_files' / 'library_final_filtered.sdf'))
-		if col1.button('Save Final Filtered Library to SDF', key='save_final_filtered_library_button'):
-			with st.spinner('Saving filtered library to SDF...'):
-				save_dataframe_to_sdf(st.session_state.filtered_ligand_library, save_path)
-				st.success(f'Saved library to {save_path}')
+	st.session_state.save_final_library = col2.toggle(label="Save Final Library to SDF file",
+														value=True,
+														key='save_final_library_toggle')
 
-	if col2.button('Proceed to Library Preparation'):
-		st.session_state.library_to_pass_to_preparation = library_to_pass_to_preparation
-		st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[2]))
+	if st.session_state.save_final_library:
+		final_library_save_path = determine_working_directory()
+		if final_library_save_path:
+			st.session_state.final_library_path = final_library_save_path
+			col2.write(f'Library will be saved to: **{final_library_save_path}**')
+
+	if col1.button('Proceed to Library Preparation'):
+		try:
+			save_final_library()
+			st.success("Final library saved successfully.")
+			st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[2]))
+		except Exception as e:
+			st.error(f"An error occurred while saving the final library: {str(e)}")
+			st.error(traceback.format_exc())

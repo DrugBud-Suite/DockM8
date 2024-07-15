@@ -24,9 +24,9 @@ menu()
 
 # Initialize session state variables
 if 'add_missing_hydrogens' not in st.session_state:
-	st.session_state.add_missing_hydrogens = True
+	st.session_state.add_missing_hydrogens = False
 if 'protonate' not in st.session_state:
-	st.session_state.protonate = False
+	st.session_state.protonate = True
 
 
 # Define callback functions
@@ -45,18 +45,18 @@ st.title("Protein Preparation", anchor='center', help="Main title for the protei
 st.subheader("Input Protein", divider="orange", help="Section to input your protein data.")
 col1, col2 = st.columns(2)
 input_type = col1.radio("Select input type:", ("File Path", "PDB Code", "UniProt Code (AlphaFold structure)"),
-						help="Select the type of input for the protein: a PDB code, UniProt code, or a file path.")
+		help="Select the type of input for the protein: a PDB code, UniProt code, or a file path.")
 
 if input_type == "PDB Code":
 	protein_input = col2.text_input("Enter PDB Code (4 characters):",
-									help="Enter a valid PDB code consisting of 4 characters.")
+			help="Enter a valid PDB code consisting of 4 characters.")
 elif input_type == "UniProt Code":
 	protein_input = col2.text_input("Enter UniProt Code (6 characters):",
-									help="Enter a valid UniProt code consisting of 6 characters.")
+			help="Enter a valid UniProt code consisting of 6 characters.")
 else:
 	protein_input = col2.text_input("Enter file path (.pdb):",
-									value=str(dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"),
-									help="Enter the complete file path to your protein data.")
+			value=str(dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"),
+			help="Enter the complete file path to your protein data.")
 if input_type == "File Path":
 	if 'w_dir' in st.session_state:
 		output_dir_value = str(st.session_state.w_dir)
@@ -66,8 +66,8 @@ else:
 	output_dir_value = None
 
 output_dir = col2.text_input("Output Directory:",
-								value=output_dir_value,
-								help="Specify the directory where the output will be saved.")
+		value=output_dir_value,
+		help="Specify the directory where the output will be saved.")
 
 st.subheader("Preparation Options", divider="orange", help="Configure additional options for protein preparation.")
 
@@ -84,51 +84,51 @@ st.write("**Minimization**")
 col1, col2 = st.columns(2)
 with col1:
 	minimize = st.toggle("Minimize Structure",
-							value=False,
-							help="Enable to minimize the structure to potentially improve quality.")
+			value=False,
+			help="Enable to minimize the structure to potentially improve quality.")
 with col2:
 	with_solvent = st.toggle("Include Solvent in Minimization",
-								value=False,
-								disabled=not minimize,
-								help="Decide whether to include solvent molecules in the minimization process.")
+			value=False,
+			disabled=not minimize,
+			help="Decide whether to include solvent molecules in the minimization process.")
 
 # Structure Fixing
 st.write("**Structure Fixing**")
 fix_protein = st.toggle("Fix Protein",
-						value=True,
-						help="Enable to automatically fix issues in the protein structure, such as missing residues.")
+		value=True,
+		help="Enable to automatically fix issues in the protein structure, such as missing residues.")
 if fix_protein:
 	col1, col2 = st.columns(2)
 	with col1:
 		fix_nonstandard_residues = st.toggle("Fix Non-standard Residues",
-												value=True,
-												help="Enable to replace non-standard residues with standard ones.")
+					value=True,
+					help="Enable to replace non-standard residues with standard ones.")
 		fix_missing_residues = st.toggle("Fix Missing Residues",
-											value=True,
-											help="Enable to add missing residues to the structure.")
+					value=True,
+					help="Enable to add missing residues to the structure.")
 	with col2:
 		remove_hetero = st.toggle("Remove Heteroatoms/Ligands",
-									value=True,
-									help="Enable to remove heteroatoms or ligands from the structure.")
+				value=True,
+				help="Enable to remove heteroatoms or ligands from the structure.")
 		remove_water = st.toggle("Remove Water Molecules",
-									value=True,
-									help="Enable to remove water molecules from the structure.")
+				value=True,
+				help="Enable to remove water molecules from the structure.")
 
 # Hydrogen Addition and Protonation
 st.write("**Hydrogen Addition and Protonation**")
 col1, col2 = st.columns(2)
 with col1:
 	add_missing_hydrogens = st.toggle("Add Missing Hydrogens",
-										value=st.session_state.add_missing_hydrogens,
-										on_change=toggle_add_hydrogens,
-										help="Toggle to add missing hydrogen atoms to the protein structure.")
+				value=st.session_state.add_missing_hydrogens,
+				on_change=toggle_add_hydrogens,
+				help="Toggle to add missing hydrogen atoms to the protein structure.")
 	if add_missing_hydrogens:
 		add_missing_hydrogens_pH = st.number_input("pH for Adding Hydrogens",
-													min_value=0.0,
-													max_value=14.0,
-													value=7.0,
-													step=0.1,
-													help="Set the pH value for adding hydrogens.")
+					min_value=0.0,
+					max_value=14.0,
+					value=7.0,
+					step=0.1,
+					help="Set the pH value for adding hydrogens.")
 with col2:
 	protonate = st.toggle(
 		"Protonate Protein with Protoss",
@@ -171,12 +171,12 @@ if st.button("Prepare Protein"):
 				# Fix protein
 				if fix_protein:
 					fixed_protein = fix_pdb_file(current_protein,
-													output_path,
-													fix_nonstandard_residues,
-													fix_missing_residues,
-													add_missing_hydrogens_pH if add_missing_hydrogens else None,
-													remove_hetero,
-													remove_water)
+							output_path,
+							fix_nonstandard_residues,
+							fix_missing_residues,
+							add_missing_hydrogens_pH if add_missing_hydrogens else None,
+							remove_hetero,
+							remove_water)
 					current_protein = fixed_protein
 
 				# Protonate
@@ -200,8 +200,8 @@ if 'prepared_protein_path' in st.session_state:
 
 # Add a new section for Protein Visualization
 st.subheader("Protein Visualization",
-				divider="orange",
-				help="Visualize the protein structure using the Mol* web-based toolkit.")
+	divider="orange",
+	help="Visualize the protein structure using the Mol* web-based toolkit.")
 
 # Check if the protein has been prepared and a path is available
 if 'prepared_protein_path' in st.session_state:

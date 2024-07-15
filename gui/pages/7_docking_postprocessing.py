@@ -26,8 +26,8 @@ if 'poses_for_postprocessing' not in st.session_state:
 		st.session_state.w_dir
 	) / "docking/allposes.sdf" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "allposes.sdf"
 	library_to_postprocess_input = st.text_input(label="Enter the path to the docked ligands (.sdf format)",
-				value=default_path_library,
-				help="Choose a file containing docked ligands (.sdf format)")
+													value=default_path_library,
+													help="Choose a file containing docked ligands (.sdf format)")
 	if not Path(library_to_postprocess_input).is_file():
 		st.error("File does not exist.")
 	else:
@@ -41,8 +41,8 @@ if 'prepared_protein_path' not in st.session_state:
 	) / "prepared_protein.pdb" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_protein.pdb"
 	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
-			value=default_path_protein,
-			help="Enter the complete file path to your prepared protein file.")
+									value=default_path_protein,
+									help="Enter the complete file path to your prepared protein file.")
 	if not Path(protein_path).is_file():
 		st.error("File does not exist.")
 	else:
@@ -56,20 +56,20 @@ if 'software' not in st.session_state:
 st.subheader("Pose Minimization", divider="orange")
 col1, col2 = st.columns(2)
 minimize_poses = col1.toggle(label="Minimize docking poses",
-		value=False,
-		help="Minimize poses after docking",
-		key="minimize_poses")
+								value=False,
+								help="Minimize poses after docking",
+								key="minimize_poses")
 if minimize_poses:
 	minimize_poses_config = {}
 	minimize_poses_config['force_field'] = col1.selectbox(label="Choose the force field for minimization",
-					options=("UFF", "MMFF94", "MMFF94s"),
-					index=2)
+															options=("UFF", "MMFF94", "MMFF94s"),
+															index=2)
 	minimize_poses_config['n_steps'] = col1.number_input(label="Number of minimization steps",
-					min_value=1,
-					max_value=5000,
-					value=1000,
-					step=10,
-					help="Number of minimization steps to perform")
+															min_value=1,
+															max_value=5000,
+															value=1000,
+															step=10,
+															help="Number of minimization steps to perform")
 	minimize_poses_config['distance_constraing'] = col1.number_input(
 		label="Distance constraint (Å)",
 		min_value=0.1,
@@ -78,25 +78,25 @@ if minimize_poses:
 		step=0.1,
 		help="Distance constraint in Å for minimization")
 minimize_poses_H = col2.toggle(label="Minimize Hydrogens of docking poses",
-		value=False,
-		help="Minimize H positions of poses after docking",
-		key="minimize_poses_H")
+								value=False,
+								help="Minimize H positions of poses after docking",
+								key="minimize_poses_H")
 col1, col2 = st.columns(2)
 minimize_poses = col1.toggle(label="Minimize docking poses",
-		value=False,
-		help="Minimize poses after docking",
-		key="minimize_poses")
+								value=False,
+								help="Minimize poses after docking",
+								key="minimize_poses")
 if minimize_poses:
 	minimize_poses_config = {}
 	minimize_poses_config['force_field'] = col1.selectbox(label="Choose the force field for minimization",
-					options=("UFF", "MMFF94", "MMFF94s"),
-					index=2)
+															options=("UFF", "MMFF94", "MMFF94s"),
+															index=2)
 	minimize_poses_config['n_steps'] = col1.number_input(label="Number of minimization steps",
-					min_value=1,
-					max_value=5000,
-					value=1000,
-					step=10,
-					help="Number of minimization steps to perform")
+															min_value=1,
+															max_value=5000,
+															value=1000,
+															step=10,
+															help="Number of minimization steps to perform")
 	minimize_poses_config['distance_constraing'] = col1.number_input(
 		label="Distance constraint (Å)",
 		min_value=0.1,
@@ -105,37 +105,37 @@ if minimize_poses:
 		step=0.1,
 		help="Distance constraint in Å for minimization")
 minimize_poses_H = col2.toggle(label="Minimize Hydrogens of docking poses",
-		value=False,
-		help="Minimize H positions of poses after docking",
-		key="minimize_poses_H")
+								value=False,
+								help="Minimize H positions of poses after docking",
+								key="minimize_poses_H")
 
 st.subheader("Clash and Strain Filtering", divider="orange")
 col1, col2 = st.columns(2)
 clash_cutoff_toggle = col1.toggle(label="Remove poses with clashes",
-			value=True,
-			help="Remove poses with clashes",
-			key="clash_cutoff_toggle")
+									value=True,
+									help="Remove poses with clashes",
+									key="clash_cutoff_toggle")
 if clash_cutoff_toggle:
 	clash_cutoff = col1.number_input(label="Remove poses with more than x clashes:",
-				min_value=0,
-				max_value=100,
-				value=5,
-				step=1,
-				help="Setting too low will remove too many poses, use default if unsure")
+										min_value=0,
+										max_value=100,
+										value=5,
+										step=1,
+										help="Setting too low will remove too many poses, use default if unsure")
 else:
 	clash_cutoff = None
 
 strain_cutoff_toggle = col2.toggle(label="Remove poses with high strain",
-			value=True,
-			help="Remove poses with high strain",
-			key="strain_cutoff_toggle")
+									value=True,
+									help="Remove poses with high strain",
+									key="strain_cutoff_toggle")
 if strain_cutoff_toggle:
 	strain_cutoff = col2.number_input(label="Remove poses with higher than x strain energy (kcal/mol):",
-				min_value=100,
-				max_value=100000,
-				value=5000,
-				step=100,
-				help="Setting too low will remove too many poses, use default if unsure")
+										min_value=100,
+										max_value=100000,
+										value=5000,
+										step=100,
+										help="Setting too low will remove too many poses, use default if unsure")
 else:
 	strain_cutoff = None
 
@@ -149,13 +149,13 @@ bust_poses = st.toggle(
 
 st.subheader("Classy_Pose Classification", divider="orange")
 classy_pose = st.toggle(label="Classify poses using Classy_Pose",
-		value=False,
-		help="Classify poses using Classy_Pose",
-		key="classy_pose_toggle")
+						value=False,
+						help="Classify poses using Classy_Pose",
+						key="classy_pose_toggle")
 if classy_pose:
 	classy_pose_model = st.selectbox(label="Choose the Classy_Pose model to use",
-				options=("SVM (from publication)", "LGBM (retrained model)"),
-				index=0)
+										options=("SVM (from publication)", "LGBM (retrained model)"),
+										index=0)
 
 st.subheader("Run Postprocessing", divider="orange")
 
@@ -210,14 +210,15 @@ def run_postprocessing():
 # UI Layout
 col1, col2 = st.columns(2)
 st.session_state.save_postprocessing_results = col2.toggle(label="Save Postprocessed Results to SDF file",
-				value=True,
-				key='save_postprocessing_results_toggle')
+															value=True,
+															key='save_postprocessing_results_toggle')
 
 if st.session_state.save_docking_results:
 	# Determine and set working directory
 	postprocessed_poses_save_path = determine_working_directory()
 	if postprocessed_poses_save_path:
 		st.session_state.poses_for_selection = postprocessed_poses_save_path
+		col2.write(f'Processed poses will be saved to: **{postprocessed_poses_save_path}**')
 
 if st.button("Run Docking Postprocessing"):
 	try:
