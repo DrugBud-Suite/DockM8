@@ -30,8 +30,8 @@ st.title('Library Analysis and Filtering', anchor='center')
 
 # Setup the path input and initial configuration
 input_library = st.text_input(label='Enter the path to the ligand library file (.sdf format)',
-								value=str(dockm8_path / 'tests' / 'test_files' / 'library.sdf'),
-								help='Choose a ligand library file (.sdf format)')
+		value=str(dockm8_path / 'tests' / 'test_files' / 'library.sdf'),
+		help='Choose a ligand library file (.sdf format)')
 
 # Button to load the library
 if st.button('Load Library'):
@@ -39,10 +39,10 @@ if st.button('Load Library'):
 		if Path(input_library).is_file():
 			n_cpus = st.session_state.get('n_cpus', int(os.cpu_count() * 0.9))
 			ligand_library = parallel_SDF_loader(input_library,
-													SMILES='SMILES',
-													molColName='Molecule',
-													idName='ID',
-													n_cpus=n_cpus)
+						SMILES='SMILES',
+						molColName='Molecule',
+						idName='ID',
+						n_cpus=n_cpus)
 			st.session_state.ligand_library = ligand_library
 			st.write(f'Ligand library loaded with {len(ligand_library)} compounds.')
 		else:
@@ -68,7 +68,7 @@ if 'ligand_library' in st.session_state:
 		with st.spinner('Calculating properties...'):
 			try:
 				st.session_state.calculated_ligand_library = calculate_properties(st.session_state.ligand_library,
-																					properties)
+									properties)
 				st.write(f"Properties calculated for {len(st.session_state.calculated_ligand_library)} compounds.")
 				st.session_state.expander_property = True
 			except Exception as e:
@@ -238,8 +238,8 @@ if 'ligand_library' in st.session_state:
 	col1, col2 = st.columns(2)
 
 	st.session_state.save_final_library = col2.toggle(label="Save Final Library to SDF file",
-														value=True,
-														key='save_final_library_toggle')
+					value=True,
+					key='save_final_library_toggle')
 
 	if st.session_state.save_final_library:
 		final_library_save_path = determine_working_directory()
@@ -247,7 +247,7 @@ if 'ligand_library' in st.session_state:
 			st.session_state.final_library_path = final_library_save_path
 			col2.write(f'Library will be saved to: **{final_library_save_path}**')
 
-	if col1.button('Proceed to Library Preparation'):
+	if col1.button('Proceed to Library Preparation', use_container_width=True):
 		try:
 			save_final_library()
 			st.success("Final library saved successfully.")

@@ -25,8 +25,8 @@ if 'rescored_poses' not in st.session_state:
 		st.session_state.w_dir
 	) / "rescored_poses.sdf" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "allposes.sdf"
 	library_to_rescore_input = st.text_input(label="Enter the path to the rescored poses file (.sdf format)",
-				value=default_path_library,
-				help="Choose a file containing rescored poses (.sdf format)")
+												value=default_path_library,
+												help="Choose a file containing rescored poses (.sdf format)")
 	if not Path(library_to_rescore_input).is_file():
 		st.error("File does not exist.")
 	else:
@@ -35,9 +35,9 @@ if 'rescored_poses' not in st.session_state:
 
 st.subheader("Consensus Algorithm", divider="orange")
 st.session_state.consensus_methods = st.selectbox(label="Choose which consensus algorithm to use:",
-				index=9,
-				options=list(CONSENSUS_METHODS.keys()),
-				help="The method to use for consensus.")
+													index=9,
+													options=list(CONSENSUS_METHODS.keys()),
+													help="The method to use for consensus.")
 
 st.subheader("Run Consensus Analysis", divider="orange")
 
@@ -78,8 +78,8 @@ def run_consensus():
 
 col1, col2 = st.columns(2)
 st.session_state.save_consensus_results = col2.toggle(label="Save Consensus scores",
-				value=True,
-				key='save_consensus_results_toggle')
+														value=True,
+														key='save_consensus_results_toggle')
 
 if st.session_state.save_consensus_results:
 	consensus_score_save_path = determine_working_directory()
@@ -87,7 +87,7 @@ if st.session_state.save_consensus_results:
 		st.session_state.rescored_poses = consensus_score_save_path
 		col2.write(f'Consensus scores will be saved to: **{consensus_score_save_path}**')
 
-if st.button("Run Rescoring"):
+if col1.button("Run Consensus scoring", use_container_width=True):
 	if not st.session_state.consensus_methods:
 		st.error("Please select at least one rescoring function.")
 	else:

@@ -23,15 +23,15 @@ st.title("Library Preparation", anchor='center')
 st.subheader("Ligand library", divider="orange")
 if 'library_to_prepare' not in st.session_state:
 	library_to_prepare_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
-												value=str(dockm8_path / "tests" / "test_files" / "library.sdf"),
-												help="Choose a ligand library file (.sdf format)")
+				value=str(dockm8_path / "tests" / "test_files" / "library.sdf"),
+				help="Choose a ligand library file (.sdf format)")
 	if st.button('Load Library', key='load_library_button'):
 		st.write('Loading library...')
 		if Path(library_to_prepare_input).is_file():
 			st.session_state.library_to_prepare = PandasTools.LoadSDF(library_to_prepare_input,
-																		smilesName='SMILES',
-																		molColName='Molecule',
-																		idName='ID')
+							smilesName='SMILES',
+							molColName='Molecule',
+							idName='ID')
 			st.success(f'Ligand library loaded with {len(st.session_state.library_to_prepare)} compounds.')
 		else:
 			st.error('File does not exist.')
@@ -47,9 +47,9 @@ remove_salts = st.toggle("Remove Salts", value=True, help="Enable salt removal")
 # Ligand protonation
 st.subheader("Ligand Protonation", divider="orange")
 protonation_method = st.selectbox(label="Protonation method",
-									options=["GypsumDL", "None"],
-									index=0,
-									help="Choose the protonation method")
+			options=["GypsumDL", "None"],
+			index=0,
+			help="Choose the protonation method")
 if protonation_method == "GypsumDL":
 	min_ph = st.number_input("Minimum pH for protonation", min_value=0.0, max_value=14.0, value=6.4, step=0.5)
 	max_ph = st.number_input("Maximum pH for protonation", min_value=0.0, max_value=14.0, value=8.4, step=0.5)
@@ -58,9 +58,9 @@ if protonation_method == "GypsumDL":
 # Ligand conformers
 st.subheader("Ligand Conformers", divider="orange")
 conformer_method = st.selectbox(label="Conformer generation method",
-								options=["MMFF", "UFF", "GypsumDL"],
-								index=0,
-								help="Choose the conformer generation method")
+		options=["MMFF", "UFF", "GypsumDL"],
+		index=0,
+		help="Choose the conformer generation method")
 
 st.subheader("Run Library Preparation", divider="orange")
 
@@ -107,8 +107,8 @@ def run_library_preparation():
 # UI Layout
 col1, col2 = st.columns(2)
 st.session_state.save_preparation_results = col2.toggle(label="Save Prepared Library to SDF file",
-														value=True,
-														key='save_preparation_results_toggle')
+				value=True,
+				key='save_preparation_results_toggle')
 
 if st.session_state.save_preparation_results:
 	prepared_library_save_path = determine_working_directory()
@@ -116,7 +116,7 @@ if st.session_state.save_preparation_results:
 		st.session_state.prepared_library_path = prepared_library_save_path
 		col2.write(f'Prepared library will be saved to: **{prepared_library_save_path}**')
 
-if col1.button("Run Library Preparation"):
+if col1.button("Run Library Preparation", use_container_width=True):
 	try:
 		run_library_preparation()
 		st.success("Library preparation completed successfully.")

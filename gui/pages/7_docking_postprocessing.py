@@ -77,35 +77,9 @@ if minimize_poses:
 		value=1.0,
 		step=0.1,
 		help="Distance constraint in Å for minimization")
-minimize_poses_H = col2.toggle(label="Minimize Hydrogens of docking poses",
+minimize_poses_H = col2.toggle(label="Minimize Hydrogens of docked poses",
 								value=False,
-								help="Minimize H positions of poses after docking",
-								key="minimize_poses_H")
-col1, col2 = st.columns(2)
-minimize_poses = col1.toggle(label="Minimize docking poses",
-								value=False,
-								help="Minimize poses after docking",
-								key="minimize_poses")
-if minimize_poses:
-	minimize_poses_config = {}
-	minimize_poses_config['force_field'] = col1.selectbox(label="Choose the force field for minimization",
-															options=("UFF", "MMFF94", "MMFF94s"),
-															index=2)
-	minimize_poses_config['n_steps'] = col1.number_input(label="Number of minimization steps",
-															min_value=1,
-															max_value=5000,
-															value=1000,
-															step=10,
-															help="Number of minimization steps to perform")
-	minimize_poses_config['distance_constraing'] = col1.number_input(
-		label="Distance constraint (Å)",
-		min_value=0.1,
-		max_value=2.0,
-		value=1.0,
-		step=0.1,
-		help="Distance constraint in Å for minimization")
-minimize_poses_H = col2.toggle(label="Minimize Hydrogens of docking poses",
-								value=False,
+								disabled=not minimize_poses,
 								help="Minimize H positions of poses after docking",
 								key="minimize_poses_H")
 
@@ -220,7 +194,7 @@ if st.session_state.save_docking_results:
 		st.session_state.poses_for_selection = postprocessed_poses_save_path
 		col2.write(f'Processed poses will be saved to: **{postprocessed_poses_save_path}**')
 
-if st.button("Run Docking Postprocessing"):
+if col1.button("Run Docking Postprocessing", use_container_width=True):
 	try:
 		run_postprocessing()
 		st.success("Docking postprocessing completed successfully.")

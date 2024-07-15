@@ -174,7 +174,7 @@ if st.session_state.save_rescoring_results:
 		st.session_state.rescored_poses = rescored_poses_save_path
 		col2.write(f'Rescored poses will be saved to: **{rescored_poses_save_path}**')
 
-if st.button("Run Rescoring"):
+if col1.button("Run Rescoring", use_container_width=True):
 	if not st.session_state.rescoring_functions:
 		st.error("Please select at least one rescoring function.")
 	else:
