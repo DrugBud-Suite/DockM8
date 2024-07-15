@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import pandas as pd
 from rdkit.Chem import PandasTools
@@ -35,13 +35,13 @@ def docking_postprocessing(input_data: Union[Path, pd.DataFrame],
 							clash_cutoff: int,
 							classy_pose: bool,
 							classy_pose_model: str,
-							n_cpus: int) -> pd.DataFrame:
+							n_cpus: int,
+							output_sdf: Optional[Path]) -> pd.DataFrame:
 	"""
     Perform postprocessing on docking results.
 
     Args:
         input_data (Union[Path, pd.DataFrame]): Path to the input SDF file or a pre-loaded DataFrame containing docking results.
-        output_path (Path): Path to save the postprocessed SDF file.
         protein_file (Path): Path to the protein file used for docking.
         minimize_poses (bool): Flag indicating whether to perform ligand minimization.
         bust_poses (bool): Flag indicating whether to apply pose busting.
@@ -50,9 +50,10 @@ def docking_postprocessing(input_data: Union[Path, pd.DataFrame],
         classy_pose (bool): Flag indicating whether to perform classy pose analysis.
         classy_pose_model (str): Path to the classy pose model file.
         n_cpus (int): Number of CPUs to use for parallel processing.
+        output_sdf (Optional[Path]): Path to save the postprocessed SDF file.
 
     Returns:
-        Path: Path to the postprocessed SDF file.
+        pd.DataFrame: DataFrame containing the postprocessed docking results.
     """
 	printlog("Postprocessing docking results...")
 	try:
@@ -83,6 +84,12 @@ def docking_postprocessing(input_data: Union[Path, pd.DataFrame],
 		if classy_pose:
 			sdf_dataframe = classy_pose_filter(sdf_dataframe, protein_file, classy_pose_model, n_cpus)
 		log_dataframe_length_change(initial_length, len(sdf_dataframe), "ClassyPose")
+		if output_sdf:
+			PandasTools.WriteSDF(sdf_dataframe,
+									str(output_sdf),
+									molColName="Molecule",
+									idName="Pose ID",
+									properties=list(sdf_dataframe.columns))
 	except Exception as e:
 		printlog(f"An error occurred during docking postprocessing: {str(e)}")
 	return sdf_dataframe
