@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 from yaml import safe_load
-
+from posebusters import PoseBusters
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
@@ -16,8 +16,6 @@ from scripts.utilities.parallel_executor import parallel_executor
 
 
 def process_chunk(data_chunk, config_path, protein_file):
-	from posebusters import PoseBusters
-
 	# Initialize PoseBusters with the configuration file
 	buster = PoseBusters(config=safe_load(open(config_path)))
 	data_chunk["mol_cond"] = str(protein_file)
@@ -49,7 +47,7 @@ def pose_buster(dataframe: pd.DataFrame, protein_file: Path, n_cpus: int = (os.c
 	config_path = str(dockm8_path) + "/scripts/docking_postprocessing/posebusters/posebusters_config.yml"
 
 	# Calculate chunk size based on number of CPUs
-	chunk_size = len(dataframe) // n_cpus
+	chunk_size = len(dataframe) // n_cpus * 8
 	if chunk_size == 0:
 		chunk_size = 1
 
