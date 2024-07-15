@@ -1,12 +1,8 @@
 # Import required libraries and scripts
 import argparse
-import os
 import sys
 import warnings
 from pathlib import Path
-import time
-
-from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -17,12 +13,11 @@ sys.path.append(str(dockm8_path))
 from scripts.utilities.config_parser import check_config
 from scripts.pose_selection.pose_selection import select_poses
 from scripts.consensus.consensus import apply_consensus_methods
-from scripts.docking.docking import DOCKING_PROGRAMS, concat_all_poses
-from scripts.library_preparation.main import prepare_library
+from scripts.docking.docking import concat_all_poses, dockm8_docking
+from scripts.library_preparation.library_preparation import prepare_library
 from scripts.docking_postprocessing.docking_postprocessing import docking_postprocessing
-from scripts.performance_calculation import *
+from scripts.performance_calculation import calculate_performance
 from scripts.pocket_finding.pocket_finding import pocket_finder
-from scripts.postprocessing import *
 from scripts.protein_preparation.protein_preparation import prepare_protein
 from scripts.rescoring.rescoring import rescore_poses, RESCORING_FUNCTIONS
 from scripts.utilities.logging import printlog
@@ -59,7 +54,7 @@ def dockm8(software: Path,
 	# Set working directory based on the receptor file
 	w_dir = Path(receptor).parent / Path(receptor).stem
 	printlog("The working directory has been set to:", w_dir)
-	(w_dir).mkdir(exist_ok=True)
+	w_dir.mkdir(exist_ok=True)
 
 	# Prepare the protein for docking
 	prepared_receptor = prepare_protein(protein_file_or_code=receptor, output_dir=w_dir, **prepare_proteins)
@@ -78,84 +73,74 @@ def dockm8(software: Path,
 										ligand=reference_ligand,
 										**pocket_detection)
 
-	# Perform the docking operation
+	# Create docking directory
 	(w_dir / "docking").mkdir(exist_ok=True)
-	for program in docking["docking_programs"]:
-		docking_class = DOCKING_PROGRAMS[program]
-		docking_function = docking_class(software)
-		
-		output_sdf = w_dir / f"docking/{program.lower()}_poses.sdf"
-		docking_function.dock(
-			library=prepared_library,
-			protein_file=prepared_receptor,
-			pocket_definition=pocket_definition,
-			exhaustiveness=docking["exhaustiveness"],
-			n_poses=docking["n_poses"],
-			n_cpus=n_cpus,
-			output_sdf=output_sdf
-		)
+
+	# Perform the docking operation
+	docked_poses = dockm8_docking(library=prepared_library,
+									protein_file=prepared_receptor,
+									pocket_definition=pocket_definition,
+									software=software,
+									docking_programs=docking["docking_programs"],
+									exhaustiveness=docking["exhaustiveness"],
+									n_poses=docking["n_poses"],
+									n_cpus=n_cpus,
+									output_sdf=w_dir / "docking/allposes.sdf")
 
 	# Combine all docking results into a single file
-	concat_all_poses(w_dir / "docking/allposes.sdf", docking["docking_programs"], n_cpus)
+	all_poses = concat_all_poses(output_path=w_dir / "docking/allposes.sdf",
+									docking_programs=docking["docking_programs"],
+									n_cpus=n_cpus)
 
-	# Combine all poses
-	combined_poses = pd.concat(all_poses, ignore_index=True)
-
-	# Save combined poses
-	output_file = w_dir / "allposes.sdf"
-	PandasTools.WriteSDF(combined_poses,
-							str(output_file),
-							molColName="Molecule",
-							idName="Pose ID",
-							properties=list(combined_poses.columns))
-
-	processed_poses = docking_postprocessing(input_sdf=output_file,
-												output_path=w_dir / "allposes_processed.sdf",
+	# Postprocessing
+	processed_poses = docking_postprocessing(input_data=all_poses,
 												protein_file=prepared_receptor,
-												**post_docking,
-												n_cpus=n_cpus)
+												minimize_poses=post_docking["minimize_poses"],
+												bust_poses=post_docking["bust_poses"],
+												strain_cutoff=post_docking["strain_cutoff"],
+												clash_cutoff=post_docking["clash_cutoff"],
+												classy_pose=post_docking["classy_pose"],
+												classy_pose_model=post_docking["classy_pose_model"],
+												n_cpus=n_cpus,
+												output_sdf=w_dir / "allposes_processed.sdf")
 
-	# Load all poses from SDF file and perform clustering
-	printlog("Loading all poses SDF file...")
-	tic = time.perf_counter()
-	all_poses = PandasTools.LoadSDF(str(processed_poses),
-									idName="Pose ID",
-									molColName="Molecule",
-									includeFingerprints=False)
-	toc = time.perf_counter()
-	printlog(f"Finished loading all poses SDF in {toc-tic:0.4f}!")
+	# Create clustering directory
+	(w_dir / "clustering").mkdir(exist_ok=True)
 
 	# Select Poses
 	pose_selection_methods = pose_selection["pose_selection_method"]
 	for method in pose_selection_methods:
-		if not os.path.isfile(w_dir / f"clustering/{method}_clustered.sdf"):
-			select_poses(selection_method=method,
-							clustering_method=pose_selection["clustering_method"],
-							w_dir=w_dir,
-							protein_file=receptor,
-							software=software,
-							all_poses=all_poses,
-							n_cpus=n_cpus)
+		selected_poses = select_poses(poses=processed_poses,
+										selection_method=method,
+										clustering_method=pose_selection["clustering_method"],
+										pocket_definition=pocket_definition,
+										protein_file=prepared_receptor,
+										software=software,
+										n_cpus=n_cpus,
+										output_file=w_dir / f"clustering/{method}_clustered.sdf")
 
-	# Rescore poses for each selection method
-	for method in pose_selection_methods:
-		rescore_poses(w_dir=w_dir,
-						protein_file=prepared_receptor,
-						pocket_definition=pocket_definition,
-						software=software,
-						clustered_sdf=w_dir / "clustering" / f"{method}_clustered.sdf",
-						functions=rescoring,
-						n_cpus=n_cpus)
+		# Create rescoring directory
+		(w_dir / "rescoring").mkdir(exist_ok=True)
 
-	# Apply consensus methods to the poses
-	for method in pose_selection_methods:
-		apply_consensus_methods(w_dir=w_dir,
-								selection_method=method,
-								consensus_methods=consensus,
-								rescoring_functions=rescoring,
-								standardization_type="min_max")
+		# Rescore poses for each selection method
+		rescored_poses = rescore_poses(protein_file=prepared_receptor,
+										pocket_definition=pocket_definition,
+										software=software,
+										poses=selected_poses,
+										functions=rescoring,
+										n_cpus=n_cpus,
+										output_file=w_dir / f"rescoring/{method}_rescored.csv")
 
-	return
+		# Create consensus directory
+		(w_dir / "consensus").mkdir(exist_ok=True)
+
+		# Apply consensus methods to the poses
+		consensus_results = apply_consensus_methods(poses_input=rescored_poses,
+													consensus_methods=consensus,
+													standardization_type="min_max",
+													output_path=w_dir / "consensus")
+
+	return consensus_results
 
 
 def run_dockm8(config):
