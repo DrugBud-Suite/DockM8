@@ -15,25 +15,10 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 from gui.menu import PAGES, menu
 from scripts.docking.docking import DOCKING_PROGRAMS, concat_all_poses
 from scripts.docking.docking_function import DockingFunction
-from scripts.docking.docking_function import DockingFunction
 
 menu()
 
 st.title("Docking", anchor='center')
-
-if 'w_dir' in st.session_state and ('library_to_dock' not in st.session_state or
-									'prepared_protein_path' not in st.session_state):
-	st.session_state.library_to_dock = Path(st.session_state.w_dir) / "prepared_library.sdf"
-	if not Path(st.session_state.library_to_dock).is_file():
-		st.warning(
-			f"Could not find {st.session_state.library_to_dock} in the working directory. Ensure it is in the working directory or enter it's path manually :"
-		)
-
-	st.session_state.prepared_protein_path = Path(st.session_state.w_dir) / "prepared_protein.pdb"
-	if not Path(st.session_state.prepared_protein_path).is_file():
-		st.warning(
-			f"Could not find {st.session_state.prepared_protein_path} in the working directory. Ensure it is in the working directory."
-		)
 
 # Check for prepared docking library
 if 'library_to_dock' not in st.session_state:
@@ -58,9 +43,6 @@ if 'prepared_protein_path' not in st.session_state:
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
 									value=default_path_protein,
 									help="Enter the complete file path to your prepared protein file.")
-	if not Path(protein_path).is_file():
-		st.error("File does not exist.")
-	else:
 	if not Path(protein_path).is_file():
 		st.error("File does not exist.")
 	else:
@@ -110,7 +92,7 @@ st.markdown("""
 }
 </style>
 """,
-			unsafe_allow_html=True)
+	unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -124,7 +106,7 @@ with col1:
 			<span class="metric-value">{len(st.session_state.library_to_dock)}</span>
 		</div>
 		""",
-					unsafe_allow_html=True)
+			unsafe_allow_html=True)
 	else:
 		st.markdown("""
 		<div class="metric-container">
@@ -132,7 +114,7 @@ with col1:
 			<span class="metric-value">Not loaded</span>
 		</div>
 		""",
-					unsafe_allow_html=True)
+			unsafe_allow_html=True)
 
 	protein_path = st.session_state.get('prepared_protein_path', 'Not loaded')
 	st.markdown(f"""
@@ -141,7 +123,7 @@ with col1:
 		<span class="metric-value">{Path(protein_path).name if protein_path != 'Not loaded' else protein_path}</span>
 	</div>
 	""",
-				unsafe_allow_html=True)
+		unsafe_allow_html=True)
 
 with col2:
 	if 'binding_site' in st.session_state:
@@ -157,7 +139,7 @@ with col2:
 					<span class="metric-value">{st.session_state.binding_site['center'][i]:.2f} Å</span>
 				</div>
 				""",
-							unsafe_allow_html=True)
+					unsafe_allow_html=True)
 
 		with subcol2:
 			for i, dim in enumerate(['Width', 'Height', 'Depth']):
@@ -167,7 +149,7 @@ with col2:
 					<span class="metric-value">{st.session_state.binding_site['size'][i]:.2f} Å</span>
 				</div>
 				""",
-							unsafe_allow_html=True)
+					unsafe_allow_html=True)
 	else:
 		st.markdown("<div class='subheader'>Binding Site</div>", unsafe_allow_html=True)
 		st.markdown("""
@@ -176,14 +158,14 @@ with col2:
 			<span class="metric-value">Not defined</span>
 		</div>
 		""",
-					unsafe_allow_html=True)
+			unsafe_allow_html=True)
 
 # Docking programs
 st.subheader("Docking Programs", divider="orange")
 docking_programs = st.multiselect(label="Choose the docking programs you want to use:",
-									default=["GNINA"],
-									options=DOCKING_PROGRAMS,
-									help="Select one or more docking programs. Multiple selections are allowed.")
+			default=["GNINA"],
+			options=DOCKING_PROGRAMS,
+			help="Select one or more docking programs. Multiple selections are allowed.")
 st.session_state.docking_programs = docking_programs
 
 if "PLANTS" in docking_programs and not os.path.exists(f"{st.session_state['software']}/PLANTS"):
@@ -206,11 +188,11 @@ col1, col2 = st.columns(2)
 
 with col1:
 	st.session_state.n_poses = st.slider(label="Number of Poses",
-											min_value=1,
-											max_value=100,
-											step=5,
-											value=10,
-											help="Specify the number of poses to generate for each ligand.")
+				min_value=1,
+				max_value=100,
+				step=5,
+				value=10,
+				help="Specify the number of poses to generate for each ligand.")
 
 with col2:
 	st.session_state.exhaustiveness = st.select_slider(
@@ -284,8 +266,8 @@ def run_docking():
 # UI Layout
 col1, col2 = st.columns(2)
 st.session_state.save_docking_results = col2.toggle(label="Save All Docking Results to SDF file",
-													value=True,
-													key='save_docking_results_toggle')
+				value=True,
+				key='save_docking_results_toggle')
 
 if st.session_state.save_docking_results:
 	# Determine and set working directory
