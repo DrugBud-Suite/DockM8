@@ -31,6 +31,12 @@ def prepare_library(input_data: Union[pd.DataFrame, Path],
 					software: Path,
 					n_cpus: int,
 					n_conformers: int = 1,
+					standardize_ids: bool = True,
+					standardize_tautomers: bool = True,
+					remove_salts: bool = True,
+					min_ph: float = 6.4,
+					max_ph: float = 8.4,
+					pka_precision: float = 1.0,
 					output_sdf: Optional[Path] = None) -> pd.DataFrame:
 	"""
     Prepares a docking library for further analysis.
@@ -63,11 +69,16 @@ def prepare_library(input_data: Union[pd.DataFrame, Path],
 		raise ValueError("input_data must be either a pandas DataFrame or a Path to an SDF file.")
 
 	# Standardization
-	standardized_df = standardize_library(input_df, smiles_column=None, n_cpus=n_cpus)
+	standardized_df = standardize_library(input_df,
+											smiles_column=None,
+											remove_salts=remove_salts,
+											standardize_tautomers=standardize_tautomers,
+											standardize_ids_flag=standardize_ids,
+											n_cpus=n_cpus)
 
 	# Protonation
 	if protonation == "GypsumDL":
-		protonated_df = protonate_GypsumDL(standardized_df, software, n_cpus)
+		protonated_df = protonate_GypsumDL(standardized_df, software, n_cpus, min_ph, max_ph, pka_precision)
 	elif protonation == "None":
 		protonated_df = standardized_df
 	else:
@@ -90,10 +101,10 @@ def prepare_library(input_data: Union[pd.DataFrame, Path],
 	# Save output to SDF if specified
 	if output_sdf:
 		PandasTools.WriteSDF(final_df,
-								str(output_sdf),
-								molColName="Molecule",
-								idName="ID",
-								properties=list(final_df.columns))
+				str(output_sdf),
+				molColName="Molecule",
+				idName="ID",
+				properties=list(final_df.columns))
 		return output_sdf
 	else:
 		return final_df
