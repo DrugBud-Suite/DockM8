@@ -21,13 +21,13 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def select_poses(poses: Union[Path, pd.DataFrame],
-					selection_method: str,
-					clustering_method: str,
-					pocket_definition: dict,
-					protein_file: Path,
-					software: Path,
-					n_cpus: int,
-					output_file: Optional[Path] = None) -> pd.DataFrame:
+		selection_method: str,
+		clustering_method: str,
+		pocket_definition: dict,
+		protein_file: Path,
+		software: Path,
+		n_cpus: int,
+		output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""This function clusters all poses according to the metric selected using multiple CPU cores.
 
 	Args:
@@ -44,7 +44,7 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 
 	# Process input
 	if isinstance(poses, Path):
-		poses_df = PandasTools.LoadSDF(poses, smilesName='SMILES', molColName='Molecule', includeFingerprints=True)
+		poses_df = PandasTools.LoadSDF(poses, molColName='Molecule', idName='Pose ID')
 	elif isinstance(poses, pd.DataFrame):
 		poses_df = poses
 	else:
@@ -68,7 +68,7 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 		selected_poses = selected_poses[selected_poses["Docking_program"] == selection_method.split("_")[1]]
 	elif selection_method in CLUSTERING_METRICS.keys():
 		# Perform clustering using multiple CPU cores
-		selected_poses = run_clustering(poses, selection_method, clustering_method, protein_file, n_cpus)
+		selected_poses = run_clustering(poses_df, selection_method, clustering_method, protein_file, n_cpus)
 	elif selection_method in RESCORING_FUNCTIONS.keys():
 		# Perform rescoring using the specified metric scoring function
 		selected_poses = rescore_docking(poses_df, protein_file, pocket_definition, software, selection_method, n_cpus)
@@ -82,8 +82,8 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 	# Write the filtered poses to a SDF file
 	if output_file:
 		PandasTools.WriteSDF(filtered_poses,
-								str(output_file),
-								molColName="Molecule",
-								idName="Pose ID",
-								properties=list(filtered_poses.columns))
+				str(output_file),
+				molColName="Molecule",
+				idName="Pose ID",
+				properties=list(filtered_poses.columns))
 	return filtered_poses
