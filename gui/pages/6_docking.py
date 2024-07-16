@@ -4,6 +4,7 @@ import traceback
 from pathlib import Path
 import pandas as pd
 import streamlit as st
+from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
 gui_path = next((p / "gui" for p in Path(__file__).resolve().parents if (p / "gui").is_dir()), None)
@@ -13,7 +14,7 @@ sys.path.append(str(dockm8_path))
 st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", layout="wide")
 
 from gui.menu import PAGES, menu
-from scripts.docking.docking import DOCKING_PROGRAMS, concat_all_poses
+from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.docking.docking_function import DockingFunction
 
 menu()
@@ -26,28 +27,21 @@ if 'library_to_dock' not in st.session_state:
 		st.session_state.w_dir
 	) / "prepared_library.sdf" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_library.sdf"
 	library_to_dock_input = st.text_input(label="Enter the path to the ligand library file (.sdf format)",
-				value=default_path_library,
-				help="Choose a ligand library file (.sdf format)")
+											value=default_path_library,
+											help="Choose a ligand library file (.sdf format)")
 	if not Path(library_to_dock_input).is_file():
 		st.error("File does not exist.")
-	else:
-		st.session_state.library_to_dock = library_to_dock_input
-		st.success(f"Library loaded: {library_to_dock_input}")
 
 # Check for prepared protein file
 if 'prepared_protein_path' not in st.session_state:
 	default_path_protein = Path(
 		st.session_state.w_dir
 	) / "prepared_protein.pdb" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_protein.pdb"
-	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
-			value=default_path_protein,
-			help="Enter the complete file path to your prepared protein file.")
+									value=default_path_protein,
+									help="Enter the complete file path to your prepared protein file.")
 	if not Path(protein_path).is_file():
 		st.error("File does not exist.")
-	else:
-		st.session_state.prepared_protein_path = protein_path
-		st.success(f"Protein file loaded: {protein_path}")
 
 # Check for binding site definition
 if 'binding_site' not in st.session_state:
@@ -55,12 +49,26 @@ if 'binding_site' not in st.session_state:
 	if st.button("Define Binding Site"):
 		st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[4]))
 
-if 'software' not in st.session_state:
-	st.info("Software path not set. Using default path. If you want to change it you can do so on the 'Setup' page.")
-	st.session_state.software = dockm8_path / "software"
-
 if 'docking_programs' not in st.session_state:
 	st.session_state.docking_programs = None
+
+col1, col2 = st.columns(2)
+if col1.button("Confirm Inputs",
+				key='confirm_inputs_button',
+				help="Confirm the input files and proceed to docking parameters.",
+				use_container_width=True):
+	st.session_state.library_to_dock = Path(library_to_dock_input)
+	st.session_state.prepared_protein_path = Path(protein_path)
+	st.success("Inputs confirmed. Proceed to docking parameters.")
+
+if col2.button("Reset Inputs",
+				key='reset_inputs_button',
+				help="Reset all inputs and start over.",
+				use_container_width=True):
+	st.session_state.pop('library_to_dock', None)
+	st.session_state.pop('prepared_protein_path', None)
+	st.session_state.pop('binding_site', None)
+	st.success("Inputs have been reset.")
 
 # Display information about the available components
 st.subheader("Docking Inputs", divider="orange")
@@ -92,7 +100,7 @@ st.markdown("""
 }
 </style>
 """,
-	unsafe_allow_html=True)
+			unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -103,10 +111,10 @@ with col1:
 		st.markdown(f"""
 		<div class="metric-container">
 			<span class="metric-label">Compounds to Dock</span>
-			<span class="metric-value">{len(st.session_state.library_to_dock)}</span>
+			<span class="metric-value">{st.session_state.library_to_dock}</span>
 		</div>
 		""",
-			unsafe_allow_html=True)
+					unsafe_allow_html=True)
 	else:
 		st.markdown("""
 		<div class="metric-container">
@@ -114,7 +122,7 @@ with col1:
 			<span class="metric-value">Not loaded</span>
 		</div>
 		""",
-			unsafe_allow_html=True)
+					unsafe_allow_html=True)
 
 	protein_path = st.session_state.get('prepared_protein_path', 'Not loaded')
 	st.markdown(f"""
@@ -123,7 +131,7 @@ with col1:
 		<span class="metric-value">{Path(protein_path).name if protein_path != 'Not loaded' else protein_path}</span>
 	</div>
 	""",
-		unsafe_allow_html=True)
+				unsafe_allow_html=True)
 
 with col2:
 	if 'binding_site' in st.session_state:
@@ -139,7 +147,7 @@ with col2:
 					<span class="metric-value">{st.session_state.binding_site['center'][i]:.2f} Å</span>
 				</div>
 				""",
-					unsafe_allow_html=True)
+							unsafe_allow_html=True)
 
 		with subcol2:
 			for i, dim in enumerate(['Width', 'Height', 'Depth']):
@@ -149,7 +157,7 @@ with col2:
 					<span class="metric-value">{st.session_state.binding_site['size'][i]:.2f} Å</span>
 				</div>
 				""",
-					unsafe_allow_html=True)
+							unsafe_allow_html=True)
 	else:
 		st.markdown("<div class='subheader'>Binding Site</div>", unsafe_allow_html=True)
 		st.markdown("""
@@ -158,14 +166,14 @@ with col2:
 			<span class="metric-value">Not defined</span>
 		</div>
 		""",
-			unsafe_allow_html=True)
+					unsafe_allow_html=True)
 
 # Docking programs
 st.subheader("Docking Programs", divider="orange")
 docking_programs = st.multiselect(label="Choose the docking programs you want to use:",
-			default=["GNINA"],
-			options=DOCKING_PROGRAMS,
-			help="Select one or more docking programs. Multiple selections are allowed.")
+									default=["GNINA"],
+									options=DOCKING_PROGRAMS,
+									help="Select one or more docking programs. Multiple selections are allowed.")
 st.session_state.docking_programs = docking_programs
 
 if "PLANTS" in docking_programs and not os.path.exists(f"{st.session_state['software']}/PLANTS"):
@@ -188,11 +196,11 @@ col1, col2 = st.columns(2)
 
 with col1:
 	st.session_state.n_poses = st.slider(label="Number of Poses",
-				min_value=1,
-				max_value=100,
-				step=5,
-				value=10,
-				help="Specify the number of poses to generate for each ligand.")
+											min_value=1,
+											max_value=100,
+											step=5,
+											value=10,
+											help="Specify the number of poses to generate for each ligand.")
 
 with col2:
 	st.session_state.exhaustiveness = st.select_slider(
@@ -233,10 +241,10 @@ def determine_working_directory() -> Path:
 
 
 def run_docking():
-	all_poses = []
+	all_poses = pd.DataFrame()
 	for program in docking_programs:
 		docking_class = DOCKING_PROGRAMS[program]
-		docking_function: DockingFunction = docking_class(st.session_state.software)
+		docking_function: DockingFunction = docking_class(st.session_state.get('software', dockm8_path / "software"))
 
 		common_params = {
 			"library": st.session_state.library_to_dock,
@@ -249,25 +257,29 @@ def run_docking():
 		if st.session_state.save_docking_results:
 			allposes_save_path = st.session_state.poses_for_postprocessing
 			output_sdf = allposes_save_path.parent / f"{program.lower()}_poses.sdf"
-			docking_function.dock(**common_params, output_sdf=output_sdf)
+			results = docking_function.dock(**common_params, output_sdf=output_sdf)
 		else:
 			results = docking_function.dock(**common_params)
-			all_poses.append(results)
+
+		all_poses = pd.concat([all_poses, results], ignore_index=True)
 
 	if st.session_state.save_docking_results:
-		allposes_save_path = st.session_state.poses_for_postprocessing
-		concat_all_poses(allposes_save_path, docking_programs, common_params["n_cpus"])
-		st.session_state.poses_for_postprocessing = allposes_save_path
-		st.info(f"All poses have been combined and saved to: {allposes_save_path}")
+		PandasTools.WriteSDF(all_poses,
+								str(st.session_state.poses_for_postprocessing),
+								molColName="Molecule",
+								idName="Pose ID",
+								properties=list(all_poses.columns))
+		st.info(f"All poses have been combined and saved to: {st.session_state.poses_for_postprocessing}")
+		del all_poses
 	else:
-		st.session_state.poses_for_postprocessing = pd.concat(all_poses, ignore_index=True)
+		st.session_state.poses_for_postprocessing = all_poses
 
 
 # UI Layout
 col1, col2 = st.columns(2)
 st.session_state.save_docking_results = col2.toggle(label="Save All Docking Results to SDF file",
-				value=True,
-				key='save_docking_results_toggle')
+													value=True,
+													key='save_docking_results_toggle')
 
 if st.session_state.save_docking_results:
 	# Determine and set working directory
