@@ -70,12 +70,12 @@ class AAScore(ScoringFunction):
 
 			if n_cpus == 1:
 				results = Path(temp_dir) / "rescored_AAScore.csv"
-				AAscore_cmd = f"python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {sdf} --Out {results}"
+				AAscore_cmd = f"conda run -n AAScore {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {sdf} --Out {results}"
 				subprocess.run(AAscore_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				AAScore_rescoring_results = pd.read_csv(results,
-														delimiter="\t",
-														header=None,
-														names=["Pose ID", self.column_name])
+							delimiter="\t",
+							header=None,
+							names=["Pose ID", self.column_name])
 			else:
 				split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
 				split_files_sdfs = list(split_files_folder.glob("*.sdf"))
@@ -87,10 +87,10 @@ class AAScore(ScoringFunction):
 					results = Path(temp_dir) / f"{split_file.stem}_AAScore.csv"
 					AAscore_cmd = f"python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {split_file} --Out {results}"
 					subprocess.run(AAscore_cmd,
-									shell=True,
-									check=True,
-									stdout=subprocess.DEVNULL,
-									stderr=subprocess.STDOUT)
+						shell=True,
+						check=True,
+						stdout=subprocess.DEVNULL,
+						stderr=subprocess.STDOUT)
 
 				# Execute the rescoring in parallel
 				parallel_executor(AAScore_rescoring_splitted, split_files_sdfs, n_cpus, display_name=self.column_name)
