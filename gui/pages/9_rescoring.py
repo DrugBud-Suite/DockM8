@@ -152,11 +152,11 @@ def run_rescoring():
 		"protein_file": Path(st.session_state.prepared_protein_path),
 		"pocket_definition": st.session_state.binding_site,
 		"software": st.session_state.software,
-		"rescoring_functions": st.session_state.rescoring_functions,
+		"functions": st.session_state.rescoring_functions,
 		"n_cpus": st.session_state.get('n_cpus', int(os.cpu_count() * 0.9)), }
 	if st.session_state.save_rescoring_results:
 		output_file = st.session_state.rescored_poses
-		rescore_poses(**common_params, output_sdf=output_file)
+		rescore_poses(**common_params, output_file=output_file)
 		st.session_state.rescored_poses = output_file
 	else:
 		results = rescore_poses(**common_params)
