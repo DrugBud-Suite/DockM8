@@ -37,14 +37,14 @@ class DockingFunction(ABC):
 		pass
 
 	def dock(self,
-		library: Union[pd.DataFrame, Path],
-		protein_file: Path,
-		pocket_definition: dict,
-		exhaustiveness: int,
-		n_poses: int,
-		n_cpus: int,
-		job_manager: str = "concurrent_process",
-		output_sdf: Path = None) -> pd.DataFrame:
+				library: Union[pd.DataFrame, Path],
+				protein_file: Path,
+				pocket_definition: dict,
+				exhaustiveness: int,
+				n_poses: int,
+				n_cpus: int,
+				job_manager: str = "concurrent_process",
+				output_sdf: Path = None) -> pd.DataFrame:
 		"""
 		Performs docking using the specific docking software and returns results as a DataFrame.
 		"""
@@ -95,10 +95,10 @@ class DockingFunction(ABC):
 			# Write output SDF if requested
 			if output_sdf:
 				PandasTools.WriteSDF(combined_results,
-					str(output_sdf),
-					molColName="Molecule",
-					idName="Pose ID",
-					properties=list(combined_results.columns))
+										str(output_sdf),
+										molColName="Molecule",
+										idName="Pose ID",
+										properties=list(combined_results.columns))
 
 			return combined_results
 
@@ -154,11 +154,11 @@ class DockingFunction(ABC):
 		return batches
 
 	def dock_batch(self,
-		batch_file: Path,
-		protein_file: Path,
-		pocket_definition: dict,
-		exhaustiveness: int,
-		n_poses: int) -> Path:
+					batch_file: Path,
+					protein_file: Path,
+					pocket_definition: dict,
+					exhaustiveness: int,
+					n_poses: int) -> Path:
 		"""
 		Docks a batch of ligands and returns the path to the results file.
 		"""
