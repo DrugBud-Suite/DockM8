@@ -110,7 +110,7 @@ for group, methods in method_groups.items():
 	if group == "Best Pose Methods":
 		st.write("Note: Best pose methods are disabled for docking programs that were not used in the previous step.")
 
-st.session_state.pose_selection_method = selected_method
+st.session_state.pose_selection_method = selected_method[0]
 
 # Clustering Algorithm section
 if any(x in CLUSTERING_METRICS.keys() for x in selected_method):
