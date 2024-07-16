@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def Zscore_avg(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def Zscore_avg(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	"""
     Calculates the Z-score consensus scores for each row in the given DataFrame. Averaging of the score is done across all selected poses.
 
