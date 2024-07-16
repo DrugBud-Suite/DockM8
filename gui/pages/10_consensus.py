@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 import os
 import traceback
-
+import pandas as pd
 import streamlit as st
 
 # Search for 'DockM8' in parent directories
@@ -14,46 +14,89 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 
 from gui.menu import PAGES, menu
 from scripts.consensus.consensus import CONSENSUS_METHODS, apply_consensus_methods
-from scripts.pose_selection.pose_selection import select_poses
-from scripts.utilities.utilities import parallel_SDF_loader
 
 menu()
 
 st.title("Consensus")
 
+# Check for prepared docking library
+if 'rescored_poses' not in st.session_state:
+	default_path_library = Path(
+		st.session_state.w_dir
+	) / "rescored_poses.sdf" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "allposes.sdf"
+	library_to_rescore_input = st.text_input(label="Enter the path to the rescored poses file (.sdf format)",
+												value=default_path_library,
+												help="Choose a file containing rescored poses (.sdf format)")
+	if not Path(library_to_rescore_input).is_file():
+		st.error("File does not exist.")
+	else:
+		st.session_state.poses_to_rescore = library_to_rescore_input
+		st.success(f"Library loaded: {library_to_rescore_input}")
+
 st.subheader("Consensus Algorithm", divider="orange")
-consensus_method = st.selectbox(label="Choose which consensus algorithm to use:",
-								index=9,
-								options=list(CONSENSUS_METHODS.keys()),
-								help="The method to use for consensus.")
+st.session_state.consensus_methods = st.selectbox(label="Choose which consensus algorithm to use:",
+													index=9,
+													options=list(CONSENSUS_METHODS.keys()),
+													help="The method to use for consensus.")
 
 st.subheader("Run Consensus Analysis", divider="orange")
-if st.button("Run Consensus Analysis"):
-	with st.spinner("Running consensus analysis..."):
-		if 'w_dir' not in st.session_state or 'prepared_protein_path' not in st.session_state:
-			st.error("Please complete the previous steps before running consensus analysis.")
+
+
+def determine_working_directory() -> Path:
+	if 'w_dir' in st.session_state:
+		consensus_results_save_path = Path(st.session_state.w_dir)
+		return consensus_results_save_path
+	elif isinstance(st.session_state.rescored_poses, Path):
+		consensus_results_save_path = st.session_state.rescored_poses.parent
+		return consensus_results_save_path
+	elif isinstance(st.session_state.rescored_poses, pd.DataFrame):
+		custom_dir = st.text_input("Enter a custom save location:")
+		if "." in custom_dir:
+			st.error("Please enter a valid directory, not a file.")
 		else:
-			w_dir = st.session_state.w_dir
-			protein_file = st.session_state.prepared_protein_path
-			software = st.session_state.software if 'software' in st.session_state else Path(dockm8_path / 'software')
-			n_cpus = st.session_state.n_cpus if 'n_cpus' in st.session_state else os.cpu_count()
+			consensus_results_save_path = Path(custom_dir)
+			consensus_results_save_path.mkdir(exist_ok=True, parents=True)
+			return consensus_results_save_path
+	st.error(
+		"Unable to determine working directory. Please set a working directory or use a file path for the library.")
+	return None
 
-			try:
-				# Assuming the pose selection and rescoring steps have been completed
-				selection_methods = st.session_state.get('pose_selection_methods')
-				rescoring_functions = st.session_state.get('rescoring_functions')
 
-				for method in selection_methods:
-					apply_consensus_methods(w_dir=w_dir,
-											selection_method=method,
-											consensus_methods=consensus_method,
-											rescoring_functions=rescoring_functions,
-											standardization_type="min_max"                            # You might want to make this configurable
-											)
+def run_consensus():
+	common_params = {
+		"poses_input": st.session_state.rescored_poses,
+		"consensus_methods": st.session_state.consensus_methods,
+		"standardization_type": "min_max"}
+	if st.session_state.save_consensus_results:
+		output_file = st.session_state.consensus_scores
+		apply_consensus_methods(**common_params, output_path=output_file)
+		st.session_state.consensus_scores = output_file
+	else:
+		results = apply_consensus_methods(**common_params)
+		st.session_state.consensus_scores = results
 
-				st.success(f"Consensus analysis completed successfully using {consensus_method} method.")
-			except Exception as e:
-				st.error(f"An error occurred during consensus analysis: {str(e)}")
-				st.error(traceback.format_exc())
-	if st.button('Generate DockM8 Report'):
-		st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[10]))
+
+col1, col2 = st.columns(2)
+st.session_state.save_consensus_results = col2.toggle(label="Save Consensus scores",
+														value=True,
+														key='save_consensus_results_toggle')
+
+if st.session_state.save_consensus_results:
+	consensus_score_save_path = determine_working_directory()
+	if consensus_score_save_path:
+		st.session_state.rescored_poses = consensus_score_save_path
+		col2.write(f'Consensus scores will be saved to: **{consensus_score_save_path}**')
+
+if col1.button("Run Consensus scoring", use_container_width=True):
+	if not st.session_state.consensus_methods:
+		st.error("Please select at least one rescoring function.")
+	else:
+		try:
+			run_consensus()
+			st.success("Rescoring completed successfully.")
+		except Exception as e:
+			st.error(f"An error occurred during rescoring: {str(e)}")
+			st.error(traceback.format_exc())
+
+if st.button('Generate DockM8 Report'):
+	st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[10]))

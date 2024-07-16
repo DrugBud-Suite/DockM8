@@ -14,7 +14,7 @@ sys.path.append(str(dockm8_path))
 from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics import CLUSTERING_METRICS
 from scripts.consensus.consensus import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
-from scripts.library_preparation.main import CONFORMER_OPTIONS, PROTONATION_OPTIONS
+from scripts.library_preparation.library_preparation import CONFORMER_OPTIONS, PROTONATION_OPTIONS
 from scripts.pocket_finding.pocket_finding import POCKET_DETECTION_OPTIONS
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.logging import printlog
@@ -266,7 +266,7 @@ def check_config(config):
 				"DockM8 configuration error: Invalid manual pocket definition format. Format should be 'center:x,y,z*size:x,y,z' where x, y, and z are numbers."
 			)
 
-	# Check docking configuration
+# Check docking configuration
 	docking = config.get("docking", {})
 
 	# Validate each docking program specified in the configuration
@@ -274,7 +274,7 @@ def check_config(config):
 	for program in docking_programs:
 		if program not in DOCKING_PROGRAMS:
 			raise DockM8Error(
-				f"DockM8 configuration error: Invalid docking program ({program}) specified in the configuration file. Must be one of {', '.join(list(DOCKING_PROGRAMS.keys()))}."
+				f"DockM8 configuration error: Invalid docking program ({program}) specified in the configuration file. Must be one of {', '.join(DOCKING_PROGRAMS.keys())}."
 			)
 
 	# Validate 'n_poses' to ensure it is an integer
@@ -286,7 +286,8 @@ def check_config(config):
 	exhaustiveness = docking.get("exhaustiveness")
 	if not isinstance(exhaustiveness, int):
 		raise DockM8Error("DockM8 configuration error: 'exhaustiveness' in 'docking' section must be an integer value.")
-	# Check if exhaustiveness is not set and SMINA, GNINA, QVINA2, or QVINAW are not in docking programs
+
+	# Check if exhaustiveness is not set and SMINA, GNINA, QVINA2, or QVINAW are in docking programs
 	if "exhaustiveness" not in docking and any(
 		program in docking_programs for program in ["SMINA", "GNINA", "QVINA2", "QVINAW"]):
 		DockM8Warning(
@@ -373,8 +374,8 @@ def check_config(config):
 		)
 		config["pose_selection"]["clustering_method"] = "KMedoids"
 
+	# Validate rescoring methods
 	rescoring_methods = config.get("rescoring", [])
-	# Validate each rescoring method
 	valid_rescoring_methods = list(RESCORING_FUNCTIONS.keys())
 	for method in rescoring_methods:
 		if method not in valid_rescoring_methods:

@@ -4,7 +4,6 @@ import sys
 import time
 import warnings
 from pathlib import Path
-from subprocess import DEVNULL, STDOUT
 
 import pandas as pd
 from rdkit.Chem import PandasTools
@@ -14,81 +13,80 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.utilities.logging import printlog
-from scripts.utilities.utilities import delete_files
-from scripts.utilities.parallel_executor import parallel_executor
+from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
+from scripts.utilities.logging import printlog
+from scripts.utilities.parallel_executor import parallel_executor
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def LinF9_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
-	"""
-    Performs rescoring of poses in an SDF file using the LinF9 scoring function.
+class LinF9(ScoringFunction):
 
-    Args:
-    sdf (str): The path to the SDF file containing the poses to be rescored.
-    n_cpus (int): The number of CPUs to use for parallel execution.
-    column_name (str): The name of the column to store the rescoring results.
-    **kwargs: Additional keyword arguments.
+	def __init__(self):
+		super().__init__("LinF9", "LinF9", "min", (100, -100))
 
-    Keyword Args:
-    rescoring_folder (str): Path to the folder where the rescoring results will be saved.
-    software (str): Path to the software.
-    protein_file (str): Path to the protein file.
-    pocket_definition (str): Path to the pocket definition file.
+	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
+		tic = time.perf_counter()
+		software = kwargs.get("software")
+		protein_file = kwargs.get("protein_file")
 
-    Returns:
-    pandas.DataFrame: A DataFrame containing the rescoring results, with columns 'Pose ID' and the specified column name.
-    """
-	rescoring_folder = kwargs.get("rescoring_folder")
-	software = kwargs.get("software")
-	protein_file = kwargs.get("protein_file")
-
-	tic = time.perf_counter()
-	(rescoring_folder / f"{column_name}_rescoring").mkdir(parents=True, exist_ok=True)
-	split_files_folder = split_sdf_str(rescoring_folder / f"{column_name}_rescoring", sdf, n_cpus)
-	split_files_sdfs = [Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
-
-	global LinF9_rescoring_splitted
-
-	def LinF9_rescoring_splitted(split_file, protein_file):
-		LinF9_folder = rescoring_folder / "LinF9_rescoring"
-		results = LinF9_folder / f"{split_file.stem}_LinF9.sdf"
-		LinF9_cmd = (f"{software}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
-						f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
+		temp_dir = self.create_temp_dir()
 		try:
-			subprocess.call(LinF9_cmd, shell=True, stdout=DEVNULL, stderr=STDOUT)
-		except Exception as e:
-			printlog(f"LinF9 rescoring failed: {e}")
-		return
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_sdfs = [
+				Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-	parallel_executor(LinF9_rescoring_splitted, split_files_sdfs, n_cpus, protein_file=protein_file)
+			global LinF9_rescoring_splitted
 
-	try:
-		LinF9_dataframes = [
-			PandasTools.LoadSDF(str(rescoring_folder / "LinF9_rescoring" / file),
-			idName="Pose ID",
-			molColName=None,
-			includeFingerprints=False,
-			embedProps=False)
-			for file in os.listdir(rescoring_folder / "LinF9_rescoring")
-			if file.startswith("split") and file.endswith("_LinF9.sdf")]
-	except Exception as e:
-		printlog("ERROR: Failed to Load LinF9 rescoring SDF file!")
-		printlog(e)
+			def LinF9_rescoring_splitted(split_file, protein_file):
+				results = Path(temp_dir) / f"{split_file.stem}_LinF9.sdf"
+				LinF9_cmd = (f"{software}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
+					f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
+				try:
+					subprocess.call(LinF9_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+				except Exception as e:
+					printlog(f"LinF9 rescoring failed: {e}")
+				return
 
-	try:
-		LinF9_rescoring_results = pd.concat(LinF9_dataframes)
-	except Exception as e:
-		printlog("ERROR: Could not combine LinF9 rescored poses")
-		printlog(e)
+			parallel_executor(LinF9_rescoring_splitted,
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
-	LinF9_rescoring_results.rename(columns={"minimizedAffinity": column_name}, inplace=True)
-	LinF9_rescoring_results = LinF9_rescoring_results[["Pose ID", column_name]]
-	LinF9_rescoring_results.to_csv(rescoring_folder / "LinF9_rescoring" / "LinF9_scores.csv", index=False)
-	delete_files(rescoring_folder / "LinF9_rescoring", "LinF9_scores.csv")
-	toc = time.perf_counter()
-	printlog(f"Rescoring with LinF9 complete in {toc-tic:0.4f}!")
-	return LinF9_rescoring_results
+			try:
+				LinF9_dataframes = [
+					PandasTools.LoadSDF(str(Path(temp_dir) / file),
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
+					for file in os.listdir(temp_dir)
+					if file.startswith("split") and file.endswith("_LinF9.sdf")]
+			except Exception as e:
+				printlog("ERROR: Failed to Load LinF9 rescoring SDF file!")
+				printlog(e)
+				return pd.DataFrame()
+
+			try:
+				LinF9_rescoring_results = pd.concat(LinF9_dataframes)
+			except Exception as e:
+				printlog("ERROR: Could not combine LinF9 rescored poses")
+				printlog(e)
+				return pd.DataFrame()
+
+			LinF9_rescoring_results.rename(columns={"minimizedAffinity": self.column_name}, inplace=True)
+			LinF9_rescoring_results = LinF9_rescoring_results[["Pose ID", self.column_name]]
+
+			toc = time.perf_counter()
+			printlog(f"Rescoring with LinF9 complete in {toc-tic:0.4f}!")
+			return LinF9_rescoring_results
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# linf9 = LinF9()
+# results = linf9.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

@@ -62,10 +62,11 @@ def generate_conformers_RDKit(df: pd.DataFrame, n_cpus: int, forcefield: str) ->
 		n_cpds_start = len(df)
 		# Generate conformers for each molecule in parallel using the conf_gen_RDKit function
 		results = parallel_executor(conf_gen_RDKit,
-				df['Molecule'].tolist(),
-				n_cpus,
-				'concurrent_process',
-				forcefield=forcefield)
+									list_of_objects=df['Molecule'].tolist(),
+									n_cpus=n_cpus,
+									job_manager='concurrent_process',
+									display_name=f"Generating Conformers with {forcefield}",
+									forcefield=forcefield)
 
 		df['Molecule'] = results
 		# Remove molecules where conformer generation failed

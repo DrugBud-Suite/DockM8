@@ -1,12 +1,8 @@
 # Import required libraries and scripts
 import argparse
-import os
 import sys
 import warnings
 from pathlib import Path
-import time
-
-from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -17,14 +13,13 @@ sys.path.append(str(dockm8_path))
 from scripts.utilities.config_parser import check_config
 from scripts.pose_selection.pose_selection import select_poses
 from scripts.consensus.consensus import apply_consensus_methods
-from scripts.docking.docking import dockm8_docking, concat_all_poses
-from scripts.library_preparation.main import prepare_library
+from scripts.docking.docking import concat_all_poses, dockm8_docking
+from scripts.library_preparation.library_preparation import prepare_library
 from scripts.docking_postprocessing.docking_postprocessing import docking_postprocessing
-from scripts.performance_calculation import *
+from scripts.performance_calculation import calculate_performance
 from scripts.pocket_finding.pocket_finding import pocket_finder
-from scripts.postprocessing import *
 from scripts.protein_preparation.protein_preparation import prepare_protein
-from scripts.rescoring.rescoring import rescore_poses
+from scripts.rescoring.rescoring import rescore_poses, RESCORING_FUNCTIONS
 from scripts.utilities.logging import printlog
 from software.DeepCoy.generate_decoys import generate_decoys
 
@@ -54,112 +49,93 @@ def dockm8(software: Path,
 	n_cpus: int,
 	rescoring: list,
 	consensus: str,
-	threshold: float,
-	):
+	threshold: float):
+
 	# Set working directory based on the receptor file
 	w_dir = Path(receptor).parent / Path(receptor).stem
 	printlog("The working directory has been set to:", w_dir)
-	(w_dir).mkdir(exist_ok=True)
+	w_dir.mkdir(exist_ok=True)
 
-	# Prepare the protein for docking (e.g., adding hydrogens)
-	prepared_receptor = prepare_protein(protein_file_or_code=receptor,
-										output_dir=w_dir,
-										select_best_chain=prepare_proteins["select_best_chain"],
-										minimize=prepare_proteins["minimize"],
-										with_solvent=prepare_proteins["with_solvent"],
-										fix_nonstandard_residues=prepare_proteins["fix_nonstandard_residues"],
-										fix_missing_residues=prepare_proteins["fix_missing_residues"],
-										remove_hetero=prepare_proteins["remove_heteroatoms"],
-										remove_water=prepare_proteins["remove_water"],
-										add_missing_hydrogens_pH=prepare_proteins["add_hydrogens"],
-										protonate=prepare_proteins["protonation"])
+	# Prepare the protein for docking
+	prepared_receptor = prepare_protein(protein_file_or_code=receptor, output_dir=w_dir, **prepare_proteins)
 
-	# Prepare the ligands for docking (e.g., adding hydrogens, generating conformers)
+	# Prepare the ligands for docking
 	prepared_library = prepare_library(input_sdf=docking_library,
-										id_column="ID",
-										protonation=ligand_preparation["protonation"],
-										conformers=ligand_preparation["conformers"],
-										software=software,
-										n_cpus=n_cpus,
-										n_conformers=ligand_preparation["n_conformers"])
+				id_column="ID",
+				**ligand_preparation,
+				software=software,
+				n_cpus=n_cpus)
 
 	# Determine the docking pocket
 	pocket_definition = pocket_finder(mode=pocket_detection["method"],
-										software=software,
-										receptor=prepared_receptor,
-										ligand=reference_ligand,
-										radius=pocket_detection["radius"],
-										manual_pocket=pocket_detection["manual_pocket"])
+				software=software,
+				receptor=prepared_receptor,
+				ligand=reference_ligand,
+				**pocket_detection)
+
+	# Create docking directory
+	(w_dir / "docking").mkdir(exist_ok=True)
 
 	# Perform the docking operation
-	if not (w_dir / "allposes.sdf").exists():
-		dockm8_docking(library=prepared_library,
-						w_dir=w_dir,
-						protein_file=prepared_receptor,
-						pocket_definition=pocket_definition,
-						software=software,
-						docking_programs=docking["docking_programs"],
-						n_poses=docking["n_poses"],
-						exhaustiveness=docking["exhaustiveness"],
-						n_cpus=n_cpus)
+	all_poses_path = dockm8_docking(library=prepared_library,
+									protein_file=prepared_receptor,
+									pocket_definition=pocket_definition,
+									software=software,
+									docking_programs=docking["docking_programs"],
+									exhaustiveness=docking["exhaustiveness"],
+									n_poses=docking["n_poses"],
+									n_cpus=n_cpus,
+									output_sdf=w_dir / "docking/allposes.sdf")
 
-		# Concatenate all poses into a single file
-		concat_all_poses(w_dir=w_dir,
-							docking_programs=docking["docking_programs"],
-							protein_file=prepared_receptor,
-							n_cpus=n_cpus)
-
-	processed_poses = docking_postprocessing(input_sdf=w_dir / "allposes.sdf",
-												output_path=w_dir / "allposes_processed.sdf",
+	# Postprocessing
+	processed_poses = docking_postprocessing(input_data=all_poses_path,
 												protein_file=prepared_receptor,
-												minimize_poses=post_docking["minimize"],
+												minimize_poses=post_docking["minimize_poses"],
 												bust_poses=post_docking["bust_poses"],
 												strain_cutoff=post_docking["strain_cutoff"],
 												clash_cutoff=post_docking["clash_cutoff"],
 												classy_pose=post_docking["classy_pose"],
 												classy_pose_model=post_docking["classy_pose_model"],
-												n_cpus=n_cpus)
+												n_cpus=n_cpus,
+												output_sdf=w_dir / "allposes_processed.sdf")
 
-	# Load all poses from SDF file and perform clustering
-	printlog("Loading all poses SDF file...")
-	tic = time.perf_counter()
-	all_poses = PandasTools.LoadSDF(str(processed_poses),
-									idName="Pose ID",
-									molColName="Molecule",
-									includeFingerprints=False)
-	toc = time.perf_counter()
-	printlog(f"Finished loading all poses SDF in {toc-tic:0.4f}!")
+	# Create clustering directory
+	(w_dir / "clustering").mkdir(exist_ok=True)
 
 	# Select Poses
 	pose_selection_methods = pose_selection["pose_selection_method"]
 	for method in pose_selection_methods:
-		if not os.path.isfile(w_dir / f"clustering/{method}_clustered.sdf"):
-			select_poses(selection_method=method,
+		selected_poses = select_poses(poses=processed_poses,
+				selection_method=method,
 				clustering_method=pose_selection["clustering_method"],
-				w_dir=w_dir,
-				protein_file=receptor,
+				pocket_definition=pocket_definition,
+				protein_file=prepared_receptor,
 				software=software,
-				all_poses=all_poses,
-				n_cpus=n_cpus)
+				n_cpus=n_cpus,
+				output_file=w_dir / f"clustering/{method}_clustered.sdf")
 
-	# Rescore poses for each selection method
-	for method in pose_selection_methods:
-		rescore_poses(w_dir=w_dir,
-			protein_file=prepared_receptor,
-			software=software,
-			clustered_sdf=w_dir / "clustering" / f"{method}_clustered.sdf",
-			functions=rescoring,
-			n_cpus=n_cpus)
+		# Create rescoring directory
+		(w_dir / "rescoring").mkdir(exist_ok=True)
 
-	# Apply consensus methods to the poses
-	for method in pose_selection_methods:
-		apply_consensus_methods(w_dir=w_dir,
-			selection_method=method,
-			consensus_methods=consensus,
-			rescoring_functions=rescoring,
-			standardization_type="min_max")
+		# Rescore poses for each selection method
+		rescored_poses = rescore_poses(protein_file=prepared_receptor,
+				pocket_definition=pocket_definition,
+				software=software,
+				poses=selected_poses,
+				functions=rescoring,
+				n_cpus=n_cpus,
+				output_file=w_dir / f"rescoring/{method}_rescored.csv")
 
-	return
+		# Create consensus directory
+		(w_dir / "consensus").mkdir(exist_ok=True)
+
+		# Apply consensus methods to the poses
+		consensus_results = apply_consensus_methods(poses_input=rescored_poses,
+					consensus_methods=consensus,
+					standardization_type="min_max",
+					output_path=w_dir / "consensus")
+
+	return consensus_results
 
 
 def run_dockm8(config):
@@ -168,9 +144,9 @@ def run_dockm8(config):
 	decoy_generation = config["decoy_generation"]
 	if decoy_generation["gen_decoys"]:
 		decoy_library = generate_decoys(Path(decoy_generation.get("actives")),
-			decoy_generation.get("n_decoys"),
-			decoy_generation.get("decoy_model"),
-			software)
+				decoy_generation.get("n_decoys"),
+				decoy_generation.get("decoy_model"),
+				software)
 
 		if config["general"]["mode"] == "single":
 			# Run DockM8 on the decoy library
@@ -202,6 +178,7 @@ def run_dockm8(config):
 			else:
 				pass
 			optimal_rescoring_functions = list(optimal_conditions["scoring"].split("_"))
+			optimal_rescoring_functions = [func for func in optimal_rescoring_functions if func in RESCORING_FUNCTIONS]
 			config["pose_selection"]["pose_selection_method"] = optimal_conditions["clustering"]
 			# Save optimal conditions to a file
 			with open(config["receptor(s)"][0].parent / "DeepCoy" / "optimal_conditions.txt", "w") as file:
@@ -262,6 +239,7 @@ def run_dockm8(config):
 			else:
 				pass
 			optimal_rescoring_functions = list(optimal_conditions["scoring"].split("_"))
+			optimal_rescoring_functions = [func for func in optimal_rescoring_functions if func in RESCORING_FUNCTIONS]
 			config["pose_selection"]["pose_selection_method"] = optimal_conditions["clustering"]
 			# Save optimal conditions to a file
 			with open(config["receptor(s)"][0].parent / "DeepCoy" / "optimal_conditions.txt", "w") as file:

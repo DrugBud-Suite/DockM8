@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def Zscore_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def Zscore_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	"""
     Calculates the Z-score consensus scores for each row in the given DataFrame. Returns only the best score for each ID. No averaging is carried out.
 
@@ -34,5 +34,5 @@ def Zscore_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list
 	df = df.drop_duplicates("ID", inplace=False)
 	# Normalize the Zscore column
 	df["Zscore"] = (df["Zscore"] - df["Zscore"].min()) / (df["Zscore"].max() - df["Zscore"].min())
-	df = df.rename(columns={"Zscore": f"Zscore_best_{clustering_metric}"})
-	return df[["ID", f"Zscore_best_{clustering_metric}"]]
+	df = df.rename(columns={"Zscore": "Zscore_best"})
+	return df[["ID", "Zscore_best"]]

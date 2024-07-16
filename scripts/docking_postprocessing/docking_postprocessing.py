@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path
+from typing import Union, Optional
 
+import pandas as pd
 from rdkit.Chem import PandasTools
 
 # Search for 'DockM8' in parent directories
@@ -12,7 +14,7 @@ import warnings
 
 from scripts.docking_postprocessing.posebusters.posebusters import pose_buster
 from scripts.docking_postprocessing.posecheck.posecheck import pose_checker
-from scripts.docking_postprocessing.minimisation.minimize import minimize_all_ligands
+from scripts.docking_postprocessing.minimization.minimize import minimize_all_ligands
 from scripts.docking_postprocessing.classy_pose.classy_pose import classy_pose_filter
 from scripts.utilities.utilities import parallel_SDF_loader
 from scripts.utilities.logging import printlog
@@ -25,23 +27,21 @@ def log_dataframe_length_change(previous_length, current_length, process_name):
 		printlog(f"Removed {previous_length - current_length} poses during {process_name} postprocessing.")
 
 
-def docking_postprocessing(input_sdf: Path,
-		output_path: Path,
-		protein_file: Path,
-		minimize_poses: bool,
-		bust_poses: bool,
-		strain_cutoff: int,
-		clash_cutoff: int,
-		classy_pose: bool,
-		classy_pose_model: str,
-		n_cpus: int,
-		) -> Path:
+def docking_postprocessing(input_data: Union[Path, pd.DataFrame],
+							protein_file: Path,
+							minimize_poses: bool,
+							bust_poses: bool,
+							strain_cutoff: int,
+							clash_cutoff: int,
+							classy_pose: bool,
+							classy_pose_model: str,
+							n_cpus: int,
+							output_sdf: Optional[Path]) -> pd.DataFrame:
 	"""
     Perform postprocessing on docking results.
 
     Args:
-        input_sdf (Path): Path to the input SDF file containing docking results.
-        output_path (Path): Path to save the postprocessed SDF file.
+        input_data (Union[Path, pd.DataFrame]): Path to the input SDF file or a pre-loaded DataFrame containing docking results.
         protein_file (Path): Path to the protein file used for docking.
         minimize_poses (bool): Flag indicating whether to perform ligand minimization.
         bust_poses (bool): Flag indicating whether to apply pose busting.
@@ -50,36 +50,46 @@ def docking_postprocessing(input_sdf: Path,
         classy_pose (bool): Flag indicating whether to perform classy pose analysis.
         classy_pose_model (str): Path to the classy pose model file.
         n_cpus (int): Number of CPUs to use for parallel processing.
+        output_sdf (Optional[Path]): Path to save the postprocessed SDF file.
 
     Returns:
-        Path: Path to the postprocessed SDF file.
+        pd.DataFrame: DataFrame containing the postprocessed docking results.
     """
 	printlog("Postprocessing docking results...")
-	sdf_dataframe = parallel_SDF_loader(input_sdf, molColName="Molecule", idName="Pose ID", n_cpus=n_cpus)
-	initial_length = len(sdf_dataframe)
+	try:
+		if isinstance(input_data, Path):
+			sdf_dataframe = parallel_SDF_loader(input_data, molColName="Molecule", idName="Pose ID", n_cpus=n_cpus)
+		elif isinstance(input_data, pd.DataFrame):
+			sdf_dataframe = input_data
+		else:
+			raise ValueError("input_data must be either a Path to an SDF file or a pandas DataFrame")
 
-	if minimize_poses:
-		sdf_dataframe = minimize_all_ligands(protein_file, str(input_sdf), n_cpus)
-	log_dataframe_length_change(initial_length, len(sdf_dataframe), "Ligand Minimization")
-	initial_length = len(sdf_dataframe)
+		initial_length = len(sdf_dataframe)
 
-	if (strain_cutoff is not None) and (clash_cutoff is not None):
-		sdf_dataframe = pose_checker(sdf_dataframe, protein_file, clash_cutoff, strain_cutoff, n_cpus)
+		if minimize_poses:
+			sdf_dataframe = minimize_all_ligands(protein_file, sdf_dataframe, n_cpus)
+		log_dataframe_length_change(initial_length, len(sdf_dataframe), "Ligand Minimization")
+		initial_length = len(sdf_dataframe)
+
+		if (strain_cutoff is not None) and (clash_cutoff is not None):
+			sdf_dataframe = pose_checker(sdf_dataframe, protein_file, clash_cutoff, strain_cutoff, n_cpus)
 		log_dataframe_length_change(initial_length, len(sdf_dataframe), "PoseChecker")
 		initial_length = len(sdf_dataframe)
 
-	if bust_poses:
-		sdf_dataframe = pose_buster(sdf_dataframe, protein_file, n_cpus)
+		if bust_poses:
+			sdf_dataframe = pose_buster(sdf_dataframe, protein_file, n_cpus)
 		log_dataframe_length_change(initial_length, len(sdf_dataframe), "PoseBusters")
 		initial_length = len(sdf_dataframe)
 
-	if classy_pose:
-		sdf_dataframe = classy_pose_filter(sdf_dataframe, protein_file, classy_pose_model, n_cpus)
+		if classy_pose:
+			sdf_dataframe = classy_pose_filter(sdf_dataframe, protein_file, classy_pose_model, n_cpus)
 		log_dataframe_length_change(initial_length, len(sdf_dataframe), "ClassyPose")
-
-	PandasTools.WriteSDF(sdf_dataframe,
-			str(output_path),
-			molColName="Molecule",
-			idName="Pose ID",
-			properties=list(sdf_dataframe.columns))
-	return output_path
+		if output_sdf:
+			PandasTools.WriteSDF(sdf_dataframe,
+									str(output_sdf),
+									molColName="Molecule",
+									idName="Pose ID",
+									properties=list(sdf_dataframe.columns))
+	except Exception as e:
+		printlog(f"An error occurred during docking postprocessing: {str(e)}")
+	return sdf_dataframe

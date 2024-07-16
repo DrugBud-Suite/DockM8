@@ -22,11 +22,11 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 def protonate_GypsumDL(df: pd.DataFrame,
-		software: Path,
-		n_cpus: int,
-		min_ph: float = 6.5,
-		max_ph: float = 7.5,
-		pka_precision: float = 1.0) -> pd.DataFrame:
+	software: Path,
+	n_cpus: int,
+	min_ph: float = 6.5,
+	max_ph: float = 7.5,
+	pka_precision: float = 1.0) -> pd.DataFrame:
 	"""
 	Generates protonation states using GypsumDL.
 
@@ -65,37 +65,42 @@ def protonate_GypsumDL(df: pd.DataFrame,
 			results_dir = output_dir / "GypsumDL_results"
 			try:
 				gypsum_dl_command = (f"{sys.executable} {software}/gypsum_dl-1.2.1/run_gypsum_dl.py "
-						f"-s {split_file} "
-						f"-o {results_dir} "
-						f"--job_manager multiprocessing "
-						f"-p {cpus} "
-						f"-m 1 "
-						f"-t 10 "
-						f"--min_ph {min_ph} "
-						f"--max_ph {max_ph} "
-						f"--pka_precision {pka_precision} "
-						f"--skip_alternate_ring_conformations "
-						f"--skip_making_tautomers "
-						f"--skip_enumerate_chiral_mol "
-						f"--skip_enumerate_double_bonds "
-						f"--max_variants_per_compound 1 "
-						f"--separate_output_files "
-						f"--2d_output_only")
+					f"-s {split_file} "
+					f"-o {results_dir} "
+					f"--job_manager multiprocessing "
+					f"-p {cpus} "
+					f"-m 1 "
+					f"-t 10 "
+					f"--min_ph {min_ph} "
+					f"--max_ph {max_ph} "
+					f"--pka_precision {pka_precision} "
+					f"--skip_alternate_ring_conformations "
+					f"--skip_making_tautomers "
+					f"--skip_enumerate_chiral_mol "
+					f"--skip_enumerate_double_bonds "
+					f"--max_variants_per_compound 1 "
+					f"--separate_output_files "
+					f"--2d_output_only")
 				subprocess.call(gypsum_dl_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 			except Exception as e:
 				printlog(f"ERROR: Failed to generate protomers! {e}")
 			return
 
 		# Parallel execution function (you'll need to implement this)
-		parallel_executor(gypsum_dl_run, split_files_sdfs, 3, output_dir=output_dir, cpus=math.ceil(n_cpus // 3))
+		parallel_executor(gypsum_dl_run,
+							list_of_objects=split_files_sdfs,
+							n_cpus=3,
+							display_name="Protomer Generation with GypsumDL",
+							output_dir=output_dir,
+							cpus=math.ceil(n_cpus // 3))
 
 		results_dfs = []
 
 		for file in os.listdir(output_dir / "GypsumDL_results"):
 			if file.endswith(".sdf"):
 				sdf_df = PandasTools.LoadSDF(str(output_dir / "GypsumDL_results" / file),
-						molColName="Molecule",
-						idName="ID")
+					molColName="Molecule",
+					idName="ID")
 				results_dfs.append(sdf_df)
 
 		final_df = pd.concat(results_dfs)

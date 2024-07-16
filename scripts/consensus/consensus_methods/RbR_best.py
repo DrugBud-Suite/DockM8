@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def RbR_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -> pd.DataFrame:
+def RbR_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	"""
     Calculates the Rank by Rank (RbR) consensus score for each ID in the input dataframe.
 
@@ -32,5 +32,5 @@ def RbR_best(df: pd.DataFrame, clustering_metric: str, selected_columns: list) -
 	df = df.drop_duplicates(subset="ID", inplace=False)
 	# Normalize the RbR column
 	df["RbR"] = (df["RbR"].max() - df["RbR"]) / (df["RbR"].max() - df["RbR"].min())
-	df = df.rename(columns={"RbR": f"RbR_best_{clustering_metric}"})
-	return df[["ID", f"RbR_best_{clustering_metric}"]]
+	df = df.rename(columns={"RbR": "RbR_best"})
+	return df[["ID", "RbR_best"]]

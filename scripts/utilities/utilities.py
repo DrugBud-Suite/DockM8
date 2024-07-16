@@ -99,10 +99,10 @@ def str2bool(v):
 
 
 def parallel_SDF_loader(sdf_path: Path,
-						molColName: str,
-						idName: str,
-						n_cpus: Optional[int] = None,
-						SMILES: Optional[str] = None) -> pd.DataFrame:
+		molColName: str,
+		idName: str,
+		n_cpus: Optional[int] = None,
+		SMILES: Optional[str] = None) -> pd.DataFrame:
 	"""
     Loads an SDF file in parallel using ThreadPoolExecutor.
 
@@ -122,9 +122,9 @@ def parallel_SDF_loader(sdf_path: Path,
 	def process_molecule(mol):
 		if mol is None:
 			return None
-		mol_props = {"Pose ID": mol.GetProp("_Name")}
+		mol_props = {idName: mol.GetProp("_Name")}
 		mol_props.update({prop: mol.GetProp(prop) for prop in mol.GetPropNames()})
-		mol_props["Molecule"] = mol
+		mol_props[molColName] = mol
 		return mol_props
 
 	try:

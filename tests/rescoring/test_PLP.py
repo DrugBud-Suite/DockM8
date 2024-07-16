@@ -2,53 +2,47 @@ import os
 from pathlib import Path
 import sys
 
+import pandas as pd
 from pandas import DataFrame
-
 import pytest
+from rdkit import Chem
 
 # Search for 'DockM8' in parent directories
-tests_path = next((p / "tests"
-                   for p in Path(__file__).resolve().parents
-                   if (p / "tests").is_dir()), None)
+tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.rescoring.rescoring_functions.PLP import plp_rescoring
+from scripts.rescoring.rescoring_functions.PLP import PLP
 
 
 @pytest.fixture
 def test_data():
-    dockm8_path = next((p / "tests"
-                        for p in Path(__file__).resolve().parents
-                        if (p / "tests").is_dir()), None).parent
-    w_dir = dockm8_path / "tests/test_files/rescoring"
-    protein_file = dockm8_path / "tests/test_files/rescoring/example_prepared_receptor_1fvv.pdb"
-    software = dockm8_path / "software"
-    clustered_sdf = dockm8_path / "tests/test_files/rescoring/example_poses_1fvv.sdf"
-    n_cpus = int(os.cpu_count() * 0.9)
-    pocket_definition = {"center": [1.0, 2.0, 3.0], "size": [10.0]}
-    return w_dir, protein_file, software, clustered_sdf, n_cpus, pocket_definition
+	dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
+	protein_file = dockm8_path / "tests/test_files/rescoring/example_prepared_receptor_1fvv.pdb"
+	software = dockm8_path / "software"
+	clustered_sdf = dockm8_path / "tests/test_files/rescoring/example_poses_1fvv.sdf"
+	n_cpus = int(os.cpu_count() * 0.9)
+	output_dir = dockm8_path / "tests/test_files/rescoring/output"
+	output_dir.mkdir(exist_ok=True)
+	return protein_file, software, clustered_sdf, n_cpus, output_dir
 
 
-def test_plp_rescoring(test_data):
-    # Define the input arguments for the function
-    w_dir, protein_file, software, clustered_sdf, n_cpus, pocket_definition = test_data
-    column_name = "PLP"
-    rescoring_folder = w_dir / f"rescoring_{clustered_sdf.stem}"
+def test_PLP_rescoring(test_data):
+	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-    # Call the function
-    result = plp_rescoring(
-        clustered_sdf,
-        n_cpus,
-        column_name,
-        rescoring_folder=rescoring_folder,
-        software=software,
-        protein_file=protein_file,
-        pocket_definition=pocket_definition)
+	plp = PLP()
 
+	result = plp.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
 
-    # Assert the result
-    assert isinstance(result, DataFrame)
-    assert "Pose ID" in result.columns
-    assert "PLP" in result.columns
-    assert len(result) > 0
+	assert isinstance(result, DataFrame)
+	assert "Pose ID" in result.columns
+	assert plp.column_name in result.columns
+	assert len(result) > 0
+
+	suppl = Chem.SDMolSupplier(str(clustered_sdf))
+	num_molecules = len([mol for mol in suppl if mol is not None])
+	assert len(result) == num_molecules
+
+	output_file = output_dir / f"{plp.column_name}_scores.csv"
+	result.to_csv(output_file, index=False)
+	assert output_file.is_file()

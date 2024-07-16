@@ -30,7 +30,12 @@ else:
 	from tqdm import tqdm
 
 
-def parallel_executor(function, list_of_objects: list, n_cpus: int, job_manager="concurrent_process", **kwargs):
+def parallel_executor(function,
+						list_of_objects: list,
+						n_cpus: int,
+						job_manager="concurrent_process",
+						display_name: str = None,
+						**kwargs):
 	"""
     Executes a function in parallel using multiple processes.
 
@@ -52,8 +57,9 @@ def parallel_executor(function, list_of_objects: list, n_cpus: int, job_manager=
 		with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
 			jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
 			results = [
-				job.result() for job in tqdm(
-				concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function_name}")]
+				job.result() for job in tqdm(concurrent.futures.as_completed(jobs),
+												total=len(list_of_objects),
+												desc=f"Running {display_name if display_name else function_name}")]
 
 	elif job_manager == "concurrent_process_silent":
 		with concurrent.futures.ProcessPoolExecutor(max_workers=n_cpus) as executor:
@@ -64,12 +70,15 @@ def parallel_executor(function, list_of_objects: list, n_cpus: int, job_manager=
 		with concurrent.futures.ThreadPoolExecutor(max_workers=n_cpus) as executor:
 			jobs = [executor.submit(function, obj, **kwargs) for obj in list_of_objects]
 			results = [
-				job.result() for job in tqdm(
-				concurrent.futures.as_completed(jobs), total=len(list_of_objects), desc=f"Running {function_name}")]
+				job.result() for job in tqdm(concurrent.futures.as_completed(jobs),
+												total=len(list_of_objects),
+												desc=f"Running {display_name if display_name else function_name}")]
 
 	elif job_manager == "joblib":
 		jobs = [delayed(function)(obj, **kwargs) for obj in list_of_objects]
-		results = Parallel(n_jobs=n_cpus)(tqdm(jobs, total=len(list_of_objects), desc=f"Running {function_name}"))
+		results = Parallel(n_jobs=n_cpus)(tqdm(jobs,
+												total=len(list_of_objects),
+												desc=f"Running {display_name if display_name else function_name}"))
 
 	elif job_manager == "pebble_process":
 		with pebble.ProcessPool(max_workers=n_cpus) as executor:

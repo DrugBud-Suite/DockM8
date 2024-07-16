@@ -1,12 +1,15 @@
 import os
+import shutil
 import sys
+import tempfile
 import time
 import warnings
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Union
 
 import pandas as pd
 from rdkit import RDLogger
+from rdkit.Chem import PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
@@ -14,223 +17,264 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.rescoring.rescoring_functions.AAScore import AAScore_rescoring
-from scripts.rescoring.rescoring_functions.AD4 import AD4_rescoring
-from scripts.rescoring.rescoring_functions.CHEMPLP import chemplp_rescoring
-from scripts.rescoring.rescoring_functions.ConvexPLR import ConvexPLR_rescoring
-from scripts.rescoring.rescoring_functions.gnina import gnina_rescoring
-from scripts.rescoring.rescoring_functions.KORP_PL import KORPL_rescoring
-from scripts.rescoring.rescoring_functions.LinF9 import LinF9_rescoring
-from scripts.rescoring.rescoring_functions.NNScore import oddt_nnscore_rescoring
-from scripts.rescoring.rescoring_functions.PLECScore import oddt_plecscore_rescoring
-from scripts.rescoring.rescoring_functions.PLP import plp_rescoring
-from scripts.rescoring.rescoring_functions.RFScoreVS import rfscorevs_rescoring
-from scripts.rescoring.rescoring_functions.RTMScore import RTMScore_rescoring
-from scripts.rescoring.rescoring_functions.SCORCH import SCORCH_rescoring
-from scripts.rescoring.rescoring_functions.vinardo import vinardo_rescoring
-from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff_rescoring
-from scripts.rescoring.rescoring_functions.DLIGAND2 import DLIGAND2_rescoring
-from scripts.rescoring.rescoring_functions.CENsible import CENsible_rescoring
-from scripts.rescoring.rescoring_functions.PANTHER import PANTHER_rescoring
-from scripts.rescoring.rescoring_functions.GenScore import GenScore_rescoring
+from scripts.rescoring.rescoring_functions.AAScore import AAScore
+from scripts.rescoring.rescoring_functions.AD4 import AD4
+from scripts.rescoring.rescoring_functions.CENsible import CENsible
+from scripts.rescoring.rescoring_functions.CHEMPLP import CHEMPLP
+from scripts.rescoring.rescoring_functions.ConvexPLR import ConvexPLR
+from scripts.rescoring.rescoring_functions.DLIGAND2 import DLIGAND2
+from scripts.rescoring.rescoring_functions.GenScore import GenScore
+from scripts.rescoring.rescoring_functions.gnina import Gnina
+from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff
+from scripts.rescoring.rescoring_functions.KORP_PL import KORPL
+from scripts.rescoring.rescoring_functions.LinF9 import LinF9
+from scripts.rescoring.rescoring_functions.NNScore import NNScore
+from scripts.rescoring.rescoring_functions.PANTHER import PANTHER
+from scripts.rescoring.rescoring_functions.PLECScore import PLECScore
+from scripts.rescoring.rescoring_functions.PLP import PLP
+from scripts.rescoring.rescoring_functions.RFScoreVS import RFScoreVS
+from scripts.rescoring.rescoring_functions.RTMScore import RTMScore
+from scripts.rescoring.rescoring_functions.SCORCH import SCORCH
+from scripts.rescoring.rescoring_functions.vinardo import Vinardo
+from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-# add new scoring functions here!
-# Dict key: (function, column_name, min or max ordering, min value for scaled standardisation, max value for scaled standardisation)
+# Updated RESCORING_FUNCTIONS dictionary using class instances
 RESCORING_FUNCTIONS = {
-	"GNINA-Affinity": {
-		"function": gnina_rescoring, "column_name": "GNINA-Affinity", "best_value": "min", "range": (100, -100), },
-	"CNN-Score": {
-		"function": gnina_rescoring, "column_name": "CNN-Score", "best_value": "max", "range": (0, 1)},
-	"CNN-Affinity": {
-		"function": gnina_rescoring, "column_name": "CNN-Affinity", "best_value": "max", "range": (0, 20)},
-	"Vinardo": {
-		"function": vinardo_rescoring, "column_name": "Vinardo", "best_value": "min", "range": (200, 20)},
-	"AD4": {
-		"function": AD4_rescoring, "column_name": "AD4", "best_value": "min", "range": (100, -100)},
-	"RFScoreVS": {
-		"function": rfscorevs_rescoring, "column_name": "RFScoreVS", "best_value": "max", "range": (5, 10)},
-                                                                                                                       #'RFScoreVS2':       {'function': rfscorevs_rescoring2,    'column_name': 'RFScoreVS',      'best_value': 'max', 'range': (5, 10)},
-	"PLP": {
-		"function": plp_rescoring, "column_name": "PLP", "best_value": "min", "range": (200, -200)},
-	"CHEMPLP": {
-		"function": chemplp_rescoring, "column_name": "CHEMPLP", "best_value": "min", "range": (200, -200)},
-	"NNScore": {
-		"function": oddt_nnscore_rescoring, "column_name": "NNScore", "best_value": "max", "range": (0, 20)},
-	"PLECScore": {
-		"function": oddt_plecscore_rescoring, "column_name": "PLECScore", "best_value": "max", "range": (0, 20), },
-	"LinF9": {
-		"function": LinF9_rescoring, "column_name": "LinF9", "best_value": "min", "range": (100, -100)},
-	"AAScore": {
-		"function": AAScore_rescoring, "column_name": "AAScore", "best_value": "max", "range": (100, -100)},
-	"SCORCH": {
-		"function": SCORCH_rescoring, "column_name": "SCORCH", "best_value": "max", "range": (0, 1)},
-	"RTMScore": {
-		"function": RTMScore_rescoring, "column_name": "RTMScore", "best_value": "max", "range": (0, 100)},
-	"KORP-PL": {
-		"function": KORPL_rescoring, "column_name": "KORP-PL", "best_value": "min", "range": (200, -1000)},
-	"ConvexPLR": {
-		"function": ConvexPLR_rescoring, "column_name": "ConvexPLR", "best_value": "max", "range": (-10, 10)},
-	"ITScoreAff": {
-		"function": ITScoreAff_rescoring, "column_name": "ITScoreAff", "best_value": "min", "range": (-200, 100)},
-	"DLIGAND2": {
-		"function": DLIGAND2_rescoring, "column_name": "DLIGAND2", "best_value": "min", "range": (-200, 100)},
-	"CENsible": {
-		"function": CENsible_rescoring, "column_name": "CENsible", "best_value": "max", "range": (0, 20)},
-	"PANTHER": {
-		"function": PANTHER_rescoring, "column_name": "PANTHER", "best_value": "max", "range": (0, 10)},
-	"PANTHER-ESP": {
-		"function": PANTHER_rescoring, "column_name": "PANTHER-ESP", "best_value": "max", "range": (0, 10)},
-	"PANTHER-Shape": {
-		"function": PANTHER_rescoring, "column_name": "PANTHER-Shape", "best_value": "max", "range": (0, 10)},
-	"GenScore-scoring": {
-		"function": GenScore_rescoring, "column_name": "GenScore-scoring", "best_value": "max", "range": (0, 200)},
-	"GenScore-docking": {
-		"function": GenScore_rescoring, "column_name": "GenScore-docking", "best_value": "max", "range": (0, 200)},
-	"GenScore-balanced": {
-		"function": GenScore_rescoring, "column_name": "GenScore-balanced", "best_value": "max", "range": (0, 200)}, }
+	"AAScore": AAScore(),
+	"AD4": AD4(),
+	"CENsible": CENsible(),
+	"CHEMPLP": CHEMPLP(),
+	"CNN-Affinity": Gnina("cnn_affinity"),
+	"CNN-Score": Gnina("cnn_score"),
+	"ConvexPLR": ConvexPLR(),
+	"DLIGAND2": DLIGAND2(),
+	"GenScore-balanced": GenScore("balanced"),
+	"GenScore-docking": GenScore("docking"),
+	"GenScore-scoring": GenScore("scoring"),
+	"GNINA-Affinity": Gnina("affinity"),
+	"ITScoreAff": ITScoreAff(),
+	"KORP-PL": KORPL(),
+	"LinF9": LinF9(),
+	"NNScore": NNScore(),
+	"PANTHER": PANTHER("PANTHER"),
+	"PANTHER-ESP": PANTHER("PANTHER-ESP"),
+	"PANTHER-Shape": PANTHER("PANTHER-Shape"),
+	"PLECScore": PLECScore(),
+	"PLP": PLP(),
+	"RFScoreVS": RFScoreVS(),
+	"RTMScore": RTMScore(),
+	"SCORCH": SCORCH(),
+	"Vinardo": Vinardo(), }
 
 
-def rescore_poses(w_dir: Path,
-	protein_file: Path,
-	pocket_definition: dict,
-	software: Path,
-	clustered_sdf: Path,
-	functions: List[str],
-	n_cpus: int) -> None:
+def create_temp_dir(name: str) -> Path:
 	"""
-    Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into
-    smaller files, and then runs the specified software on each of these files in parallel. The results are then combined into a single
-    Pandas dataframe and saved to a CSV file.
+	Creates a temporary directory for the scoring function.
 
-    Args:
-        w_dir (str): The working directory.
-        protein_file (str): The path to the protein file.
-        pocket_definition (dict): A dictionary containing the pocket center and size.
-        software (str): The path to the software to be used for rescoring.
-        clustered_sdf (str): The path to the input SDF file containing the clustered poses.
-        functions (List[str]): A list of the scoring functions to be used.
-        n_cpus (int): The number of CPUs to use for parallel execution.
+	Args:
+		name (str): The name of the scoring function.
 
-    Returns:
-        None
-    """
-	RDLogger.DisableLog("rdApp.*")
-	tic = time.perf_counter()
-	rescoring_folder_name = Path(clustered_sdf).stem
-	rescoring_folder = w_dir / f"rescoring_{rescoring_folder_name}"
-	(rescoring_folder).mkdir(parents=True, exist_ok=True)
-
-	skipped_functions = []
-	for function in functions:
-		function_info = RESCORING_FUNCTIONS.get(function)
-		if not (rescoring_folder / f"{function}_rescoring" / f"{function}_scores.csv").is_file():
-			try:
-				function_info["function"](clustered_sdf,
-					n_cpus,
-					function_info["column_name"],
-					protein_file=protein_file,
-					pocket_definition=pocket_definition,
-					software=software,
-					rescoring_folder=rescoring_folder)
-
-			except Exception as e:
-				printlog(e)
-				printlog(f"Failed for {function}")
-		else:
-			skipped_functions.append(function)
-	if skipped_functions:
-		printlog(f'Skipping functions: {", ".join(skipped_functions)}')
-
-	score_files = [f"{function}_scores.csv" for function in functions]
-	csv_files = [file for file in (rescoring_folder.rglob("*.csv")) if file.name in score_files]
-	csv_dfs = []
-	for file in csv_files:
-		df = pd.read_csv(file)
-		if "Unnamed: 0" in df.columns:
-			df = df.drop(columns=["Unnamed: 0"])
-		csv_dfs.append(df)
-	if len(csv_dfs) == 1:
-		combined_dfs = csv_dfs[0]
-	if len(csv_dfs) > 1:
-		combined_dfs = csv_dfs[0]
-		for df in tqdm(csv_dfs[1:], desc="Combining scores", unit="files"):
-			combined_dfs = pd.merge(combined_dfs, df, on="Pose ID", how="inner")
-	first_column = combined_dfs.pop("Pose ID")
-	combined_dfs.insert(0, "Pose ID", first_column)
-	columns = combined_dfs.columns
-	col = columns[1:]
-	for c in col.tolist():
-		if c == "Pose ID":
-			pass
-		if combined_dfs[c].dtypes is not float:
-			combined_dfs[c] = combined_dfs[c].apply(pd.to_numeric, errors="coerce")
-		else:
-			pass
-	combined_dfs.to_csv(rescoring_folder / "allposes_rescored.csv", index=False)
-	# delete_files(rescoring_folder, 'allposes_rescored.csv')
-	toc = time.perf_counter()
-	printlog(f"Rescoring complete in {toc - tic:0.4f}!")
-	return
-
-
-def rescore_docking(w_dir: Path, protein_file: Path, pocket_definition: dict, software: Path, function: str, n_cpus: int) -> None:
+	Returns:
+		Path: The path to the temporary directory.
 	"""
-    Rescores ligand poses using the specified software and scoring functions. The function splits the input SDF file into
-    smaller files, and then runs the specified software on each of these files in parallel. The results are then combined into a single
-    Pandas dataframe and saved to a CSV file.
+	os.makedirs(Path.home() / "dockm8_temp_files", exist_ok=True)
+	return Path(tempfile.mkdtemp(dir=Path.home() / "dockm8_temp_files", prefix=f"dockm8_{name}_"))
 
-    Args:
-        w_dir (str): The working directory.
-        protein_file (str): The path to the protein file.
-        pocket_definition (dict): A dictionary containing the pocket center and size.
-        software (str): The path to the software to be used for rescoring.
-        all_poses (str): The path to the input SDF file containing the clustered poses.
-        functions (List[str]): A list of the scoring functions to be used.
-        n_cpus (int): The number of CPUs to use for parallel execution.
 
-    Returns:
-        None
-    """
+def remove_temp_dir(temp_dir: Path):
+	"""
+	Removes the temporary directory.
+
+	Args:
+		temp_dir (Path): The path to the temporary directory.
+	"""
+	shutil.rmtree(str(temp_dir), ignore_errors=True)
+
+
+def save_dataframe_to_sdf(dataframe, file_path, molecule_column='Molecule', id_column='ID'):
+	"""Helper function to save DataFrame to SDF format."""
+	PandasTools.WriteSDF(dataframe,
+							file_path,
+							molColName=molecule_column,
+							idName=id_column,
+							properties=list(dataframe.columns))
+
+
+def rescore_poses(protein_file: Path,
+					pocket_definition: dict,
+					software: Path,
+					poses: Union[Path, pd.DataFrame],
+					functions: List[str],
+					n_cpus: int,
+					output_file: Optional[Path] = None) -> pd.DataFrame:
+	"""
+	Rescores poses using specified scoring functions. If an output file exists,
+	it will only run the missing scoring functions.
+
+	Args:
+		protein_file (Path): Path to the protein file.
+		pocket_definition (dict): Dictionary defining the pocket.
+		software (Path): Path to the software.
+		poses (Union[Path, pd.DataFrame]): Path to the clustered SDF file or DataFrame of poses.
+		functions (List[str]): List of scoring function names.
+		n_cpus (int): Number of CPUs to use for parallel processing.
+		output_file (Optional[Path], optional): Path to the output file. Defaults to None.
+
+	Returns:
+		pd.DataFrame: Combined DataFrame of the rescored poses.
+	"""
 	RDLogger.DisableLog("rdApp.*")
 	tic = time.perf_counter()
 
-	all_poses = Path(f"{w_dir}/allposes.sdf")
+	# Process input
+	temp_dir = create_temp_dir("rescore_poses")
+	try:
+		if isinstance(poses, Path):
+			sdf = poses
+		elif isinstance(poses, pd.DataFrame):
+			sdf = temp_dir / "temp_clustered.sdf"
+			PandasTools.WriteSDF(poses, sdf, molColName='Molecule', idName='Pose ID', properties=list(poses.columns))
+		else:
+			raise ValueError("poses must be a Path or DataFrame")
 
-	function_info = RESCORING_FUNCTIONS.get(function)
+		existing_results = pd.DataFrame()
+		functions_to_run = functions.copy()
 
-	function_info["function"](all_poses,
-		n_cpus,
-		function_info["column_name"],
-		protein_file=protein_file,
-		pocket_definition=pocket_definition,
-		software=software,
-		rescoring_folder=w_dir)
+		if output_file and output_file.exists():
+			existing_results = pd.read_csv(output_file)
+			printlog(f"Found existing results in {output_file}")
+			existing_functions = [col for col in existing_results.columns if col != "Pose ID"]
+			functions_to_run = [f for f in functions if f not in existing_functions]
+			printlog(f"Functions to run: {', '.join(functions_to_run)}")
 
-	score_file = f"{w_dir}/{function}_rescoring/{function}_scores.csv"
+		results = []
+		skipped_functions = []
+		for function in functions_to_run:
+			scoring_function: ScoringFunction = RESCORING_FUNCTIONS.get(function)
+			if scoring_function:
+				try:
+					result = scoring_function.rescore(str(sdf),
+														n_cpus,
+														software=str(software),
+														protein_file=str(protein_file),
+														pocket_definition=pocket_definition)
+					results.append(result)
+				except Exception as e:
+					printlog(e)
+					printlog(f"Failed for {function}")
+			else:
+				skipped_functions.append(function)
 
-	score_df = pd.read_csv(score_file)
-	if "Unnamed: 0" in score_df.columns:
-		score_df = score_df.drop(columns=["Unnamed: 0"])
+		if skipped_functions:
+			printlog(f'Skipping functions: {", ".join(skipped_functions)}')
 
-	score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
-	score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
-	score_df["ID"] = score_df["Pose ID"].str.split("_").str[0].astype(str)
+		if results:
+			if len(results) == 1:
+				new_results = results[0]
+			else:
+				new_results = results[0]
+				for df in tqdm(results[1:], desc="Combining scores", unit="files"):
+					new_results = pd.merge(new_results, df, on="Pose ID", how="inner")
 
-	if function_info["best_value"] == "min":
-		best_pose_indices = score_df.groupby("ID")[function_info["column_name"]].idxmin()
-	else:
-		best_pose_indices = score_df.groupby("ID")[function_info["column_name"]].idxmax()
+			if not existing_results.empty:
+				combined_df = pd.merge(existing_results, new_results, on="Pose ID", how="outer")
+			else:
+				combined_df = new_results
+		else:
+			combined_df = existing_results
 
-	if os.path.exists(score_file):
-		os.remove(score_file)
-	if os.path.exists(f"{w_dir}/{function}_rescoring"):
-		os.rmdir(f"{w_dir}/{function}_rescoring")
+		# Ensure "Pose ID" is the first column
+		columns = combined_df.columns.tolist()
+		columns.insert(0, columns.pop(columns.index("Pose ID")))
+		combined_df = combined_df[columns]
 
-	best_poses = pd.DataFrame(score_df.loc[best_pose_indices, "Pose ID"])
-	toc = time.perf_counter()
-	printlog(f"Rescoring complete in {toc - tic:0.4f}!")
-	return best_poses
+		# Convert columns to float where possible
+		for col in combined_df.columns:
+			if col != "Pose ID":
+				combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce')
+
+		if output_file:
+			combined_df.to_csv(output_file, index=False)
+			printlog(f"Rescoring results written to {output_file}")
+
+		toc = time.perf_counter()
+		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
+
+		return combined_df
+
+	finally:
+		remove_temp_dir(temp_dir)
+
+
+def rescore_docking(poses: Union[Path, pd.DataFrame],
+					protein_file: Path,
+					pocket_definition: dict,
+					software: Path,
+					function: str,
+					n_cpus: int) -> pd.DataFrame:
+	"""
+	Rescores the docking poses using a specified scoring function.
+
+	Args:
+		poses (Union[Path, pd.DataFrame]): The path to the SDF file containing the docking poses or a DataFrame of poses.
+		protein_file (Path): The path to the protein file.
+		pocket_definition (dict): A dictionary defining the pocket for docking.
+		software (Path): The path to the software used for docking.
+		function (str): The name of the scoring function to use for rescoring.
+		n_cpus (int): The number of CPUs to use for parallel processing.
+
+	Returns:
+		pd.DataFrame: A DataFrame containing the best poses after rescoring.
+
+	Raises:
+		ValueError: If an unknown scoring function is specified.
+	"""
+	RDLogger.DisableLog("rdApp.*")
+	tic = time.perf_counter()
+
+	temp_dir = create_temp_dir("rescore_docking")
+	try:
+		# Process input
+		if isinstance(poses, Path):
+			sdf = poses
+		elif isinstance(poses, pd.DataFrame):
+			sdf = temp_dir / "temp_clustered.sdf"
+			PandasTools.WriteSDF(poses,
+									sdf,
+									molColName='Molecule',
+									idName='Pose ID',
+									properties=list(poses.columns))
+		else:
+			raise ValueError("poses must be a Path or DataFrame")
+		scoring_function: ScoringFunction = RESCORING_FUNCTIONS.get(function)
+
+		if scoring_function is None:
+			raise ValueError(f"Unknown scoring function: {function}")
+
+		score_df = scoring_function.rescore(str(sdf),
+											n_cpus,
+											software=software,
+											protein_file=protein_file,
+											pocket_definition=pocket_definition)
+
+		score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
+		score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
+		score_df["ID"] = score_df["Pose ID"].str.split("_").str[0].astype(str)
+
+		if scoring_function.best_value == "min":
+			best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmin()
+		else:
+			best_pose_indices = score_df.groupby("ID")[scoring_function.column_name].idxmax()
+
+		best_poses = pd.DataFrame(score_df.loc[best_pose_indices, "Pose ID"])
+
+		toc = time.perf_counter()
+		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
+		return best_poses
+
+	finally:
+		remove_temp_dir(temp_dir)

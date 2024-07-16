@@ -18,12 +18,9 @@ st.set_page_config(page_title="DockM8", page_icon="./media/DockM8_logo.png", lay
 from gui.menu import PAGES, menu
 from scripts.pocket_finding.default import find_pocket_default
 from scripts.pocket_finding.dogsitescorer import find_pocket_dogsitescorer
-from scripts.pocket_finding.manual import parse_pocket_coordinates
-from scripts.pocket_finding.p2rank import download_p2rank, find_pocket_p2rank
+from scripts.pocket_finding.p2rank import download_p2rank
 from scripts.pocket_finding.pocket_finding import POCKET_DETECTION_OPTIONS
 from scripts.pocket_finding.radius_of_gyration import find_pocket_RoG
-from scripts.utilities.pocket_extraction import extract_pocket
-from scripts.utilities.logging import printlog
 
 menu()
 
@@ -33,9 +30,13 @@ if 'binding_site' not in st.session_state:
 	st.session_state.binding_site = None
 
 if 'prepared_protein_path' not in st.session_state:
+	if 'w_dir' in st.session_state:
+		default_value = Path(st.session_state.w_dir) / 'prepared_protein.pdb'
+	else:
+		default_value = dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"
 	protein_input = st.text_input("Enter file path (.pdb):",
-		value=str(dockm8_path / "tests" / "test_files" / "1fvv_p.pdb"),
-		help="Enter the complete file path to your protein data.")
+									value=default_value,
+									help="Enter the complete file path to your protein data.")
 else:
 	protein_input = st.session_state.prepared_protein_path
 
@@ -95,8 +96,8 @@ elif pocket_mode == "RoG":
 
 elif pocket_mode == "Dogsitescorer":
 	dogsitescorer_mode = st.selectbox(label="Choose which metric to select binding sites by:",
-				options=["Volume", "Druggability_Score", "Surface", "Depth"],
-				help="Choose the metric to select binding sites by.")
+		options=["Volume", "Druggability_Score", "Surface", "Depth"],
+		help="Choose the metric to select binding sites by.")
 	if st.button("Find Pockets"):
 		with st.spinner("Finding pocket..."):
 			try:
@@ -109,7 +110,7 @@ elif pocket_mode == "Dogsitescorer":
 
 elif pocket_mode == "p2rank":
 	pocket_radius = st.number_input("Binding Site Radius", min_value=0.0, value=10.0, step=0.1)
-	software = st.session_state.software if 'software' in st.session_state else Path(dockm8_path / 'software')
+	software = st.session_state.get('software', Path(dockm8_path / 'software'))
 	with st.spinner("Finding pocket..."):
 		if not os.path.exists(software / "p2rank" / "prank"):
 			p2rank_path = download_p2rank(software)

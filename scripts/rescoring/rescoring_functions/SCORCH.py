@@ -1,10 +1,8 @@
-from pathlib import Path
 import subprocess
-from subprocess import DEVNULL
-from subprocess import STDOUT
 import sys
 import time
 import warnings
+from pathlib import Path
 
 import pandas as pd
 
@@ -13,51 +11,72 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
+from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
-from scripts.utilities.utilities import delete_files
 from scripts.utilities.molecule_conversion import convert_molecules
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def SCORCH_rescoring(sdf: str, n_cpus: int, column_name: str, **kwargs):
-	"""
-    Rescores ligands in an SDF file using SCORCH and saves the results in a CSV file.
+class SCORCH(ScoringFunction):
 
-    Args:
-        sdf (str): Path to the SDF file containing the ligands to be rescored.
-        n_cpus (int): Number of CPUs to use for parallel processing.
-        column_name (str): Name of the column to store the SCORCH scores in the output CSV file.
-        **kwargs: Additional keyword arguments.
+	def __init__(self):
+		super().__init__("SCORCH", "SCORCH", "max", (0, 1))
 
-    Returns:
-        None
-    """
-	rescoring_folder = kwargs.get("rescoring_folder")
-	software = kwargs.get("software")
-	protein_file = kwargs.get("protein_file")
+	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
+		tic = time.perf_counter()
+		software = kwargs.get("software")
+		protein_file = kwargs.get("protein_file")
 
-	tic = time.perf_counter()
-	SCORCH_rescoring_folder = rescoring_folder / f"{column_name}_rescoring"
-	SCORCH_rescoring_folder.mkdir(parents=True, exist_ok=True)
-	SCORCH_protein = SCORCH_rescoring_folder / "protein.pdbqt"
-	convert_molecules(str(protein_file).replace(".pdb", "_pocket.pdb"), SCORCH_protein, "pdb", "pdbqt")
-	# Convert ligands to pdbqt
-	split_files_folder = SCORCH_rescoring_folder / f"split_{sdf.stem}"
-	split_files_folder.mkdir(exist_ok=True)
-	convert_molecules(sdf, split_files_folder, "sdf", "pdbqt")
-	# Run SCORCH
+		temp_dir = self.create_temp_dir()
+		try:
+			SCORCH_protein = Path(temp_dir) / "protein.pdbqt"
+			try:
+				convert_molecules(Path(str(protein_file)), SCORCH_protein, "pdb", "pdbqt", software)
+			except Exception as e:
+				printlog(f"Error converting protein file to .pdbqt: {str(e)}")
+				return pd.DataFrame()
 
-	SCORCH_command = f"cd {software}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {SCORCH_rescoring_folder}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
-	subprocess.call(SCORCH_command, shell=True, stdout=DEVNULL, stderr=STDOUT)
-	# Clean data
-	SCORCH_scores = pd.read_csv(SCORCH_rescoring_folder / "scoring_results.csv")
-	SCORCH_scores = SCORCH_scores.rename(columns={"Ligand_ID": "Pose ID", "SCORCH_pose_score": column_name})
-	SCORCH_scores = SCORCH_scores[[column_name, "Pose ID"]]
-	SCORCH_rescoring_results = SCORCH_rescoring_folder / f"{column_name}_scores.csv"
-	SCORCH_scores.to_csv(SCORCH_rescoring_results, index=False)
-	delete_files(SCORCH_rescoring_folder, f"{column_name}_scores.csv")
-	toc = time.perf_counter()
-	printlog(f"Rescoring with SCORCH complete in {toc-tic:0.4f}!")
-	return SCORCH_rescoring_results
+			# Convert ligands to pdbqt
+			split_files_folder = Path(temp_dir) / f"split_{Path(sdf).stem}"
+			split_files_folder.mkdir(exist_ok=True)
+			try:
+				convert_molecules(sdf, split_files_folder, "sdf", "pdbqt", software)
+			except Exception as e:
+				printlog(f"Error converting ligand file to .pdbqt: {str(e)}")
+				return pd.DataFrame()
+
+			# Run SCORCH
+			SCORCH_command = f"cd {software}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {temp_dir}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
+			try:
+				subprocess.run(SCORCH_command,
+								shell=True,
+								check=True,
+								stdout=subprocess.DEVNULL,
+								stderr=subprocess.STDOUT)
+			except subprocess.CalledProcessError as e:
+				printlog(f"Error running SCORCH command: {str(e)}")
+				return pd.DataFrame()
+
+			# Clean data
+			results_file = Path(temp_dir) / "scoring_results.csv"
+			if not results_file.exists():
+				printlog(f"Results file not found: {results_file}")
+				return pd.DataFrame()
+
+			SCORCH_scores = pd.read_csv(results_file)
+			SCORCH_scores = SCORCH_scores.rename(columns={
+				"Ligand_ID": "Pose ID", "SCORCH_pose_score": self.column_name})
+			SCORCH_scores = SCORCH_scores[[self.column_name, "Pose ID"]]
+
+			toc = time.perf_counter()
+			printlog(f"Rescoring with SCORCH complete in {toc-tic:0.4f}!")
+			return SCORCH_scores
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+
+# Usage:
+# scorch = SCORCH()
+# results = scorch.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)

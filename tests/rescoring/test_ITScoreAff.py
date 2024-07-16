@@ -1,49 +1,47 @@
 import os
-from pathlib import Path
 import sys
-
-import pandas as pd
-from pandas import DataFrame
+from pathlib import Path
 
 import pytest
+from pandas import DataFrame
+from rdkit import Chem
 
 # Search for 'DockM8' in parent directories
 tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff_rescoring
+from scripts.rescoring.rescoring_functions.ITScoreAff import ITScoreAff
 
 
 @pytest.fixture
 def test_data():
 	dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
-	w_dir = dockm8_path / "tests/test_files/rescoring"
 	protein_file = dockm8_path / "tests/test_files/rescoring/example_prepared_receptor_1fvv.pdb"
 	software = dockm8_path / "software"
 	clustered_sdf = dockm8_path / "tests/test_files/rescoring/example_poses_1fvv.sdf"
 	n_cpus = int(os.cpu_count() * 0.9)
-	return w_dir, protein_file, software, clustered_sdf, n_cpus
+	output_dir = dockm8_path / "tests/test_files/rescoring/output"
+	output_dir.mkdir(exist_ok=True)
+	return protein_file, software, clustered_sdf, n_cpus, output_dir
 
 
 def test_ITScoreAff_rescoring(test_data):
-	# Define the input arguments for the function
-	w_dir, protein_file, software, clustered_sdf, n_cpus = test_data
-	column_name = "ITScoreAff"
-	rescoring_folder = w_dir / f"rescoring_{clustered_sdf.stem}"
+	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	# Call the function
-	result_file = ITScoreAff_rescoring(clustered_sdf,
-										n_cpus,
-										column_name,
-										rescoring_folder=rescoring_folder,
-										software=software,
-										protein_file=protein_file)
+	itscoreAff = ITScoreAff()
 
-	# Assert the result
-	assert result_file.exists()
-	result = pd.read_csv(result_file)
+	result = itscoreAff.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns
-	assert "ITScoreAff" in result.columns
+	assert itscoreAff.column_name in result.columns
 	assert len(result) > 0
+
+	suppl = Chem.SDMolSupplier(str(clustered_sdf))
+	num_molecules = len([mol for mol in suppl if mol is not None])
+	assert len(result) == num_molecules
+
+	output_file = output_dir / f"{itscoreAff.column_name}_scores.csv"
+	result.to_csv(output_file, index=False)
+	assert output_file.is_file()

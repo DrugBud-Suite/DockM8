@@ -186,6 +186,15 @@ else
 
 	echo -e """
     ###############################################################
+    # Installing MGL_Tools environment
+    ###############################################################
+    """
+	conda deactivate
+	conda create -n mgltools python=2.7 -y
+    conda deactivate
+
+	echo -e """
+    ###############################################################
     # Installing GenScore environment
     ###############################################################
     """
@@ -352,10 +361,30 @@ cd $BASEDIR
 if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
     echo -e "\nDownloading DeepCoy models!"
     cd $DOCKM8_FOLDER/software/models
-    wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz
+    wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz --no-check-certificate -q --show-progress
     tar -xf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/
     rm DeepCoy_pretrained_models.tar.gz
 fi
+
+cd $BASEDIR
+
+if if [[ ! -f $DOCKM8_FOLDER/software/MGL_Tools* ]]; then
+    echo -e "\nDownloading MGL_Tools!"
+    cd $DOCKM8_FOLDER/software/
+    wget https://ccsb.scripps.edu/mgltools/download/491/mgltools_x86_64Linux2_1.5.7p1.tar.gz --no-check-certificate -q --show-progress
+    rm mgltools_x86_64Linux2_1.5.7p1.tar.gz
+    chmod +x ./mgltools_x86_64Linux2_1.5.7/install.sh
+	cd $DOCKM8_FOLDER/software/mgltools_x86_64Linux2_1.5.7
+	./install.sh -d $DOCKM8_FOLDER/software/MGL_Tools -c 1
+	rmdir -r $DOCKM8_FOLDER/software/mgltools_x86_64Linux2_1.5.7
+fi
+
+if if [[ ! -f $DOCKM8_FOLDER/software/FABind ]]; then
+    echo -e "\nDownloading FABind!"
+    cd $DOCKM8_FOLDER/software/
+    git clone https://github.com/QizhiPei/FABind.git --recursive
+fi
+
 
 echo -e """
 ###############################################################
