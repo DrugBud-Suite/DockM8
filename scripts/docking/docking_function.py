@@ -57,25 +57,14 @@ class DockingFunction(ABC):
 			else:
 				library_path = library
 
-			if self.name in ["FABIND+", "PLANTAIN"]:
-				if n_cpus == 1:
-					pass
-				else:
-					n_cpus = 2
-
-			# Generate batches of ligands
-			if self.name in ["FABIND+", "PLANTAIN"]:
-				batches = self._create_batches(library_path, n_cpus)
-			else:
-				batches = self._create_batches(library_path, n_cpus * 8)
-			# Adjust n_cpus if there are fewer batches than CPUs
-			n_cpus_to_use = min(n_cpus, len(batches))
+			# Create batches
+			batches = self._create_batches(library_path, n_cpus)
 
 			printlog(f"Docking with {self.name}.")
 			# Perform docking
 			results = parallel_executor(self.dock_batch,
 										batches,
-										n_cpus=n_cpus_to_use,
+										n_cpus=n_cpus,
 										job_manager=job_manager,
 										display_name=f"{self.name} docking",
 										protein_file=protein_file,
@@ -107,7 +96,7 @@ class DockingFunction(ABC):
 
 	def _create_batches(self, sdf_file: Path, n_cpus: int) -> List[Path]:
 		"""
-		Creates batches of compounds from an SDF file based on the number of CPUs.
+		Creates batches of compounds from an SDF file based on the number of CPUs and docking software.
 		"""
 		temp_dir = self.create_temp_dir()
 		batches = []
@@ -117,39 +106,31 @@ class DockingFunction(ABC):
 
 		total_compounds = sdf_lines.count("$$$$\n")
 
-		if total_compounds > n_cpus:
-			compounds_per_batch = math.ceil(total_compounds / n_cpus)
-
-			compound_count = 0
-			batch_index = 1
-			current_batch_lines = []
-
-			for line in sdf_lines:
-				current_batch_lines.append(line)
-
-				if line.startswith("$$$$"):
-					compound_count += 1
-
-					if compound_count % compounds_per_batch == 0:
-						batch_file = temp_dir / f"batch_{batch_index}.sdf"
-						with open(batch_file, "w") as outfile:
-							outfile.writelines(current_batch_lines)
-						batches.append(batch_file)
-						current_batch_lines = []
-						batch_index += 1
-
-			# Write the remaining compounds to the last batch file
-			if current_batch_lines:
-				batch_file = temp_dir / f"batch_{batch_index}.sdf"
-				with open(batch_file, "w") as outfile:
-					outfile.writelines(current_batch_lines)
-				batches.append(batch_file)
+		# Determine the optimal number of batches
+		if self.name in ["FABIND+", "PLANTAIN"]:
+			n_batches = 2                                 # These programs are already multithreaded
 		else:
-			# If there are fewer or equal compounds than CPUs, create a single batch
-			batch_file = temp_dir / "batch_1.sdf"
-			with open(batch_file, "w") as outfile:
-				outfile.writelines(sdf_lines)
-			batches.append(batch_file)
+			n_batches = total_compounds                   # Create at least 4 times as many batches as CPUs
+
+		compounds_per_batch = max(1, math.ceil(total_compounds / n_batches))
+
+		compound_count = 0
+		batch_index = 1
+		current_batch_lines = []
+
+		for line in sdf_lines:
+			current_batch_lines.append(line)
+
+			if line.startswith("$$$$"):
+				compound_count += 1
+
+				if compound_count % compounds_per_batch == 0 or compound_count == total_compounds:
+					batch_file = temp_dir / f"batch_{batch_index}.sdf"
+					with open(batch_file, "w") as outfile:
+						outfile.writelines(current_batch_lines)
+					batches.append(batch_file)
+					current_batch_lines = []
+					batch_index += 1
 
 		return batches
 
