@@ -18,11 +18,11 @@ class PsovinaDocking(DockingFunction):
 		super().__init__("PSOVINA", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 
 		temp_dir = self.create_temp_dir()
 		results_folder = temp_dir / "docked"
@@ -49,7 +49,7 @@ class PsovinaDocking(DockingFunction):
 		output_files = []
 		for file in pdbqt_files:
 			output_file = results_folder / f"{file.stem}_PSOVINA.pdbqt"
-			psovina_cmd = (f"{self.software_path / 'psovina'}"
+			psovina_cmd = (f"{self.software_path}/psovina"
 							f" --receptor {protein_file_pdbqt}"
 							f" --ligand {file}"
 							f" --out {output_file}"

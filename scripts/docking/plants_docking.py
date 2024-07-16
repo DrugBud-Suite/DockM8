@@ -17,11 +17,11 @@ class PlantsDocking(DockingFunction):
 		super().__init__("PLANTS", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
 		results_folder = temp_dir / "results"
@@ -46,20 +46,20 @@ class PlantsDocking(DockingFunction):
 		# Generate PLANTS config file
 		plants_docking_config_path = temp_dir / "plants_config.txt"
 		self.generate_plants_config(plants_protein_mol2,
-									plants_ligands_mol2,
-									pocket_definition,
-									n_poses,
-									results_folder,
-									plants_docking_config_path)
+				plants_ligands_mol2,
+				pocket_definition,
+				n_poses,
+				results_folder,
+				plants_docking_config_path)
 
 		# Run PLANTS docking
 		try:
-			plants_docking_command = f'{self.software_path / "PLANTS"} --mode screen {plants_docking_config_path}'
+			plants_docking_command = f'{self.software_path}/PLANTS --mode screen {plants_docking_config_path}'
 			subprocess.run(plants_docking_command,
-							shell=True,
-							check=True,
-							stdout=subprocess.DEVNULL,
-							stderr=subprocess.STDOUT)
+				shell=True,
+				check=True,
+				stdout=subprocess.DEVNULL,
+				stderr=subprocess.STDOUT)
 		except subprocess.CalledProcessError as e:
 			printlog(f"ERROR: PLANTS docking command failed: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -97,12 +97,12 @@ class PlantsDocking(DockingFunction):
 			self.remove_temp_dir(result_file.parent)
 
 	def generate_plants_config(self,
-								protein_mol2: Path,
-								ligands_mol2: Path,
-								pocket_definition: dict,
-								n_poses: int,
-								output_dir: Path,
-								config_path: Path):
+			protein_mol2: Path,
+			ligands_mol2: Path,
+			pocket_definition: dict,
+			n_poses: int,
+			output_dir: Path,
+			config_path: Path):
 		config_lines = [
 			"# search algorithm\n",
 			"search_speed speed1\n",

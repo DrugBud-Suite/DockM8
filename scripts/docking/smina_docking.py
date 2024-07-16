@@ -21,16 +21,16 @@ class SminaDocking(DockingFunction):
 		super().__init__("SMINA", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
 		results_path = temp_dir / f"{batch_file.stem}_smina.sdf"
 
-		smina_cmd = (f'{self.software_path / "gnina"}'
+		smina_cmd = (f"{self.software_path}/gnina"
 						f" --receptor {protein_file}"
 						f" --ligand {batch_file}"
 						f" --out {results_path}"
