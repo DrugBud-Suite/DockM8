@@ -207,7 +207,6 @@ tests/test_files/rescoring/output/
 software/MGL_Tools/
 tests/test_files/docking/output/
 TODO.txt
-software/plantain/plantain.py
 tests/test_files/pose_selection/bestpose_GNINA_clustered.sdf
 tests/test_files/pose_selection/KORP-PL_clustered.sdf
 tests/test_files/pose_selection/RMSD_clustered.sdf
