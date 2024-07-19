@@ -120,13 +120,14 @@ ENV_NAME="dockm8"
 
 if conda env list | grep -q "^$ENV_NAME\s"; then
     echo "Conda environment '$ENV_NAME' already exists. Skipping creation."
-    conda activate dockm8
+	conda deactivate
+    conda activate $ENV_NAME
 else
     conda create -n $ENV_NAME python=3.10 -y
     conda deactivate
     conda activate $ENV_NAME
 
-    conda config --add channels conda-forge
+    conda config --add channels conda-forge bioconda schrodinger
 
     conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pydantic -q -y
 
