@@ -161,14 +161,19 @@ else
         # Replace wget logic with Git logic for DockM8 repository download
         echo -e "\nDownloading DockM8 repository using Git..."
         rm -rf ./DockM8
-        git clone https://gitlab.com/Tonylac77/DockM8.git DockM8
+        git clone https://gitlab.com/DrugBud-Suite/DockM8.git -b main DockM8
         DOCKM8_FOLDER=$(pwd)/DockM8
         echo -e "\nDockM8 repository downloaded using Git."
     else
         # Use wget logic for DockM8 repository download (as in your original script)
         echo -e "\nDownloading DockM8 repository using wget..."
         rm -rf ./DockM8
-        wget https://gitlab.com/Tonylac77/DockM8/-/archive/main/DockM8-main.tar.gz -O DockM8.tar.gz --no-check-certificate -q --show-progress
+		# Fetch the latest release information
+		LATEST_RELEASE=$(curl -s "https://api.github.com/repos/DrugBud-Suite/DockM8/releases/latest")
+		# Extract the download URL for the tar.gz file
+		DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | grep "tarball_url" | cut -d '"' -f 4)
+		# Download the latest release
+		wget "$DOWNLOAD_URL" -O DockM8.tar.gz --no-check-certificate -q --show-progress
         tar -xf DockM8.tar.gz
         mv -f DockM8-main DockM8
         DOCKM8_FOLDER=$(pwd)/DockM8
