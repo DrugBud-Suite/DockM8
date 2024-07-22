@@ -127,7 +127,9 @@ else
     conda deactivate
     conda activate $ENV_NAME
 
-    conda config --add channels conda-forge bioconda schrodinger
+    conda config --add channels conda-forge 
+	conda config --add channels bioconda 
+	conda config --add channels schrodinger
 
     conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pydantic -q -y
 
@@ -159,27 +161,20 @@ if [[ -f dockm8.py ]]; then
     DOCKM8_FOLDER=$(pwd)
 else
     if [ $USE_GIT -eq 1 ]; then
-        # Replace wget logic with Git logic for DockM8 repository download
         echo -e "\nDownloading DockM8 repository using Git..."
         rm -rf ./DockM8
         git clone https://gitlab.com/DrugBud-Suite/DockM8.git -b main DockM8
         DOCKM8_FOLDER=$(pwd)/DockM8
         echo -e "\nDockM8 repository downloaded using Git."
     else
-        # Use wget logic for DockM8 repository download (as in your original script)
         echo -e "\nDownloading DockM8 repository using wget..."
         rm -rf ./DockM8
-		# Fetch the latest release information
-		LATEST_RELEASE=$(curl -s "https://api.github.com/repos/DrugBud-Suite/DockM8/releases/latest")
-		# Extract the download URL for the tar.gz file
-		DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | grep "tarball_url" | cut -d '"' -f 4)
-		# Download the latest release
-		wget "$DOWNLOAD_URL" -O DockM8.tar.gz --no-check-certificate -q --show-progress
-        tar -xf DockM8.tar.gz
-        mv -f DockM8-main DockM8
+        mkdir -p DockM8
+        LATEST_RELEASE=$(curl -s "https://api.github.com/repos/DrugBud-Suite/DockM8/releases/latest")
+        DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | grep "tarball_url" | cut -d '"' -f 4)
+        wget "$DOWNLOAD_URL" -O - --no-check-certificate -q --show-progress | tar -xzf - -C DockM8 --strip-components=1
         DOCKM8_FOLDER=$(pwd)/DockM8
-        rm DockM8.tar.gz
-        echo -e "\nDockM8 repository downloaded using wget."
+        echo -e "\nDockM8 repository downloaded using wget and extracted."
     fi
 fi
 
