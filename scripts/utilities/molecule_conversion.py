@@ -14,6 +14,7 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.logging import printlog
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -21,11 +22,12 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 pybel.ob.obErrorLog.StopLogging()
 
 
+@ensure_software_installed("MGLTOOLS")
 def convert_molecules(input_file: Path,
-						output_file_or_path: Path,
-						input_format: str,
-						output_format: str,
-						software: Path):
+		output_file_or_path: Path,
+		input_format: str,
+		output_format: str,
+		software: Path):
 	"""
 	Converts molecules from one format to another using various conversion tools.
 
