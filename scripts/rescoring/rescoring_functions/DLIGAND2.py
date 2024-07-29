@@ -46,6 +46,7 @@ class DLIGAND2(ScoringFunction):
 	@ensure_software_installed("DLIGAND2")
 	def __init__(self, software_path: Path):
 		super().__init__("DLIGAND2", "DLIGAND2", "min", (-200, 100), software_path)
+		self.software_path = software_path
 
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:

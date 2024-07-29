@@ -25,6 +25,7 @@ class SCORCH(ScoringFunction):
 	@ensure_software_installed("SCORCH")
 	def __init__(self, software_path: Path):
 		super().__init__("SCORCH", "SCORCH", "max", (0, 1), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -53,10 +54,10 @@ class SCORCH(ScoringFunction):
 			SCORCH_command = f"cd {software}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {temp_dir}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
 			try:
 				subprocess.run(SCORCH_command,
-								shell=True,
-								check=True,
-								stdout=subprocess.DEVNULL,
-								stderr=subprocess.STDOUT)
+					shell=True,
+					check=True,
+					stdout=subprocess.DEVNULL,
+					stderr=subprocess.STDOUT)
 			except subprocess.CalledProcessError as e:
 				printlog(f"Error running SCORCH command: {str(e)}")
 				return pd.DataFrame()

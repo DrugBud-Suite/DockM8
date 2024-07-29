@@ -27,6 +27,7 @@ class ConvexPLR(ScoringFunction):
 	@ensure_software_installed("CONVEX_PLR")
 	def __init__(self, software_path: Path):
 		super().__init__("ConvexPLR", "ConvexPLR", "max", (-10, 10), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -45,11 +46,11 @@ class ConvexPLR(ScoringFunction):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
 				ConvexPLR_command = (f"{software}/Convex-PL" + f" --receptor {protein_file}" +
-						f" --ligand {split_file}" + " --sdf --regscore")
+					f" --ligand {split_file}" + " --sdf --regscore")
 				process = subprocess.Popen(ConvexPLR_command,
-						stdout=subprocess.PIPE,
-						stderr=subprocess.PIPE,
-						shell=True)
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE,
+					shell=True)
 				stdout, stderr = process.communicate()
 				energies = []
 				output = stdout.decode().splitlines()
@@ -63,10 +64,10 @@ class ConvexPLR(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(ConvexPLR_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_file=protein_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))
 			combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)

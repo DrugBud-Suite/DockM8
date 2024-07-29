@@ -28,6 +28,7 @@ class KORPL(ScoringFunction):
 	@ensure_software_installed("KORP_PL")
 	def __init__(self, software_path: Path):
 		super().__init__("KORP-PL", "KORP-PL", "min", (200, -1000), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -61,10 +62,10 @@ class KORPL(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(KORPL_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_file=protein_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				protein_file=protein_file)
 
 			print("Combining KORPL scores")
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))

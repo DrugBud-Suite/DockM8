@@ -49,6 +49,7 @@ class CENsible(ScoringFunction):
 	@ensure_software_installed("CENSIBLE")
 	def __init__(self, software_path: Path):
 		super().__init__("CENsible", "CENsible", "max", (0, 20), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -99,9 +100,9 @@ class CENsible(ScoringFunction):
 							obabel_path,
 							"--use_cpu"]
 						process = subprocess.Popen(censible_command,
-													stdout=subprocess.PIPE,
-													stderr=subprocess.PIPE,
-													text=True)
+								stdout=subprocess.PIPE,
+								stderr=subprocess.PIPE,
+								text=True)
 						stdout, stderr = process.communicate()
 						score = None
 						for line in stdout.split('\n'):
@@ -118,10 +119,10 @@ class CENsible(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(censible_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_file=protein_file)
+					split_files_sdfs,
+					n_cpus,
+					display_name=self.column_name,
+					protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_score.csv"))
 			if not score_files:

@@ -29,6 +29,7 @@ class ITScoreAff(ScoringFunction):
 	@ensure_software_installed("IT_SCORE_AFF")
 	def __init__(self, software_path: Path):
 		super().__init__("ITScoreAff", "ITScoreAff", "min", (-200, 100), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -66,9 +67,9 @@ class ITScoreAff(ScoringFunction):
 
 				itscoreAff_command = f"cd {temp_dir} && {software}/ITScoreAff_v1.0/ITScoreAff ./{protein_mol2.name} ./{ligand_mol2.name}"
 				process = subprocess.Popen(itscoreAff_command,
-											stdout=subprocess.PIPE,
-											stderr=subprocess.PIPE,
-											shell=True)
+						stdout=subprocess.PIPE,
+						stderr=subprocess.PIPE,
+						shell=True)
 				stdout, stderr = process.communicate()
 
 				scores = []
@@ -89,10 +90,10 @@ class ITScoreAff(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(ITScoreAff_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_mol2=protein_mol2)
+					split_files_sdfs,
+					n_cpus,
+					display_name=self.column_name,
+					protein_mol2=protein_mol2)
 
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))
 			if not score_files:

@@ -25,10 +25,13 @@ class PANTHER(ScoringFunction):
 	def __init__(self, score_type, software_path: Path):
 		if score_type == "PANTHER":
 			super().__init__("PANTHER", "PANTHER", "max", (0, 10), software_path)
+			self.software_path = software_path
 		elif score_type == "PANTHER-ESP":
 			super().__init__("PANTHER-ESP", "PANTHER-ESP", "max", (0, 10), software_path)
+			self.software_path = software_path
 		elif score_type == "PANTHER-Shape":
 			super().__init__("PANTHER-Shape", "PANTHER-Shape", "max", (0, 10), software_path)
+			self.software_path = software_path
 		else:
 			raise ValueError(f"Invalid PANTHER score type: {score_type}")
 
@@ -125,10 +128,10 @@ class PANTHER(ScoringFunction):
 
 			# Run PANTHER rescoring in parallel
 			rescoring_results = parallel_executor(panther_rescoring_splitted,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.column_name,
-						negative_image=negative_image)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				negative_image=negative_image)
 
 			# Process the results
 			panther_dataframes = []

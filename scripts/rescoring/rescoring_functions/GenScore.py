@@ -26,14 +26,17 @@ class GenScore(ScoringFunction):
 			super().__init__("GenScore-scoring", "GenScore-scoring", "max", (0, 200), software_path)
 			self.model = "../trained_models/GatedGCN_ft_1.0_1.pth"
 			self.encoder = "gatedgcn"
+			self.software_path = software_path
 		elif score_type == "docking":
 			super().__init__("GenScore-docking", "GenScore-docking", "max", (0, 200), software_path)
 			self.model = "../trained_models/GT_0.0_1.pth"
 			self.encoder = "gt"
+			self.software_path = software_path
 		elif score_type == "balanced":
 			super().__init__("GenScore-balanced", "GenScore-balanced", "max", (0, 200), software_path)
 			self.model = "../trained_models/GT_ft_0.5_1.pth"
 			self.encoder = "gt"
+			self.software_path = software_path
 		else:
 			raise ValueError(f"Invalid GenScore type: {score_type}")
 
@@ -56,12 +59,12 @@ class GenScore(ScoringFunction):
 			def genscore_rescoring_splitted(split_file):
 				try:
 					cmd = (f"cd {software}/GenScore/example/ &&"
-							"conda run -n genscore python genscore.py"
-							f" -p {pocket_file}"
-							f" -l {split_file}"
-							f" -o {Path(temp_dir) / Path(split_file).stem}"
-							f" -m {self.model}"
-							f" -e {self.encoder}")
+						"conda run -n genscore python genscore.py"
+						f" -p {pocket_file}"
+						f" -l {split_file}"
+						f" -o {Path(temp_dir) / Path(split_file).stem}"
+						f" -m {self.model}"
+						f" -e {self.encoder}")
 
 					subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -71,9 +74,9 @@ class GenScore(ScoringFunction):
 					return None
 
 			rescoring_results = parallel_executor(genscore_rescoring_splitted,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.column_name)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.column_name)
 
 			genscore_dataframes = []
 			for result_file in rescoring_results:

@@ -27,6 +27,7 @@ class RFScoreVS(ScoringFunction):
 	@ensure_software_installed("RF_SCORE_VS")
 	def __init__(self, software_path: Path):
 		super().__init__("RFScoreVS", "RFScoreVS", "max", (5, 10), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -46,10 +47,10 @@ class RFScoreVS(ScoringFunction):
 				return
 
 			parallel_executor(rf_score_vs_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_file=protein_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				protein_file=protein_file)
 
 			try:
 				rfscorevs_dataframes = [

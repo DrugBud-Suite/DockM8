@@ -4,6 +4,7 @@ import sys
 import tempfile
 import time
 import warnings
+from functools import partial
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -43,32 +44,33 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Updated RESCORING_FUNCTIONS dictionary using class instances
+
 RESCORING_FUNCTIONS = {
-	"AAScore": AAScore(),
-	"AD4": AD4(),
-	"CENsible": CENsible(),
-	"CHEMPLP": CHEMPLP(),
-	"CNN-Affinity": Gnina("cnn_affinity"),
-	"CNN-Score": Gnina("cnn_score"),
-	"ConvexPLR": ConvexPLR(),
-	"DLIGAND2": DLIGAND2(),
-	"GenScore-balanced": GenScore("balanced"),
-	"GenScore-docking": GenScore("docking"),
-	"GenScore-scoring": GenScore("scoring"),
-	"GNINA-Affinity": Gnina("affinity"),
-	"ITScoreAff": ITScoreAff(),
-	"KORP-PL": KORPL(),
-	"LinF9": LinF9(),
-	"NNScore": NNScore(),
-	"PANTHER": PANTHER("PANTHER"),
-	"PANTHER-ESP": PANTHER("PANTHER-ESP"),
-	"PANTHER-Shape": PANTHER("PANTHER-Shape"),
-	"PLECScore": PLECScore(),
-	"PLP": PLP(),
-	"RFScoreVS": RFScoreVS(),
-	"RTMScore": RTMScore(),
-	"SCORCH": SCORCH(),
-	"Vinardo": Vinardo(), }
+	"AAScore": AAScore,
+	"AD4": AD4,
+	"CENsible": CENsible,
+	"CHEMPLP": CHEMPLP,
+	"CNN-Affinity": partial(Gnina, score_type="cnn_affinity"),
+	"CNN-Score": partial(Gnina, score_type="cnn_score"),
+	"ConvexPLR": ConvexPLR,
+	"DLIGAND2": DLIGAND2,
+	"GenScore-balanced": partial(GenScore, score_type="balanced"),
+	"GenScore-docking": partial(GenScore, score_type="docking"),
+	"GenScore-scoring": partial(GenScore, score_type="scoring"),
+	"GNINA-Affinity": partial(Gnina, score_type="affinity"),
+	"ITScoreAff": ITScoreAff,
+	"KORP-PL": KORPL,
+	"LinF9": LinF9,
+	"NNScore": NNScore,
+	"PANTHER": partial(PANTHER, score_type="PANTHER"),
+	"PANTHER-ESP": partial(PANTHER, score_type="PANTHER-ESP"),
+	"PANTHER-Shape": partial(PANTHER, score_type="PANTHER-Shape"),
+	"PLECScore": PLECScore,
+	"PLP": PLP,
+	"RFScoreVS": RFScoreVS,
+	"RTMScore": RTMScore,
+	"SCORCH": SCORCH,
+	"Vinardo": Vinardo, }
 
 
 def create_temp_dir(name: str) -> Path:
@@ -154,12 +156,12 @@ def rescore_poses(protein_file: Path,
 		results = []
 		skipped_functions = []
 		for function in functions_to_run:
-			scoring_function: ScoringFunction = RESCORING_FUNCTIONS.get(function)
-			if scoring_function:
+			scoring_function_class = RESCORING_FUNCTIONS.get(function)
+			if scoring_function_class:
 				try:
+					scoring_function = scoring_function_class(software_path=software)
 					result = scoring_function.rescore(str(sdf),
 														n_cpus,
-														software=str(software),
 														protein_file=str(protein_file),
 														pocket_definition=pocket_definition)
 					results.append(result)
@@ -259,14 +261,14 @@ def rescore_docking(poses: Union[Path, pd.DataFrame],
 			PandasTools.WriteSDF(poses, sdf, molColName='Molecule', idName='Pose ID', properties=list(poses.columns))
 		else:
 			raise ValueError("poses must be a Path or DataFrame")
-		scoring_function: ScoringFunction = RESCORING_FUNCTIONS.get(function)
+		scoring_function_class = RESCORING_FUNCTIONS.get(function)
 
-		if scoring_function is None:
+		if scoring_function_class is None:
 			raise ValueError(f"Unknown scoring function: {function}")
 
+		scoring_function = scoring_function_class(software_path=software)
 		score_df = scoring_function.rescore(str(sdf),
 											n_cpus,
-											software=software,
 											protein_file=protein_file,
 											pocket_definition=pocket_definition)
 

@@ -25,6 +25,7 @@ class PLP(ScoringFunction):
 	@ensure_software_installed("PLANTS")
 	def __init__(self, software_path: Path):
 		super().__init__("PLP", "PLP", "min", (200, -200), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()

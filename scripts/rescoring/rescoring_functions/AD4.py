@@ -28,6 +28,7 @@ class AD4(ScoringFunction):
 	@ensure_software_installed("GNINA")
 	def __init__(self, software_path: Path):
 		super().__init__("AD4", "AD4", "min", (100, -100), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -58,18 +59,18 @@ class AD4(ScoringFunction):
 				return
 
 			parallel_executor(AD4_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_file=protein_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				protein_file=protein_file)
 
 			try:
 				AD4_dataframes = [
 					PandasTools.LoadSDF(str(Path(temp_dir) / file),
-						idName="Pose ID",
-						molColName=None,
-						includeFingerprints=False,
-						embedProps=False)
+					idName="Pose ID",
+					molColName=None,
+					includeFingerprints=False,
+					embedProps=False)
 					for file in os.listdir(temp_dir)
 					if file.startswith("split") and file.endswith(".sdf")]
 			except Exception as e:

@@ -38,14 +38,6 @@ class ScoringFunction(ABC):
 		self.best_value = best_value
 		self.score_range = score_range
 		self.software_path = software_path
-		self._ensure_software_installed()
-
-	@ensure_software_installed(lambda self: self.name)
-	def _ensure_software_installed(self):
-		"""
-		Ensures that the required software for this scoring function is installed.
-		"""
-		pass   # The actual installation is handled by the decorator
 
 	@abstractmethod
 	def rescore(self, sdf: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:

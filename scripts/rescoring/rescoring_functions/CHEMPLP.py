@@ -25,6 +25,7 @@ class CHEMPLP(ScoringFunction):
 	@ensure_software_installed("PLANTS")
 	def __init__(self, software_path: Path):
 		super().__init__("CHEMPLP", "CHEMPLP", "min", (200, -200), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -100,10 +101,10 @@ class CHEMPLP(ScoringFunction):
 			chemplp_rescoring_command = f"{software}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}"
 			try:
 				subprocess.run(chemplp_rescoring_command,
-								shell=True,
-								check=True,
-								stdout=subprocess.DEVNULL,
-								stderr=subprocess.STDOUT)
+					shell=True,
+					check=True,
+					stdout=subprocess.DEVNULL,
+					stderr=subprocess.STDOUT)
 			except subprocess.CalledProcessError as e:
 				printlog(f"Error running PLANTS docking: {str(e)}")
 				return pd.DataFrame()

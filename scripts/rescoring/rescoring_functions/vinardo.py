@@ -28,6 +28,7 @@ class Vinardo(ScoringFunction):
 	@ensure_software_installed("GNINA")
 	def __init__(self, software_path: Path):
 		super().__init__("Vinardo", "Vinardo", "min", (200, 20), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -45,12 +46,12 @@ class Vinardo(ScoringFunction):
 			def vinardo_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
 				vinardo_cmd = (f"{software}/gnina"
-								f" --receptor {protein_file}"
-								f" --ligand {split_file}"
-								f" --out {results}"
-								" --score_only"
-								" --scoring vinardo"
-								" --cnn_scoring none")
+					f" --receptor {protein_file}"
+					f" --ligand {split_file}"
+					f" --out {results}"
+					" --score_only"
+					" --scoring vinardo"
+					" --cnn_scoring none")
 				try:
 					subprocess.call(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
@@ -58,18 +59,18 @@ class Vinardo(ScoringFunction):
 				return
 
 			parallel_executor(vinardo_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_file=protein_file)
+					split_files_sdfs,
+					n_cpus,
+					display_name=self.column_name,
+					protein_file=protein_file)
 
 			try:
 				vinardo_dataframes = [
 					PandasTools.LoadSDF(str(Path(temp_dir) / file),
-										idName="Pose ID",
-										molColName=None,
-										includeFingerprints=False,
-										embedProps=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
 					for file in os.listdir(temp_dir)
 					if file.startswith("split") and file.endswith(".sdf")]
 			except Exception as e:

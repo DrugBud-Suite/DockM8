@@ -28,6 +28,7 @@ class LinF9(ScoringFunction):
 	@ensure_software_installed("LINF9")
 	def __init__(self, software_path: Path):
 		super().__init__("LinF9", "LinF9", "min", (100, -100), software_path)
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -53,10 +54,10 @@ class LinF9(ScoringFunction):
 				return
 
 			parallel_executor(LinF9_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_file=protein_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				protein_file=protein_file)
 
 			try:
 				LinF9_dataframes = [
