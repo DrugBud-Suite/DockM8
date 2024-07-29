@@ -21,75 +21,6 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 pybel.ob.obErrorLog.StopLogging()
 
 
-def find_mgltools_installation(software_path):
-	"""
-	Find the MGLTools installation directory.
-
-	Parameters:
-	- software_path (str): The path to the software installation directory.
-
-	Returns:
-	- str: The path to the MGLTools installation directory.
-
-	Raises:
-	- FileNotFoundError: If the MGL_Tools directory or MGLToolsPckgs directory is not found.
-	"""
-	mgl_tools_dir = software_path / 'MGL_Tools'
-	if not mgl_tools_dir.exists():
-		raise FileNotFoundError(f"MGL_Tools directory not found at {mgl_tools_dir}")
-
-	# Look for MGLToolsPckgs directory
-	mgltools_pckgs = list(mgl_tools_dir.glob('**/MGLToolsPckgs'))
-	if not mgltools_pckgs:
-		raise FileNotFoundError(f"MGLToolsPckgs directory not found in {mgl_tools_dir}")
-
-	return mgltools_pckgs[0].parent
-
-
-def get_mgltools_env(software_path):
-	"""
-	Get environment variables for MGLTools.
-
-	Args:
-		software_path (str): The path to the MGLTools software installation.
-
-	Returns:
-		dict: A dictionary containing the environment variables for MGLTools.
-
-	Raises:
-		FileNotFoundError: If the required directories or files are not found.
-		RuntimeError: If the pythonsh executable is not runnable.
-
-	"""
-	mgltools_path = find_mgltools_installation(software_path)
-
-	bin_dir = mgltools_path / 'bin'
-	if not bin_dir.exists():
-		raise FileNotFoundError(f"bin directory not found at {bin_dir}")
-
-	pythonsh = bin_dir / 'pythonsh'
-	if not pythonsh.exists():
-		raise FileNotFoundError(f"pythonsh not found at {pythonsh}")
-
-	utilities_dir = mgltools_path / 'MGLToolsPckgs' / 'AutoDockTools' / 'Utilities24'
-	if not utilities_dir.exists():
-		raise FileNotFoundError(f"Utilities24 directory not found at {utilities_dir}")
-
-	env = os.environ.copy()
-	env['PATH'] = f"{bin_dir}:{env['PATH']}"
-	env['MGL'] = str(mgltools_path)
-	env['MGLPY'] = str(pythonsh)
-	env['MGLUTIL'] = str(utilities_dir)
-
-	# Verify that pythonsh is runnable
-	try:
-		subprocess.run([pythonsh, '--version'], check=True, capture_output=True)
-	except subprocess.CalledProcessError:
-		raise RuntimeError(f"pythonsh at {pythonsh} is not runnable")
-
-	return env
-
-
 def convert_molecules(input_file: Path,
 						output_file_or_path: Path,
 						input_format: str,
@@ -119,14 +50,8 @@ def convert_molecules(input_file: Path,
 	# For protein conversion to pdbqt file format using MGLTools
 	if input_format == "pdb" and output_format == "pdbqt":
 		try:
-			mgl_env = get_mgltools_env(software)
-		except (FileNotFoundError, RuntimeError) as e:
-			printlog(f"Error setting up MGLTools environment: {str(e)}")
-			raise
-		try:
-			prepare_receptor_script = Path(mgl_env['MGLUTIL']) / "prepare_receptor4.py"
-			cmd = f"{mgl_env['MGLPY']} {prepare_receptor_script} -r {input_file} -o {output_file_or_path} -A checkhydrogens"
-			subprocess.run(cmd, shell=True, check=True, env=mgl_env)
+			cmd = f"prepare_receptor4.py -r {input_file} -o {output_file_or_path} -A checkhydrogens"
+			subprocess.run(cmd, shell=True, check=True)
 			return output_file_or_path
 		except subprocess.CalledProcessError as e:
 			printlog(f"Error occurred during conversion using MGLTools prepare_receptor4.py: {str(e)}")
