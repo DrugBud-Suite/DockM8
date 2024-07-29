@@ -3,24 +3,39 @@ from functools import wraps
 from pathlib import Path
 import sys
 import subprocess
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, Any
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.setup.software_install import (
-	install_aa_score, install_censible, install_convex_pl, install_dligand2,
-	install_fabind, install_gnina, install_gypsum_dl, install_itscoreAff,
-	install_korp_pl, install_lin_f9, install_posecheck, install_psovina,
-	install_qvina2, install_qvina_w, install_rf_score_vs, install_rtmscore,
-	install_scorch, install_plants, install_panther, install_plantain,
-	install_genscore, install_mgltools
-)
+from scripts.setup.software_install import (install_aa_score,
+											install_censible,
+											install_convex_pl,
+											install_dligand2,
+											install_fabind,
+											install_gnina,
+											install_gypsum_dl,
+											install_itscoreAff,
+											install_korp_pl,
+											install_lin_f9,
+											install_posecheck,
+											install_psovina,
+											install_qvina2,
+											install_qvina_w,
+											install_rf_score_vs,
+											install_rtmscore,
+											install_scorch,
+											install_plants,
+											install_panther,
+											install_plantain,
+											install_genscore,
+											install_mgltools)
 from scripts.utilities.logging import printlog
 
-def check_mgltools() -> bool:
+
+def check_mgltools(software_path) -> bool:
 	env_name = 'mgltools'
 	try:
 		result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True, check=True)
@@ -28,6 +43,7 @@ def check_mgltools() -> bool:
 	except subprocess.CalledProcessError:
 		printlog(f"Error checking for {env_name} environment")
 		return False
+
 
 # Define a dictionary mapping docking programs to their installation functions and check methods
 SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
@@ -78,6 +94,7 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"MGLTOOLS": {
 		"install": install_mgltools, "check": check_mgltools}}
 
+
 def ensure_software_installed(program_name: str):
 	"""
     Decorator function that ensures the specified software is installed before executing the decorated function.
@@ -91,14 +108,18 @@ def ensure_software_installed(program_name: str):
     Raises:
         ValueError: If the software path is not provided or if the program is not in SOFTWARE_INFO.
     """
-	def decorator(func):
+
+	def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+
 		@wraps(func)
 		def wrapper(*args, **kwargs):
 			if program_name not in SOFTWARE_INFO:
 				raise ValueError(f"Unknown program: {program_name}")
 
-			# Assuming the software path is always the second argument
-			software_path = args[1] if len(args) > 1 else kwargs.get('software_path')
+			# Find the software_path argument
+			software_path = next((arg for arg in args if isinstance(arg, Path)), None)
+			if software_path is None:
+				software_path = kwargs.get('software_path')
 
 			if software_path is None:
 				raise ValueError("Software path not provided")
@@ -108,7 +129,9 @@ def ensure_software_installed(program_name: str):
 				install_software(program_name, software_path)
 
 			return func(*args, **kwargs)
+
 		return wrapper
+
 	return decorator
 
 def is_software_installed(program_name: str, software_path: Path) -> bool:
