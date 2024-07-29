@@ -32,7 +32,7 @@ def test_PLECScore_rescoring(test_data):
 
 	plecscore = PLECScore()
 
-	result = plecscore.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = plecscore.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

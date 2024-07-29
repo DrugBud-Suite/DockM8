@@ -31,7 +31,7 @@ def test_DLIGAND2_rescoring(test_data):
 
 	dligand2 = DLIGAND2(software)
 
-	result = dligand2.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = dligand2.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

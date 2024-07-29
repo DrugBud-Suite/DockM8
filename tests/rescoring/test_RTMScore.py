@@ -32,7 +32,7 @@ def test_RTMScore_rescoring(test_data):
 
 	rtmscore = RTMScore(software)
 
-	result = rtmscore.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = rtmscore.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

@@ -31,7 +31,7 @@ def test_ConvexPLR_rescoring(test_data):
 
 	convexplr = ConvexPLR(software)
 
-	result = convexplr.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = convexplr.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

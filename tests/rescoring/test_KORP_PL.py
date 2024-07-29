@@ -31,7 +31,7 @@ def test_KORPL_rescoring(test_data):
 
 	korpl = KORPL(software)
 
-	result = korpl.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = korpl.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

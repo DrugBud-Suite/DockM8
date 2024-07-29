@@ -31,7 +31,7 @@ def test_ITScoreAff_rescoring(test_data):
 
 	itscoreAff = ITScoreAff(software)
 
-	result = itscoreAff.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = itscoreAff.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

@@ -34,7 +34,7 @@ def test_AD4_rescoring(test_data):
 	ad4 = AD4(software)
 
 	# Call the function
-	result = ad4.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = ad4.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	# Assert the result
 	assert isinstance(result, DataFrame)

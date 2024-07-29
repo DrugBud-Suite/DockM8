@@ -31,7 +31,7 @@ def test_Vinardo_rescoring(test_data):
 
 	vinardo = Vinardo(software)
 
-	result = vinardo.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = vinardo.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

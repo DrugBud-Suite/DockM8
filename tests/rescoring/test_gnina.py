@@ -32,7 +32,7 @@ def test_Gnina_rescoring(test_data, score_type):
 
 	gnina = Gnina(score_type, software)
 
-	result = gnina.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = gnina.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns
