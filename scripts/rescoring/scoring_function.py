@@ -1,11 +1,19 @@
 import os
 import shutil
+import sys
 import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict
 
 import pandas as pd
+
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
+from scripts.setup.software_manager import ensure_software_installed
 
 
 class ScoringFunction(ABC):
@@ -14,7 +22,7 @@ class ScoringFunction(ABC):
 	Abstract base class for scoring functions used in DockM8.
 	"""
 
-	def __init__(self, name: str, column_name: str, best_value: str, score_range: tuple):
+	def __init__(self, name: str, column_name: str, best_value: str, score_range: tuple, software_path: Path):
 		"""
 		Initializes a ScoringFunction object.
 
@@ -23,11 +31,21 @@ class ScoringFunction(ABC):
 			column_name (str): The name of the column where the scores will be stored.
 			best_value (str): The best value for the scoring function.
 			score_range (tuple): The range of scores for the scoring function.
+			software_path (Path): The path to the software installation directory.
 		"""
 		self.name = name
 		self.column_name = column_name
 		self.best_value = best_value
 		self.score_range = score_range
+		self.software_path = software_path
+		self._ensure_software_installed()
+
+	@ensure_software_installed(lambda self: self.name)
+	def _ensure_software_installed(self):
+		"""
+		Ensures that the required software for this scoring function is installed.
+		"""
+		pass   # The actual installation is handled by the decorator
 
 	@abstractmethod
 	def rescore(self, sdf: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
