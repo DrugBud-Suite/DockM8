@@ -62,28 +62,28 @@ def install_gnina(software_path):
 	gnina_path = os.path.join(software_path, 'gnina')
 	url = "https://github.com/gnina/gnina/releases/latest/download/gnina"
 	download_file(url, gnina_path)
-	os.chmod(gnina_path, os.stat(gnina_path).st_mode | stat.S_IEXEC)
+	os.chmod(gnina_path, os.stat(gnina_path).st_mode | stat.S_IXOTH)
 
 
 def install_qvina_w(software_path):
 	qvina_w_path = os.path.join(software_path, 'qvina-w')
 	url = "https://github.com/QVina/qvina/raw/master/bin/qvina-w"
 	download_file(url, qvina_w_path)
-	os.chmod(qvina_w_path, os.stat(qvina_w_path).st_mode | stat.S_IEXEC)
+	os.chmod(qvina_w_path, os.stat(qvina_w_path).st_mode | stat.S_IXOTH)
 
 
 def install_qvina2(software_path):
 	qvina2_path = os.path.join(software_path, 'qvina2.1')
 	url = "https://github.com/QVina/qvina/raw/master/bin/qvina2.1"
 	download_file(url, qvina2_path)
-	os.chmod(qvina2_path, os.stat(qvina2_path).st_mode | stat.S_IEXEC)
+	os.chmod(qvina2_path, os.stat(qvina2_path).st_mode | stat.S_IXOTH)
 
 
 def install_psovina(software_path):
 	psovina_path = os.path.join(software_path, 'psovina')
 	url = "https://github.com/li-jin-xing/RDPSOVina/raw/master/binary/Ubuntu-15.04/psovina"
 	download_file(url, psovina_path)
-	os.chmod(psovina_path, os.stat(psovina_path).st_mode | stat.S_IEXEC)
+	os.chmod(psovina_path, os.stat(psovina_path).st_mode | stat.S_IXOTH)
 
 
 def install_plants(software_path):
@@ -94,9 +94,9 @@ def install_plants(software_path):
 
 def install_panther(software_path):
 	subprocess.call('conda create -n panther python=2.7 -y',
-		shell=True,
-		stderr=subprocess.DEVNULL,
-		stdout=subprocess.DEVNULL)
+					shell=True,
+					stderr=subprocess.DEVNULL,
+					stdout=subprocess.DEVNULL)
 	printlog(
 		"PANTHER automatic installation is not supported. \n" +
 		"Please install PANTHER manually from : https://www.medchem.fi/panther/. \n" +
@@ -110,9 +110,9 @@ def install_panther(software_path):
 def install_plantain(software_path):
 	plantain_path = Path(software_path) / "plantain"
 	subprocess.call(f"git clone https://github.com/molecularmodelinglab/plantain.git {str(plantain_path)} --depth 1",
-		shell=True,
-		stdout=subprocess.DEVNULL,
-		stderr=subprocess.DEVNULL)
+					shell=True,
+					stdout=subprocess.DEVNULL,
+					stderr=subprocess.DEVNULL)
 
 
 def install_korp_pl(software_path):
@@ -123,7 +123,7 @@ def install_korp_pl(software_path):
 	with tarfile.open(tar_file, 'r:gz') as tar:
 		tar.extractall(path=software_path)
 	os.remove(tar_file)
-	os.chmod(korp_pl_path, os.stat(korp_pl_path).st_mode | stat.S_IEXEC)
+	os.chmod(korp_pl_path, os.stat(korp_pl_path).st_mode | stat.S_IXOTH)
 
 
 def install_convex_pl(software_path):
@@ -139,14 +139,14 @@ def install_convex_pl(software_path):
 	os.remove(zip_file)
 	os.remove(tar_file)
 	shutil.rmtree(os.path.join(software_path, '__MACOSX'), ignore_errors=True)
-	os.chmod(convex_pl_path, os.stat(convex_pl_path).st_mode | stat.S_IEXEC)
+	os.chmod(convex_pl_path, os.stat(convex_pl_path).st_mode | stat.S_IXOTH)
 
 
 def install_lin_f9(software_path):
 	lin_f9_path = os.path.join(software_path, 'LinF9')
 	url = "https://github.com/cyangNYU/Lin_F9_test/raw/master/smina.static"
 	download_file(url, lin_f9_path)
-	os.chmod(lin_f9_path, os.stat(lin_f9_path).st_mode | stat.S_IEXEC)
+	os.chmod(lin_f9_path, os.stat(lin_f9_path).st_mode | stat.S_IXOTH)
 
 
 def install_aa_score(software_path):
@@ -159,9 +159,9 @@ def install_aa_score(software_path):
 	os.remove(zip_file)
 	remove_git_files(aa_score_path)
 	subprocess.call("conda create -n AAScore python=3.6 openbabel rdkit numpy scipy pandas py3dmol biopandas -y",
-		shell=True,
-		stderr=subprocess.DEVNULL,
-		stdout=subprocess.DEVNULL)
+					shell=True,
+					stderr=subprocess.DEVNULL,
+					stdout=subprocess.DEVNULL)
 
 
 def install_gypsum_dl(software_path):
@@ -193,7 +193,7 @@ def install_scorch(software_path):
 	with open(os.path.join(scorch_path, 'scorch.py'), 'r') as file:
 		content = file.read()
 	content = content.replace("dtest = xgb.DMatrix(df, feature_names=df.columns)",
-			"dtest = xgb.DMatrix(df, feature_names=list(df.columns))")
+								"dtest = xgb.DMatrix(df, feature_names=list(df.columns))")
 	with open(os.path.join(scorch_path, 'scorch.py'), 'w') as file:
 		file.write(content)
 
@@ -208,7 +208,7 @@ def install_rf_score_vs(software_path):
 	os.remove(zip_file)
 	shutil.rmtree(os.path.join(software_path, 'test'), ignore_errors=True)
 	os.remove(os.path.join(software_path, 'README.md'))
-	os.chmod(rf_score_vs_path, os.stat(rf_score_vs_path).st_mode | stat.S_IEXEC)
+	os.chmod(rf_score_vs_path, os.stat(rf_score_vs_path).st_mode | stat.S_IXOTH)
 	remove_git_files(rf_score_vs_path)
 
 
@@ -252,10 +252,10 @@ def install_fabind(software_path):
 
 	# Clone FABind repository
 	subprocess.run(['git', 'clone', 'https://github.com/QizhiPei/FABind.git', '--recursive', '--depth', '1'],
-		cwd=software_path,
-		stderr=subprocess.DEVNULL,
-		stdout=subprocess.DEVNULL,
-		check=True)
+					cwd=software_path,
+					stderr=subprocess.DEVNULL,
+					stdout=subprocess.DEVNULL,
+					check=True)
 	remove_git_files(fabind_path)
 
 	# Create and set up conda environment
@@ -304,7 +304,7 @@ def install_dligand2(software_path):
 	os.remove(zip_file)
 	remove_git_files(dligand2_folder)
 	executable_path = os.path.join(dligand2_folder, 'bin', 'dligand2.gnu')
-	os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IEXEC)
+	os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IXOTH)
 
 
 def install_itscoreAff(software_path):
@@ -316,7 +316,7 @@ def install_itscoreAff(software_path):
 		tar.extractall(path=software_path)
 	os.remove(tar_file)
 	executable_path = os.path.join(itscore_folder, 'ITScoreAff')
-	os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IEXEC)
+	os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IXOTH)
 
 
 def install_genscore(software_path):
@@ -346,8 +346,8 @@ def install_genscore(software_path):
 
 	# Install PyTorch Geometric and related packages
 	pip_install_cmd = (f"conda run -n {env_name} pip install torch-geometric==2.0.3 "
-			"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl "
-			"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
+		"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl "
+		"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
 	subprocess.run(pip_install_cmd, shell=True, check=True)
 
 def install_mgltools():
