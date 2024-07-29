@@ -26,19 +26,17 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 class Gnina(ScoringFunction):
 
 	@ensure_software_installed("GNINA")
-	def __init__(self, score_type, software_path: Path):
+	def __init__(self, score_type: str, software_path: Path):
 		if score_type == "affinity":
 			super().__init__("GNINA-Affinity", "GNINA-Affinity", "min", (100, -100), software_path)
-			self.software_path = software_path
 		elif score_type == "cnn_score":
 			super().__init__("CNN-Score", "CNN-Score", "max", (0, 1), software_path)
-			self.software_path = software_path
 		elif score_type == "cnn_affinity":
 			super().__init__("CNN-Affinity", "CNN-Affinity", "max", (0, 20), software_path)
-			self.software_path = software_path
 		else:
 			raise ValueError("Invalid score type for Gnina")
 		self.score_type = score_type
+		self.software_path = software_path
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()

@@ -22,18 +22,16 @@ from scripts.setup.software_manager import ensure_software_installed
 class PANTHER(ScoringFunction):
 
 	@ensure_software_installed("PANTHER")
-	def __init__(self, score_type, software_path: Path):
+	def __init__(self, score_type: str, software_path: Path):
 		if score_type == "PANTHER":
 			super().__init__("PANTHER", "PANTHER", "max", (0, 10), software_path)
-			self.software_path = software_path
 		elif score_type == "PANTHER-ESP":
 			super().__init__("PANTHER-ESP", "PANTHER-ESP", "max", (0, 10), software_path)
-			self.software_path = software_path
 		elif score_type == "PANTHER-Shape":
 			super().__init__("PANTHER-Shape", "PANTHER-Shape", "max", (0, 10), software_path)
-			self.software_path = software_path
 		else:
 			raise ValueError(f"Invalid PANTHER score type: {score_type}")
+		self.software_path = software_path
 
 	def generate_negative_image(self, temp_dir, software, protein_file, pocket_definition):
 		try:
