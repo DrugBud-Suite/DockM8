@@ -9,7 +9,7 @@ from typing import List, Optional, Union
 
 import pandas as pd
 from rdkit import RDLogger
-from rdkit.Chem import PandasTools
+from rdkit.Chem import AllChem, PandasTools
 from tqdm import tqdm
 
 # Search for 'DockM8' in parent directories
@@ -95,15 +95,6 @@ def remove_temp_dir(temp_dir: Path):
 	shutil.rmtree(str(temp_dir), ignore_errors=True)
 
 
-def save_dataframe_to_sdf(dataframe, file_path, molecule_column='Molecule', id_column='ID'):
-	"""Helper function to save DataFrame to SDF format."""
-	PandasTools.WriteSDF(dataframe,
-							file_path,
-							molColName=molecule_column,
-							idName=id_column,
-							properties=list(dataframe.columns))
-
-
 def rescore_poses(protein_file: Path,
 					pocket_definition: dict,
 					software: Path,
@@ -112,21 +103,23 @@ def rescore_poses(protein_file: Path,
 					n_cpus: int,
 					output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""
-	Rescores poses using specified scoring functions. If an output file exists,
-	it will only run the missing scoring functions.
+    Rescores poses using specified scoring functions. If an output file exists,
+    it will only run the missing scoring functions. Saves results to CSV and SDF,
+    and adds a SMILES column to the output.
 
-	Args:
-		protein_file (Path): Path to the protein file.
-		pocket_definition (dict): Dictionary defining the pocket.
-		software (Path): Path to the software.
-		poses (Union[Path, pd.DataFrame]): Path to the clustered SDF file or DataFrame of poses.
-		functions (List[str]): List of scoring function names.
-		n_cpus (int): Number of CPUs to use for parallel processing.
-		output_file (Optional[Path], optional): Path to the output file. Defaults to None.
+    Args:
+        protein_file (Path): Path to the protein file.
+        pocket_definition (dict): Dictionary defining the pocket.
+        software (Path): Path to the software.
+        poses (Union[Path, pd.DataFrame]): Path to the clustered SDF file or DataFrame of poses.
+        functions (List[str]): List of scoring function names.
+        n_cpus (int): Number of CPUs to use for parallel processing.
+        output_file (Optional[Path], optional): Path to the output CSV file. Defaults to None.
+        output_sdf (Optional[Path], optional): Path to the output SDF file. Defaults to None.
 
-	Returns:
-		pd.DataFrame: Combined DataFrame of the rescored poses.
-	"""
+    Returns:
+        pd.DataFrame: Combined DataFrame of the rescored poses, including SMILES.
+    """
 	RDLogger.DisableLog("rdApp.*")
 	tic = time.perf_counter()
 
@@ -135,9 +128,15 @@ def rescore_poses(protein_file: Path,
 	try:
 		if isinstance(poses, Path):
 			sdf = poses
+			original_poses = PandasTools.LoadSDF(str(sdf), molColName='Molecule', idName='Pose ID')
 		elif isinstance(poses, pd.DataFrame):
 			sdf = temp_dir / "temp_clustered.sdf"
-			PandasTools.WriteSDF(poses, sdf, molColName='Molecule', idName='Pose ID', properties=list(poses.columns))
+			original_poses = poses.copy()
+			PandasTools.WriteSDF(original_poses,
+									sdf,
+									molColName='Molecule',
+									idName='Pose ID',
+									properties=list(original_poses.columns))
 		else:
 			raise ValueError("poses must be a Path or DataFrame")
 
@@ -145,9 +144,10 @@ def rescore_poses(protein_file: Path,
 		functions_to_run = functions.copy()
 
 		if output_file and output_file.exists():
-			existing_results = pd.read_csv(output_file)
+			existing_results = pd.read_csv(output_file.with_suffix('.csv'))
 			printlog(f"Found existing results in {output_file}")
-			existing_functions = [col for col in existing_results.columns if col != "Pose ID"]
+			existing_functions = [
+				col for col in existing_results.columns if col != "Pose ID" and col in list(RESCORING_FUNCTIONS.keys())]
 			functions_to_run = [f for f in functions if f not in existing_functions]
 			printlog(f"Functions to run: {', '.join(functions_to_run)}")
 
@@ -186,20 +186,33 @@ def rescore_poses(protein_file: Path,
 				combined_df = new_results
 		else:
 			combined_df = existing_results
+		# Merge rescoring results with original poses
+		combined_df = pd.merge(original_poses, combined_df, on="Pose ID", how="inner")
 
-		# Ensure "Pose ID" is the first column
+		# Add SMILES column
+		combined_df['SMILES'] = combined_df['Molecule'].apply(lambda x: AllChem.MolToSmiles(x)
+																if x is not None else None)
+
+		# Ensure "Pose ID" is the first column, followed by "SMILES"
 		columns = combined_df.columns.tolist()
 		columns.insert(0, columns.pop(columns.index("Pose ID")))
+		columns.insert(1, columns.pop(columns.index("SMILES")))
 		combined_df = combined_df[columns]
 
 		# Convert columns to float where possible
 		for col in combined_df.columns:
-			if col != "Pose ID":
+			if col not in ["Pose ID", "Molecule", "SMILES"]:
 				combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce')
 
 		if output_file:
-			combined_df.to_csv(output_file, index=False)
-			printlog(f"Rescoring results written to {output_file}")
+			df = combined_df.drop(columns=["Molecule"])
+			df.to_csv(output_file.with_suffix('.csv'), index=False)
+			PandasTools.WriteSDF(combined_df,
+									str(output_file.with_suffix(".sdf")),
+									molColName='Molecule',
+									idName='Pose ID',
+									properties=list(combined_df.columns))
+			printlog(f"Rescored poses written to : {output_file}")
 
 		toc = time.perf_counter()
 		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
@@ -243,11 +256,7 @@ def rescore_docking(poses: Union[Path, pd.DataFrame],
 			sdf = poses
 		elif isinstance(poses, pd.DataFrame):
 			sdf = temp_dir / "temp_clustered.sdf"
-			PandasTools.WriteSDF(poses,
-									sdf,
-									molColName='Molecule',
-									idName='Pose ID',
-									properties=list(poses.columns))
+			PandasTools.WriteSDF(poses, sdf, molColName='Molecule', idName='Pose ID', properties=list(poses.columns))
 		else:
 			raise ValueError("poses must be a Path or DataFrame")
 		scoring_function: ScoringFunction = RESCORING_FUNCTIONS.get(function)
