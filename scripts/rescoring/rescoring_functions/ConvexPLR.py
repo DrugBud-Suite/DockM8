@@ -31,7 +31,6 @@ class ConvexPLR(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		temp_dir = self.create_temp_dir()
@@ -45,8 +44,8 @@ class ConvexPLR(ScoringFunction):
 			def ConvexPLR_rescoring_splitted(split_file, protein_file):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
-				ConvexPLR_command = (f"{software}/Convex-PL" + f" --receptor {protein_file}" +
-					f" --ligand {split_file}" + " --sdf --regscore")
+				ConvexPLR_command = (f"{self.software_path}/Convex-PL" + f" --receptor {protein_file}" +
+										f" --ligand {split_file}" + " --sdf --regscore")
 				process = subprocess.Popen(ConvexPLR_command,
 					stdout=subprocess.PIPE,
 					stderr=subprocess.PIPE,

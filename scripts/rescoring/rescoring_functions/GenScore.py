@@ -42,7 +42,6 @@ class GenScore(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 		pocket_file = str(protein_file).replace(".pdb", "_pocket.pdb")
 
@@ -58,13 +57,13 @@ class GenScore(ScoringFunction):
 
 			def genscore_rescoring_splitted(split_file):
 				try:
-					cmd = (f"cd {software}/GenScore/example/ &&"
-						"conda run -n genscore python genscore.py"
-						f" -p {pocket_file}"
-						f" -l {split_file}"
-						f" -o {Path(temp_dir) / Path(split_file).stem}"
-						f" -m {self.model}"
-						f" -e {self.encoder}")
+					cmd = (f"cd {self.software_path}/GenScore/example/ &&"
+							"conda run -n genscore python genscore.py"
+							f" -p {pocket_file}"
+							f" -l {split_file}"
+							f" -o {Path(temp_dir) / Path(split_file).stem}"
+							f" -m {self.model}"
+							f" -e {self.encoder}")
 
 					subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -74,9 +73,9 @@ class GenScore(ScoringFunction):
 					return None
 
 			rescoring_results = parallel_executor(genscore_rescoring_splitted,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.column_name)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name)
 
 			genscore_dataframes = []
 			for result_file in rescoring_results:

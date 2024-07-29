@@ -32,7 +32,6 @@ class LinF9(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		temp_dir = self.create_temp_dir()
@@ -45,8 +44,9 @@ class LinF9(ScoringFunction):
 
 			def LinF9_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{split_file.stem}_LinF9.sdf"
-				LinF9_cmd = (f"{software}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
-					f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
+				LinF9_cmd = (f"{self.software_path
+					}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
+								f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
 				try:
 					subprocess.call(LinF9_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:

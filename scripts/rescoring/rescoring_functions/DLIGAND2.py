@@ -76,11 +76,11 @@ class DLIGAND2(ScoringFunction):
 						df.to_csv(output_csv, index=False)
 						return
 
-					dligand2_command = f"cd {self.dligand2_folder}/bin && ./dligand2.gnu -etype 2 -P {protein_file} -L {temp_mol2.name}"
+					dligand2_command = f"cd {self.software_path}/DLIGAND2/bin && ./dligand2.gnu -etype 2 -P {protein_file} -L {temp_mol2.name}"
 					process = subprocess.Popen(dligand2_command,
-						stdout=subprocess.PIPE,
-						stderr=subprocess.PIPE,
-						shell=True)
+												stdout=subprocess.PIPE,
+												stderr=subprocess.PIPE,
+												shell=True)
 					stdout, stderr = process.communicate()
 					output = stdout.decode().strip()
 					try:
@@ -93,7 +93,7 @@ class DLIGAND2(ScoringFunction):
 				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_score.csv"))
 				df.to_csv(output_csv, index=False)
 
-			os.environ["DATAPATH"] = str(self.dligand2_folder / "bin")
+			os.environ["DATAPATH"] = str(self.software_path / "DLIGAND2/bin")
 			parallel_executor(dligand2_rescoring_splitted,
 				split_files_sdfs,
 				n_cpus,

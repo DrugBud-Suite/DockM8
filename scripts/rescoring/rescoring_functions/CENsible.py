@@ -53,7 +53,6 @@ class CENsible(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = Path(kwargs.get("software"))
 		protein_file = Path(kwargs.get("protein_file"))
 
 		smina_path = self.find_executable("smina")
@@ -76,7 +75,7 @@ class CENsible(ScoringFunction):
 
 				with tempfile.NamedTemporaryFile(suffix=".pdb", delete=False) as temp_pdb:
 					try:
-						convert_molecules(split_file, Path(temp_pdb.name), "sdf", "pdb", software)
+						convert_molecules(split_file, Path(temp_pdb.name), "sdf", "pdb", self.software_path)
 					except Exception as e:
 						printlog(f"Error converting molecules: {str(e)}")
 						df[self.column_name] = [None]
@@ -89,7 +88,7 @@ class CENsible(ScoringFunction):
 						shutil.copy(protein_file, temp_protein)
 						censible_command = [
 							sys.executable,
-							software / "censible/predict.py",
+							self.software_path / "censible/predict.py",
 							"--ligpath",
 							temp_pdb.name,
 							"--recpath",
@@ -100,9 +99,9 @@ class CENsible(ScoringFunction):
 							obabel_path,
 							"--use_cpu"]
 						process = subprocess.Popen(censible_command,
-								stdout=subprocess.PIPE,
-								stderr=subprocess.PIPE,
-								text=True)
+							stdout=subprocess.PIPE,
+							stderr=subprocess.PIPE,
+							text=True)
 						stdout, stderr = process.communicate()
 						score = None
 						for line in stdout.split('\n'):
@@ -119,10 +118,10 @@ class CENsible(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(censible_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_file=protein_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_score.csv"))
 			if not score_files:

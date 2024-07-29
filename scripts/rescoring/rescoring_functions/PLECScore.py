@@ -26,21 +26,20 @@ class PLECScore(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		temp_dir = self.create_temp_dir()
 		try:
-			pickle_path = f"{software}/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle"
+			pickle_path = f"{self.software_path}/models/PLECnn_p5_l1_pdbbind2016_s65536.pickle"
 			results = Path(temp_dir) / "rescored_PLECnn.sdf"
 			plecscore_rescoring_command = ("oddt_cli " + str(sdf) + " --receptor " + str(protein_file) + " -n " +
-											str(n_cpus) + " --score_file " + str(pickle_path) + " -O " + str(results))
+					str(n_cpus) + " --score_file " + str(pickle_path) + " -O " + str(results))
 			subprocess.call(plecscore_rescoring_command, shell=True)
 			PLECScore_results_df = PandasTools.LoadSDF(str(results),
-														idName="Pose ID",
-														molColName=None,
-														includeFingerprints=False,
-														removeHs=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						removeHs=False)
 			PLECScore_results_df.rename(columns={"PLECnn_p5_l1_s65536": self.column_name}, inplace=True)
 			PLECScore_results_df = PLECScore_results_df[["Pose ID", self.column_name]]
 

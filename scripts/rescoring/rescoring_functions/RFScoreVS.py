@@ -31,7 +31,6 @@ class RFScoreVS(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		temp_dir = self.create_temp_dir()
@@ -42,7 +41,7 @@ class RFScoreVS(ScoringFunction):
 			global rf_score_vs_splitted
 
 			def rf_score_vs_splitted(split_file, protein_file):
-				rfscorevs_cmd = f"{software}/rf-score-vs --receptor {protein_file} {split_file} -O {Path(temp_dir) / Path(split_file).stem}_RFScoreVS_scores.csv -n 1"
+				rfscorevs_cmd = f"{self.software_path}/rf-score-vs --receptor {protein_file} {split_file} -O {Path(temp_dir) / Path(split_file).stem}_RFScoreVS_scores.csv -n 1"
 				subprocess.call(rfscorevs_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				return
 

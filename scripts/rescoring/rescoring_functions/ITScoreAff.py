@@ -34,7 +34,6 @@ class ITScoreAff(ScoringFunction):
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
 		protein_file = Path(kwargs.get("protein_file"))
-		software = kwargs.get("software")
 
 		temp_dir = self.create_temp_dir()
 		try:
@@ -44,7 +43,7 @@ class ITScoreAff(ScoringFunction):
 
 			protein_mol2 = Path(temp_dir) / 'protein.mol2'
 			try:
-				convert_molecules(Path(protein_file), Path(protein_mol2), 'pdb', 'mol2', software)
+				convert_molecules(Path(protein_file), Path(protein_mol2), 'pdb', 'mol2', self.software_path)
 			except Exception as e:
 				printlog(f"Error converting protein file to .mol2: {str(e)}")
 				return pd.DataFrame()
@@ -57,7 +56,7 @@ class ITScoreAff(ScoringFunction):
 
 				ligand_mol2 = Path(temp_dir) / f'{split_file.stem}.mol2'
 				try:
-					convert_molecules(split_file, ligand_mol2, 'sdf', 'mol2', software)
+					convert_molecules(split_file, ligand_mol2, 'sdf', 'mol2', self.software_path)
 				except Exception as e:
 					printlog(f"Error converting ligand file to .mol2: {str(e)}")
 					df[self.column_name] = [None] * len(df)
@@ -65,11 +64,11 @@ class ITScoreAff(ScoringFunction):
 					df.to_csv(output_csv, index=False)
 					return
 
-				itscoreAff_command = f"cd {temp_dir} && {software}/ITScoreAff_v1.0/ITScoreAff ./{protein_mol2.name} ./{ligand_mol2.name}"
+				itscoreAff_command = f"cd {temp_dir} && {self.software_path}/ITScoreAff_v1.0/ITScoreAff ./{protein_mol2.name} ./{ligand_mol2.name}"
 				process = subprocess.Popen(itscoreAff_command,
-						stdout=subprocess.PIPE,
-						stderr=subprocess.PIPE,
-						shell=True)
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE,
+					shell=True)
 				stdout, stderr = process.communicate()
 
 				scores = []
@@ -90,10 +89,10 @@ class ITScoreAff(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(ITScoreAff_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_mol2=protein_mol2)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.column_name,
+				protein_mol2=protein_mol2)
 
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))
 			if not score_files:

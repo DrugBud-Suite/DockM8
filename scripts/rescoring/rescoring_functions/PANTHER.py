@@ -85,7 +85,6 @@ class PANTHER(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 		pocket_definition = kwargs.get("pocket_definition")
 
@@ -94,7 +93,7 @@ class PANTHER(ScoringFunction):
 			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-			negative_image = self.generate_negative_image(temp_dir, software, protein_file, pocket_definition)
+			negative_image = self.generate_negative_image(temp_dir, self.software_path, protein_file, pocket_definition)
 
 			global panther_rescoring_splitted
 
@@ -106,7 +105,7 @@ class PANTHER(ScoringFunction):
 					subprocess.call(obabel_charge_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 					# Check if SHAEP executable exists
-					shaep_executable = software / "shaep"
+					shaep_executable = self.software_path / "shaep"
 					if not shaep_executable.is_file():
 						printlog(
 							"SHAEP executable not found. Please download SHAEP and ensure it is in DockM8's software folder."
@@ -115,7 +114,7 @@ class PANTHER(ScoringFunction):
 						# Run SHAEP
 						shaep_output_sdf = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
 						shaep_output_txt = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.txt"
-						shaep_cmd = f"{software}/shaep -q {negative_image} {mol2_file} -s {shaep_output_sdf} --output-file {shaep_output_txt} --noOptimization"
+						shaep_cmd = f"{self.software_path}/shaep -q {negative_image} {mol2_file} -s {shaep_output_sdf} --output-file {shaep_output_txt} --noOptimization"
 						subprocess.call(shaep_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 					# Clean up the temporary MOL2 file

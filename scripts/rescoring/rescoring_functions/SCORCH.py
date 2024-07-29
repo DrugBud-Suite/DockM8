@@ -29,14 +29,13 @@ class SCORCH(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		temp_dir = self.create_temp_dir()
 		try:
 			SCORCH_protein = Path(temp_dir) / "protein.pdbqt"
 			try:
-				convert_molecules(Path(str(protein_file)), SCORCH_protein, "pdb", "pdbqt", software)
+				convert_molecules(Path(str(protein_file)), SCORCH_protein, "pdb", "pdbqt", self.software_path)
 			except Exception as e:
 				printlog(f"Error converting protein file to .pdbqt: {str(e)}")
 				return pd.DataFrame()
@@ -45,13 +44,13 @@ class SCORCH(ScoringFunction):
 			split_files_folder = Path(temp_dir) / f"split_{Path(sdf).stem}"
 			split_files_folder.mkdir(exist_ok=True)
 			try:
-				convert_molecules(sdf, split_files_folder, "sdf", "pdbqt", software)
+				convert_molecules(sdf, split_files_folder, "sdf", "pdbqt", self.software_path)
 			except Exception as e:
 				printlog(f"Error converting ligand file to .pdbqt: {str(e)}")
 				return pd.DataFrame()
 
 			# Run SCORCH
-			SCORCH_command = f"cd {software}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {temp_dir}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
+			SCORCH_command = f"cd {self.software_path}/SCORCH-1.0.0/ && {sys.executable} ./scorch.py --receptor {SCORCH_protein} --ligand {split_files_folder} --out {temp_dir}/scoring_results.csv --threads {n_cpus} --return_pose_scores"
 			try:
 				subprocess.run(SCORCH_command,
 					shell=True,

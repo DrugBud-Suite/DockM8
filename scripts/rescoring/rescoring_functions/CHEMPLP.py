@@ -29,7 +29,6 @@ class CHEMPLP(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		plants_search_speed = "speed1"
@@ -40,7 +39,7 @@ class CHEMPLP(ScoringFunction):
 			# Convert protein file to .mol2 using open babel
 			plants_protein_mol2 = Path(temp_dir) / "protein.mol2"
 			try:
-				convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", software)
+				convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", self.software_path)
 			except Exception as e:
 				printlog(f"Error converting protein file to .mol2: {str(e)}")
 				return pd.DataFrame()
@@ -48,7 +47,7 @@ class CHEMPLP(ScoringFunction):
 			# Convert prepared ligand file to .mol2 using open babel
 			plants_ligands_mol2 = Path(temp_dir) / "ligands.mol2"
 			try:
-				convert_molecules(sdf, plants_ligands_mol2, "sdf", "mol2", software)
+				convert_molecules(sdf, plants_ligands_mol2, "sdf", "mol2", self.software_path)
 			except Exception as e:
 				printlog(f"Error converting ligand file to .mol2: {str(e)}")
 				return pd.DataFrame()
@@ -98,7 +97,7 @@ class CHEMPLP(ScoringFunction):
 				configwriter.writelines(chemplp_config)
 
 			# Run PLANTS docking
-			chemplp_rescoring_command = f"{software}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}"
+			chemplp_rescoring_command = f"{self.software_path}/PLANTS --mode rescore {chemplp_rescoring_config_path_config}"
 			try:
 				subprocess.run(chemplp_rescoring_command,
 					shell=True,

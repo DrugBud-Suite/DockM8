@@ -32,7 +32,6 @@ class KORPL(ScoringFunction):
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		temp_dir = self.create_temp_dir()
@@ -46,8 +45,8 @@ class KORPL(ScoringFunction):
 			def KORPL_rescoring_splitted(split_file, protein_file):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
-				korpl_command = (f"{software}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " +
-					str(split_file) + " --sdf")
+				korpl_command = (f"{self.software_path}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " +
+									str(split_file) + " --sdf")
 				process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 				stdout, stderr = process.communicate()
 				energies = []
