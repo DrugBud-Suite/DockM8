@@ -132,7 +132,7 @@ else
     conda config --add channels mx
 
     conda install -c conda-forge rdkit=2023.09 spyrmsd kneed molvs xgboost openbabel docopt pdbfixer smina lightning -q -y
-	conda install ipykernel scipy seaborn tqdm pytest -q -y
+	conda install ipykernel scipy seaborn tqdm pytest pydantic -q -y
 	conda install -c mx reduct -q -y
 
     echo -e """
