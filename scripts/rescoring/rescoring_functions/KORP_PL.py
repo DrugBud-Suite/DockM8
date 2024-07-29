@@ -46,7 +46,7 @@ class KORPL(ScoringFunction):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
 				korpl_command = (f"{self.software_path}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " +
-									str(split_file) + " --sdf")
+						str(split_file) + " --sdf")
 				process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 				stdout, stderr = process.communicate()
 				energies = []
@@ -83,4 +83,4 @@ class KORPL(ScoringFunction):
 
 # Usage:
 # korpl = KORPL()
-# results = korpl.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = korpl.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

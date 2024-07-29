@@ -36,9 +36,9 @@ class RTMScore(ScoringFunction):
 			RTMScore_rescoring_results = Path(temp_dir) / f"{self.column_name}_scores.csv"
 			try:
 				RTMScore_command = (f'cd {temp_dir} && python {self.software_path}/RTMScore-main/example/rtmscore.py' +
-									f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' + f" -l {sdf}" +
-									" -o RTMScore_scores" + " -pl"
-									f" -m {self.software_path}/RTMScore-main/trained_models/rtmscore_model1.pth")
+						f' -p {str(protein_file).replace(".pdb", "_pocket.pdb")}' + f" -l {sdf}" +
+						" -o RTMScore_scores" + " -pl"
+						f" -m {self.software_path}/RTMScore-main/trained_models/rtmscore_model1.pth")
 				subprocess.call(RTMScore_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 			except Exception as e:
 				if not os.path.exists(os.path.join(self.software_path, "RTMScore-main", "example", "rtmscore.py")):
@@ -64,4 +64,4 @@ class RTMScore(ScoringFunction):
 
 # Usage:
 # rtmscore = RTMScore()
-# results = rtmscore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = rtmscore.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

@@ -129,4 +129,4 @@ class PLP(ScoringFunction):
 
 # Usage:
 # plp = PLP()
-# results = plp.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = plp.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

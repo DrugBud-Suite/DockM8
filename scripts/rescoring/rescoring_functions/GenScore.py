@@ -58,12 +58,12 @@ class GenScore(ScoringFunction):
 			def genscore_rescoring_splitted(split_file):
 				try:
 					cmd = (f"cd {self.software_path}/GenScore/example/ &&"
-							"conda run -n genscore python genscore.py"
-							f" -p {pocket_file}"
-							f" -l {split_file}"
-							f" -o {Path(temp_dir) / Path(split_file).stem}"
-							f" -m {self.model}"
-							f" -e {self.encoder}")
+						"conda run -n genscore python genscore.py"
+						f" -p {pocket_file}"
+						f" -l {split_file}"
+						f" -o {Path(temp_dir) / Path(split_file).stem}"
+						f" -m {self.model}"
+						f" -e {self.encoder}")
 
 					subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -99,4 +99,4 @@ class GenScore(ScoringFunction):
 
 # Usage:
 # genscore = GenScore("scoring")  # or "docking" or "balanced"
-# results = genscore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = genscore.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

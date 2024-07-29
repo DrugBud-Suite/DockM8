@@ -45,12 +45,12 @@ class AD4(ScoringFunction):
 			def AD4_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
 				AD4_cmd = (f"{self.software_path}/gnina"
-							f" --receptor {protein_file}"
-							f" --ligand {split_file}"
-							f" --out {results}"
-							" --score_only"
-							" --scoring ad4_scoring"
-							" --cnn_scoring none")
+					f" --receptor {protein_file}"
+					f" --ligand {split_file}"
+					f" --out {results}"
+					" --score_only"
+					" --scoring ad4_scoring"
+					" --cnn_scoring none")
 				try:
 					subprocess.call(AD4_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
@@ -96,4 +96,4 @@ class AD4(ScoringFunction):
 
 # Usage:
 # ad4 = AD4()
-# results = ad4.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = ad4.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

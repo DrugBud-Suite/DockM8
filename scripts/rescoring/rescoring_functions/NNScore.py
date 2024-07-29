@@ -33,13 +33,13 @@ class NNScore(ScoringFunction):
 			pickle_path = f"{self.software_path}/models/NNScore_pdbbind2016.pickle"
 			results = Path(temp_dir) / "rescored_NNscore.sdf"
 			nnscore_rescoring_command = ("oddt_cli " + str(sdf) + " --receptor " + str(protein_file) + " -n " +
-					str(n_cpus) + " --score_file " + str(pickle_path) + " -O " + str(results))
+				str(n_cpus) + " --score_file " + str(pickle_path) + " -O " + str(results))
 			subprocess.call(nnscore_rescoring_command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 			NNScore_results_df = PandasTools.LoadSDF(str(results),
-						idName="Pose ID",
-						molColName=None,
-						includeFingerprints=False,
-						removeHs=False)
+				idName="Pose ID",
+				molColName=None,
+				includeFingerprints=False,
+				removeHs=False)
 			NNScore_results_df.rename(columns={"nnscore": self.column_name}, inplace=True)
 			NNScore_results_df = NNScore_results_df[["Pose ID", self.column_name]]
 
@@ -52,4 +52,4 @@ class NNScore(ScoringFunction):
 
 # Usage:
 # nnscore = NNScore()
-# results = nnscore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = nnscore.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

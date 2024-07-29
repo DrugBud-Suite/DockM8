@@ -164,4 +164,4 @@ class PANTHER(ScoringFunction):
 
 # Usage:
 # panther = PANTHER("PANTHER")  # or "PANTHER-ESP" or "PANTHER-Shape"
-# results = panther.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path, pocket_definition=pocket_def)
+# results = panther.rescore(sdf_file, n_cpus, protein_file=protein_file_path, pocket_definition=pocket_def)

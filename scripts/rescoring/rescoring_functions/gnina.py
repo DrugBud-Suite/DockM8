@@ -55,12 +55,12 @@ class Gnina(ScoringFunction):
 			def gnina_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
 				gnina_cmd = (f"{self.software_path}/gnina"
-								f" --receptor {protein_file}"
-								f" --ligand {split_file}"
-								f" --out {results}"
-								" --cpu 1"
-								" --score_only"
-								f" --cnn {cnn} --no_gpu")
+					f" --receptor {protein_file}"
+					f" --ligand {split_file}"
+					f" --out {results}"
+					" --cpu 1"
+					" --score_only"
+					f" --cnn {cnn} --no_gpu")
 				try:
 					subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
@@ -109,4 +109,4 @@ class Gnina(ScoringFunction):
 
 # Usage:
 # gnina = Gnina("affinity")  # or "cnn_score" or "cnn_affinity"
-# results = gnina.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = gnina.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

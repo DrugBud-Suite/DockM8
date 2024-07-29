@@ -81,4 +81,4 @@ class SCORCH(ScoringFunction):
 
 # Usage:
 # scorch = SCORCH()
-# results = scorch.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = scorch.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

@@ -45,7 +45,7 @@ class ConvexPLR(ScoringFunction):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
 				ConvexPLR_command = (f"{self.software_path}/Convex-PL" + f" --receptor {protein_file}" +
-										f" --ligand {split_file}" + " --sdf --regscore")
+						f" --ligand {split_file}" + " --sdf --regscore")
 				process = subprocess.Popen(ConvexPLR_command,
 					stdout=subprocess.PIPE,
 					stderr=subprocess.PIPE,
@@ -80,4 +80,4 @@ class ConvexPLR(ScoringFunction):
 
 # Usage:
 # convexplr = ConvexPLR()
-# results = convexplr.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = convexplr.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

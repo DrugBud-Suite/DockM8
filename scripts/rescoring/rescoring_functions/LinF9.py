@@ -92,4 +92,4 @@ class LinF9(ScoringFunction):
 
 # Usage:
 # linf9 = LinF9()
-# results = linf9.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# results = linf9.rescore(sdf_file, n_cpus, protein_file=protein_file_path)
