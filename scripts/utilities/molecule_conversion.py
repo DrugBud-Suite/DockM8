@@ -113,17 +113,16 @@ def convert_molecules(input_file: Path,
 		subprocess.CalledProcessError: If an error occurs during conversion using MGLTools.
 		Exception: If an error occurs during conversion using Meeko or Pybel.
 	"""
-	try:
-		mgl_env = get_mgltools_env(software)
-	except (FileNotFoundError, RuntimeError) as e:
-		printlog(f"Error setting up MGLTools environment: {str(e)}")
-		raise
-
 	if not input_file.exists():
 		raise FileNotFoundError(f"Input file for molecule conversion not found: {input_file}")
 
 	# For protein conversion to pdbqt file format using MGLTools
 	if input_format == "pdb" and output_format == "pdbqt":
+		try:
+			mgl_env = get_mgltools_env(software)
+		except (FileNotFoundError, RuntimeError) as e:
+			printlog(f"Error setting up MGLTools environment: {str(e)}")
+			raise
 		try:
 			prepare_receptor_script = Path(mgl_env['MGLUTIL']) / "prepare_receptor4.py"
 			cmd = f"{mgl_env['MGLPY']} {prepare_receptor_script} -r {input_file} -o {output_file_or_path} -A checkhydrogens"
@@ -162,7 +161,7 @@ def convert_molecules(input_file: Path,
 					setup_list = preparator.prepare(mol)
 					pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
 					mol_name = mol.GetProp("_Name") if mol.HasProp("_Name") else f"compound_{i+1}"
-					output_path = output_dir / f"{mol_name}.pdbqt"
+					output_path = Path(output_dir) / f"{mol_name}.pdbqt"
 					with open(output_path, "w") as f:
 						f.write(pdbqt_string[0])
 					pdbqt_files.append(output_path)
