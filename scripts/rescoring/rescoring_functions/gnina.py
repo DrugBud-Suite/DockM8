@@ -17,6 +17,7 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -24,13 +25,14 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class Gnina(ScoringFunction):
 
-	def __init__(self, score_type):
+	@ensure_software_installed("GNINA")
+	def __init__(self, score_type, software_path: Path):
 		if score_type == "affinity":
-			super().__init__("GNINA-Affinity", "GNINA-Affinity", "min", (100, -100))
+			super().__init__("GNINA-Affinity", "GNINA-Affinity", "min", (100, -100), software_path)
 		elif score_type == "cnn_score":
-			super().__init__("CNN-Score", "CNN-Score", "max", (0, 1))
+			super().__init__("CNN-Score", "CNN-Score", "max", (0, 1), software_path)
 		elif score_type == "cnn_affinity":
-			super().__init__("CNN-Affinity", "CNN-Affinity", "max", (0, 20))
+			super().__init__("CNN-Affinity", "CNN-Affinity", "max", (0, 20), software_path)
 		else:
 			raise ValueError("Invalid score type for Gnina")
 		self.score_type = score_type
@@ -51,12 +53,12 @@ class Gnina(ScoringFunction):
 			def gnina_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
 				gnina_cmd = (f"{software}/gnina"
-					f" --receptor {protein_file}"
-					f" --ligand {split_file}"
-					f" --out {results}"
-					" --cpu 1"
-					" --score_only"
-					f" --cnn {cnn} --no_gpu")
+								f" --receptor {protein_file}"
+								f" --ligand {split_file}"
+								f" --out {results}"
+								" --cpu 1"
+								" --score_only"
+								f" --cnn {cnn} --no_gpu")
 				try:
 					subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
@@ -72,10 +74,10 @@ class Gnina(ScoringFunction):
 			try:
 				gnina_dataframes = [
 					PandasTools.LoadSDF(str(Path(temp_dir) / file),
-						idName="Pose ID",
-						molColName=None,
-						includeFingerprints=False,
-						embedProps=False)
+										idName="Pose ID",
+										molColName=None,
+										includeFingerprints=False,
+										embedProps=False)
 					for file in os.listdir(temp_dir)
 					if file.startswith("split") and file.endswith(".sdf")]
 			except Exception as e:
@@ -92,7 +94,7 @@ class Gnina(ScoringFunction):
 
 			gnina_rescoring_results.rename(columns={
 				"minimizedAffinity": "GNINA-Affinity", "CNNscore": "CNN-Score", "CNNaffinity": "CNN-Affinity"},
-					inplace=True)
+											inplace=True)
 
 			gnina_rescoring_results = gnina_rescoring_results[["Pose ID", self.column_name]]
 

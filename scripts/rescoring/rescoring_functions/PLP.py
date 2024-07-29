@@ -14,6 +14,7 @@ sys.path.append(str(dockm8_path))
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -21,8 +22,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class PLP(ScoringFunction):
 
-	def __init__(self):
-		super().__init__("PLP", "PLP", "min", (200, -200))
+	@ensure_software_installed("PLANTS")
+	def __init__(self, software_path: Path):
+		super().__init__("PLP", "PLP", "min", (200, -200), software_path)
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -97,10 +99,10 @@ class PLP(ScoringFunction):
 			plp_rescoring_command = f"{software}/PLANTS --mode rescore {plp_rescoring_config_path_config}"
 			try:
 				subprocess.run(plp_rescoring_command,
-								shell=True,
-								check=True,
-								stdout=subprocess.DEVNULL,
-								stderr=subprocess.STDOUT)
+					shell=True,
+					check=True,
+					stdout=subprocess.DEVNULL,
+					stderr=subprocess.STDOUT)
 			except subprocess.CalledProcessError as e:
 				printlog(f"Error running PLANTS docking: {str(e)}")
 				return pd.DataFrame()

@@ -15,6 +15,7 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -23,45 +24,43 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 class AAScore(ScoringFunction):
 
 	"""
-	AAScore class for performing rescoring using the AAScore scoring function.
+    AAScore class for performing rescoring using the AAScore scoring function.
 
-	Args:
-		ScoringFunction (class): Base class for scoring functions.
+    Args:
+        software_path (Path): Path to the software installation directory.
 
-	Attributes:
-		name (str): Name of the scoring function.
-		column_name (str): Name of the column in the result dataframe.
-		score_type (str): Type of scoring (e.g., "max", "min").
-		score_range (tuple): Range of scores (e.g., (100, -100)).
+    Attributes:
+        name (str): Name of the scoring function.
+        column_name (str): Name of the column in the result dataframe.
+        score_type (str): Type of scoring (e.g., "max", "min").
+        score_range (tuple): Range of scores (e.g., (100, -100)).
 
-	Methods:
-		rescore(sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
-			Rescores the given SDF file using the AAScore scoring function.
+    Methods:
+        rescore(sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
+            Rescores the given SDF file using the AAScore scoring function.
+    """
 
-	"""
-
-	def __init__(self):
-		super().__init__("AAScore", "AAScore", "max", (100, -100))
+	@ensure_software_installed("AA_SCORE")
+	def __init__(self, software_path: Path):
+		super().__init__("AAScore", "AAScore", "max", (100, -100), software_path)
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		"""
-		Rescores the given SDF file using the AAScore scoring function.
+        Rescores the given SDF file using the AAScore scoring function.
 
-		Args:
-			sdf (str): Path to the SDF file.
-			n_cpus (int): Number of CPUs to use for parallel execution.
-			**kwargs: Additional keyword arguments.
+        Args:
+            sdf (str): Path to the SDF file.
+            n_cpus (int): Number of CPUs to use for parallel execution.
+            **kwargs: Additional keyword arguments.
 
-		Returns:
-			pd.DataFrame: DataFrame containing the rescoring results.
+        Returns:
+            pd.DataFrame: DataFrame containing the rescoring results.
 
-		Raises:
-			RuntimeError: If the AAScore rescoring fails.
-			ValueError: If there is an error in AAScore rescoring.
-
-		"""
+        Raises:
+            RuntimeError: If the AAScore rescoring fails.
+            ValueError: If there is an error in AAScore rescoring.
+        """
 		tic = time.perf_counter()
-		software = kwargs.get("software")
 		protein_file = kwargs.get("protein_file")
 
 		temp_dir = self.create_temp_dir()
@@ -70,27 +69,25 @@ class AAScore(ScoringFunction):
 
 			if n_cpus == 1:
 				results = Path(temp_dir) / "rescored_AAScore.csv"
-				AAscore_cmd = f"conda run -n AAScore {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {sdf} --Out {results}"
+				AAscore_cmd = f"conda run -n AAScore {self.software_path}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {sdf} --Out {results}"
 				subprocess.run(AAscore_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				AAScore_rescoring_results = pd.read_csv(results,
-							delimiter="\t",
-							header=None,
-							names=["Pose ID", self.column_name])
+														delimiter="\t",
+														header=None,
+														names=["Pose ID", self.column_name])
 			else:
 				split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
 				split_files_sdfs = list(split_files_folder.glob("*.sdf"))
 
 				# Define the function for parallel execution
-				global AAScore_rescoring_splitted
-
 				def AAScore_rescoring_splitted(split_file):
 					results = Path(temp_dir) / f"{split_file.stem}_AAScore.csv"
-					AAscore_cmd = f"python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {split_file} --Out {results}"
+					AAscore_cmd = f"python {self.software_path}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {split_file} --Out {results}"
 					subprocess.run(AAscore_cmd,
-						shell=True,
-						check=True,
-						stdout=subprocess.DEVNULL,
-						stderr=subprocess.STDOUT)
+									shell=True,
+									check=True,
+									stdout=subprocess.DEVNULL,
+									stderr=subprocess.STDOUT)
 
 				# Execute the rescoring in parallel
 				parallel_executor(AAScore_rescoring_splitted, split_files_sdfs, n_cpus, display_name=self.column_name)
@@ -114,5 +111,5 @@ class AAScore(ScoringFunction):
 
 
 # Usage:
-# aascore = AAScore()
-# results = aascore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+# aascore = AAScore(software_path)
+# results = aascore.rescore(sdf_file, n_cpus, protein_file=protein_file_path)

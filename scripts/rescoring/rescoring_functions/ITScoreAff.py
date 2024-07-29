@@ -1,10 +1,7 @@
 import os
-import stat
 import subprocess
 import sys
-import tarfile
 import time
-import urllib.request
 import warnings
 from pathlib import Path
 
@@ -17,6 +14,7 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
+from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
@@ -28,27 +26,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class ITScoreAff(ScoringFunction):
 
-	def __init__(self):
-		super().__init__("ITScoreAff", "ITScoreAff", "min", (-200, 100))
-		self.itscore_folder = self.check_and_download_itscoreAff()
-
-	def check_and_download_itscoreAff(self):
-		itscore_folder = dockm8_path / "software" / "ITScoreAff_v1.0"
-		if not itscore_folder.exists():
-			printlog("ITScoreAff_v1.0 folder not found. Downloading...")
-			download_url = "http://huanglab.phys.hust.edu.cn/ITScoreAff/ITScoreAff_v1.0.tar.gz"
-			download_path = dockm8_path / "software" / "ITScoreAff_v1.0.tar.gz"
-			urllib.request.urlretrieve(download_url, download_path)
-			printlog("Download complete. Extracting...")
-			with tarfile.open(download_path, "r:gz") as tar:
-				tar.extractall(path=dockm8_path / "software")
-			printlog("Extraction complete. Removing tarball...")
-			os.remove(download_path)
-			executable_path = itscore_folder / "ITScoreAff"
-			os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IEXEC)
-			printlog(f"Changed permissions for {executable_path}")
-			printlog("ITScoreAff_v1.0 setup complete.")
-		return itscore_folder
+	@ensure_software_installed("IT_SCORE_AFF")
+	def __init__(self, software_path: Path):
+		super().__init__("ITScoreAff", "ITScoreAff", "min", (-200, 100), software_path)
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -63,7 +43,7 @@ class ITScoreAff(ScoringFunction):
 
 			protein_mol2 = Path(temp_dir) / 'protein.mol2'
 			try:
-				convert_molecules(protein_file, protein_mol2, 'pdb', 'mol2', software)
+				convert_molecules(Path(protein_file), Path(protein_mol2), 'pdb', 'mol2', software)
 			except Exception as e:
 				printlog(f"Error converting protein file to .mol2: {str(e)}")
 				return pd.DataFrame()
@@ -86,9 +66,9 @@ class ITScoreAff(ScoringFunction):
 
 				itscoreAff_command = f"cd {temp_dir} && {software}/ITScoreAff_v1.0/ITScoreAff ./{protein_mol2.name} ./{ligand_mol2.name}"
 				process = subprocess.Popen(itscoreAff_command,
-					stdout=subprocess.PIPE,
-					stderr=subprocess.PIPE,
-					shell=True)
+											stdout=subprocess.PIPE,
+											stderr=subprocess.PIPE,
+											shell=True)
 				stdout, stderr = process.communicate()
 
 				scores = []
@@ -109,10 +89,10 @@ class ITScoreAff(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(ITScoreAff_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_mol2=protein_mol2)
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_mol2=protein_mol2)
 
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))
 			if not score_files:

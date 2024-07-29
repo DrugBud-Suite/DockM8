@@ -17,6 +17,7 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -24,8 +25,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class AD4(ScoringFunction):
 
-	def __init__(self):
-		super().__init__("AD4", "AD4", "min", (100, -100))
+	@ensure_software_installed("GNINA")
+	def __init__(self, software_path: Path):
+		super().__init__("AD4", "AD4", "min", (100, -100), software_path)
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -43,12 +45,12 @@ class AD4(ScoringFunction):
 			def AD4_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
 				AD4_cmd = (f"{software}/gnina"
-							f" --receptor {protein_file}"
-							f" --ligand {split_file}"
-							f" --out {results}"
-							" --score_only"
-							" --scoring ad4_scoring"
-							" --cnn_scoring none")
+					f" --receptor {protein_file}"
+					f" --ligand {split_file}"
+					f" --out {results}"
+					" --score_only"
+					" --scoring ad4_scoring"
+					" --cnn_scoring none")
 				try:
 					subprocess.call(AD4_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				except Exception as e:
@@ -56,18 +58,18 @@ class AD4(ScoringFunction):
 				return
 
 			parallel_executor(AD4_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_file=protein_file)
+					split_files_sdfs,
+					n_cpus,
+					display_name=self.column_name,
+					protein_file=protein_file)
 
 			try:
 				AD4_dataframes = [
 					PandasTools.LoadSDF(str(Path(temp_dir) / file),
-										idName="Pose ID",
-										molColName=None,
-										includeFingerprints=False,
-										embedProps=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
 					for file in os.listdir(temp_dir)
 					if file.startswith("split") and file.endswith(".sdf")]
 			except Exception as e:

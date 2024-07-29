@@ -17,6 +17,7 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -24,8 +25,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class LinF9(ScoringFunction):
 
-	def __init__(self):
-		super().__init__("LinF9", "LinF9", "min", (100, -100))
+	@ensure_software_installed("LINF9")
+	def __init__(self, software_path: Path):
+		super().__init__("LinF9", "LinF9", "min", (100, -100), software_path)
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
@@ -51,18 +53,18 @@ class LinF9(ScoringFunction):
 				return
 
 			parallel_executor(LinF9_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_file=protein_file)
+					split_files_sdfs,
+					n_cpus,
+					display_name=self.column_name,
+					protein_file=protein_file)
 
 			try:
 				LinF9_dataframes = [
 					PandasTools.LoadSDF(str(Path(temp_dir) / file),
-						idName="Pose ID",
-						molColName=None,
-						includeFingerprints=False,
-						embedProps=False)
+					idName="Pose ID",
+					molColName=None,
+					includeFingerprints=False,
+					embedProps=False)
 					for file in os.listdir(temp_dir)
 					if file.startswith("split") and file.endswith("_LinF9.sdf")]
 			except Exception as e:

@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict
 
@@ -7,21 +8,28 @@ import pandas as pd
 from rdkit import Chem, RDLogger
 from rdkit.Chem import PandasTools
 
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
 from scripts.docking.docking_function import DockingFunction
+from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
 
 
 class FABindDocking(DockingFunction):
 
+	@ensure_software_installed("FABind")
 	def __init__(self, software_path: Path):
 		super().__init__("FABind", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 
 		temp_dir = self.create_temp_dir()
 

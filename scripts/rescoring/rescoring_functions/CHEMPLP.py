@@ -14,6 +14,7 @@ sys.path.append(str(dockm8_path))
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -21,8 +22,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class CHEMPLP(ScoringFunction):
 
-	def __init__(self):
-		super().__init__("CHEMPLP", "CHEMPLP", "min", (200, -200))
+	@ensure_software_installed("PLANTS")
+	def __init__(self, software_path: Path):
+		super().__init__("CHEMPLP", "CHEMPLP", "min", (200, -200), software_path)
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()

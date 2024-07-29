@@ -5,9 +5,7 @@ import subprocess
 import sys
 import tempfile
 import time
-import urllib.request
 import warnings
-import zipfile
 from pathlib import Path
 
 import pandas as pd
@@ -19,6 +17,7 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
+from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.file_splitting import split_sdf_single_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
@@ -47,34 +46,9 @@ class CENsible(ScoringFunction):
 
 	"""
 
-	def __init__(self):
-		super().__init__("CENsible", "CENsible", "max", (0, 20))
-		self.censible_folder = self.check_and_download_censible()
-
-	def check_and_download_censible(self):
-		"""
-		Checks if the CENsible software is available and downloads it if necessary.
-
-		Returns:
-			censible_folder (Path): The path to the CENsible software folder.
-
-		"""
-		censible_folder = dockm8_path / "software/censible"
-		if not censible_folder.exists():
-			printlog("CENsible folder not found. Downloading...")
-			download_url = "https://github.com/durrantlab/censible/archive/refs/heads/main.zip"
-			download_path = dockm8_path / "software" / "censible.zip"
-			urllib.request.urlretrieve(download_url, download_path)
-			printlog("Download complete. Extracting...")
-			with zipfile.ZipFile(download_path, 'r') as zip_ref:
-				zip_ref.extractall(path=dockm8_path / "software")
-			os.rename(dockm8_path / "software" / "censible-main", censible_folder)
-			printlog("Extraction complete. Removing zip file...")
-			os.remove(download_path)
-			subprocess.run([sys.executable, "-m", "pip", "install", "-r", censible_folder / "requirements_predict.txt"],
-				check=True)
-			printlog("CENsible setup complete.")
-		return censible_folder
+	@ensure_software_installed("CENSIBLE")
+	def __init__(self, software_path: Path):
+		super().__init__("CENsible", "CENsible", "max", (0, 20), software_path)
 
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
