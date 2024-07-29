@@ -247,20 +247,6 @@ def install_deepcoy_models(software_path):
 	os.remove(tar_file)
 
 
-def install_mgl_tools(software_path):
-	mgl_tools_path = os.path.join(software_path, 'MGL_Tools')
-	url = "https://ccsb.scripps.edu/mgltools/download/491/mgltools_x86_64Linux2_1.5.7p1.tar.gz"
-	tar_file = os.path.join(software_path, 'mgltools_x86_64Linux2_1.5.7p1.tar.gz')
-	download_file(url, tar_file)
-	with tarfile.open(tar_file, 'r:gz') as tar:
-		tar.extractall(path=software_path)
-	os.remove(tar_file)
-	install_script = os.path.join(software_path, 'mgltools_x86_64Linux2_1.5.7', 'install.sh')
-	os.chmod(install_script, os.stat(install_script).st_mode | stat.S_IEXEC)
-	subprocess.run([install_script, '-d', mgl_tools_path, '-c', '1'])
-	shutil.rmtree(os.path.join(software_path, 'mgltools_x86_64Linux2_1.5.7'), ignore_errors=True)
-
-
 def install_fabind(software_path):
 	fabind_path = Path(software_path) / 'FABind'
 
@@ -351,10 +337,11 @@ def install_genscore(software_path):
 	subprocess.run(f"conda create -n {env_name} python=3.8 -y", shell=True, check=True)
 
 	# Install dependencies
-	conda_install_cmd = (f"conda run -n {env_name} conda install "
-							"pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cpuonly -c pytorch -y && "
-							"conda install MDAnalysis==2.0.0 prody==2.1.0 pandas rdkit==2021.03.5 openbabel "
-							"scikit-learn scipy seaborn numpy joblib matplotlib -y")
+	conda_install_cmd = (
+		f"conda run -n {env_name} conda install "
+		"pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cpuonly -c pytorch -y && "
+		f"conda run -n {env_name} conda install MDAnalysis==2.0.0 prody==2.1.0 pandas rdkit==2021.03.5 openbabel "
+		"scikit-learn scipy seaborn numpy joblib matplotlib -y")
 	subprocess.run(conda_install_cmd, shell=True, check=True)
 
 	# Install PyTorch Geometric and related packages
@@ -380,8 +367,8 @@ def install_all_software(software_path):
 	install_rtmscore(software_path)
 	install_posecheck(software_path)
 	install_deepcoy_models(software_path)
-	install_mgl_tools(software_path)
 	install_fabind(software_path)
 	install_censible(software_path)
 	install_dligand2(software_path)
 	install_itscoreAff(software_path)
+	install_genscore(software_path)
