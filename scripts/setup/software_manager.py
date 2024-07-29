@@ -54,7 +54,7 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"CENSIBLE": {
 		"install": install_censible, "check": lambda path: (path / "censible").is_file()},
 	"DLIGAND2": {
-		"install": install_dligand2, "check": lambda path: (path / "DLIGAND2").is_file()},
+		"install": install_dligand2, "check": lambda path: (path / "DLIGAND2").is_dir()},
 	"LIN_F9": {
 		"install": install_lin_f9, "check": lambda path: (path / "LinF9").is_file()},
 	"GYPSUM_DL": {
@@ -64,7 +64,7 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"RF_SCORE_VS": {
 		"install": install_rf_score_vs, "check": lambda path: (path / "rf-score-vs").is_file()},
 	"RTMSCORE": {
-		"install": install_rtmscore, "check": lambda path: (path / "RTMScore-main").is_file()},
+		"install": install_rtmscore, "check": lambda path: (path / "RTMScore-main").is_dir()},
 	"IT_SCORE_AFF": {
 		"install": install_itscoreAff, "check": lambda path: (path / "ITScoreAff_v1.0").is_dir()},
 	"KORP_PL": {
