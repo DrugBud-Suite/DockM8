@@ -31,13 +31,13 @@ def test_data():
 def test_PANTHER_rescoring(test_data, score_type):
 	protein_file, pocket_definition, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	panther = PANTHER(score_type)
+	panther = PANTHER(score_type, software)
 
 	result = panther.rescore(clustered_sdf,
-								n_cpus,
-								software=software,
-								protein_file=protein_file,
-								pocket_definition=pocket_definition)
+			n_cpus,
+			software=software,
+			protein_file=protein_file,
+			pocket_definition=pocket_definition)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

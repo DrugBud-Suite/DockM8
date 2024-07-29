@@ -30,7 +30,7 @@ def test_data():
 def test_SCORCH_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	scorch = SCORCH()
+	scorch = SCORCH(software)
 
 	result = scorch.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
 

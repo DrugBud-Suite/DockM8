@@ -30,7 +30,7 @@ def test_data():
 def test_Gnina_rescoring(test_data, score_type):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	gnina = Gnina(score_type)
+	gnina = Gnina(score_type, software)
 
 	result = gnina.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
 

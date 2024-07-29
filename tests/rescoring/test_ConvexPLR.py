@@ -29,7 +29,7 @@ def test_data():
 def test_ConvexPLR_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	convexplr = ConvexPLR()
+	convexplr = ConvexPLR(software)
 
 	result = convexplr.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
 

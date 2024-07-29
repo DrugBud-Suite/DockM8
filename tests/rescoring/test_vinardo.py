@@ -29,7 +29,7 @@ def test_data():
 def test_Vinardo_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	vinardo = Vinardo()
+	vinardo = Vinardo(software)
 
 	result = vinardo.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
 

@@ -29,7 +29,7 @@ def test_data():
 def test_AAScore_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	aascore = AAScore()
+	aascore = AAScore(software)
 
 	result = aascore.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
 
