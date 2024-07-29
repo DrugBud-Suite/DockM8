@@ -350,6 +350,10 @@ def install_genscore(software_path):
 						"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
 	subprocess.run(pip_install_cmd, shell=True, check=True)
 
+def install_mgltools():
+	env_name = 'mgltools'
+	subprocess.run(f"conda create -n {env_name} python=2.7 -y", shell=True, check=True)
+	subprocess.run(f"conda run -n {env_name} conda install -c bioconda mgltools -y", shell=True, check=True)
 
 def install_all_software(software_path):
 	os.makedirs(software_path, exist_ok=True)
