@@ -132,7 +132,8 @@ else
     conda config --add channels mx
 
     conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt tqdm pytest pdbfixer smina omegaconf roma -q -y
-	conda install -c ikmckenz adme-pred-py
+	conda install -c ikmckenz adme-pred-py -y -q
+	conda install -c bioconda mgltools -y -q
 
     echo -e """
     ###############################################################
@@ -367,17 +368,6 @@ if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
 fi
 
 cd $BASEDIR
-
-if if [[ ! -f $DOCKM8_FOLDER/software/MGL_Tools* ]]; then
-    echo -e "\nDownloading MGL_Tools!"
-    cd $DOCKM8_FOLDER/software/
-    wget https://ccsb.scripps.edu/mgltools/download/491/mgltools_x86_64Linux2_1.5.7p1.tar.gz --no-check-certificate -q --show-progress
-    rm mgltools_x86_64Linux2_1.5.7p1.tar.gz
-    chmod +x ./mgltools_x86_64Linux2_1.5.7/install.sh
-	cd $DOCKM8_FOLDER/software/mgltools_x86_64Linux2_1.5.7
-	./install.sh -d $DOCKM8_FOLDER/software/MGL_Tools -c 1
-	rmdir -r $DOCKM8_FOLDER/software/mgltools_x86_64Linux2_1.5.7
-fi
 
 if if [[ ! -f $DOCKM8_FOLDER/software/FABind ]]; then
     echo -e "\nDownloading FABind!"
