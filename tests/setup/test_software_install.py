@@ -29,13 +29,13 @@ from scripts.setup.software_install import (install_gnina,
 											install_rf_score_vs,
 											install_rtmscore,
 											install_posecheck,
-											install_mgl_tools,
 											install_fabind,
 											install_censible,
 											install_dligand2,
 											install_itscoreAff,
 											install_genscore,
-											install_deepcoy_models)
+											install_deepcoy_models,
+											install_mgltools)
 
 
 @pytest.fixture(scope="module")
@@ -191,3 +191,8 @@ def test_install_deepcoy_models(software_path):
 	logging.info("Starting DeepCoys models installation")
 	install_deepcoy_models(software_path)
 	log_and_assert(software_path, "DeepCoys models", 'models')
+
+def test_install_mgltools(software_path):
+	logging.info("Starting MGL Tools installation")
+	install_mgltools(software_path)
+	log_and_assert(software_path, "MGL Tools", 'MGLTools-1.5.7')
