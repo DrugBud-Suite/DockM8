@@ -94,9 +94,9 @@ def install_plants(software_path):
 
 def install_panther(software_path):
 	subprocess.call('conda create -n panther python=2.7 -y',
-					shell=True,
-					stderr=subprocess.DEVNULL,
-					stdout=subprocess.DEVNULL)
+		shell=True,
+		stderr=subprocess.DEVNULL,
+		stdout=subprocess.DEVNULL)
 	printlog(
 		"PANTHER automatic installation is not supported. \n" +
 		"Please install PANTHER manually from : https://www.medchem.fi/panther/. \n" +
@@ -110,9 +110,9 @@ def install_panther(software_path):
 def install_plantain(software_path):
 	plantain_path = Path(software_path) / "plantain"
 	subprocess.call(f"git clone https://github.com/molecularmodelinglab/plantain.git {str(plantain_path)} --depth 1",
-					shell=True,
-					stdout=subprocess.DEVNULL,
-					stderr=subprocess.DEVNULL)
+		shell=True,
+		stdout=subprocess.DEVNULL,
+		stderr=subprocess.DEVNULL)
 
 
 def install_korp_pl(software_path):
@@ -159,9 +159,9 @@ def install_aa_score(software_path):
 	os.remove(zip_file)
 	remove_git_files(aa_score_path)
 	subprocess.call("conda create -n AAScore python=3.6 openbabel rdkit numpy scipy pandas py3dmol biopandas -y",
-					shell=True,
-					stderr=subprocess.DEVNULL,
-					stdout=subprocess.DEVNULL)
+		shell=True,
+		stderr=subprocess.DEVNULL,
+		stdout=subprocess.DEVNULL)
 
 
 def install_gypsum_dl(software_path):
@@ -193,7 +193,7 @@ def install_scorch(software_path):
 	with open(os.path.join(scorch_path, 'scorch.py'), 'r') as file:
 		content = file.read()
 	content = content.replace("dtest = xgb.DMatrix(df, feature_names=df.columns)",
-								"dtest = xgb.DMatrix(df, feature_names=list(df.columns))")
+			"dtest = xgb.DMatrix(df, feature_names=list(df.columns))")
 	with open(os.path.join(scorch_path, 'scorch.py'), 'w') as file:
 		file.write(content)
 
@@ -252,10 +252,10 @@ def install_fabind(software_path):
 
 	# Clone FABind repository
 	subprocess.run(['git', 'clone', 'https://github.com/QizhiPei/FABind.git', '--recursive', '--depth', '1'],
-					cwd=software_path,
-					stderr=subprocess.DEVNULL,
-					stdout=subprocess.DEVNULL,
-					check=True)
+		cwd=software_path,
+		stderr=subprocess.DEVNULL,
+		stdout=subprocess.DEVNULL,
+		check=True)
 	remove_git_files(fabind_path)
 
 	# Create and set up conda environment
@@ -346,14 +346,15 @@ def install_genscore(software_path):
 
 	# Install PyTorch Geometric and related packages
 	pip_install_cmd = (f"conda run -n {env_name} pip install torch-geometric==2.0.3 "
-						"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl "
-						"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
+			"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl "
+			"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
 	subprocess.run(pip_install_cmd, shell=True, check=True)
 
 def install_mgltools():
 	env_name = 'mgltools'
 	subprocess.run(f"conda create -n {env_name} python=2.7 -y", shell=True, check=True)
 	subprocess.run(f"conda run -n {env_name} conda install -c bioconda mgltools -y", shell=True, check=True)
+
 
 def install_all_software(software_path):
 	os.makedirs(software_path, exist_ok=True)
