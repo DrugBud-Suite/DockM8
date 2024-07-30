@@ -105,9 +105,9 @@ def rescore_poses(protein_file: Path,
 					n_cpus: int,
 					output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""
-    Rescores poses using specified scoring functions. If an output file exists,
-    it will only run the missing scoring functions. Saves results to CSV and SDF,
-    and adds a SMILES column to the output.
+    Rescores poses using specified scoring functions. If an output file is provided and exists,
+    it will only run the missing scoring functions. Saves results to CSV and SDF incrementally
+    if output_file is specified, and adds a SMILES column to the output.
 
     Args:
         protein_file (Path): Path to the protein file.
@@ -117,7 +117,6 @@ def rescore_poses(protein_file: Path,
         functions (List[str]): List of scoring function names.
         n_cpus (int): Number of CPUs to use for parallel processing.
         output_file (Optional[Path], optional): Path to the output CSV file. Defaults to None.
-        output_sdf (Optional[Path], optional): Path to the output SDF file. Defaults to None.
 
     Returns:
         pd.DataFrame: Combined DataFrame of the rescored poses, including SMILES.
@@ -142,18 +141,28 @@ def rescore_poses(protein_file: Path,
 		else:
 			raise ValueError("poses must be a Path or DataFrame")
 
+		# Add SMILES column to original_poses
+		original_poses['SMILES'] = original_poses['Molecule'].apply(lambda x: AllChem.MolToSmiles(x)
+																	if x is not None else None)
+
 		existing_results = pd.DataFrame()
 		functions_to_run = functions.copy()
 
 		if output_file and output_file.exists():
-			existing_results = pd.read_csv(output_file.with_suffix('.csv'))
+			existing_results = pd.read_csv(output_file)
 			printlog(f"Found existing results in {output_file}")
 			existing_functions = [
 				col for col in existing_results.columns if col != "Pose ID" and col in list(RESCORING_FUNCTIONS.keys())]
 			functions_to_run = [f for f in functions if f not in existing_functions]
 			printlog(f"Functions to run: {', '.join(functions_to_run)}")
+		elif output_file:
+			# Initialize output file with original poses if output_file is specified but doesn't exist
+			columns_to_write = ['Pose ID', 'SMILES'] + [
+				col for col in original_poses.columns if col not in ['Pose ID', 'SMILES', 'Molecule']]
+			original_poses[columns_to_write].to_csv(output_file, index=False)
 
-		results = []
+		combined_df = pd.merge(original_poses, existing_results, on="Pose ID", how="left")
+
 		skipped_functions = []
 		for function in functions_to_run:
 			scoring_function_class = RESCORING_FUNCTIONS.get(function)
@@ -164,7 +173,15 @@ def rescore_poses(protein_file: Path,
 														n_cpus,
 														protein_file=str(protein_file),
 														pocket_definition=pocket_definition)
-					results.append(result)
+
+					# Merge new results with combined_df
+					combined_df = pd.merge(combined_df, result, on="Pose ID", how="left")
+
+					# Write updated results to CSV if output_file is specified
+					if output_file:
+						columns_to_write = [col for col in combined_df.columns if col != 'Molecule']
+						combined_df[columns_to_write].to_csv(output_file, index=False)
+						printlog(f"Updated results with {function} written to {output_file}")
 				except Exception as e:
 					printlog(e)
 					printlog(f"Failed for {function}")
@@ -173,27 +190,6 @@ def rescore_poses(protein_file: Path,
 
 		if skipped_functions:
 			printlog(f'Skipping functions: {", ".join(skipped_functions)}')
-
-		if results:
-			if len(results) == 1:
-				new_results = results[0]
-			else:
-				new_results = results[0]
-				for df in tqdm(results[1:], desc="Combining scores", unit="files"):
-					new_results = pd.merge(new_results, df, on="Pose ID", how="inner")
-
-			if not existing_results.empty:
-				combined_df = pd.merge(existing_results, new_results, on="Pose ID", how="outer")
-			else:
-				combined_df = new_results
-		else:
-			combined_df = existing_results
-		# Merge rescoring results with original poses
-		combined_df = pd.merge(original_poses, combined_df, on="Pose ID", how="inner")
-
-		# Add SMILES column
-		combined_df['SMILES'] = combined_df['Molecule'].apply(lambda x: AllChem.MolToSmiles(x)
-																if x is not None else None)
 
 		# Ensure "Pose ID" is the first column, followed by "SMILES"
 		columns = combined_df.columns.tolist()
@@ -206,15 +202,14 @@ def rescore_poses(protein_file: Path,
 			if col not in ["Pose ID", "Molecule", "SMILES"]:
 				combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce')
 
+		# Write final SDF if output_file is specified
 		if output_file:
-			df = combined_df.drop(columns=["Molecule"])
-			df.to_csv(output_file.with_suffix('.csv'), index=False)
 			PandasTools.WriteSDF(combined_df,
 									str(output_file.with_suffix(".sdf")),
 									molColName='Molecule',
 									idName='Pose ID',
 									properties=list(combined_df.columns))
-			printlog(f"Rescored poses written to : {output_file}")
+			printlog(f"Final rescored poses written to : {output_file} and {output_file.with_suffix('.sdf')}")
 
 		toc = time.perf_counter()
 		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
