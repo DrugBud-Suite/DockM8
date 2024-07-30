@@ -68,7 +68,7 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"CONVEX_PLR": {
 		"install": install_convex_pl, "check": lambda path: (path / "Convex_PL").is_file()},
 	"CENSIBLE": {
-		"install": install_censible, "check": lambda path: (path / "censible").is_file()},
+		"install": install_censible, "check": lambda path: (path / "censible").is_dir()},
 	"DLIGAND2": {
 		"install": install_dligand2, "check": lambda path: (path / "DLIGAND2").is_dir()},
 	"LIN_F9": {
@@ -85,8 +85,6 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 		"install": install_itscoreAff, "check": lambda path: (path / "ITScoreAff_v1.0").is_dir()},
 	"KORP_PL": {
 		"install": install_korp_pl, "check": lambda path: (path / "KORP-PL").is_file()},
-	"POSECHECK": {
-		"install": install_posecheck, "check": lambda path: (path / "posecheck-main").is_file()},
 	"GENSCORE": {
 		"install": install_genscore, "check": lambda path: (path / "GenScore").is_dir()},
 	"POSECHECK": {
