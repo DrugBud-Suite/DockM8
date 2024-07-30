@@ -21,13 +21,13 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def select_poses(poses: Union[Path, pd.DataFrame],
-		selection_method: str,
-		clustering_method: str,
-		pocket_definition: dict,
-		protein_file: Path,
-		software: Path,
-		n_cpus: int,
-		output_file: Optional[Path] = None) -> pd.DataFrame:
+					selection_method: str,
+					clustering_method: str,
+					pocket_definition: dict,
+					protein_file: Path,
+					software: Path,
+					n_cpus: int,
+					output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""This function clusters all poses according to the metric selected using multiple CPU cores.
 
 	Args:
@@ -82,8 +82,10 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 	# Write the filtered poses to a SDF file
 	if output_file:
 		PandasTools.WriteSDF(filtered_poses,
-				str(output_file),
-				molColName="Molecule",
-				idName="Pose ID",
-				properties=list(filtered_poses.columns))
-	return filtered_poses
+								str(output_file),
+								molColName="Molecule",
+								idName="Pose ID",
+								properties=list(filtered_poses.columns))
+		return output_file
+	else:
+		return filtered_poses
