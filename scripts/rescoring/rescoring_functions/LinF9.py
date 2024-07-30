@@ -25,7 +25,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 class LinF9(ScoringFunction):
 
-	@ensure_software_installed("LINF9")
+	@ensure_software_installed("LIN_F9")
 	def __init__(self, software_path: Path):
 		super().__init__("LinF9", "LinF9", "min", (100, -100), software_path)
 		self.software_path = software_path
@@ -44,8 +44,7 @@ class LinF9(ScoringFunction):
 
 			def LinF9_rescoring_splitted(split_file, protein_file):
 				results = Path(temp_dir) / f"{split_file.stem}_LinF9.sdf"
-				LinF9_cmd = (f"{self.software_path
-					}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
+				LinF9_cmd = (f"{self.software_path}/LinF9" + f" --receptor {protein_file}" + f" --ligand {split_file}" +
 								f" --out {results}" + " --cpu 1" + " --scoring Lin_F9 --score_only")
 				try:
 					subprocess.call(LinF9_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
