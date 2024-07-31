@@ -5,7 +5,7 @@ import warnings
 from pathlib import Path
 from rdkit import Chem
 from meeko import MoleculePreparation, PDBQTWriterLegacy
-
+import traceback
 from openbabel import pybel
 
 # Search for 'DockM8' in parent directories
@@ -52,11 +52,12 @@ def convert_molecules(input_file: Path,
 	# For protein conversion to pdbqt file format using MGLTools
 	if input_format == "pdb" and output_format == "pdbqt":
 		try:
-			cmd = f"conda run -n mgltools prepare_receptor4.py -r {input_file} -o {output_file_or_path} -A checkhydrogens"
+			cmd = f"conda run -n mgltools prepare_receptor4.py -r {input_file} -o {output_file_or_path} -A bond_hydrogens"
 			subprocess.run(cmd, shell=True, check=True)
 			return output_file_or_path
-		except subprocess.CalledProcessError as e:
+		except Exception as e:
 			printlog(f"Error occurred during conversion using MGLTools prepare_receptor4.py: {str(e)}")
+			printlog(traceback.format_exc())
 			raise
 
 	# For compound conversion to pdbqt file format using MGLTools
