@@ -4,7 +4,7 @@ import sys
 import time
 import warnings
 from pathlib import Path
-
+import traceback
 import pandas as pd
 from rdkit.Chem import PandasTools
 
@@ -57,36 +57,45 @@ class ITScoreAff(ScoringFunction):
 				ligand_mol2 = Path(temp_dir) / f'{split_file.stem}.mol2'
 				try:
 					convert_molecules(split_file, ligand_mol2, 'sdf', 'mol2', self.software_path)
+					#subprocess.run(f"obabel -isdf {split_file} -O {ligand_mol2} -omol2")
 				except Exception as e:
 					printlog(f"Error converting ligand file to .mol2: {str(e)}")
 					df[self.column_name] = [None] * len(df)
 					output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
 					df.to_csv(output_csv, index=False)
 					return
-
-				itscoreAff_command = f"cd {temp_dir} && {self.software_path}/ITScoreAff_v1.0/ITScoreAff ./{protein_mol2.name} ./{ligand_mol2.name}"
-				process = subprocess.Popen(itscoreAff_command,
-					stdout=subprocess.PIPE,
-					stderr=subprocess.PIPE,
-					shell=True)
-				stdout, stderr = process.communicate()
-
-				scores = []
-				output = stdout.decode().splitlines()
-				for line in output[1:]:
-					parts = line.split()
-					if len(parts) >= 3:
-						try:
-							score = round(float(parts[2]), 2)
-							scores.append(score)
-						except ValueError:
-							printlog(
-								f"Warning: Could not convert '{parts[2]}' to float for file {split_file}. Skipping this score."
-							)
-							scores.append(None)
-				df[self.column_name] = scores
-				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
-				df.to_csv(output_csv, index=False)
+				try:
+					itscoreAff_command = f"{self.software_path}/ITScoreAff_v1.0/ITScoreAff {protein_mol2.name} {ligand_mol2.name}"
+					process = subprocess.Popen(itscoreAff_command,
+												stdout=subprocess.PIPE,
+												stderr=subprocess.PIPE,
+												shell=True,
+												cwd=temp_dir)
+					print(itscoreAff_command)
+					stdout, stderr = process.communicate()
+					#print(stdout.decode())
+					if stderr:
+						printlog(f"Error running ITScoreAff: {stderr.decode()}")
+					scores = []
+					output = stdout.decode().splitlines()
+					for line in output[1:]:
+						parts = line.split()
+						if len(parts) >= 3:
+							try:
+								score = round(float(parts[2]), 2)
+								scores.append(score)
+							except ValueError:
+								printlog(
+									f"Warning: Could not convert '{parts[2]}' to float for file {split_file}. Skipping this score."
+								)
+								scores.append(None)
+					df[self.column_name] = scores
+					output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
+					df.to_csv(output_csv, index=False)
+				except Exception as e:
+					printlog(f"Error running ITScoreAff: {str(e)}")
+					printlog(f"Error running ITScoreAff: {stderr.decode()}")
+					printlog(traceback.format_exc())
 
 			parallel_executor(ITScoreAff_rescoring_splitted,
 				split_files_sdfs,

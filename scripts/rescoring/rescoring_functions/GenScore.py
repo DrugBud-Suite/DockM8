@@ -43,10 +43,10 @@ class GenScore(ScoringFunction):
 	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
 		tic = time.perf_counter()
 		protein_file = kwargs.get("protein_file")
-		pocket_file = str(protein_file).replace(".pdb", "_pocket.pdb")
+		pocket_file = Path(str(protein_file).replace(".pdb", "_pocket.pdb"))
 
-		if not Path(pocket_file).is_file():
-			pocket_file = extract_pocket(kwargs.get('pocket_definition'), pocket_file)
+		if not pocket_file.is_file():
+			pocket_file = extract_pocket(kwargs.get('pocket_definition'), protein_file)
 
 		temp_dir = self.create_temp_dir()
 		try:
@@ -66,7 +66,6 @@ class GenScore(ScoringFunction):
 							f" -e {self.encoder}")
 
 					subprocess.call(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
 					return Path(temp_dir) / f"{Path(split_file).stem}.csv"
 				except Exception as e:
 					printlog(f"Error occurred while running GenScore on {split_file}: {e}")
@@ -89,7 +88,8 @@ class GenScore(ScoringFunction):
 
 			genscore_rescoring_results = pd.concat(genscore_dataframes)
 			genscore_rescoring_results.rename(columns={"id": "Pose ID", "score": self.column_name}, inplace=True)
-
+			genscore_rescoring_results["Pose ID"] = genscore_rescoring_results["Pose ID"].apply(
+				lambda x: x.split("-")[0])
 			toc = time.perf_counter()
 			printlog(f"Rescoring with {self.column_name} complete in {toc - tic:0.4f}!")
 			return genscore_rescoring_results

@@ -18,6 +18,7 @@ from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.setup.software_manager import ensure_software_installed
+from scripts.utilities.molecule_conversion import convert_molecules
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -45,8 +46,13 @@ class KORPL(ScoringFunction):
 			def KORPL_rescoring_splitted(split_file, protein_file):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
-				korpl_command = (f"{self.software_path}/KORP-PL" + " --receptor " + str(protein_file) + " --ligand " +
-						str(split_file) + " --sdf")
+				mol2_file = convert_molecules(split_file,
+												split_file.with_suffix("mol2"),
+												"sdf",
+												"mol2",
+												self.software_path)
+				korpl_command = (f"{self.software_path}/KORP-PL --receptor {protein_file} --ligand {mol2_file}")
+				print(korpl_command)
 				process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 				stdout, stderr = process.communicate()
 				energies = []
@@ -61,10 +67,10 @@ class KORPL(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(KORPL_rescoring_splitted,
-				split_files_sdfs,
-				n_cpus,
-				display_name=self.column_name,
-				protein_file=protein_file)
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			print("Combining KORPL scores")
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))

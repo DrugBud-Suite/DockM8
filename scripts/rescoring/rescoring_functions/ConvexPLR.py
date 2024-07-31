@@ -17,6 +17,7 @@ from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.setup.software_manager import ensure_software_installed
+from scripts.utilities.molecule_conversion import convert_molecules
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -44,12 +45,18 @@ class ConvexPLR(ScoringFunction):
 			def ConvexPLR_rescoring_splitted(split_file, protein_file):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
-				ConvexPLR_command = (f"{self.software_path}/Convex-PL" + f" --receptor {protein_file}" +
-						f" --ligand {split_file}" + " --sdf --regscore")
+				mol2_file = convert_molecules(split_file,
+												split_file.with_suffix("mol2"),
+												"sdf",
+												"mol2",
+												self.software_path)
+				ConvexPLR_command = (
+					f"{self.software_path}/Convex-PL --receptor {protein_file} --ligand {mol2_file} --regscore")
+				print(ConvexPLR_command)
 				process = subprocess.Popen(ConvexPLR_command,
-					stdout=subprocess.PIPE,
-					stderr=subprocess.PIPE,
-					shell=True)
+											stdout=subprocess.PIPE,
+											stderr=subprocess.PIPE,
+											shell=True)
 				stdout, stderr = process.communicate()
 				energies = []
 				output = stdout.decode().splitlines()
@@ -63,10 +70,10 @@ class ConvexPLR(ScoringFunction):
 				df.to_csv(output_csv, index=False)
 
 			parallel_executor(ConvexPLR_rescoring_splitted,
-				split_files_sdfs,
-				n_cpus,
-				display_name=self.column_name,
-				protein_file=protein_file)
+								split_files_sdfs,
+								n_cpus,
+								display_name=self.column_name,
+								protein_file=protein_file)
 
 			score_files = list(Path(temp_dir).glob("*_scores.csv"))
 			combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)

@@ -3,7 +3,7 @@ import sys
 import time
 import warnings
 from pathlib import Path
-
+import traceback
 import pandas as pd
 
 # Search for 'DockM8' in parent directories
@@ -42,6 +42,7 @@ class CHEMPLP(ScoringFunction):
 				convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", self.software_path)
 			except Exception as e:
 				printlog(f"Error converting protein file to .mol2: {str(e)}")
+				printlog(traceback.format_exc())
 				return pd.DataFrame()
 
 			# Convert prepared ligand file to .mol2 using open babel
@@ -50,6 +51,7 @@ class CHEMPLP(ScoringFunction):
 				convert_molecules(sdf, plants_ligands_mol2, "sdf", "mol2", self.software_path)
 			except Exception as e:
 				printlog(f"Error converting ligand file to .mol2: {str(e)}")
+				printlog(traceback.format_exc())
 				return pd.DataFrame()
 
 			chemplp_rescoring_config_path_txt = Path(temp_dir) / "config.txt"
@@ -106,6 +108,7 @@ class CHEMPLP(ScoringFunction):
 					stderr=subprocess.STDOUT)
 			except subprocess.CalledProcessError as e:
 				printlog(f"Error running PLANTS docking: {str(e)}")
+				printlog(traceback.format_exc())
 				return pd.DataFrame()
 
 			# Fetch results
