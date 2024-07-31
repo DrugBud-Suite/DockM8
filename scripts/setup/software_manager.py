@@ -11,27 +11,27 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.setup.software_install import (install_aa_score,
-											install_censible,
-											install_convex_pl,
-											install_dligand2,
-											install_fabind,
-											install_gnina,
-											install_gypsum_dl,
-											install_itscoreAff,
-											install_korp_pl,
-											install_lin_f9,
-											install_posecheck,
-											install_psovina,
-											install_qvina2,
-											install_qvina_w,
-											install_rf_score_vs,
-											install_rtmscore,
-											install_scorch,
-											install_plants,
-											install_panther,
-											install_plantain,
-											install_genscore,
-											install_mgltools)
+			install_censible,
+			install_convex_pl,
+			install_dligand2,
+			install_fabind,
+			install_gnina,
+			install_gypsum_dl,
+			install_itscoreAff,
+			install_korp_pl,
+			install_lin_f9,
+			install_posecheck,
+			install_psovina,
+			install_qvina2,
+			install_qvina_w,
+			install_rf_score_vs,
+			install_rtmscore,
+			install_scorch,
+			install_plants,
+			install_panther,
+			install_plantain,
+			install_genscore,
+			install_mgltools)
 from scripts.utilities.logging import printlog
 
 
@@ -66,7 +66,7 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"AA_SCORE": {
 		"install": install_aa_score, "check": lambda path: (path / "AA-Score-Tool-main").is_dir()},
 	"CONVEX_PLR": {
-		"install": install_convex_pl, "check": lambda path: (path / "Convex_PL").is_file()},
+		"install": install_convex_pl, "check": lambda path: (path / "Convex-PL").is_file()},
 	"CENSIBLE": {
 		"install": install_censible, "check": lambda path: (path / "censible").is_dir()},
 	"DLIGAND2": {
