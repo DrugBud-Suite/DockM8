@@ -47,7 +47,7 @@ class KORPL(ScoringFunction):
 				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 				df = df[["Pose ID"]]
 				mol2_file = convert_molecules(split_file,
-												split_file.with_suffix("mol2"),
+												split_file.with_suffix(".mol2"),
 												"sdf",
 												"mol2",
 												self.software_path)
