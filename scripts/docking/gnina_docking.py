@@ -15,6 +15,7 @@ sys.path.append(str(dockm8_path))
 from scripts.docking.docking_function import DockingFunction
 from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 
 class GninaDocking(DockingFunction):
@@ -61,7 +62,7 @@ class GninaDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog("rdApp.*")
 		try:
-			df = PandasTools.LoadSDF(str(result_file), molColName="Molecule", smilesName="SMILES", idName="ID")
+			df = parallel_SDF_loader(result_file, molColName="Molecule", smilesName="SMILES", idName="ID")
 			df['CNN-Score'] = df['CNNscore'].astype(float)
 
 			# Sort by CNN-Score (higher is better) and rank within each ID group

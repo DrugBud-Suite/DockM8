@@ -17,7 +17,7 @@ from scripts.docking.docking_function import DockingFunction
 from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
 from scripts.utilities.pocket_extraction import extract_pocket
-
+from scripts.utilities.utilities import parallel_SDF_loader
 
 class PlantainDocking(DockingFunction):
 
@@ -77,7 +77,7 @@ class PlantainDocking(DockingFunction):
 
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		try:
-			df = PandasTools.LoadSDF(str(result_file),
+			df = parallel_SDF_loader(result_file,
 										molColName="Molecule",
 										smilesName="SMILES",
 										idName='ID',

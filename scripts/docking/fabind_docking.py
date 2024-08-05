@@ -16,6 +16,7 @@ sys.path.append(str(dockm8_path))
 from scripts.docking.docking_function import DockingFunction
 from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 
 class FABindDocking(DockingFunction):
@@ -48,7 +49,7 @@ class FABindDocking(DockingFunction):
 		index_csv = temp_dir / f"{batch_file.stem}_index.csv"
 
 		# Create index CSV from input SDF
-		df = PandasTools.LoadSDF(str(batch_file), molColName='ROMol', smilesName='SMILES')
+		df = parallel_SDF_loader(batch_file, molColName='ROMol', smilesName='SMILES')
 		df['Cleaned_SMILES'] = df['ROMol'].apply(
 			lambda mol: Chem.MolToSmiles(Chem.MolFromSmiles(Chem.MolToSmiles(mol))))
 		df['pdb_id'] = protein_file_path.stem
@@ -95,7 +96,7 @@ class FABindDocking(DockingFunction):
 			fabind_poses = pd.DataFrame()
 			for file in result_file.glob("*.sdf"):
 				try:
-					df = PandasTools.LoadSDF(str(file), molColName="Molecule", smilesName="SMILES", strictParsing=False)
+					df = parallel_SDF_loader(file, molColName="Molecule", smilesName="SMILES", strictParsing=False)
 
 					ligand_id = file.stem
 					df["ID"] = ligand_id

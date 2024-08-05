@@ -26,6 +26,7 @@ from scripts.consensus.consensus_methods.Zscore_best import Zscore_best
 from scripts.consensus.score_manipulation import rank_scores, standardize_scores
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -83,7 +84,7 @@ def apply_consensus_methods(poses_input: Union[Path, pd.DataFrame],
 		if file_path.suffix.lower() == '.csv':
 			rescored_dataframe = pd.read_csv(file_path)
 		elif file_path.suffix.lower() == '.sdf':
-			rescored_dataframe = PandasTools.LoadSDF(str(file_path), molColName="Molecule", idName="Pose ID")
+			rescored_dataframe = parallel_SDF_loader(file_path, molColName="Molecule", idName="Pose ID")
 		else:
 			raise ValueError(f"Unsupported file format: {file_path.suffix}")
 	else:
@@ -196,8 +197,7 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
 				RESCORING_FUNCTIONS.keys()):
-			consensus_file = PandasTools.LoadSDF(str(w_dir / "consensus" /
-														f"{selection_method}_{consensus_method}_results.sdf"),
+			consensus_file = parallel_SDF_loader(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf",
 													molColName="Molecule",
 													idName="ID")
 
@@ -223,8 +223,7 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
 				RESCORING_FUNCTIONS.keys()):
-			consensus_file = PandasTools.LoadSDF(str(w_dir / "consensus" /
-														f"{selection_method}_{consensus_method}_results.sdf"),
+			consensus_file = parallel_SDF_loader(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf",
 													molColName="Molecule",
 													idName="ID")
 

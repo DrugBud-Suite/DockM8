@@ -17,6 +17,7 @@ from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.library_preparation.conformer_generation.confgen_RDKit import generate_conformers_RDKit
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -91,7 +92,7 @@ def generate_conformers_GypsumDL(df: pd.DataFrame, software: Path, n_cpus: int) 
 		# Loading generated conformers from output directory
 		for file in os.listdir(output_dir / "GypsumDL_results"):
 			if file.endswith(".sdf"):
-				sdf_df = PandasTools.LoadSDF(str(output_dir / "GypsumDL_results" / file),
+				sdf_df = parallel_SDF_loader(output_dir / "GypsumDL_results" / file,
 												molColName="Molecule",
 												idName="ID")
 				results_dfs.append(sdf_df)

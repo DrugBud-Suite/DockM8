@@ -17,6 +17,7 @@ sys.path.append(str(dockm8_path))
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -98,7 +99,7 @@ def protonate_GypsumDL(df: pd.DataFrame,
 
 		for file in os.listdir(output_dir / "GypsumDL_results"):
 			if file.endswith(".sdf"):
-				sdf_df = PandasTools.LoadSDF(str(output_dir / "GypsumDL_results" / file),
+				sdf_df = parallel_SDF_loader(output_dir / "GypsumDL_results" / file),
 					molColName="Molecule",
 					idName="ID")
 				results_dfs.append(sdf_df)

@@ -15,6 +15,7 @@ from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics imp
 from scripts.pose_selection.clustering.clustering import run_clustering
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS, rescore_docking
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -44,7 +45,7 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 
 	# Process input
 	if isinstance(poses, Path):
-		poses_df = PandasTools.LoadSDF(poses, molColName='Molecule', idName='Pose ID')
+		poses_df = parallel_SDF_loader(poses, molColName='Molecule', idName='Pose ID')
 	elif isinstance(poses, pd.DataFrame):
 		poses_df = poses
 	else:

@@ -16,7 +16,7 @@ from scripts.docking.docking_function import DockingFunction
 from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
-
+from scripts.utilities.utilities import parallel_SDF_loader
 
 class PlantsDocking(DockingFunction):
 
@@ -88,7 +88,7 @@ class PlantsDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog("rdApp.*")
 		try:
-			plants_poses = PandasTools.LoadSDF(str(result_file), idName="ID", molColName="Molecule")
+			plants_poses = parallel_SDF_loader(result_file, idName="ID", molColName="Molecule")
 			plants_scores = pd.read_csv(str(result_file.parent / "ranking.csv")).rename(columns={
 				"LIGAND_ENTRY": "ID", "TOTAL_SCORE": "CHEMPLP"})[["ID", "CHEMPLP"]]
 			df = pd.merge(plants_scores, plants_poses, on="ID")

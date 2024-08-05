@@ -39,6 +39,7 @@ from scripts.rescoring.rescoring_functions.SCORCH import SCORCH
 from scripts.rescoring.rescoring_functions.vinardo import Vinardo
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -129,7 +130,7 @@ def rescore_poses(protein_file: Path,
 	try:
 		if isinstance(poses, Path):
 			sdf = poses
-			original_poses = PandasTools.LoadSDF(str(sdf), molColName='Molecule', idName='Pose ID', removeHs=False)
+			original_poses = parallel_SDF_loader(sdf, molColName='Molecule', idName='Pose ID', removeHs=False)
 		elif isinstance(poses, pd.DataFrame):
 			sdf = temp_dir / "temp_clustered.sdf"
 			original_poses = poses.copy()
