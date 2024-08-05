@@ -52,9 +52,9 @@ class KORPL(ScoringFunction):
 												"mol2",
 												self.software_path)
 				korpl_command = (f"{self.software_path}/KORP-PL --receptor {protein_file} --ligand {mol2_file}")
-				print(korpl_command)
 				process = subprocess.Popen(korpl_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 				stdout, stderr = process.communicate()
+				print(stdout.decode())
 				energies = []
 				output = stdout.decode().splitlines()
 				for line in output:

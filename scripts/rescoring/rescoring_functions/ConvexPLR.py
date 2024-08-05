@@ -52,7 +52,6 @@ class ConvexPLR(ScoringFunction):
 												self.software_path)
 				ConvexPLR_command = (
 					f"{self.software_path}/Convex-PL --receptor {protein_file} --ligand {mol2_file} --regscore")
-				print(ConvexPLR_command)
 				process = subprocess.Popen(ConvexPLR_command,
 											stdout=subprocess.PIPE,
 											stderr=subprocess.PIPE,
