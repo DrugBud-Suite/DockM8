@@ -66,10 +66,10 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 		min_pose_indices = poses_df.groupby(["ID", "Docking_program"])["Pose_Number"].idxmin()
 		selected_poses = poses_df.loc[min_pose_indices]
 		selected_poses = selected_poses[selected_poses["Docking_program"] == selection_method.split("_")[1]]
-	elif selection_method in CLUSTERING_METRICS.keys():
+	elif selection_method in list(CLUSTERING_METRICS.keys()):
 		# Perform clustering using multiple CPU cores
 		selected_poses = run_clustering(poses_df, selection_method, clustering_method, protein_file, n_cpus)
-	elif selection_method in RESCORING_FUNCTIONS.keys():
+	elif selection_method in list(RESCORING_FUNCTIONS.keys()):
 		# Perform rescoring using the specified metric scoring function
 		selected_poses = rescore_docking(poses_df, protein_file, pocket_definition, software, selection_method, n_cpus)
 	else:
