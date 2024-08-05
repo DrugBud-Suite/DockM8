@@ -130,7 +130,7 @@ def rescore_poses(protein_file: Path,
 	try:
 		if isinstance(poses, Path):
 			sdf = poses
-			original_poses = parallel_SDF_loader(sdf, molColName='Molecule', idName='Pose ID', removeHs=False)
+			original_poses = parallel_SDF_loader(sdf, molColName='Molecule', idName='Pose ID')
 		elif isinstance(poses, pd.DataFrame):
 			sdf = temp_dir / "temp_clustered.sdf"
 			original_poses = poses.copy()
