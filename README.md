@@ -1,4 +1,4 @@
-![DockM8 Logo](./media/DockM8_white_horizontal_smaller.png)
+![DockM8 Logo](./media/DockM8_GitHub.png)
 
 [![Forks](https://img.shields.io/github/forks/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 [![Stars](https://img.shields.io/github/stars/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
