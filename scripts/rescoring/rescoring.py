@@ -99,12 +99,12 @@ def remove_temp_dir(temp_dir: Path):
 
 
 def rescore_poses(protein_file: Path,
-					pocket_definition: dict,
-					software: Path,
-					poses: Union[Path, pd.DataFrame],
-					functions: List[str],
-					n_cpus: int,
-					output_file: Optional[Path] = None) -> pd.DataFrame:
+		pocket_definition: dict,
+		software: Path,
+		poses: Union[Path, pd.DataFrame],
+		functions: List[str],
+		n_cpus: int,
+		output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""
     Rescores poses using specified scoring functions. If an output file is provided and exists,
     it will only run the missing scoring functions. Saves results to CSV and SDF incrementally
@@ -135,16 +135,16 @@ def rescore_poses(protein_file: Path,
 			sdf = temp_dir / "temp_clustered.sdf"
 			original_poses = poses.copy()
 			PandasTools.WriteSDF(original_poses,
-									sdf,
-									molColName='Molecule',
-									idName='Pose ID',
-									properties=list(original_poses.columns))
+					sdf,
+					molColName='Molecule',
+					idName='Pose ID',
+					properties=list(original_poses.columns))
 		else:
 			raise ValueError("poses must be a Path or DataFrame")
 
 		# Add SMILES column to original_poses
 		original_poses['SMILES'] = original_poses['Molecule'].apply(lambda x: AllChem.MolToSmiles(x)
-																	if x is not None else None)
+						if x is not None else None)
 
 		existing_results = pd.DataFrame()
 		functions_to_run = functions.copy()
@@ -159,14 +159,10 @@ def rescore_poses(protein_file: Path,
 			functions_to_run = [f for f in functions if f not in existing_functions]
 			printlog(f"Functions to run: {', '.join(functions_to_run)}")
 		elif output_file:
-			# Initialize output file with original poses if output_file is specified but doesn't exist
-			columns_to_write = ['Pose ID'] + [
-				col for col in original_poses.columns if col not in ['Pose ID', 'SMILES', 'Molecule']]
-			original_poses[columns_to_write].to_csv(output_file, index=False)
+			original_poses['Pose ID'].to_csv(output_file, index=False)
 
 		combined_df = pd.merge(original_poses, existing_results, on="Pose ID", how="left")
 
-		skipped_functions = []
 		for function in functions_to_run:
 			scoring_function_class = RESCORING_FUNCTIONS.get(function)
 			if scoring_function_class:
@@ -176,23 +172,15 @@ def rescore_poses(protein_file: Path,
 														n_cpus,
 														protein_file=protein_file,
 														pocket_definition=pocket_definition)
-					print(result)
-					# Merge new resul	ts with combined_df
 					combined_df = pd.merge(combined_df, result, on="Pose ID", how="left")
-
-					# Write updated results to CSV if output_file is specified
 					if output_file:
 						columns_to_write = [col for col in combined_df.columns if col != 'Molecule']
 						combined_df[columns_to_write].to_csv(output_file, index=False)
-						printlog(f"Updated results with {function} written to {output_file}")
 				except Exception as e:
 					printlog(f"Failed for {function} : {e}")
 					printlog(traceback.format_exc())
 			else:
-				skipped_functions.append(function)
-
-		if skipped_functions:
-			printlog(f'Skipping functions: {", ".join(skipped_functions)}')
+				printlog(f"Unknown scoring function: {function}")
 
 		# Ensure "Pose ID" is the first column, followed by "SMILES"
 		columns = combined_df.columns.tolist()
@@ -207,10 +195,10 @@ def rescore_poses(protein_file: Path,
 		# Write final SDF if output_file is specified
 		if output_file:
 			PandasTools.WriteSDF(combined_df,
-					str(output_file.with_suffix(".sdf")),
-					molColName='Molecule',
-					idName='Pose ID',
-					properties=list(combined_df.columns))
+				str(output_file.with_suffix(".sdf")),
+				molColName='Molecule',
+				idName='Pose ID',
+				properties=list(combined_df.columns))
 			printlog(f"Final rescored poses written to : {output_file} and {output_file.with_suffix('.sdf')}")
 
 		toc = time.perf_counter()
@@ -223,11 +211,11 @@ def rescore_poses(protein_file: Path,
 
 
 def rescore_docking(poses: Union[Path, pd.DataFrame],
-		protein_file: Path,
-		pocket_definition: dict,
-		software: Path,
-		function: str,
-		n_cpus: int) -> pd.DataFrame:
+	protein_file: Path,
+	pocket_definition: dict,
+	software: Path,
+	function: str,
+	n_cpus: int) -> pd.DataFrame:
 	"""
 	Rescores the docking poses using a specified scoring function.
 
@@ -265,9 +253,9 @@ def rescore_docking(poses: Union[Path, pd.DataFrame],
 
 		scoring_function = scoring_function_class(software_path=software)
 		score_df = scoring_function.rescore(str(sdf),
-					n_cpus,
-					protein_file=protein_file,
-					pocket_definition=pocket_definition)
+			n_cpus,
+			protein_file=protein_file,
+			pocket_definition=pocket_definition)
 
 		score_df["Pose_Number"] = score_df["Pose ID"].str.split("_").str[2].astype(int)
 		score_df["Docking_program"] = score_df["Pose ID"].str.split("_").str[1].astype(str)
