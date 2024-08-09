@@ -45,6 +45,7 @@ pocket_detection:
     - "/home/tony/DockM8_v2/tests/test_files/1fvv_l.sdf"
   radius: 10                                                        # Radius used for pocket detection (only for "Reference" method)
   manual_pocket: "center:x,y,z*size:x,y,z"                          # Manual pocket definition (only for "Manual" method). Format is "center:x,y,z*size:x,y,z". Ensure that the size is in Angstroms
+  dogsitescorer_method: "Volume"                                    # Method used for pocket detection in Dogsitescorer. Options are : 'Druggability_Score', 'Volume', 'Surface' or 'Depth'
 
 ## Docking configuration
 docking:
