@@ -31,7 +31,8 @@ from scripts.setup.software_install import (install_aa_score,
 	install_panther,
 	install_plantain,
 	install_genscore,
-	install_mgltools)
+	install_mgltools,
+	install_p2rank)
 from scripts.utilities.logging import printlog
 
 
@@ -90,7 +91,9 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"POSECHECK": {
 	"install": install_posecheck, "check": lambda path: (path / "posecheck-main").is_dir()},
 	"MGLTOOLS": {
-	"install": install_mgltools, "check": check_mgltools}}
+	"install": install_mgltools, "check": check_mgltools},
+	"P2RANK": {
+        "install": install_p2rank, "check": lambda path: (path / "p2rank" / "prank").is_file()}}
 
 
 def ensure_software_installed(program_name: str):

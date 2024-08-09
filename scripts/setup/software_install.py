@@ -7,6 +7,7 @@ import shutil
 import stat
 from pathlib import Path
 import sys
+import urllib
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -346,14 +347,41 @@ def install_genscore(software_path):
 
 	# Install PyTorch Geometric and related packages
 	pip_install_cmd = (f"conda run -n {env_name} pip install torch-geometric==2.0.3 "
-		"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl "
-		"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
+						"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl "
+						"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
 	subprocess.run(pip_install_cmd, shell=True, check=True)
+
 
 def install_mgltools():
 	env_name = 'mgltools'
 	subprocess.run(f"conda create -n {env_name} python=2.7 -y", shell=True, check=True)
 	subprocess.run(f"conda run -n {env_name} conda install -c bioconda mgltools -y", shell=True, check=True)
+
+
+def install_p2rank(software_path):
+	printlog("p2rank executable not found. Downloading...")
+
+	repo_url = "https://api.github.com/repos/rdk/p2rank/releases/latest"
+	response = requests.get(repo_url)
+	data = response.json()
+
+	tarball_url = next((asset["browser_download_url"] for asset in data["assets"] if asset["name"].endswith(".tar.gz")),
+						None)
+
+	if tarball_url is None:
+		raise ValueError("No tarball found in the latest release.")
+
+	tarball_path = software_path / "p2rank.tar.gz"
+	urllib.request.urlretrieve(tarball_url, tarball_path)
+
+	subprocess.run(["tar", "-xzf", tarball_path, "-C", software_path])
+	os.unlink(tarball_path)
+
+	p2rank_folder = next(
+		(software_path / folder for folder in os.listdir(software_path) if folder.startswith("p2rank")), None)
+	os.rename(p2rank_folder, software_path / "p2rank")
+
+	printlog("p2rank executable downloaded and installed successfully.")
 
 
 def install_all_software(software_path):
@@ -377,3 +405,5 @@ def install_all_software(software_path):
 	install_dligand2(software_path)
 	install_itscoreAff(software_path)
 	install_genscore(software_path)
+	install_mgltools()
+	install_p2rank(software_path)
