@@ -48,7 +48,7 @@ def convert_molecules(input_file: Path, output_file_or_path: Path, input_format:
 	if input_format == "pdb" and output_format == "pdbqt":
 		try:
 			cmd = f"conda run -n mgltools prepare_receptor4.py -r {input_file} -o {output_file_or_path} -A bond_hydrogens"
-			subprocess.run(cmd, shell=True, check=True)
+			subprocess.run(cmd, shell=True)
 			return output_file_or_path
 		except Exception as e:
 			printlog(f"Error occurred during conversion using MGLTools prepare_receptor4.py: {str(e)}")
