@@ -35,7 +35,7 @@ from scripts.setup.software_install import (install_aa_score,
 from scripts.utilities.logging import printlog
 
 
-def check_mgltools(software_path) -> bool:
+def check_mgltools() -> bool:
 	env_name = 'mgltools'
 	try:
 		result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True, check=True)
@@ -48,64 +48,52 @@ def check_mgltools(software_path) -> bool:
 # Define a dictionary mapping docking programs to their installation functions and check methods
 SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"GNINA": {
-	"install": install_gnina, "check": lambda path: (path / "gnina").is_file()},
+		"install": install_gnina, "check": lambda path: (path / "gnina").is_file()},
 	"QVINAW": {
-	"install": install_qvina_w, "check": lambda path: (path / "qvina-w").is_file()},
+		"install": install_qvina_w, "check": lambda path: (path / "qvina-w").is_file()},
 	"QVINA2": {
-	"install": install_qvina2, "check": lambda path: (path / "qvina2.1").is_file()},
+		"install": install_qvina2, "check": lambda path: (path / "qvina2.1").is_file()},
 	"PSOVINA": {
-	"install": install_psovina, "check": lambda path: (path / "psovina").is_file()},
+		"install": install_psovina, "check": lambda path: (path / "psovina").is_file()},
 	"PLANTS": {
-	"install": install_plants, "check": lambda path: (path / "PLANTS").is_file()},
+		"install": install_plants, "check": lambda path: (path / "PLANTS").is_file()},
 	"FABind": {
-	"install": install_fabind, "check": lambda path: (path / "FABind").is_dir()},
+		"install": install_fabind, "check": lambda path: (path / "FABind").is_dir()},
 	"PANTHER": {
-	"install": install_panther, "check": lambda path: (path / "panther").is_dir()},
+		"install": install_panther, "check": lambda path: (path / "panther").is_dir()},
 	"PLANTAIN": {
-	"install": install_plantain, "check": lambda path: (path / "plantain").is_dir()},
+		"install": install_plantain, "check": lambda path: (path / "plantain").is_dir()},
 	"AA_SCORE": {
-	"install": install_aa_score, "check": lambda path: (path / "AA-Score-Tool-main").is_dir()},
+		"install": install_aa_score, "check": lambda path: (path / "AA-Score-Tool-main").is_dir()},
 	"CONVEX_PLR": {
-	"install": install_convex_pl, "check": lambda path: (path / "Convex-PL").is_file()},
+		"install": install_convex_pl, "check": lambda path: (path / "Convex-PL").is_file()},
 	"CENSIBLE": {
-	"install": install_censible, "check": lambda path: (path / "censible").is_dir()},
+		"install": install_censible, "check": lambda path: (path / "censible").is_dir()},
 	"DLIGAND2": {
-	"install": install_dligand2, "check": lambda path: (path / "DLIGAND2").is_dir()},
+		"install": install_dligand2, "check": lambda path: (path / "DLIGAND2").is_dir()},
 	"LIN_F9": {
-	"install": install_lin_f9, "check": lambda path: (path / "LinF9").is_file()},
+		"install": install_lin_f9, "check": lambda path: (path / "LinF9").is_file()},
 	"GYPSUM_DL": {
-	"install": install_gypsum_dl, "check": lambda path: (path / "gypsum_dl-1.2.1").is_dir()},
+		"install": install_gypsum_dl, "check": lambda path: (path / "gypsum_dl-1.2.1").is_dir()},
 	"SCORCH": {
-	"install": install_scorch, "check": lambda path: (path / "SCORCH-1.0.0").is_dir()},
+		"install": install_scorch, "check": lambda path: (path / "SCORCH-1.0.0").is_dir()},
 	"RF_SCORE_VS": {
-	"install": install_rf_score_vs, "check": lambda path: (path / "rf-score-vs").is_file()},
+		"install": install_rf_score_vs, "check": lambda path: (path / "rf-score-vs").is_file()},
 	"RTMSCORE": {
-	"install": install_rtmscore, "check": lambda path: (path / "RTMScore-main").is_dir()},
+		"install": install_rtmscore, "check": lambda path: (path / "RTMScore-main").is_dir()},
 	"IT_SCORE_AFF": {
-	"install": install_itscoreAff, "check": lambda path: (path / "ITScoreAff_v1.0").is_dir()},
+		"install": install_itscoreAff, "check": lambda path: (path / "ITScoreAff_v1.0").is_dir()},
 	"KORP_PL": {
-	"install": install_korp_pl, "check": lambda path: (path / "KORP-PL").is_file()},
+		"install": install_korp_pl, "check": lambda path: (path / "KORP-PL").is_file()},
 	"GENSCORE": {
-	"install": install_genscore, "check": lambda path: (path / "GenScore").is_dir()},
+		"install": install_genscore, "check": lambda path: (path / "GenScore").is_dir()},
 	"POSECHECK": {
-	"install": install_posecheck, "check": lambda path: (path / "posecheck-main").is_dir()},
+		"install": install_posecheck, "check": lambda path: (path / "posecheck-main").is_dir()},
 	"MGLTOOLS": {
-	"install": install_mgltools, "check": check_mgltools}}
+		"install": install_mgltools, "check": check_mgltools}}
 
 
 def ensure_software_installed(program_name: str):
-	"""
-    Decorator function that ensures the specified software is installed before executing the decorated function.
-
-    Args:
-        program_name (str): The name of the software to be installed.
-
-    Returns:
-        function: The decorated function.
-
-    Raises:
-        ValueError: If the software path is not provided or if the program is not in SOFTWARE_INFO.
-    """
 
 	def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
 
@@ -114,14 +102,18 @@ def ensure_software_installed(program_name: str):
 			if program_name not in SOFTWARE_INFO:
 				raise ValueError(f"Unknown program: {program_name}")
 
-			software_path = kwargs.get('software_path')
+			if program_name == "MGLTOOLS":
+				# For MGLTOOLS, we only need to check if the conda environment exists
+				if not is_software_installed(program_name, Path("/")):
+					install_software(program_name, Path("/"))
+			else:
+				software_path = kwargs.get('software_path')
+				if software_path is None:
+					raise ValueError("Software path not provided")
 
-			if software_path is None:
-				raise ValueError("Software path not provided")
-
-			software_path = Path(software_path)
-			if not is_software_installed(program_name, software_path):
-				install_software(program_name, software_path)
+				software_path = Path(software_path)
+				if not is_software_installed(program_name, software_path):
+					install_software(program_name, software_path)
 
 			return func(*args, **kwargs)
 
