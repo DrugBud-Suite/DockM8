@@ -28,7 +28,6 @@ def standardize_scores(df: pd.DataFrame, standardization_type: str):
 			if col not in ["Pose ID", "ID", "SMILES", "Molecule"]:
 				df[col] = pd.to_numeric(df[col], errors="coerce")
 				function_info = RESCORING_FUNCTIONS.get(col)
-				print(function_info)
 				if standardization_type == "min_max":
 					df[col] = min_max_standardization(df[col],
 														function_info["best_value"],
@@ -62,7 +61,7 @@ def rank_scores(input_dataframe: pd.DataFrame):
 	"""
 	ranked_dataframe = input_dataframe.assign(
 		**{
-		col: input_dataframe[col].rank(method="average", ascending=False)
-		for col in input_dataframe.columns
-		if col not in ["Pose ID", "ID"]})
+			col: input_dataframe[col].rank(method="average", ascending=False)
+			for col in input_dataframe.columns
+			if col not in ["Pose ID", "ID", "SMILES", "Molecule"]})
 	return ranked_dataframe
