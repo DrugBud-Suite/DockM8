@@ -60,10 +60,10 @@ class ITScoreAff(ScoringFunction):
 				return pd.DataFrame()
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.name,
-													protein_mol2=protein_mol2)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						protein_mol2=protein_mol2)
 
 			itscoreaff_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
@@ -96,15 +96,15 @@ class ITScoreAff(ScoringFunction):
 			convert_molecules(split_file, ligand_mol2, 'sdf', 'mol2')
 
 			itscoreaff_cmd = (f"{self.software_path}/ITScoreAff_v1.0/ITScoreAff"
-					f" {protein_mol2.name}"
-					f" {ligand_mol2.name}")
+				f" {protein_mol2.name}"
+				f" {ligand_mol2.name}")
 
 			result = subprocess.run(itscoreaff_cmd,
-					shell=True,
-					capture_output=True,
-					text=True,
-					check=True,
-					cwd=split_file.parent)
+				shell=True,
+				capture_output=True,
+				text=True,
+				check=True,
+				cwd=split_file.parent)
 
 			scores = []
 			for line in result.stdout.splitlines()[1:]:
@@ -126,6 +126,7 @@ class ITScoreAff(ScoringFunction):
 		except Exception as e:
 			printlog(f"ITScoreAff rescoring failed for {split_file}:")
 			printlog(traceback.format_exc())
+			printlog(f"stdout: {result.stdout}")
 			return None
 
 	def _combine_rescoring_results(self, result_files: List[Path]) -> pd.DataFrame:

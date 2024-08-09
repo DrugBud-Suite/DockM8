@@ -69,10 +69,10 @@ class GenScore(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.name,
-													pocket_file=pocket_file)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						pocket_file=pocket_file)
 
 			genscore_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
@@ -99,14 +99,14 @@ class GenScore(ScoringFunction):
         """
 		try:
 			genscore_cmd = (f"cd {self.software_path}/example/ &&"
-							f" conda run -n genscore python genscore.py"
-							f" -p {pocket_file}"
-							f" -l {split_file}"
-							f" -o {split_file.parent / split_file.stem}"
-							f" -m {self.model}"
-							f" -e {self.encoder}")
+				f" conda run -n genscore python genscore.py"
+				f" -p {pocket_file}"
+				f" -l {split_file}"
+				f" -o {split_file.parent / split_file.stem}"
+				f" -m {self.model}"
+				f" -e {self.encoder}")
 
-			subprocess.run(genscore_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			subprocess.run(genscore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			return split_file.parent / f"{split_file.stem}.csv"
 		except subprocess.CalledProcessError as e:
 			printlog(f"GenScore rescoring failed for {split_file}:")

@@ -61,10 +61,10 @@ class PANTHER(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.name,
-													negative_image=negative_image)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						negative_image=negative_image)
 
 			panther_dataframes = self._load_rescoring_results(rescoring_results)
 			panther_rescoring_results = self._combine_rescoring_results(panther_dataframes)
@@ -116,10 +116,10 @@ class PANTHER(ScoringFunction):
 						f_out.write(line)
 
 			panther_cmd = (f"conda run -n panther python {self.software_path}/panther/panther.py"
-							f" {panther_input}"
-							f" {negative_image}")
+				f" {panther_input}"
+				f" {negative_image}")
 
-			result = subprocess.run(panther_cmd, shell=True, capture_output=True, text=True, check=True)
+			result = subprocess.run(panther_cmd, shell=True, capture_output=True, text=True)
 
 			mol2_start = result.stdout.find("@<TRIPOS>MOLECULE")
 			mol2_end = result.stdout.rfind("INFO:")
@@ -153,7 +153,7 @@ class PANTHER(ScoringFunction):
 			obabel_cmd = (f"obabel -isdf {split_file}"
 							f" -O {mol2_file}"
 							" --partialcharge mmff94")
-			subprocess.run(obabel_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			subprocess.run(obabel_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 			shaep_output_sdf = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
 			shaep_output_txt = split_file.parent / f"{split_file.stem}_{self.column_name}.txt"
@@ -164,7 +164,7 @@ class PANTHER(ScoringFunction):
 							f" -s {shaep_output_sdf}"
 							f" --output-file {shaep_output_txt}"
 							" --noOptimization")
-			subprocess.run(shaep_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			subprocess.run(shaep_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 			os.remove(mol2_file)
 			return shaep_output_sdf
@@ -188,10 +188,10 @@ class PANTHER(ScoringFunction):
 			if file and file.is_file():
 				try:
 					df = PandasTools.LoadSDF(str(file),
-												idName="Pose ID",
-												molColName=None,
-												includeFingerprints=False,
-												embedProps=False)
+							idName="Pose ID",
+							molColName=None,
+							includeFingerprints=False,
+							embedProps=False)
 					dataframes.append(df)
 				except Exception as e:
 					printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")
@@ -213,7 +213,7 @@ class PANTHER(ScoringFunction):
 			combined_results = combined_results[["Pose ID", "Similarity_best", "Similarity_ESP", "Similarity_shape"]]
 			combined_results.rename(columns={
 				"Similarity_best": "PANTHER", "Similarity_ESP": "PANTHER-ESP", "Similarity_shape": "PANTHER-Shape"},
-									inplace=True)
+					inplace=True)
 			return combined_results[["Pose ID", self.column_name]]
 		except Exception as e:
 			printlog(f"ERROR: Could not combine {self.column_name} rescored poses")

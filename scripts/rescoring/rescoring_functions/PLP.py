@@ -61,7 +61,7 @@ class PLP(ScoringFunction):
 				f" {config_file}")
 
 			try:
-				subprocess.run(plp_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+				subprocess.run(plp_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			except subprocess.CalledProcessError as e:
 				printlog(f"Error running PLANTS docking:")
 				printlog(traceback.format_exc())

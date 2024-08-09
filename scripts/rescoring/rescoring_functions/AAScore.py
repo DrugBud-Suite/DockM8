@@ -76,11 +76,11 @@ class AAScore(ScoringFunction):
         """
 		results = temp_dir / "rescored_AAScore.csv"
 		aascore_cmd = (f"conda run -n AAScore {self.software_path}/AA-Score-Tool-main/AA_Score.py"
-						f" --Rec {pocket_file}"
-						f" --Lig {sdf_file}"
-						f" --Out {results}")
+			f" --Rec {pocket_file}"
+			f" --Lig {sdf_file}"
+			f" --Out {results}")
 		try:
-			subprocess.run(aascore_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			return pd.read_csv(results, delimiter="\t", header=None, names=["Pose ID", self.column_name])
 		except subprocess.CalledProcessError as e:
 			printlog(f"AAScore rescoring failed:")
@@ -128,7 +128,7 @@ class AAScore(ScoringFunction):
 						f" --Lig {split_file}"
 						f" --Out {results}")
 		try:
-			subprocess.run(aascore_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			return results
 		except subprocess.CalledProcessError as e:
 			printlog(f"AAScore rescoring failed for {split_file}:")

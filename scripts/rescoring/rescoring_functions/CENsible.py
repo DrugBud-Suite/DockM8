@@ -59,12 +59,12 @@ class CENsible(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in split_files_folder.glob("*.sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.name,
-						protein_file=protein_file,
-						smina_path=smina_path,
-						obabel_path=obabel_path)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.name,
+				protein_file=protein_file,
+				smina_path=smina_path,
+				obabel_path=obabel_path)
 
 			censible_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
@@ -114,7 +114,7 @@ class CENsible(ScoringFunction):
 				obabel_path,
 				"--use_cpu"]
 
-			result = subprocess.run(censible_cmd, capture_output=True, text=True, check=True)
+			result = subprocess.run(censible_cmd, capture_output=True, text=True)
 
 			score = None
 			for line in result.stdout.split('\n'):
@@ -176,11 +176,11 @@ class CENsible(ScoringFunction):
             Optional[str]: The path to the executable file, or None if not found.
         """
 		try:
-			result = subprocess.run(['which', name], capture_output=True, text=True, check=True)
+			result = subprocess.run(['which', name], capture_output=True, text=True)
 			return result.stdout.strip()
 		except subprocess.CalledProcessError:
 			try:
-				result = subprocess.run(['where', name], capture_output=True, text=True, check=True)
+				result = subprocess.run(['where', name], capture_output=True, text=True)
 				return result.stdout.strip().split('\n')[0]
 			except subprocess.CalledProcessError:
 				return None

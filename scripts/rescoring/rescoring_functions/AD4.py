@@ -51,10 +51,10 @@ class AD4(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.name,
-													protein_file=protein_file)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						protein_file=protein_file)
 
 			ad4_dataframes = self._load_rescoring_results(rescoring_results)
 			ad4_rescoring_results = self._combine_rescoring_results(ad4_dataframes)
@@ -82,14 +82,14 @@ class AD4(ScoringFunction):
         """
 		results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
 		ad4_cmd = (f"{self.software_path}/gnina"
-					f" --receptor {protein_file}"
-					f" --ligand {split_file}"
-					f" --out {results}"
-					" --score_only"
-					" --scoring ad4_scoring"
-					" --cnn_scoring none")
+			f" --receptor {protein_file}"
+			f" --ligand {split_file}"
+			f" --out {results}"
+			" --score_only"
+			" --scoring ad4_scoring"
+			" --cnn_scoring none")
 		try:
-			subprocess.run(ad4_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			subprocess.run(ad4_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		except subprocess.CalledProcessError as e:
 			printlog(f"{self.column_name} rescoring failed for {split_file}:")
 			printlog(traceback.format_exc())
@@ -109,10 +109,10 @@ class AD4(ScoringFunction):
 		for file in result_files:
 			try:
 				df = PandasTools.LoadSDF(str(file),
-											idName="Pose ID",
-											molColName=None,
-											includeFingerprints=False,
-											embedProps=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
 				dataframes.append(df)
 			except Exception as e:
 				printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")
