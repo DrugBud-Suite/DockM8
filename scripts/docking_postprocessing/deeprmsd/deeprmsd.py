@@ -42,18 +42,18 @@ def run_optimization(input_file: Path, output_dir: Path, software_path: Path) ->
     """
 	cmd = f"cd {software_path}/DeepRMSD-Vina_Optimization && bash run_pose_optimization.sh {str(input_file)}"
 	try:
-		subprocess.run(cmd, check=True, cwd=output_dir)
+		subprocess.run(cmd, cwd=output_dir)
 	except subprocess.CalledProcessError as e:
 		printlog(f"Error running optimization: {e}")
 		raise
 
 
 def optimize_poses(poses: Union[pd.DataFrame, Path],
-		protein_file: Path,
-		output_dir: Path,
-		software_path: Path,
-		ncpus: int = max(1, int(os.cpu_count() * 0.9)),
-		) -> pd.DataFrame:
+	protein_file: Path,
+	output_dir: Path,
+	software_path: Path,
+	ncpus: int = max(1, int(os.cpu_count() * 0.9)),
+	) -> pd.DataFrame:
 	"""
     Optimize docking poses using DeepRMSD+Vina.
 
@@ -76,10 +76,10 @@ def optimize_poses(poses: Union[pd.DataFrame, Path],
 	if isinstance(poses, pd.DataFrame):
 		sdf_file = output_dir / "poses.sdf"
 		PandasTools.WriteSDF(poses,
-				str(sdf_file),
-				molColName='Molecule',
-				idName='Pose ID',
-				properties=list(poses.columns))
+			str(sdf_file),
+			molColName='Molecule',
+			idName='Pose ID',
+			properties=list(poses.columns))
 	else:
 		sdf_file = output_dir / "poses.sdf"
 		shutil.copy(poses, sdf_file)
