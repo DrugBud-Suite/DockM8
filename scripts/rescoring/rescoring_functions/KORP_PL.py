@@ -52,10 +52,10 @@ class KORPL(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.name,
-													protein_file=protein_file)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						protein_file=protein_file)
 
 			korpl_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
@@ -84,16 +84,12 @@ class KORPL(ScoringFunction):
 			df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
 			df = df[["Pose ID"]]
 
-			mol2_file = convert_molecules(split_file,
-											split_file.with_suffix(".mol2"),
-											"sdf",
-											"mol2",
-											self.software_path)
+			mol2_file = convert_molecules(split_file, split_file.with_suffix(".mol2"), "sdf", "mol2")
 
 			korpl_cmd = (f"{self.software_path}/KORP-PL"
-							f" --receptor {protein_file}"
-							f" --ligand {mol2_file}"
-							" --mol2")
+				f" --receptor {protein_file}"
+				f" --ligand {mol2_file}"
+				" --mol2")
 
 			result = subprocess.run(korpl_cmd, shell=True, capture_output=True, text=True, check=True)
 

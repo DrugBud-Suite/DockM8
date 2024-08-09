@@ -47,8 +47,8 @@ class CHEMPLP(ScoringFunction):
 			plants_ligands_mol2 = temp_dir / "ligands.mol2"
 
 			try:
-				convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", self.software_path)
-				convert_molecules(sdf_file, plants_ligands_mol2, "sdf", "mol2", self.software_path)
+				convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2")
+				convert_molecules(sdf_file, plants_ligands_mol2, "sdf", "mol2")
 			except Exception as e:
 				printlog("Error converting molecules:")
 				printlog(traceback.format_exc())
@@ -57,15 +57,15 @@ class CHEMPLP(ScoringFunction):
 			config_file = self._create_config_file(temp_dir, plants_protein_mol2, plants_ligands_mol2)
 
 			chemplp_cmd = (f"{self.software_path}/PLANTS"
-							f" --mode rescore"
-							f" {config_file}")
+				f" --mode rescore"
+				f" {config_file}")
 
 			try:
 				subprocess.run(chemplp_cmd,
-								shell=True,
-								check=True,
-								stdout=subprocess.DEVNULL,
-								stderr=subprocess.DEVNULL)
+					shell=True,
+					check=True,
+					stdout=subprocess.DEVNULL,
+					stderr=subprocess.DEVNULL)
 			except subprocess.CalledProcessError as e:
 				printlog("Error running PLANTS docking:")
 				printlog(traceback.format_exc())

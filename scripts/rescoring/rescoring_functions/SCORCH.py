@@ -50,7 +50,7 @@ class SCORCH(ScoringFunction):
 		try:
 			scorch_protein = Path(temp_dir) / "protein.pdbqt"
 			try:
-				convert_molecules(Path(protein_file), scorch_protein, "pdb", "pdbqt", self.software_path)
+				convert_molecules(Path(protein_file), scorch_protein, "pdb", "pdbqt")
 			except Exception as e:
 				printlog(f"Error converting protein file to .pdbqt:")
 				printlog(traceback.format_exc())
@@ -92,13 +92,13 @@ class SCORCH(ScoringFunction):
 		results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
 		try:
 			split_pdbqt = split_file.with_suffix('.pdbqt')
-			convert_molecules(split_file, split_pdbqt, "sdf", "pdbqt", self.software_path)
+			convert_molecules(split_file, split_pdbqt, "sdf", "pdbqt")
 
 			scorch_cmd = (f"{self.software_path}/SCORCH-1.0.0/scorch.py"
-							f" --receptor {scorch_protein}"
-							f" --ligand {split_pdbqt}"
-							f" --out {results}"
-							" --return_pose_scores")
+				f" --receptor {scorch_protein}"
+				f" --ligand {split_pdbqt}"
+				f" --out {results}"
+				" --return_pose_scores")
 			subprocess.run(scorch_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		except Exception as e:
 			printlog(f"{self.column_name} rescoring failed for {split_file}:")
@@ -119,10 +119,10 @@ class SCORCH(ScoringFunction):
 		for file in result_files:
 			try:
 				df = PandasTools.LoadSDF(str(file),
-											idName="Pose ID",
-											molColName=None,
-											includeFingerprints=False,
-											embedProps=False)
+						idName="Pose ID",
+						molColName=None,
+						includeFingerprints=False,
+						embedProps=False)
 				dataframes.append(df)
 			except Exception as e:
 				printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")

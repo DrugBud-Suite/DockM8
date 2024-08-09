@@ -25,11 +25,11 @@ class PlantsDocking(DockingFunction):
 		super().__init__("PLANTS", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
 		results_folder = temp_dir / "results"
@@ -37,7 +37,7 @@ class PlantsDocking(DockingFunction):
 		# Convert molecules to mol2 format
 		plants_protein_mol2 = temp_dir / "protein.mol2"
 		try:
-			convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", self.software_path)
+			convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2")
 		except Exception as e:
 			printlog(f"ERROR: Failed to convert protein file to mol2: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -45,7 +45,7 @@ class PlantsDocking(DockingFunction):
 
 		plants_ligands_mol2 = temp_dir / f"{batch_file.stem}.mol2"
 		try:
-			convert_molecules(batch_file, plants_ligands_mol2, "sdf", "mol2", self.software_path)
+			convert_molecules(batch_file, plants_ligands_mol2, "sdf", "mol2")
 		except Exception as e:
 			printlog(f"ERROR: Failed to convert ligands file to mol2: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -77,7 +77,7 @@ class PlantsDocking(DockingFunction):
 		results_mol2 = results_folder / "docked_ligands.mol2"
 		results_sdf = results_mol2.with_suffix(".sdf")
 		try:
-			convert_molecules(results_mol2, results_sdf, "mol2", "sdf", self.software_path)
+			convert_molecules(results_mol2, results_sdf, "mol2", "sdf")
 		except Exception as e:
 			printlog(f"ERROR: Failed to convert PLANTS poses file to .sdf: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -105,12 +105,12 @@ class PlantsDocking(DockingFunction):
 			self.remove_temp_dir(result_file.parent)
 
 	def generate_plants_config(self,
-								protein_mol2: Path,
-								ligands_mol2: Path,
-								pocket_definition: dict,
-								n_poses: int,
-								output_dir: Path,
-								config_path: Path):
+			protein_mol2: Path,
+			ligands_mol2: Path,
+			pocket_definition: dict,
+			n_poses: int,
+			output_dir: Path,
+			config_path: Path):
 		config_lines = [
 			"# search algorithm\n",
 			"search_speed speed1\n",

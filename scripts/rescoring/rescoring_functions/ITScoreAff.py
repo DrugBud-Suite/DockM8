@@ -53,7 +53,7 @@ class ITScoreAff(ScoringFunction):
 
 			protein_mol2 = temp_dir / 'protein.mol2'
 			try:
-				convert_molecules(Path(protein_file), protein_mol2, 'pdb', 'mol2', self.software_path)
+				convert_molecules(Path(protein_file), protein_mol2, 'pdb', 'mol2')
 			except Exception as e:
 				printlog(f"Error converting protein file to .mol2:")
 				printlog(traceback.format_exc())
@@ -93,18 +93,18 @@ class ITScoreAff(ScoringFunction):
 			df = df[["Pose ID"]]
 
 			ligand_mol2 = split_file.with_suffix('.mol2')
-			convert_molecules(split_file, ligand_mol2, 'sdf', 'mol2', self.software_path)
+			convert_molecules(split_file, ligand_mol2, 'sdf', 'mol2')
 
 			itscoreaff_cmd = (f"{self.software_path}/ITScoreAff_v1.0/ITScoreAff"
-								f" {protein_mol2.name}"
-								f" {ligand_mol2.name}")
+					f" {protein_mol2.name}"
+					f" {ligand_mol2.name}")
 
 			result = subprocess.run(itscoreaff_cmd,
-									shell=True,
-									capture_output=True,
-									text=True,
-									check=True,
-									cwd=split_file.parent)
+					shell=True,
+					capture_output=True,
+					text=True,
+					check=True,
+					cwd=split_file.parent)
 
 			scores = []
 			for line in result.stdout.splitlines()[1:]:

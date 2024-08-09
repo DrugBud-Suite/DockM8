@@ -49,11 +49,11 @@ def run_optimization(input_file: Path, output_dir: Path, software_path: Path) ->
 
 
 def optimize_poses(poses: Union[pd.DataFrame, Path],
-					protein_file: Path,
-					output_dir: Path,
-					software_path: Path,
-					ncpus: int = max(1, int(os.cpu_count() * 0.9)),
-					) -> pd.DataFrame:
+		protein_file: Path,
+		output_dir: Path,
+		software_path: Path,
+		ncpus: int = max(1, int(os.cpu_count() * 0.9)),
+		) -> pd.DataFrame:
 	"""
     Optimize docking poses using DeepRMSD+Vina.
 
@@ -76,10 +76,10 @@ def optimize_poses(poses: Union[pd.DataFrame, Path],
 	if isinstance(poses, pd.DataFrame):
 		sdf_file = output_dir / "poses.sdf"
 		PandasTools.WriteSDF(poses,
-								str(sdf_file),
-								molColName='Molecule',
-								idName='Pose ID',
-								properties=list(poses.columns))
+				str(sdf_file),
+				molColName='Molecule',
+				idName='Pose ID',
+				properties=list(poses.columns))
 	else:
 		sdf_file = output_dir / "poses.sdf"
 		shutil.copy(poses, sdf_file)
@@ -88,11 +88,11 @@ def optimize_poses(poses: Union[pd.DataFrame, Path],
 	# Step 2: Convert the molecules to .pdbqt files
 	poses_pdbqt_dir = output_dir / "poses_pdbqts"
 	poses_pdbqt_dir.mkdir(exist_ok=True)
-	convert_molecules(sdf_file, poses_pdbqt_dir, "sdf", "pdbqt", software_path)
+	convert_molecules(sdf_file, poses_pdbqt_dir, "sdf", "pdbqt")
 
 	# Step 3: Convert the protein to .pdbqt file
 	protein_pdbqt = output_dir / "protein_prepared.pdbqt"
-	convert_molecules(protein_file, protein_pdbqt, "pdb", "pdbqt", software_path)
+	convert_molecules(protein_file, protein_pdbqt, "pdb", "pdbqt")
 
 	# Step 4: Create the input.dat file
 	input_file = output_dir / "input.dat"

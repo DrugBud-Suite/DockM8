@@ -52,10 +52,10 @@ class DLIGAND2(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.name,
-													protein_file=protein_file)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						protein_file=protein_file)
 
 			dligand2_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
@@ -85,12 +85,12 @@ class DLIGAND2(ScoringFunction):
 			df = df[["Pose ID"]]
 
 			mol2_file = split_file.with_suffix('.mol2')
-			convert_molecules(split_file, mol2_file, "sdf", "mol2", self.software_path)
+			convert_molecules(split_file, mol2_file, "sdf", "mol2")
 
 			dligand2_cmd = (f"cd {self.software_path}/DLIGAND2/bin &&"
-							f" ./dligand2.gnu -etype 2"
-							f" -P {protein_file}"
-							f" -L {mol2_file}")
+				f" ./dligand2.gnu -etype 2"
+				f" -P {protein_file}"
+				f" -L {mol2_file}")
 
 			result = subprocess.run(dligand2_cmd, shell=True, capture_output=True, text=True, check=True)
 

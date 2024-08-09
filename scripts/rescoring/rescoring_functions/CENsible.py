@@ -59,12 +59,12 @@ class CENsible(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in split_files_folder.glob("*.sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-													split_files_sdfs,
-													n_cpus,
-													display_name=self.name,
-													protein_file=protein_file,
-													smina_path=smina_path,
-													obabel_path=obabel_path)
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						protein_file=protein_file,
+						smina_path=smina_path,
+						obabel_path=obabel_path)
 
 			censible_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
@@ -96,7 +96,7 @@ class CENsible(ScoringFunction):
 			df = df[["Pose ID"]]
 
 			pdb_file = split_file.with_suffix('.pdb')
-			convert_molecules(split_file, pdb_file, "sdf", "pdb", self.software_path)
+			convert_molecules(split_file, pdb_file, "sdf", "pdb")
 
 			with pdb_file.open('r') as f:
 				ligand_pdb_content = f.read()

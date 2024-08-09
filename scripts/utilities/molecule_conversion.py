@@ -23,11 +23,7 @@ pybel.ob.obErrorLog.StopLogging()
 
 
 @ensure_software_installed("MGLTOOLS")
-def convert_molecules(input_file: Path,
-	output_file_or_path: Path,
-	input_format: str,
-	output_format: str,
-	software: Path):
+def convert_molecules(input_file: Path, output_file_or_path: Path, input_format: str, output_format: str):
 	"""
 	Converts molecules from one format to another using various conversion tools.
 
@@ -36,7 +32,6 @@ def convert_molecules(input_file: Path,
 		output_file_or_path (Path): The path to the output file or directory where the converted molecules will be saved.
 		input_format (str): The format of the input molecules.
 		output_format (str): The desired format of the output molecules.
-		software (Path): The path to the software used for conversion.
 
 	Returns:
 		The path(s) to the converted molecule file(s).

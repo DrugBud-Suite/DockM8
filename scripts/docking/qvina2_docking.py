@@ -38,7 +38,7 @@ class Qvina2Docking(DockingFunction):
 
 		# Convert molecules to pdbqt format
 		try:
-			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt", self.software_path)
+			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt")
 			if isinstance(pdbqt_files, Path):
 				pdbqt_files = [pdbqt_files]
 		except Exception as e:
@@ -48,7 +48,7 @@ class Qvina2Docking(DockingFunction):
 
 		protein_file_pdbqt = temp_dir / "protein.pdbqt"
 		try:
-			convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt", self.software_path)
+			convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt")
 		except Exception as e:
 			printlog(f"Failed to convert protein file to .pdbqt: {e}")
 			self.remove_temp_dir(temp_dir)

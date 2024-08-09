@@ -56,7 +56,7 @@ def test_convert_pdb_to_pdbqt(common_test_data, cleanup, tmp_path):
 	input_file = test_files / "test_protein.pdb"
 	output_file = tmp_path / "output_protein.pdbqt"
 
-	result = convert_molecules(input_file, output_file, "pdb", "pdbqt", software)
+	result = convert_molecules(input_file, output_file, "pdb", "pdbqt")
 
 	assert result is not None
 	assert result.exists()
@@ -71,7 +71,7 @@ def test_convert_sdf_to_pdbqt(common_test_data, cleanup, tmp_path):
 	input_file = test_files / "test_ligands.sdf"
 	output_file = tmp_path / "output_ligands.pdbqt"
 
-	result = convert_molecules(input_file, output_file, "sdf", "pdbqt", software)
+	result = convert_molecules(input_file, output_file, "sdf", "pdbqt")
 
 	assert isinstance(result, list)
 	assert all(file.suffix == ".pdbqt" for file in result)
@@ -87,7 +87,7 @@ def test_convert_sdf_to_mol2(common_test_data, cleanup, tmp_path):
 	input_file = test_files / "test_ligands.sdf"
 	output_file = tmp_path / "output_ligands.mol2"
 
-	result = convert_molecules(input_file, output_file, "sdf", "mol2", software)
+	result = convert_molecules(input_file, output_file, "sdf", "mol2")
 
 	assert result is not None
 	assert result.exists()
@@ -103,7 +103,7 @@ def test_convert_invalid_input(common_test_data):
 	output_file = test_files / "output.pdbqt"
 
 	with pytest.raises(FileNotFoundError):
-		convert_molecules(input_file, output_file, "xyz", "pdbqt", software)
+		convert_molecules(input_file, output_file, "xyz", "pdbqt")
 
 
 def test_convert_unsupported_format(common_test_data, tmp_path):
@@ -113,7 +113,7 @@ def test_convert_unsupported_format(common_test_data, tmp_path):
 	output_file = tmp_path / "output.unsupported"
 
 	with pytest.raises(ValueError):
-		convert_molecules(input_file, output_file, "sdf", "unsupported", software)
+		convert_molecules(input_file, output_file, "sdf", "unsupported")
 
 
 # Helper function to create a test SDF file
@@ -133,7 +133,7 @@ def test_convert_single_molecule_sdf_to_pdbqt(common_test_data, cleanup, tmp_pat
 	create_test_sdf(input_file)
 	output_file = tmp_path / "output_single.pdbqt"
 
-	result = convert_molecules(input_file, output_file, "sdf", "pdbqt", software)
+	result = convert_molecules(input_file, output_file, "sdf", "pdbqt")
 
 	assert isinstance(result, list)
 	assert len(result) == 1

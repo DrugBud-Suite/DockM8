@@ -3,15 +3,15 @@ import shutil
 import sys
 import tempfile
 import time
+import traceback
 import warnings
 from functools import partial
 from pathlib import Path
 from typing import List, Optional, Union
 
 import pandas as pd
-from rdkit import RDLogger
+from rdkit import Chem, RDLogger
 from rdkit.Chem import AllChem, PandasTools
-import traceback
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -46,32 +46,35 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Updated RESCORING_FUNCTIONS dictionary using class instances
 
+# yapf: disable
 RESCORING_FUNCTIONS = {
-	"AAScore": AAScore,
-	"AD4": AD4,
-	"CENsible": CENsible,
-	"CHEMPLP": CHEMPLP,
-	"CNN-Affinity": partial(Gnina, score_type="cnn_affinity"),
-	"CNN-Score": partial(Gnina, score_type="cnn_score"),
-	"ConvexPLR": ConvexPLR,
-	"DLIGAND2": DLIGAND2,
-	"GenScore-balanced": partial(GenScore, score_type="balanced"),
-	"GenScore-docking": partial(GenScore, score_type="docking"),
-	"GenScore-scoring": partial(GenScore, score_type="scoring"),
-	"GNINA-Affinity": partial(Gnina, score_type="affinity"),
-	"ITScoreAff": ITScoreAff,
-	"KORP-PL": KORPL,
-	"LinF9": LinF9,
-	"NNScore": NNScore,
-	"PANTHER": partial(PANTHER, score_type="PANTHER"),
-	"PANTHER-ESP": partial(PANTHER, score_type="PANTHER-ESP"),
-	"PANTHER-Shape": partial(PANTHER, score_type="PANTHER-Shape"),
-	"PLECScore": PLECScore,
-	"PLP": PLP,
-	"RFScoreVS": RFScoreVS,
-	"RTMScore": RTMScore,
-	"SCORCH": SCORCH,
-	"Vinardo": Vinardo, }
+	"AAScore": {"class": AAScore, "column_name": "AAScore", "best_value": "max", "score_range": (100, -100)},
+	"AD4": {"class": AD4, "column_name": "AD4", "best_value": "min", "score_range": (100, -100)},
+	"CENsible": {"class": CENsible, "column_name": "CENsible", "best_value": "max", "score_range": (0, 20)},
+	"CHEMPLP": {"class": CHEMPLP, "column_name": "CHEMPLP", "best_value": "min", "score_range": (200, -200)},
+	"ConvexPLR": {"class": ConvexPLR, "column_name": "ConvexPLR", "best_value": "max", "score_range": (-10, 10)},
+	"DLIGAND2": {"class": DLIGAND2, "column_name": "DLIGAND2", "best_value": "min", "score_range": (-200, 100)},
+	"ITScoreAff": {"class": ITScoreAff, "column_name": "ITScoreAff", "best_value": "min", "score_range": (-200, 100)},
+	"GNINA-Affinity": {"class": partial(Gnina, score_type="affinity"), "column_name": "GNINA-Affinity", "best_value": "min", "score_range": (100, -100)},
+	"CNN-Score": {"class": partial(Gnina, score_type="cnn_score"), "column_name": "CNN-Score", "best_value": "max", "score_range": (0, 1)},
+	"CNN-Affinity": {"class": partial(Gnina, score_type="cnn_affinity"), "column_name": "CNN-Affinity", "best_value": "max", "score_range": (0, 20)},
+	"GenScore-scoring": {"class": partial(GenScore, score_type="scoring"), "column_name": "GenScore-scoring", "best_value": "max", "score_range": (0, 200)},
+	"GenScore-docking": {"class": partial(GenScore, score_type="docking"), "column_name": "GenScore-docking", "best_value": "max", "score_range": (0, 200)},
+	"GenScore-balanced": {"class": partial(GenScore, score_type="balanced"), "column_name": "GenScore-balanced", "best_value": "max", "score_range": (0, 200)},
+	"KORP-PL": {"class": KORPL, "column_name": "KORP-PL", "best_value": "min", "score_range": (200, -1000)},
+	"LinF9": {"class": LinF9, "column_name": "LinF9", "best_value": "min", "score_range": (100, -100)},
+	"NNScore": {"class": NNScore, "column_name": "NNScore", "best_value": "max", "score_range": (0, 20)},
+	"PANTHER": {"class": partial(PANTHER, score_type="PANTHER"), "column_name": "PANTHER", "best_value": "max", "score_range": (0, 10)},
+	"PANTHER-ESP": {"class": partial(PANTHER, score_type="PANTHER-ESP"), "column_name": "PANTHER-ESP", "best_value": "max", "score_range": (0, 10)},
+	"PANTHER-Shape": {"class": partial(PANTHER, score_type="PANTHER-Shape"), "column_name": "PANTHER-Shape", "best_value": "max", "score_range": (0, 10)},
+	"PLECScore": {"class": PLECScore, "column_name": "PLECScore", "best_value": "max", "score_range": (0, 20)},
+	"PLP": {"class": PLP, "column_name": "PLP", "best_value": "min", "score_range": (200, -200)},
+	"RFScoreVS": {"class": RFScoreVS, "column_name": "RFScoreVS", "best_value": "max", "score_range": (5, 10)},
+	"RTMScore": {"class": RTMScore, "column_name": "RTMScore", "best_value": "max", "score_range": (0, 100)},
+	"SCORCH": {"class": SCORCH, "column_name": "SCORCH", "best_value": "max", "score_range": (0, 1)},
+	"Vinardo": {"class": Vinardo, "column_name": "Vinardo", "best_value": "min", "score_range": (200, 20)}
+}
+# yapf: enable
 
 
 def create_temp_dir(name: str) -> Path:
@@ -99,29 +102,29 @@ def remove_temp_dir(temp_dir: Path):
 
 
 def rescore_poses(protein_file: Path,
-		pocket_definition: dict,
-		software: Path,
-		poses: Union[Path, pd.DataFrame],
-		functions: List[str],
-		n_cpus: int,
-		output_file: Optional[Path] = None) -> pd.DataFrame:
+					pocket_definition: dict,
+					software: Path,
+					poses: Union[Path, pd.DataFrame],
+					functions: List[str],
+					n_cpus: int,
+					output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""
-    Rescores poses using specified scoring functions. If an output file is provided and exists,
-    it will only run the missing scoring functions. Saves results to CSV and SDF incrementally
-    if output_file is specified, and adds a SMILES column to the output.
+	Rescores poses using specified scoring functions. If an output file is provided and exists,
+	it will only run the missing scoring functions. Saves results to CSV and SDF incrementally
+	if output_file is specified, and adds a SMILES column to the output.
 
-    Args:
-        protein_file (Path): Path to the protein file.
-        pocket_definition (dict): Dictionary defining the pocket.
-        software (Path): Path to the software.
-        poses (Union[Path, pd.DataFrame]): Path to the clustered SDF file or DataFrame of poses.
-        functions (List[str]): List of scoring function names.
-        n_cpus (int): Number of CPUs to use for parallel processing.
-        output_file (Optional[Path], optional): Path to the output CSV file. Defaults to None.
+	Args:
+		protein_file (Path): Path to the protein file.
+		pocket_definition (dict): Dictionary defining the pocket.
+		software (Path): Path to the software.
+		poses (Union[Path, pd.DataFrame]): Path to the clustered SDF file or DataFrame of poses.
+		functions (List[str]): List of scoring function names.
+		n_cpus (int): Number of CPUs to use for parallel processing.
+		output_file (Optional[Path], optional): Path to the output CSV file. Defaults to None.
 
-    Returns:
-        pd.DataFrame: Combined DataFrame of the rescored poses, including SMILES.
-    """
+	Returns:
+		pd.DataFrame: Combined DataFrame of the rescored poses, including SMILES.
+	"""
 	RDLogger.DisableLog("rdApp.*")
 	tic = time.perf_counter()
 
@@ -135,16 +138,12 @@ def rescore_poses(protein_file: Path,
 			sdf = temp_dir / "temp_clustered.sdf"
 			original_poses = poses.copy()
 			PandasTools.WriteSDF(original_poses,
-					sdf,
-					molColName='Molecule',
-					idName='Pose ID',
-					properties=list(original_poses.columns))
+									sdf,
+									molColName='Molecule',
+									idName='Pose ID',
+									properties=list(original_poses.columns))
 		else:
 			raise ValueError("poses must be a Path or DataFrame")
-
-		# Add SMILES column to original_poses
-		original_poses['SMILES'] = original_poses['Molecule'].apply(lambda x: AllChem.MolToSmiles(x)
-						if x is not None else None)
 
 		existing_results = pd.DataFrame()
 		functions_to_run = functions.copy()
@@ -158,13 +157,13 @@ def rescore_poses(protein_file: Path,
 				col for col in existing_results.columns if col != "Pose ID" and col in list(RESCORING_FUNCTIONS.keys())]
 			functions_to_run = [f for f in functions if f not in existing_functions]
 			printlog(f"Functions to run: {', '.join(functions_to_run)}")
+			combined_df = pd.merge(original_poses, existing_results, on="Pose ID", how="left")
 		elif output_file:
 			original_poses['Pose ID'].to_csv(output_file, index=False)
-
-		combined_df = pd.merge(original_poses, existing_results, on="Pose ID", how="left")
+			combined_df = original_poses
 
 		for function in functions_to_run:
-			scoring_function_class = RESCORING_FUNCTIONS.get(function)
+			scoring_function_class = RESCORING_FUNCTIONS.get(function)['class']
 			if scoring_function_class:
 				try:
 					scoring_function: ScoringFunction = scoring_function_class(software_path=software)
@@ -182,24 +181,39 @@ def rescore_poses(protein_file: Path,
 			else:
 				printlog(f"Unknown scoring function: {function}")
 
-		# Ensure "Pose ID" is the first column, followed by "SMILES"
-		columns = combined_df.columns.tolist()
-		columns.insert(0, columns.pop(columns.index("Pose ID")))
-		combined_df = combined_df[columns]
+		# Ensure required columns are present
+		if 'ID' not in combined_df.columns:
+			combined_df['ID'] = combined_df['Pose ID'].str.split("_").str[0]
+		if 'SMILES' not in combined_df.columns:
+			combined_df['SMILES'] = combined_df['Molecule'].apply(lambda x: Chem.MolToSmiles(x)
+																	if x is not None else None)
+
+		# Reorder columns for CSV output
+		csv_columns = ['Pose ID', 'ID', 'SMILES'] + [col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
+		csv_df = combined_df[csv_columns]
 
 		# Convert columns to float where possible
-		for col in combined_df.columns:
-			if col not in ["Pose ID", "Molecule", "SMILES"]:
-				combined_df[col] = pd.to_numeric(combined_df[col], errors='coerce')
+		for col in csv_df.columns:
+			if col not in ["Pose ID", "ID", "SMILES"]:
+				csv_df[col] = pd.to_numeric(csv_df[col], errors='coerce')
 
-		# Write final SDF if output_file is specified
+		# Write final CSV
 		if output_file:
-			PandasTools.WriteSDF(combined_df,
-				str(output_file.with_suffix(".sdf")),
-				molColName='Molecule',
-				idName='Pose ID',
-				properties=list(combined_df.columns))
-			printlog(f"Final rescored poses written to : {output_file} and {output_file.with_suffix('.sdf')}")
+			csv_df.to_csv(output_file, index=False)
+			printlog(f"Final rescored poses CSV written to: {output_file}")
+
+		# Reorder columns for SDF output
+		sdf_columns = ['Pose ID', 'ID', 'SMILES', 'Molecule'] + [col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
+		sdf_df = combined_df[sdf_columns]
+
+		# Write final SDF
+		if output_file:
+			PandasTools.WriteSDF(sdf_df,
+								 str(output_file.with_suffix(".sdf")),
+								 molColName='Molecule',
+								 idName='Pose ID',
+								 properties=list(sdf_df.columns))
+			printlog(f"Final rescored poses SDF written to: {output_file.with_suffix('.sdf')}")
 
 		toc = time.perf_counter()
 		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
@@ -211,11 +225,11 @@ def rescore_poses(protein_file: Path,
 
 
 def rescore_docking(poses: Union[Path, pd.DataFrame],
-	protein_file: Path,
-	pocket_definition: dict,
-	software: Path,
-	function: str,
-	n_cpus: int) -> pd.DataFrame:
+					protein_file: Path,
+					pocket_definition: dict,
+					software: Path,
+					function: str,
+					n_cpus: int) -> pd.DataFrame:
 	"""
 	Rescores the docking poses using a specified scoring function.
 
@@ -246,7 +260,7 @@ def rescore_docking(poses: Union[Path, pd.DataFrame],
 			PandasTools.WriteSDF(poses, sdf, molColName='Molecule', idName='Pose ID', properties=list(poses.columns))
 		else:
 			raise ValueError("poses must be a Path or DataFrame")
-		scoring_function_class = RESCORING_FUNCTIONS.get(function)
+		scoring_function_class = RESCORING_FUNCTIONS.get(function)['class']
 
 		if scoring_function_class is None:
 			raise ValueError(f"Unknown scoring function: {function}")

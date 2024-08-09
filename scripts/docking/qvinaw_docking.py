@@ -26,11 +26,11 @@ class QvinawDocking(DockingFunction):
 		super().__init__("QVINAW", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 
 		temp_dir = self.create_temp_dir()
 		results_folder = temp_dir / "docked"
@@ -38,7 +38,7 @@ class QvinawDocking(DockingFunction):
 
 		# Convert molecules to pdbqt format
 		try:
-			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt", self.software_path)
+			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt")
 			if isinstance(pdbqt_files, Path):
 				pdbqt_files = [pdbqt_files]
 		except Exception as e:
@@ -48,7 +48,7 @@ class QvinawDocking(DockingFunction):
 
 		protein_file_pdbqt = temp_dir / "protein.pdbqt"
 		try:
-			convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt", self.software_path)
+			convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt")
 		except Exception as e:
 			printlog(f"Failed to convert protein file to .pdbqt: {e}")
 			self.remove_temp_dir(temp_dir)
@@ -58,18 +58,18 @@ class QvinawDocking(DockingFunction):
 		for file in pdbqt_files:
 			output_file = results_folder / f"{file.stem}_QVINAW.pdbqt"
 			qvinaw_cmd = (f"{self.software_path}/qvina-w"
-							f" --receptor {protein_file_pdbqt}"
-							f" --ligand {file}"
-							f" --out {output_file}"
-							f" --center_x {pocket_definition['center'][0]}"
-							f" --center_y {pocket_definition['center'][1]}"
-							f" --center_z {pocket_definition['center'][2]}"
-							f" --size_x {pocket_definition['size'][0]}"
-							f" --size_y {pocket_definition['size'][1]}"
-							f" --size_z {pocket_definition['size'][2]}"
-							f" --exhaustiveness {exhaustiveness}"
-							" --cpu 1 --seed 1 --energy_range 10"
-							f" --num_modes {n_poses}")
+				f" --receptor {protein_file_pdbqt}"
+				f" --ligand {file}"
+				f" --out {output_file}"
+				f" --center_x {pocket_definition['center'][0]}"
+				f" --center_y {pocket_definition['center'][1]}"
+				f" --center_z {pocket_definition['center'][2]}"
+				f" --size_x {pocket_definition['size'][0]}"
+				f" --size_y {pocket_definition['size'][1]}"
+				f" --size_z {pocket_definition['size'][2]}"
+				f" --exhaustiveness {exhaustiveness}"
+				" --cpu 1 --seed 1 --energy_range 10"
+				f" --num_modes {n_poses}")
 			try:
 				subprocess.run(qvinaw_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				output_files.append(output_file)
