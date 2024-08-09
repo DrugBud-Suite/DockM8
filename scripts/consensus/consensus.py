@@ -33,48 +33,48 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 CONSENSUS_METHODS = {
 	'avg_ECR': {
-		'function': avg_ECR, 'type': 'rank'},
+	'function': avg_ECR, 'type': 'rank'},
 	'avg_R_ECR': {
-		'function': avg_R_ECR, 'type': 'rank'},
+	'function': avg_R_ECR, 'type': 'rank'},
 	'ECR_avg': {
-		'function': ECR_avg, 'type': 'rank'},
+	'function': ECR_avg, 'type': 'rank'},
 	'ECR_best': {
-		'function': ECR_best, 'type': 'rank'},
+	'function': ECR_best, 'type': 'rank'},
 	'RbR_avg': {
-		'function': RbR_avg, 'type': 'rank'},
+	'function': RbR_avg, 'type': 'rank'},
 	'RbR_best': {
-		'function': RbR_best, 'type': 'rank'},
+	'function': RbR_best, 'type': 'rank'},
 	'RbV_avg': {
-		'function': RbV_avg, 'type': 'score'},
+	'function': RbV_avg, 'type': 'score'},
 	'RbV_best': {
-		'function': RbV_best, 'type': 'score'},
+	'function': RbV_best, 'type': 'score'},
 	'Zscore_avg': {
-		'function': Zscore_avg, 'type': 'score'},
+	'function': Zscore_avg, 'type': 'score'},
 	'Zscore_best': {
-		'function': Zscore_best, 'type': 'score'}}
+	'function': Zscore_best, 'type': 'score'}}
 
 
 def apply_consensus_methods(poses_input: Union[Path, pd.DataFrame],
-							consensus_methods: Union[str, List[str]],
-							standardization_type: str,
-							output_path: Optional[Path] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+		consensus_methods: Union[str, List[str]],
+		standardization_type: str,
+		output_path: Optional[Path] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
 	"""
-    Applies consensus methods to rescored data and saves the results to CSV and SDF files.
+	Applies consensus methods to rescored data and saves the results to CSV and SDF files.
 
-    Args:
-    poses_input: Can be a path to a CSV/SDF file, or a pandas DataFrame containing the poses data.
-    consensus_methods: The consensus methods to apply. Can be a single method name or a list of method names.
-    standardization_type (str): The type of standardization to apply to the scores.
-    output_path (Path, optional): The path where output files should be saved. If None, files won't be saved.
+	Args:
+	poses_input: Can be a path to a CSV/SDF file, or a pandas DataFrame containing the poses data.
+	consensus_methods: The consensus methods to apply. Can be a single method name or a list of method names.
+	standardization_type (str): The type of standardization to apply to the scores.
+	output_path (Path, optional): The path where output files should be saved. If None, files won't be saved.
 
-    Returns:
-    tuple: (consensus_dataframe_csv, consensus_dataframe_sdf) - DataFrames with consensus results
-    """
+	Returns:
+	tuple: (consensus_dataframe_csv, consensus_dataframe_sdf) - DataFrames with consensus results
+	"""
 	# Check if consensus_methods is None or 'None'
 	if consensus_methods is None or consensus_methods == "None":
 		return printlog("No consensus methods selected, skipping consensus.")
 
-	printlog(f"Applying consensus methods: {consensus_methods}")
+	printlog(f"Applying consensus methods: {consensus_methods} using {standardization_type} standardization")
 
 	# Load poses data
 	if isinstance(poses_input, pd.DataFrame):
@@ -93,14 +93,13 @@ def apply_consensus_methods(poses_input: Union[Path, pd.DataFrame],
 	# Ensure 'Pose ID' column exists
 	if 'Pose ID' not in rescored_dataframe.columns:
 		raise ValueError("Input data must contain a 'Pose ID' column")
+	if 'ID' not in rescored_dataframe.columns:
+		rescored_dataframe['ID'] = rescored_dataframe['Pose ID'].str.split('_').str[0]
 
 	# Standardize the scores and add the 'ID' column
 	standardized_dataframe = standardize_scores(rescored_dataframe, standardization_type)
-	standardized_dataframe["ID"] = standardized_dataframe["Pose ID"].str.split("_").str[0]
-
 	# Rank the scores and add the 'ID' column
 	ranked_dataframe = rank_scores(standardized_dataframe)
-	ranked_dataframe["ID"] = ranked_dataframe["Pose ID"].str.split("_").str[0]
 
 	# Ensure consensus_methods is a list
 	if isinstance(consensus_methods, str):
@@ -138,32 +137,45 @@ def apply_consensus_methods(poses_input: Union[Path, pd.DataFrame],
 	final_consensus_dataframe = final_consensus_dataframe.loc[:, ~final_consensus_dataframe.columns.duplicated()]
 
 	# Prepare CSV output (with SMILES but without molecules)
-	csv_output = final_consensus_dataframe.copy()
-	if 'Molecule' in csv_output.columns:
-		csv_output['SMILES'] = csv_output['Molecule'].apply(lambda x: Chem.MolToSmiles(x) if x is not None else None)
-		csv_output = csv_output.drop(columns=['Molecule'])
+	csv_output = pd.merge(final_consensus_dataframe, rescored_dataframe[['ID', 'SMILES']], on='ID')
 
 	# Prepare SDF output (with molecules)
-	sdf_output = final_consensus_dataframe.copy()
-	if 'Molecule' not in list(sdf_output.columns) and 'SMILES' in list(sdf_output.columns):
-		sdf_output['Molecule'] = sdf_output['SMILES'].apply(Chem.MolFromSmiles)
+	if 'Molecule' not in rescored_dataframe.columns:
+		rescored_dataframe['Molecule'] = [Chem.MolFromSmiles(smiles) for smiles in rescored_dataframe['SMILES']]
+	sdf_output = pd.merge(final_consensus_dataframe, rescored_dataframe[['ID', 'Molecule', 'SMILES']], on='ID')
 
-	# Save output files if output_path is provided
 	if output_path:
 		output_path = Path(output_path)
-		output_path.mkdir(parents=True, exist_ok=True)
 
-		csv_file = output_path / "consensus_results.csv"
-		sdf_file = output_path / "consensus_results.sdf"
+		# Create the directory if it doesn't exist
+		if output_path.is_dir() or not output_path.suffix:
+			output_path.mkdir(parents=True, exist_ok=True)
+			csv_file = output_path / f"consensus_results_{standardization_type}.csv"
+			sdf_file = output_path / f"consensus_results_{standardization_type}.sdf"
+		else:
+			# If a filename is provided, ensure both CSV and SDF formats
+			output_path.parent.mkdir(parents=True, exist_ok=True)
+			stem = output_path.stem
+			parent = output_path.parent
+			csv_file = parent / f"{stem}.csv"
+			sdf_file = parent / f"{stem}.sdf"
 
-		csv_output.to_csv(csv_file, index=False)
-		PandasTools.WriteSDF(sdf_output,
-								str(sdf_file),
-								molColName="Molecule",
-								idName="ID",
-								properties=list(sdf_output.columns))
+		try:
+			csv_output.to_csv(csv_file, index=False)
+			PandasTools.WriteSDF(sdf_output,
+									str(sdf_file),
+									molColName="Molecule",
+									idName="ID",
+									properties=list(sdf_output.columns))
 
-		printlog(f"Results saved to {csv_file} and {sdf_file}")
+			printlog(f"Results saved to {csv_file} and {sdf_file}")
+		except PermissionError:
+			printlog(
+				f"Error: Permission denied when trying to write to {output_path}. Please check your write permissions.")
+		except Exception as e:
+			printlog(f"An error occurred while saving the files: {str(e)}")
+	else:
+		printlog("No output path provided. Results were not saved to files.")
 
 	return csv_output, sdf_output
 
@@ -196,10 +208,10 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-				RESCORING_FUNCTIONS.keys()):
+			RESCORING_FUNCTIONS.keys()):
 			consensus_file = parallel_SDF_loader(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf",
-													molColName="Molecule",
-													idName="ID")
+						molColName="Molecule",
+						idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -222,10 +234,10 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-				RESCORING_FUNCTIONS.keys()):
+			RESCORING_FUNCTIONS.keys()):
 			consensus_file = parallel_SDF_loader(w_dir / "consensus" / f"{selection_method}_{consensus_method}_results.sdf",
-													molColName="Molecule",
-													idName="ID")
+						molColName="Molecule",
+						idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -236,12 +248,12 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 	# Save the common compounds and CSV or SDF file
 	if selection_method in [
 		"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-			RESCORING_FUNCTIONS.keys()):
+		RESCORING_FUNCTIONS.keys()):
 		PandasTools.WriteSDF(common_compounds_df,
-								str(Path(receptors[0]).parent / "ensemble_results.sdf"),
-								molColName="Molecule",
-								idName="ID",
-								properties=list(common_compounds_df.columns))
+				str(Path(receptors[0]).parent / "ensemble_results.sdf"),
+				molColName="Molecule",
+				idName="ID",
+				properties=list(common_compounds_df.columns))
 
 	else:
 		common_compounds_df.to_csv(Path(receptors[0]).parent / "ensemble_results.csv", index=False)
