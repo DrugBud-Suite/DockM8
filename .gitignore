@@ -201,6 +201,7 @@ software/plantain/
 software/panther/
 software/GenScore/
 software/censible/
+software/DeepRMSD-Vina_Optimization
 tests/test_files/fabind_test/
 software/shaep
 tests/test_files/rescoring/output/
