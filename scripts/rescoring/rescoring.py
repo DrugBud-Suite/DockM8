@@ -48,31 +48,31 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # yapf: disable
 RESCORING_FUNCTIONS = {
-	"AAScore": {"class": AAScore, "column_name": "AAScore", "best_value": "max", "score_range": (100, -100)},
-	"AD4": {"class": AD4, "column_name": "AD4", "best_value": "min", "score_range": (100, -100)},
+	"AAScore": {"class": AAScore, "column_name": "AAScore", "best_value": "min", "score_range": (100, -100)},
+	"AD4": {"class": AD4, "column_name": "AD4", "best_value": "min", "score_range": (1000, -100)},
 	"CENsible": {"class": CENsible, "column_name": "CENsible", "best_value": "max", "score_range": (0, 20)},
 	"CHEMPLP": {"class": CHEMPLP, "column_name": "CHEMPLP", "best_value": "min", "score_range": (200, -200)},
 	"ConvexPLR": {"class": ConvexPLR, "column_name": "ConvexPLR", "best_value": "max", "score_range": (-10, 10)},
-	"DLIGAND2": {"class": DLIGAND2, "column_name": "DLIGAND2", "best_value": "min", "score_range": (-200, 100)},
-	"ITScoreAff": {"class": ITScoreAff, "column_name": "ITScoreAff", "best_value": "min", "score_range": (-200, 100)},
+	"DLIGAND2": {"class": DLIGAND2, "column_name": "DLIGAND2", "best_value": "min", "score_range": (100, -200)},
+	"ITScoreAff": {"class": ITScoreAff, "column_name": "ITScoreAff", "best_value": "min", "score_range": (100, -200)},
 	"GNINA-Affinity": {"class": partial(Gnina, score_type="affinity"), "column_name": "GNINA-Affinity", "best_value": "min", "score_range": (100, -100)},
 	"CNN-Score": {"class": partial(Gnina, score_type="cnn_score"), "column_name": "CNN-Score", "best_value": "max", "score_range": (0, 1)},
 	"CNN-Affinity": {"class": partial(Gnina, score_type="cnn_affinity"), "column_name": "CNN-Affinity", "best_value": "max", "score_range": (0, 20)},
-	"GenScore-scoring": {"class": partial(GenScore, score_type="scoring"), "column_name": "GenScore-scoring", "best_value": "max", "score_range": (0, 200)},
-	"GenScore-docking": {"class": partial(GenScore, score_type="docking"), "column_name": "GenScore-docking", "best_value": "max", "score_range": (0, 200)},
-	"GenScore-balanced": {"class": partial(GenScore, score_type="balanced"), "column_name": "GenScore-balanced", "best_value": "max", "score_range": (0, 200)},
-	"KORP-PL": {"class": KORPL, "column_name": "KORP-PL", "best_value": "min", "score_range": (200, -1000)},
-	"LinF9": {"class": LinF9, "column_name": "LinF9", "best_value": "min", "score_range": (100, -100)},
+	"GenScore-scoring": {"class": partial(GenScore, score_type="scoring"), "column_name": "GenScore-scoring", "best_value": "max", "score_range": (0, 100)},
+	"GenScore-docking": {"class": partial(GenScore, score_type="docking"), "column_name": "GenScore-docking", "best_value": "max", "score_range": (0, 100)},
+	"GenScore-balanced": {"class": partial(GenScore, score_type="balanced"), "column_name": "GenScore-balanced", "best_value": "max", "score_range": (0, 100)},
+	"KORP-PL": {"class": KORPL, "column_name": "KORP-PL", "best_value": "min", "score_range": (200, -500)},
+	"LinF9": {"class": LinF9, "column_name": "LinF9", "best_value": "min", "score_range": (50, -50)},
 	"NNScore": {"class": NNScore, "column_name": "NNScore", "best_value": "max", "score_range": (0, 20)},
-	"PANTHER": {"class": partial(PANTHER, score_type="PANTHER"), "column_name": "PANTHER", "best_value": "max", "score_range": (0, 10)},
-	"PANTHER-ESP": {"class": partial(PANTHER, score_type="PANTHER-ESP"), "column_name": "PANTHER-ESP", "best_value": "max", "score_range": (0, 10)},
-	"PANTHER-Shape": {"class": partial(PANTHER, score_type="PANTHER-Shape"), "column_name": "PANTHER-Shape", "best_value": "max", "score_range": (0, 10)},
+	"PANTHER": {"class": partial(PANTHER, score_type="PANTHER"), "column_name": "PANTHER", "best_value": "max", "score_range": (0, 1)},
+	"PANTHER-ESP": {"class": partial(PANTHER, score_type="PANTHER-ESP"), "column_name": "PANTHER-ESP", "best_value": "max", "score_range": (0, 1)},
+	"PANTHER-Shape": {"class": partial(PANTHER, score_type="PANTHER-Shape"), "column_name": "PANTHER-Shape", "best_value": "max", "score_range": (0, 1)},
 	"PLECScore": {"class": PLECScore, "column_name": "PLECScore", "best_value": "max", "score_range": (0, 20)},
 	"PLP": {"class": PLP, "column_name": "PLP", "best_value": "min", "score_range": (200, -200)},
 	"RFScoreVS": {"class": RFScoreVS, "column_name": "RFScoreVS", "best_value": "max", "score_range": (5, 10)},
 	"RTMScore": {"class": RTMScore, "column_name": "RTMScore", "best_value": "max", "score_range": (0, 100)},
 	"SCORCH": {"class": SCORCH, "column_name": "SCORCH", "best_value": "max", "score_range": (0, 1)},
-	"Vinardo": {"class": Vinardo, "column_name": "Vinardo", "best_value": "min", "score_range": (200, 20)}
+	"Vinardo": {"class": Vinardo, "column_name": "Vinardo", "best_value": "min", "score_range": (200, -20)}
 }
 # yapf: enable
 
@@ -189,7 +189,8 @@ def rescore_poses(protein_file: Path,
 																	if x is not None else None)
 
 		# Reorder columns for CSV output
-		csv_columns = ['Pose ID', 'ID', 'SMILES'] + [col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
+		csv_columns = ['Pose ID', 'ID', 'SMILES'] + [
+			col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
 		csv_df = combined_df[csv_columns]
 
 		# Convert columns to float where possible
@@ -203,16 +204,17 @@ def rescore_poses(protein_file: Path,
 			printlog(f"Final rescored poses CSV written to: {output_file}")
 
 		# Reorder columns for SDF output
-		sdf_columns = ['Pose ID', 'ID', 'SMILES', 'Molecule'] + [col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
+		sdf_columns = ['Pose ID', 'ID', 'SMILES', 'Molecule'] + [
+			col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
 		sdf_df = combined_df[sdf_columns]
 
 		# Write final SDF
 		if output_file:
 			PandasTools.WriteSDF(sdf_df,
-								 str(output_file.with_suffix(".sdf")),
-								 molColName='Molecule',
-								 idName='Pose ID',
-								 properties=list(sdf_df.columns))
+									str(output_file.with_suffix(".sdf")),
+									molColName='Molecule',
+									idName='Pose ID',
+									properties=list(sdf_df.columns))
 			printlog(f"Final rescored poses SDF written to: {output_file.with_suffix('.sdf')}")
 
 		toc = time.perf_counter()
