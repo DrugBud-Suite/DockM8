@@ -16,10 +16,12 @@ from scripts.docking.docking_function import DockingFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-
+from scripts.setup.software_manager import ensure_software_installed
+from scripts.utilities.utilities import parallel_SDF_loader
 
 class PantherDocking(DockingFunction):
 
+	@ensure_software_installed("PANTHER")
 	def __init__(self, software_path: Path):
 		super().__init__("PANTHER", software_path)
 		self.negative_image = None
@@ -58,10 +60,10 @@ class PantherDocking(DockingFunction):
 
 		try:
 			process = subprocess.Popen(panther_cmd,
-										shell=True,
-										stdout=subprocess.PIPE,
-										stderr=subprocess.PIPE,
-										universal_newlines=True)
+					shell=True,
+					stdout=subprocess.PIPE,
+					stderr=subprocess.PIPE,
+					universal_newlines=True)
 			stdout, stderr = process.communicate()
 
 			# Extract mol2 data from the output
@@ -95,12 +97,12 @@ class PantherDocking(DockingFunction):
 		return conformers_file
 
 	def run_shaep(self,
-					conformers_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int,
-					negative_image: Path) -> Path:
+		conformers_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int,
+		negative_image: Path) -> Path:
 
 		temp_dir = self.create_temp_dir()
 
@@ -125,14 +127,14 @@ class PantherDocking(DockingFunction):
 		return shaep_output_sdf
 
 	def dock(self,
-				library: Path,
-				protein_file: Path,
-				pocket_definition: dict,
-				exhaustiveness: int,
-				n_poses: int,
-				n_cpus: int,
-				job_manager: str = "concurrent_process",
-				output_sdf: Path = None) -> pd.DataFrame:
+		library: Path,
+		protein_file: Path,
+		pocket_definition: dict,
+		exhaustiveness: int,
+		n_poses: int,
+		n_cpus: int,
+		job_manager: str = "concurrent_process",
+		output_sdf: Path = None) -> pd.DataFrame:
 
 		temp_dir = self.create_temp_dir()
 
@@ -156,11 +158,11 @@ class PantherDocking(DockingFunction):
 
 			# Perform parallel conformer generation
 			conformer_results = parallel_executor(self.generate_conformers,
-													batch_files,
-													n_cpus=n_cpus,
-													job_manager=job_manager,
-													display_name="Conformer Generation",
-													temp_dir=temp_dir)
+						batch_files,
+						n_cpus=n_cpus,
+						job_manager=job_manager,
+						display_name="Conformer Generation",
+						temp_dir=temp_dir)
 
 			print(conformer_results)
 
@@ -171,15 +173,15 @@ class PantherDocking(DockingFunction):
 			shaep_results = []
 
 			batch_results = parallel_executor(self.run_shaep,
-												conformer_results,
-												n_cpus=2,
-												job_manager=job_manager,
-												display_name="PANTHER Docking",
-												protein_file=protein_file,
-												pocket_definition=pocket_definition,
-												exhaustiveness=exhaustiveness,
-												n_poses=n_poses,
-												negative_image=self.negative_image)
+						conformer_results,
+						n_cpus=2,
+						job_manager=job_manager,
+						display_name="PANTHER Docking",
+						protein_file=protein_file,
+						pocket_definition=pocket_definition,
+						exhaustiveness=exhaustiveness,
+						n_poses=n_poses,
+						negative_image=self.negative_image)
 			shaep_results.extend(batch_results)
 
 			# Process results
@@ -194,10 +196,10 @@ class PantherDocking(DockingFunction):
 			# Write output SDF if requested
 			if output_sdf:
 				PandasTools.WriteSDF(combined_results,
-										str(output_sdf),
-										molColName="Molecule",
-										idName="Pose ID",
-										properties=list(combined_results.columns))
+						str(output_sdf),
+						molColName="Molecule",
+						idName="Pose ID",
+						properties=list(combined_results.columns))
 
 			return combined_results
 
@@ -207,7 +209,7 @@ class PantherDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog('rdApp.*')
 		try:
-			df = PandasTools.LoadSDF(str(result_file), molColName="Molecule", smilesName="SMILES", strictParsing=False)
+			df = parallel_SDF_loader(result_file, molColName="Molecule", smilesName="SMILES", strictParsing=False)
 			# Sort by Similarity_best in descending order and create new rank
 			df = df.sort_values('Similarity_best', ascending=False)
 			df['PANTHER_Rank'] = df.groupby('ID')['Similarity_best'].rank(method='first', ascending=False)

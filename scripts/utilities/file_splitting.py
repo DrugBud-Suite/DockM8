@@ -13,6 +13,7 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -35,7 +36,7 @@ def split_sdf(dir, sdf_file, n_cpus):
 	split_files_folder.mkdir(parents=True, exist_ok=True)
 	for file in split_files_folder.iterdir():
 		file.unlink()
-	df = PandasTools.LoadSDF(str(sdf_file), molColName="Molecule", idName="ID", includeFingerprints=False)
+	df = parallel_SDF_loader(sdf_file, molColName="Molecule", idName="ID")
 	compounds_per_core = math.ceil(len(df["ID"]) / (n_cpus*2))
 	used_ids = set()
 	file_counter = 1
@@ -117,7 +118,7 @@ def split_sdf_single(dir, sdf_file):
 	split_files_folder.mkdir(exist_ok=True)
 	for file in split_files_folder.iterdir():
 		file.unlink()
-	df = PandasTools.LoadSDF(str(sdf_file), molColName="Molecule", idName="ID", includeFingerprints=False)
+	df = parallel_SDF_loader(sdf_file, molColName="Molecule", idName="ID")
 	for i, row in tqdm(df.iterrows(), total=len(df), desc="Splitting SDF file"):
 		# Extract compound information from the row
 		compound = row["Molecule"]

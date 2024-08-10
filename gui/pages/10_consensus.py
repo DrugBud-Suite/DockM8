@@ -30,7 +30,7 @@ if 'rescored_poses' not in st.session_state:
 	if not Path(library_to_rescore_input).is_file():
 		st.error("File does not exist.")
 	else:
-		st.session_state.poses_to_rescore = library_to_rescore_input
+		st.session_state.rescored_poses = Path(library_to_rescore_input)
 		st.success(f"Library loaded: {library_to_rescore_input}")
 
 st.subheader("Consensus Algorithm", divider="orange")
@@ -84,7 +84,7 @@ st.session_state.save_consensus_results = col2.toggle(label="Save Consensus scor
 if st.session_state.save_consensus_results:
 	consensus_score_save_path = determine_working_directory()
 	if consensus_score_save_path:
-		st.session_state.rescored_poses = consensus_score_save_path
+		st.session_state.consensus_scores = consensus_score_save_path
 		col2.write(f'Consensus scores will be saved to: **{consensus_score_save_path}**')
 
 if col1.button("Run Consensus scoring", use_container_width=True):
@@ -92,6 +92,7 @@ if col1.button("Run Consensus scoring", use_container_width=True):
 		st.error("Please select at least one rescoring function.")
 	else:
 		try:
+			st.write(st.session_state.rescored_poses)
 			run_consensus()
 			st.success("Rescoring completed successfully.")
 		except Exception as e:

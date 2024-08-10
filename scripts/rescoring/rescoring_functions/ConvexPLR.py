@@ -1,13 +1,14 @@
 import subprocess
 import sys
 import time
-import warnings
+import traceback
 from pathlib import Path
 import os
+from typing import List
+
 import pandas as pd
 from rdkit.Chem import PandasTools
 
-# Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
@@ -16,66 +17,122 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+from scripts.setup.software_manager import ensure_software_installed
+from scripts.utilities.molecule_conversion import convert_molecules
 
 
 class ConvexPLR(ScoringFunction):
 
-	def __init__(self):
-		super().__init__("ConvexPLR", "ConvexPLR", "max", (-10, 10))
+	"""
+    ConvexPLR scoring function implementation.
+    """
 
-	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
-		tic = time.perf_counter()
-		software = kwargs.get("software")
-		protein_file = kwargs.get("protein_file")
+	@ensure_software_installed("CONVEX_PLR")
+	def __init__(self, software_path: Path):
+		super().__init__("ConvexPLR", "ConvexPLR", "max", (-10, 10), software_path)
+
+	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+		"""
+        Rescore the molecules in the given SDF file using the ConvexPLR scoring function.
+
+        Args:
+            sdf_file (str): The path to the SDF file.
+            n_cpus (int): The number of CPUs to use for parallel processing.
+            protein_file (str): The path to the protein file.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the rescored molecules.
+        """
+		start_time = time.perf_counter()
 
 		temp_dir = self.create_temp_dir()
 		try:
-			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
-			split_files_sdfs = [
-				Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf_file, n_cpus)
+			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-			global ConvexPLR_rescoring_splitted
+			rescoring_results = parallel_executor(self._rescore_split_file,
+													split_files_sdfs,
+													n_cpus,
+													display_name=self.name,
+													protein_file=protein_file)
 
-			def ConvexPLR_rescoring_splitted(split_file, protein_file):
-				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
-				df = df[["Pose ID"]]
-				ConvexPLR_command = (f"{software}/Convex-PL" + f" --receptor {protein_file}" +
-										f" --ligand {split_file}" + " --sdf --regscore")
-				process = subprocess.Popen(ConvexPLR_command,
-											stdout=subprocess.PIPE,
-											stderr=subprocess.PIPE,
-											shell=True)
-				stdout, stderr = process.communicate()
-				energies = []
-				output = stdout.decode().splitlines()
-				for line in output:
-					if line.startswith("model"):
-						parts = line.split(",")
-						energy = round(float(parts[1].split("=")[1]), 2)
-						energies.append(energy)
-				df[self.column_name] = energies
-				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_scores.csv"))
-				df.to_csv(output_csv, index=False)
+			convexplr_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
-			parallel_executor(ConvexPLR_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_file=protein_file)
-
-			score_files = list(Path(temp_dir).glob("*_scores.csv"))
-			combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)
-
-			toc = time.perf_counter()
-			printlog(f"Rescoring with ConvexPLR complete in {toc-tic:0.4f}!")
-			return combined_scores_df
+			end_time = time.perf_counter()
+			printlog(f"Rescoring with ConvexPLR complete in {end_time - start_time:.4f} seconds!")
+			return convexplr_rescoring_results
+		except Exception as e:
+			printlog(f"ERROR: An unexpected error occurred during ConvexPLR rescoring:")
+			printlog(traceback.format_exc(e))
+			return pd.DataFrame()
 		finally:
 			self.remove_temp_dir(temp_dir)
 
+	def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
+		"""
+        Rescore a single split SDF file.
 
-# Usage:
-# convexplr = ConvexPLR()
-# results = convexplr.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+        Args:
+            split_file (Path): The path to the split SDF file.
+            protein_file (str): The path to the protein file.
+
+        Returns:
+            Path: The path to the rescored CSV file.
+        """
+		try:
+			df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
+			df = df[["Pose ID"]]
+
+			mol2_file = convert_molecules(split_file, split_file.with_suffix(".mol2"), "sdf", "mol2")
+
+			convexplr_cmd = (f"{self.software_path}/Convex-PL"
+								f" --receptor {protein_file}"
+								f" --ligand {mol2_file}"
+								" --regscore --mol2")
+
+			result = subprocess.run(convexplr_cmd, shell=True, capture_output=True, text=True)
+
+			energies = []
+			for line in result.stdout.splitlines():
+				if line.startswith("model"):
+					parts = line.split(",")
+					energy = round(float(parts[1].split("=")[1]), 2)
+					energies.append(energy)
+
+			df[self.column_name] = energies
+			output_csv = split_file.parent / f"{split_file.stem}_scores.csv"
+			df.to_csv(output_csv, index=False)
+			return output_csv
+		except Exception as e:
+			printlog(f"ConvexPLR rescoring failed for {split_file}:")
+			printlog(traceback.format_exc(e))
+			return None
+
+	def _combine_rescoring_results(self, result_files: List[Path]) -> pd.DataFrame:
+		"""
+        Combine rescoring results from multiple CSV files.
+
+        Args:
+            result_files (List[Path]): List of paths to rescored CSV files.
+
+        Returns:
+            pd.DataFrame: Combined DataFrame with rescoring results.
+        """
+		try:
+			dataframes = []
+			for file in result_files:
+				if file and file.is_file():
+					df = pd.read_csv(file)
+					dataframes.append(df)
+
+			if not dataframes:
+				printlog("No valid CSV files found with ConvexPLR scores.")
+				return pd.DataFrame()
+
+			combined_results = pd.concat(dataframes, ignore_index=True)
+			return combined_results[["Pose ID", self.column_name]]
+		except Exception as e:
+			printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()

@@ -26,6 +26,9 @@ filterwarnings = "ignore"
 # Custom directory for pytest cache.
 cache_dir = ".pytest_cache"
 
+# ignore certain Directories
+norecursedirs = ["software", "tests/test_files/setup"]
+
 [tool.ruff]
 line-length = 120
 indent-width = 4

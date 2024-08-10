@@ -1,26 +1,35 @@
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict
 
 import pandas as pd
-from rdkit.Chem import PandasTools
 from rdkit import RDLogger
+from rdkit.Chem import PandasTools
+
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
 
 from scripts.docking.docking_function import DockingFunction
+from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 
 class GninaDocking(DockingFunction):
 
+	@ensure_software_installed("GNINA")
 	def __init__(self, software_path: Path):
 		super().__init__("GNINA", software_path)
 
 	def dock_batch(self,
-		batch_file: Path,
-		protein_file: Path,
-		pocket_definition: Dict[str, list],
-		exhaustiveness: int,
-		n_poses: int) -> Path:
+					batch_file: Path,
+					protein_file: Path,
+					pocket_definition: Dict[str, list],
+					exhaustiveness: int,
+					n_poses: int) -> Path:
 
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
@@ -53,7 +62,7 @@ class GninaDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog("rdApp.*")
 		try:
-			df = PandasTools.LoadSDF(str(result_file), molColName="Molecule", smilesName="SMILES", idName="ID")
+			df = parallel_SDF_loader(result_file, molColName="Molecule", smilesName="SMILES", idName="ID")
 			df['CNN-Score'] = df['CNNscore'].astype(float)
 
 			# Sort by CNN-Score (higher is better) and rank within each ID group

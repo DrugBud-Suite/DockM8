@@ -15,19 +15,20 @@ from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics imp
 from scripts.pose_selection.clustering.clustering import run_clustering
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS, rescore_docking
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 def select_poses(poses: Union[Path, pd.DataFrame],
-		selection_method: str,
-		clustering_method: str,
-		pocket_definition: dict,
-		protein_file: Path,
-		software: Path,
-		n_cpus: int,
-		output_file: Optional[Path] = None) -> pd.DataFrame:
+					selection_method: str,
+					clustering_method: str,
+					pocket_definition: dict,
+					protein_file: Path,
+					software: Path,
+					n_cpus: int,
+					output_file: Optional[Path] = None) -> pd.DataFrame:
 	"""This function clusters all poses according to the metric selected using multiple CPU cores.
 
 	Args:
@@ -44,7 +45,7 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 
 	# Process input
 	if isinstance(poses, Path):
-		poses_df = PandasTools.LoadSDF(poses, molColName='Molecule', idName='Pose ID')
+		poses_df = parallel_SDF_loader(poses, molColName='Molecule', idName='Pose ID')
 	elif isinstance(poses, pd.DataFrame):
 		poses_df = poses
 	else:
@@ -66,10 +67,10 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 		min_pose_indices = poses_df.groupby(["ID", "Docking_program"])["Pose_Number"].idxmin()
 		selected_poses = poses_df.loc[min_pose_indices]
 		selected_poses = selected_poses[selected_poses["Docking_program"] == selection_method.split("_")[1]]
-	elif selection_method in CLUSTERING_METRICS.keys():
+	elif selection_method in list(CLUSTERING_METRICS.keys()):
 		# Perform clustering using multiple CPU cores
 		selected_poses = run_clustering(poses_df, selection_method, clustering_method, protein_file, n_cpus)
-	elif selection_method in RESCORING_FUNCTIONS.keys():
+	elif selection_method in list(RESCORING_FUNCTIONS.keys()):
 		# Perform rescoring using the specified metric scoring function
 		selected_poses = rescore_docking(poses_df, protein_file, pocket_definition, software, selection_method, n_cpus)
 	else:
@@ -82,8 +83,10 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 	# Write the filtered poses to a SDF file
 	if output_file:
 		PandasTools.WriteSDF(filtered_poses,
-				str(output_file),
-				molColName="Molecule",
-				idName="Pose ID",
-				properties=list(filtered_poses.columns))
-	return filtered_poses
+								str(output_file),
+								molColName="Molecule",
+								idName="Pose ID",
+								properties=list(filtered_poses.columns))
+		return output_file
+	else:
+		return filtered_poses

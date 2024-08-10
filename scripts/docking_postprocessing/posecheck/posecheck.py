@@ -4,7 +4,6 @@ import time
 from pathlib import Path
 
 import pandas as pd
-from posecheck import PoseCheck
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -14,14 +13,17 @@ sys.path.append(str(dockm8_path))
 import multiprocessing
 
 from scripts.utilities.logging import printlog
+from scripts.setup.software_manager import ensure_software_installed
 
 
+@ensure_software_installed("POSECHECK")
 def pose_checker(dataframe: pd.DataFrame,
-		protein_file: Path,
-		clash_cutoff: int = 5,
-		strain_cutoff: int = 5000,
-		n_cpus: int = int(os.cpu_count() * 0.9),
-	):
+					protein_file: Path,
+					clash_cutoff: int = 5,
+					strain_cutoff: int = 5000,
+					n_cpus: int = int(os.cpu_count() * 0.9),
+				):
+	from posecheck import PoseCheck
 	try:
 		tic = time.perf_counter()
 		printlog("Checking poses using PoseCheck...")

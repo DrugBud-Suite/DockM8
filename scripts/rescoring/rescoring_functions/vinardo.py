@@ -1,14 +1,14 @@
 import subprocess
 import sys
 import time
-import warnings
+import traceback
 from pathlib import Path
 import os
+from typing import List
 
 import pandas as pd
 from rdkit.Chem import PandasTools
 
-# Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
@@ -17,80 +17,123 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+from scripts.setup.software_manager import ensure_software_installed
 
 
 class Vinardo(ScoringFunction):
 
-	def __init__(self):
-		super().__init__("Vinardo", "Vinardo", "min", (200, 20))
+	"""
+    Vinardo scoring function implementation.
+    """
 
-	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
-		tic = time.perf_counter()
+	@ensure_software_installed("GNINA")
+	def __init__(self, software_path: Path):
+		super().__init__("Vinardo", "Vinardo", "min", (200, 20), software_path)
 
-		software = kwargs.get("software")
-		protein_file = kwargs.get("protein_file")
+	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+		"""
+        Rescore the molecules in the given SDF file using the Vinardo scoring function.
+
+        Args:
+            sdf_file (str): The path to the SDF file.
+            n_cpus (int): The number of CPUs to use for parallel processing.
+            protein_file (str): The path to the protein file.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the rescored molecules.
+        """
+		start_time = time.perf_counter()
 
 		temp_dir = self.create_temp_dir()
 		try:
-			split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
+			split_files_folder = split_sdf_str(Path(temp_dir), sdf_file, n_cpus)
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-			global vinardo_rescoring_splitted
-			def vinardo_rescoring_splitted(split_file, protein_file):
-				results = Path(temp_dir) / f"{Path(split_file).stem}_{self.column_name}.sdf"
-				vinardo_cmd = (f"{software}/gnina"
-					f" --receptor {protein_file}"
-					f" --ligand {split_file}"
-					f" --out {results}"
-					" --score_only"
-					" --scoring vinardo"
-					" --cnn_scoring none")
-				try:
-					subprocess.call(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-				except Exception as e:
-					printlog(f"{self.column_name} rescoring failed: " + str(e))
-				return
+			rescoring_results = parallel_executor(self._rescore_split_file,
+						split_files_sdfs,
+						n_cpus,
+						display_name=self.name,
+						protein_file=protein_file)
 
-			parallel_executor(vinardo_rescoring_splitted,
-								split_files_sdfs,
-								n_cpus,
-								display_name=self.column_name,
-								protein_file=protein_file)
+			vinardo_dataframes = self._load_rescoring_results(rescoring_results)
+			vinardo_rescoring_results = self._combine_rescoring_results(vinardo_dataframes)
 
+			end_time = time.perf_counter()
+			printlog(f"Rescoring with Vinardo complete in {end_time - start_time:.4f} seconds!")
+			return vinardo_rescoring_results
+		except Exception as e:
+			printlog(f"ERROR: An unexpected error occurred during Vinardo rescoring:")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()
+		finally:
+			self.remove_temp_dir(temp_dir)
+
+	def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
+		"""
+        Rescore a single split SDF file.
+
+        Args:
+            split_file (Path): The path to the split SDF file.
+            protein_file (str): The path to the protein file.
+
+        Returns:
+            Path: The path to the rescored SDF file.
+        """
+		results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
+		vinardo_cmd = (f"{self.software_path}/gnina"
+			f" --receptor {protein_file}"
+			f" --ligand {split_file}"
+			f" --out {results}"
+			" --score_only"
+			" --scoring vinardo"
+			" --cnn_scoring none")
+		try:
+			subprocess.run(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		except subprocess.CalledProcessError as e:
+			printlog(f"{self.column_name} rescoring failed:")
+			printlog(traceback.format_exc())
+		return results
+
+	def _load_rescoring_results(self, result_files: List[Path]) -> List[pd.DataFrame]:
+		"""
+        Load rescoring results from SDF files.
+
+        Args:
+            result_files (List[Path]): List of paths to rescored SDF files.
+
+        Returns:
+            List[pd.DataFrame]: List of DataFrames containing the rescoring results.
+        """
+		dataframes = []
+		for file in result_files:
 			try:
-				vinardo_dataframes = [
-					PandasTools.LoadSDF(str(Path(temp_dir) / file),
+				df = PandasTools.LoadSDF(str(file),
 						idName="Pose ID",
 						molColName=None,
 						includeFingerprints=False,
 						embedProps=False)
-					for file in os.listdir(temp_dir)
-					if file.startswith("split") and file.endswith(".sdf")]
+				dataframes.append(df)
 			except Exception as e:
-				printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file!")
-				printlog(e)
-				return pd.DataFrame()
+				printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")
+				printlog(traceback.format_exc())
+		return dataframes
 
-			try:
-				vinardo_rescoring_results = pd.concat(vinardo_dataframes)
-			except Exception as e:
-				printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
-				printlog(e)
-				return pd.DataFrame()
+	def _combine_rescoring_results(self, dataframes: List[pd.DataFrame]) -> pd.DataFrame:
+		"""
+        Combine rescoring results from multiple DataFrames.
 
-			vinardo_rescoring_results.rename(columns={"minimizedAffinity": self.column_name}, inplace=True)
-			vinardo_rescoring_results = vinardo_rescoring_results[["Pose ID", self.column_name]]
+        Args:
+            dataframes (List[pd.DataFrame]): List of DataFrames containing rescoring results.
 
-			toc = time.perf_counter()
-			printlog(f"Rescoring with Vinardo complete in {toc - tic:0.4f}!")
-			return vinardo_rescoring_results
-		finally:
-			self.remove_temp_dir(temp_dir)
-
-
-# Usage:
-# vinardo = Vinardo()
-# results = vinardo.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+        Returns:
+            pd.DataFrame: Combined DataFrame with rescoring results.
+        """
+		try:
+			combined_results = pd.concat(dataframes, ignore_index=True)
+			combined_results.rename(columns={"minimizedAffinity": self.column_name}, inplace=True)
+			return combined_results[["Pose ID", self.column_name]]
+		except Exception as e:
+			printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()

@@ -71,7 +71,7 @@ if ! command -v conda &> /dev/null; then
     cd $HOME/miniconda3
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh --no-check-certificate -q --show-progress
     # install miniconda3
-    cd $HOME/miniconda3 && chmod -x miniconda.sh
+    cd $HOME/miniconda3 && chmod +x ./miniconda.sh
     cd $BASEDIR && bash $HOME/miniconda3/miniconda.sh -b -u -p $HOME/miniconda3
 
     # remove the installer
@@ -122,7 +122,7 @@ if conda env list | grep -q "^$ENV_NAME\s"; then
     echo "Conda environment '$ENV_NAME' already exists. Skipping creation."
     conda activate dockm8
 else
-    conda create -n $ENV_NAME python=3.10 -y
+    conda create -n $ENV_NAME python=3.10.14 -y
     conda deactivate
     conda activate $ENV_NAME
 
@@ -131,8 +131,9 @@ else
     conda config --add channels bioconda
     conda config --add channels mx
 
-    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt tqdm pytest pdbfixer smina omegaconf roma -q -y
-	conda install -c ikmckenz adme-pred-py
+    conda install -c conda-forge rdkit=2023.09 spyrmsd kneed molvs xgboost openbabel docopt pdbfixer smina lightning -q -y
+	conda install ipykernel scipy seaborn tqdm pytest pydantic -q -y
+	conda install -c mx reduct -q -y
 
     echo -e """
     ###############################################################
@@ -143,8 +144,8 @@ else
     pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
     pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf medchem molgrid -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
-	pip install streamlit_molstar sh -q
-	pip install roma torch-lightning==1.9.1 omegaconf terrace dgllife -q
+	pip install streamlit_molstar sh scikit-learn -q
+	pip install roma pytorch_lightning omegaconf terrace dgllife scikit-learn-extra -q
 
     echo -e """
     ###############################################################
@@ -203,7 +204,7 @@ else
     conda activate genscore
 	conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cpuonly -c pytorch -y -q
 	conda install MDAnalysis==2.0.0 prody==2.1.0 pandas rdkit==2021.03.5 openbabel scikit-learn scipy seaborn numpy joblib matplotlib -y -q
-	pip torch-geometric==2.0.3 -q
+	pip install torch-geometric==2.0.3 -q
 	pip install https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl -q
 	pip install https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl -q
 fi
@@ -367,17 +368,6 @@ if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
 fi
 
 cd $BASEDIR
-
-if if [[ ! -f $DOCKM8_FOLDER/software/MGL_Tools* ]]; then
-    echo -e "\nDownloading MGL_Tools!"
-    cd $DOCKM8_FOLDER/software/
-    wget https://ccsb.scripps.edu/mgltools/download/491/mgltools_x86_64Linux2_1.5.7p1.tar.gz --no-check-certificate -q --show-progress
-    rm mgltools_x86_64Linux2_1.5.7p1.tar.gz
-    chmod +x ./mgltools_x86_64Linux2_1.5.7/install.sh
-	cd $DOCKM8_FOLDER/software/mgltools_x86_64Linux2_1.5.7
-	./install.sh -d $DOCKM8_FOLDER/software/MGL_Tools -c 1
-	rmdir -r $DOCKM8_FOLDER/software/mgltools_x86_64Linux2_1.5.7
-fi
 
 if if [[ ! -f $DOCKM8_FOLDER/software/FABind ]]; then
     echo -e "\nDownloading FABind!"

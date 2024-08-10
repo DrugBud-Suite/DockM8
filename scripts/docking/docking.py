@@ -88,7 +88,7 @@ def dockm8_docking(library: Union[pd.DataFrame, Path],
 		for program in docking_programs:
 			printlog(f"Running {program} docking...")
 			docking_function = DOCKING_PROGRAMS[program](software)
-
+			(w_dir / program.lower()).mkdir(exist_ok=True, parents=True)
 			output_sdf = w_dir / program.lower() / f"{program.lower()}_poses.sdf"
 			docking_results = docking_function.dock(library_path,
 													protein_file,

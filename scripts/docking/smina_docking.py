@@ -7,25 +7,32 @@ from rdkit.Chem import PandasTools
 from rdkit import RDLogger
 
 # Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
+# Search for 'DockM8' in parent directories
 tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None)
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.docking.docking_function import DockingFunction
 from scripts.utilities.logging import printlog
-
+from scripts.setup.software_manager import ensure_software_installed
+from scripts.utilities.utilities import parallel_SDF_loader
 
 class SminaDocking(DockingFunction):
 
+	@ensure_software_installed("SMINA")
 	def __init__(self, software_path: Path):
 		super().__init__("SMINA", software_path)
 
 	def dock_batch(self,
-		batch_file: Path,
-		protein_file: Path,
-		pocket_definition: Dict[str, list],
-		exhaustiveness: int,
-		n_poses: int) -> Path:
+					batch_file: Path,
+					protein_file: Path,
+					pocket_definition: Dict[str, list],
+					exhaustiveness: int,
+					n_poses: int) -> Path:
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
 		results_path = temp_dir / f"{batch_file.stem}_smina.sdf"
@@ -57,7 +64,7 @@ class SminaDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog("rdApp.*")
 		try:
-			df = PandasTools.LoadSDF(str(result_file), molColName="Molecule", smilesName="SMILES", idName="ID")
+			df = parallel_SDF_loader(result_file, molColName="Molecule", idName="ID")
 			df['SMINA_Affinity'] = df['minimizedAffinity'].astype(float)
 
 			# Sort by SMINA_Affinity (lower is better) and rank within each ID group

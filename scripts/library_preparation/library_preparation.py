@@ -17,6 +17,7 @@ from scripts.library_preparation.conformer_generation.confgen_RDKit import gener
 from scripts.library_preparation.protonation.protgen_GypsumDL import protonate_GypsumDL
 from scripts.library_preparation.standardisation.standardise import standardize_library
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import parallel_SDF_loader
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -64,7 +65,7 @@ def prepare_library(input_data: Union[pd.DataFrame, Path],
 				raise ValueError(f"Failed to find a column containing molecule data: {str(e)}")
 
 	elif isinstance(input_data, Path):
-		input_df = PandasTools.LoadSDF(str(input_data), molColName="Molecule", idName='ID')
+		input_df = parallel_SDF_loader(input_data, molColName="Molecule", idName='ID')
 	else:
 		raise ValueError("input_data must be either a pandas DataFrame or a Path to an SDF file.")
 

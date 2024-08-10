@@ -30,9 +30,9 @@ def test_data():
 def test_PLP_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	plp = PLP()
+	plp = PLP(software)
 
-	result = plp.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = plp.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

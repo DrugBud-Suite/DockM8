@@ -29,9 +29,9 @@ def test_data():
 def test_LinF9_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	linf9 = LinF9()
+	linf9 = LinF9(software)
 
-	result = linf9.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = linf9.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

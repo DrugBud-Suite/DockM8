@@ -1,12 +1,12 @@
 import subprocess
 import sys
 import time
-import warnings
+import traceback
 from pathlib import Path
+from typing import List
 
 import pandas as pd
 
-# Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
@@ -15,104 +15,150 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+from scripts.setup.software_manager import ensure_software_installed
 
 
 class AAScore(ScoringFunction):
 
 	"""
-	AAScore class for performing rescoring using the AAScore scoring function.
+    AAScore scoring function implementation.
+    """
 
-	Args:
-		ScoringFunction (class): Base class for scoring functions.
+	@ensure_software_installed("AA_SCORE")
+	def __init__(self, software_path: Path):
+		super().__init__("AAScore", "AAScore", "max", (100, -100), software_path)
 
-	Attributes:
-		name (str): Name of the scoring function.
-		column_name (str): Name of the column in the result dataframe.
-		score_type (str): Type of scoring (e.g., "max", "min").
-		score_range (tuple): Range of scores (e.g., (100, -100)).
-
-	Methods:
-		rescore(sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
-			Rescores the given SDF file using the AAScore scoring function.
-
-	"""
-
-	def __init__(self):
-		super().__init__("AAScore", "AAScore", "max", (100, -100))
-
-	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
+	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
-		Rescores the given SDF file using the AAScore scoring function.
+        Rescore the molecules in the given SDF file using the AAScore scoring function.
 
-		Args:
-			sdf (str): Path to the SDF file.
-			n_cpus (int): Number of CPUs to use for parallel execution.
-			**kwargs: Additional keyword arguments.
+        Args:
+            sdf_file (str): The path to the SDF file.
+            n_cpus (int): The number of CPUs to use for parallel processing.
+            protein_file (str): The path to the protein file.
+            **kwargs: Additional keyword arguments.
 
-		Returns:
-			pd.DataFrame: DataFrame containing the rescoring results.
-
-		Raises:
-			RuntimeError: If the AAScore rescoring fails.
-			ValueError: If there is an error in AAScore rescoring.
-
-		"""
-		tic = time.perf_counter()
-		software = kwargs.get("software")
-		protein_file = kwargs.get("protein_file")
+        Returns:
+            pd.DataFrame: A DataFrame containing the rescored molecules.
+        """
+		start_time = time.perf_counter()
 
 		temp_dir = self.create_temp_dir()
 		try:
-			pocket = str(protein_file).replace(".pdb", "_pocket.pdb")
+			pocket_file = str(protein_file).replace(".pdb", "_pocket.pdb")
 
 			if n_cpus == 1:
-				results = Path(temp_dir) / "rescored_AAScore.csv"
-				AAscore_cmd = f"python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {sdf} --Out {results}"
-				subprocess.run(AAscore_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-				AAScore_rescoring_results = pd.read_csv(results,
-														delimiter="\t",
-														header=None,
-														names=["Pose ID", self.column_name])
+				aascore_rescoring_results = self._rescore_single_process(sdf_file, pocket_file, temp_dir)
 			else:
-				split_files_folder = split_sdf_str(Path(temp_dir), sdf, n_cpus)
-				split_files_sdfs = list(split_files_folder.glob("*.sdf"))
+				aascore_rescoring_results = self._rescore_multi_process(sdf_file, pocket_file, n_cpus, temp_dir)
 
-				# Define the function for parallel execution
-				global AAScore_rescoring_splitted
-
-				def AAScore_rescoring_splitted(split_file):
-					results = Path(temp_dir) / f"{split_file.stem}_AAScore.csv"
-					AAscore_cmd = f"python {software}/AA-Score-Tool-main/AA_Score.py --Rec {pocket} --Lig {split_file} --Out {results}"
-					subprocess.run(AAscore_cmd,
-									shell=True,
-									check=True,
-									stdout=subprocess.DEVNULL,
-									stderr=subprocess.STDOUT)
-
-				# Execute the rescoring in parallel
-				parallel_executor(AAScore_rescoring_splitted, split_files_sdfs, n_cpus, display_name=self.column_name)
-
-				# Combine results
-				result_files = list(Path(temp_dir).glob("*_AAScore.csv"))
-				AAScore_dataframes = [
-					pd.read_csv(file, delimiter="\t", header=None, names=["Pose ID", self.column_name])
-					for file in result_files]
-				AAScore_rescoring_results = pd.concat(AAScore_dataframes, ignore_index=True)
-
-			toc = time.perf_counter()
-			printlog(f"Rescoring with AAScore complete in {toc - tic:0.4f}!")
-			return AAScore_rescoring_results
-		except subprocess.CalledProcessError as e:
-			raise RuntimeError(f"AAScore rescoring failed: {e}")
+			end_time = time.perf_counter()
+			printlog(f"Rescoring with AAScore complete in {end_time - start_time:.4f} seconds!")
+			return aascore_rescoring_results
 		except Exception as e:
-			raise ValueError(f"Error in AAScore rescoring: {e}")
+			printlog(f"ERROR: An unexpected error occurred during AAScore rescoring:")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()
 		finally:
 			self.remove_temp_dir(temp_dir)
 
+	def _rescore_single_process(self, sdf_file: str, pocket_file: str, temp_dir: Path) -> pd.DataFrame:
+		"""
+        Rescore using a single process.
 
-# Usage:
-# aascore = AAScore()
-# results = aascore.rescore(sdf_file, n_cpus, software=software_path, protein_file=protein_file_path)
+        Args:
+            sdf_file (str): The path to the SDF file.
+            pocket_file (str): The path to the pocket file.
+            temp_dir (Path): The temporary directory path.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the rescoring results.
+        """
+		results = temp_dir / "rescored_AAScore.csv"
+		aascore_cmd = (f"conda run -n AAScore {self.software_path}/AA-Score-Tool-main/AA_Score.py"
+			f" --Rec {pocket_file}"
+			f" --Lig {sdf_file}"
+			f" --Out {results}")
+		try:
+			subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			return pd.read_csv(results, delimiter="\t", header=None, names=["Pose ID", self.column_name])
+		except subprocess.CalledProcessError as e:
+			printlog(f"AAScore rescoring failed:")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()
+
+	def _rescore_multi_process(self, sdf_file: str, pocket_file: str, n_cpus: int, temp_dir: Path) -> pd.DataFrame:
+		"""
+        Rescore using multiple processes.
+
+        Args:
+            sdf_file (str): The path to the SDF file.
+            pocket_file (str): The path to the pocket file.
+            n_cpus (int): The number of CPUs to use for parallel processing.
+            temp_dir (Path): The temporary directory path.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the rescoring results.
+        """
+		split_files_folder = split_sdf_str(Path(temp_dir), sdf_file, n_cpus)
+		split_files_sdfs = list(split_files_folder.glob("*.sdf"))
+
+		rescoring_results = parallel_executor(self._rescore_split_file,
+												split_files_sdfs,
+												n_cpus,
+												display_name=self.name,
+												pocket_file=pocket_file)
+
+		return self._combine_rescoring_results(rescoring_results)
+
+	def _rescore_split_file(self, split_file: Path, pocket_file: str) -> Path:
+		"""
+        Rescore a single split SDF file.
+
+        Args:
+            split_file (Path): The path to the split SDF file.
+            pocket_file (str): The path to the pocket file.
+
+        Returns:
+            Path: The path to the rescored CSV file.
+        """
+		results = split_file.parent / f"{split_file.stem}_AAScore.csv"
+		aascore_cmd = (f"python {self.software_path}/AA-Score-Tool-main/AA_Score.py"
+						f" --Rec {pocket_file}"
+						f" --Lig {split_file}"
+						f" --Out {results}")
+		try:
+			subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+			return results
+		except subprocess.CalledProcessError as e:
+			printlog(f"AAScore rescoring failed for {split_file}:")
+			printlog(traceback.format_exc())
+			return None
+
+	def _combine_rescoring_results(self, result_files: List[Path]) -> pd.DataFrame:
+		"""
+        Combine rescoring results from multiple CSV files.
+
+        Args:
+            result_files (List[Path]): List of paths to rescored CSV files.
+
+        Returns:
+            pd.DataFrame: Combined DataFrame with rescoring results.
+        """
+		try:
+			dataframes = []
+			for file in result_files:
+				if file and file.is_file():
+					df = pd.read_csv(file, delimiter="\t", header=None, names=["Pose ID", self.column_name])
+					dataframes.append(df)
+
+			if not dataframes:
+				printlog("No valid CSV files found with AAScore scores.")
+				return pd.DataFrame()
+
+			combined_results = pd.concat(dataframes, ignore_index=True)
+			return combined_results[["Pose ID", self.column_name]]
+		except Exception as e:
+			printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()

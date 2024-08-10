@@ -31,10 +31,10 @@ def test_AD4_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
 	# Initialize the AD4 class
-	ad4 = AD4()
+	ad4 = AD4(software)
 
 	# Call the function
-	result = ad4.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = ad4.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	# Assert the result
 	assert isinstance(result, DataFrame)

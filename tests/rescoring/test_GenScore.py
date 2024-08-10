@@ -29,9 +29,9 @@ def test_data():
 def test_GenScore_rescoring(test_data, score_type):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	genscore = GenScore(score_type)
+	genscore = GenScore(score_type, software)
 
-	result = genscore.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = genscore.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

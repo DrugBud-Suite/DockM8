@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List
 
@@ -6,13 +7,20 @@ import pandas as pd
 from rdkit import RDLogger
 from rdkit.Chem import PandasTools
 
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
 from scripts.docking.docking_function import DockingFunction
+from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
-
+from scripts.utilities.utilities import parallel_SDF_loader
 
 class PlantsDocking(DockingFunction):
 
+	@ensure_software_installed("PLANTS")
 	def __init__(self, software_path: Path):
 		super().__init__("PLANTS", software_path)
 
@@ -29,7 +37,7 @@ class PlantsDocking(DockingFunction):
 		# Convert molecules to mol2 format
 		plants_protein_mol2 = temp_dir / "protein.mol2"
 		try:
-			convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2", self.software_path)
+			convert_molecules(protein_file, plants_protein_mol2, "pdb", "mol2")
 		except Exception as e:
 			printlog(f"ERROR: Failed to convert protein file to mol2: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -37,7 +45,7 @@ class PlantsDocking(DockingFunction):
 
 		plants_ligands_mol2 = temp_dir / f"{batch_file.stem}.mol2"
 		try:
-			convert_molecules(batch_file, plants_ligands_mol2, "sdf", "mol2", self.software_path)
+			convert_molecules(batch_file, plants_ligands_mol2, "sdf", "mol2")
 		except Exception as e:
 			printlog(f"ERROR: Failed to convert ligands file to mol2: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -46,20 +54,20 @@ class PlantsDocking(DockingFunction):
 		# Generate PLANTS config file
 		plants_docking_config_path = temp_dir / "plants_config.txt"
 		self.generate_plants_config(plants_protein_mol2,
-				plants_ligands_mol2,
-				pocket_definition,
-				n_poses,
-				results_folder,
-				plants_docking_config_path)
+									plants_ligands_mol2,
+									pocket_definition,
+									n_poses,
+									results_folder,
+									plants_docking_config_path)
 
 		# Run PLANTS docking
 		try:
 			plants_docking_command = f'{self.software_path}/PLANTS --mode screen {plants_docking_config_path}'
 			subprocess.run(plants_docking_command,
-				shell=True,
-				check=True,
-				stdout=subprocess.DEVNULL,
-				stderr=subprocess.STDOUT)
+							shell=True,
+							check=True,
+							stdout=subprocess.DEVNULL,
+							stderr=subprocess.STDOUT)
 		except subprocess.CalledProcessError as e:
 			printlog(f"ERROR: PLANTS docking command failed: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -69,7 +77,7 @@ class PlantsDocking(DockingFunction):
 		results_mol2 = results_folder / "docked_ligands.mol2"
 		results_sdf = results_mol2.with_suffix(".sdf")
 		try:
-			convert_molecules(results_mol2, results_sdf, "mol2", "sdf", self.software_path)
+			convert_molecules(results_mol2, results_sdf, "mol2", "sdf")
 		except Exception as e:
 			printlog(f"ERROR: Failed to convert PLANTS poses file to .sdf: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -80,7 +88,7 @@ class PlantsDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog("rdApp.*")
 		try:
-			plants_poses = PandasTools.LoadSDF(str(result_file), idName="ID", molColName="Molecule")
+			plants_poses = parallel_SDF_loader(result_file, idName="ID", molColName="Molecule")
 			plants_scores = pd.read_csv(str(result_file.parent / "ranking.csv")).rename(columns={
 				"LIGAND_ENTRY": "ID", "TOTAL_SCORE": "CHEMPLP"})[["ID", "CHEMPLP"]]
 			df = pd.merge(plants_scores, plants_poses, on="ID")

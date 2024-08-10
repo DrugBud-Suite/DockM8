@@ -31,7 +31,7 @@ def test_NNScore_rescoring(test_data):
 
 	nnscore = NNScore()
 
-	result = nnscore.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = nnscore.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

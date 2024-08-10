@@ -28,7 +28,7 @@ if 'selected_poses' not in st.session_state:
 	if not Path(library_to_rescore_input).is_file():
 		st.error("File does not exist.")
 	else:
-		st.session_state.poses_to_rescore = library_to_rescore_input
+		st.session_state.selected_poses = Path(library_to_rescore_input)
 		st.success(f"Library loaded: {library_to_rescore_input}")
 
 # Check for prepared protein file
@@ -36,14 +36,13 @@ if 'prepared_protein_path' not in st.session_state:
 	default_path_protein = Path(
 		st.session_state.w_dir
 	) / "prepared_protein.pdb" if 'w_dir' in st.session_state else dockm8_path / "tests" / "test_files" / "prepared_protein.pdb"
-	st.warning("Prepared Protein File is missing.")
 	protein_path = st.text_input("Enter the path to the prepared protein file (.pdb):",
-		value=default_path_protein,
-		help="Enter the complete file path to your prepared protein file.")
+									value=default_path_protein,
+									help="Enter the complete file path to your prepared protein file.")
 	if not Path(protein_path).is_file():
 		st.error("File does not exist.")
 	else:
-		st.session_state.prepared_protein_path = protein_path
+		st.session_state.prepared_protein_path = Path(protein_path)
 		st.success(f"Protein file loaded: {protein_path}")
 
 # Check for binding site definition
@@ -70,16 +69,17 @@ st.warning(
 # Categorize scoring functions
 scoring_categories = {
 	"Empirical": {
-	"Faster": ["CHEMPLP", "PLP", "Vinardo", "LinF9"], "Slower": ["GNINA-Affinity", "AAScore"]},
+		"Faster": ["CHEMPLP", "PLP", "Vinardo", "LinF9"], "Average": [], "Slower": ["GNINA-Affinity", "AAScore"]},
 	"Semi-Empirical": {
-	"Faster": ["AD4"], "Slower": []},
+		"Faster": ["AD4"], "Average": [], "Slower": []},
 	"Knowledge-based": {
-	"Faster": ["KORP-PL", "DLIGAND2", "ITScoreAff", "ConvexPLR"], "Slower": []},
+		"Faster": ["KORP-PL", "DLIGAND2", "ITScoreAff", "ConvexPLR"], "Average": [], "Slower": []},
 	"Shape Similarity": {
-	"Faster": ["PANTHER", "PANTHER-ESP", "PANTHER-Shape"], "Slower": []},
+		"Faster": ["PANTHER", "PANTHER-ESP", "PANTHER-Shape"], "Average": [], "Slower": []},
 	"Machine Learning": {
-	"Faster": ["GenScore-scoring", "GenScore-docking", "GenScore-balanced"],
-	"Slower": ["RFScoreVS", "SCORCH", "CENsible", "RTMScore", "PLECScore", "NNScore"]}}
+		"Faster": ["GenScore-scoring", "GenScore-docking", "GenScore-balanced"],
+		"Average": ["CNN-Affinity", "CNN-Score", "RFScoreVS", "CENsible", "PLECScore", "NNScore"],
+		"Slower": ["SCORCH", "RTMScore"]}, }
 
 selected_functions = []
 
@@ -97,7 +97,7 @@ for i, (category, speed_dict) in enumerate(non_empty_categories.items()):
 	with cols[i]:
 		st.markdown(f"**{category}**")
 
-		for speed in ["Faster", "Slower"]:
+		for speed in ["Faster", "Average", "Slower"]:
 			functions = [func for func in speed_dict[speed] if func in RESCORING_FUNCTIONS]
 			if functions:
 				st.markdown(f"*{speed}*")
@@ -111,13 +111,13 @@ st.session_state.rescoring_functions = selected_functions
 
 st.subheader("Score Manipulation", divider="orange")
 normalize_scores = st.toggle(label="Normalize scores",
-	value=True,
-	help="Normalize scores to a range of 0-1",
-	key="normalize_scores")
+								value=True,
+								help="Normalize scores to a range of 0-1",
+								key="normalize_scores")
 mw_scores = st.toggle(label="Normalize to MW",
-	value=False,
-	help="Scale the scores to molecular weight of the compound",
-	key="mw_scores")
+						value=False,
+						help="Scale the scores to molecular weight of the compound",
+						key="mw_scores")
 
 st.subheader("Run Rescoring", divider="orange")
 
@@ -152,11 +152,11 @@ def run_rescoring():
 		"protein_file": Path(st.session_state.prepared_protein_path),
 		"pocket_definition": st.session_state.binding_site,
 		"software": st.session_state.software,
-		"rescoring_functions": st.session_state.rescoring_functions,
+		"functions": st.session_state.rescoring_functions,
 		"n_cpus": st.session_state.get('n_cpus', int(os.cpu_count() * 0.9)), }
 	if st.session_state.save_rescoring_results:
 		output_file = st.session_state.rescored_poses
-		rescore_poses(**common_params, output_sdf=output_file)
+		rescore_poses(**common_params, output_file=output_file)
 		st.session_state.rescored_poses = output_file
 	else:
 		results = rescore_poses(**common_params)
@@ -165,8 +165,8 @@ def run_rescoring():
 
 col1, col2 = st.columns(2)
 st.session_state.save_rescoring_results = col2.toggle(label="Save Rescored Poses to SDF file",
-	value=True,
-	key='save_rescoring_results_toggle')
+														value=True,
+														key='save_rescoring_results_toggle')
 
 if st.session_state.save_rescoring_results:
 	rescored_poses_save_path = determine_working_directory()
@@ -189,5 +189,5 @@ if st.button('Proceed to Consensus Scoring'):
 	if 'rescored_poses' in st.session_state:
 		st.switch_page(str(dockm8_path / 'gui' / 'pages' / PAGES[9]))
 	else:
-		st.warning("Postprocessing was skipped, proceeding with docked poses")
+		st.warning("Rescoring was skipped, proceeding with selected poses")
 		st.session_state.rescored_poses = st.session_state.selected_poses

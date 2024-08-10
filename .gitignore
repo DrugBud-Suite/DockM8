@@ -201,6 +201,7 @@ software/plantain/
 software/panther/
 software/GenScore/
 software/censible/
+software/DeepRMSD-Vina_Optimization
 tests/test_files/fabind_test/
 software/shaep
 tests/test_files/rescoring/output/
@@ -210,3 +211,4 @@ TODO.txt
 tests/test_files/pose_selection/bestpose_GNINA_clustered.sdf
 tests/test_files/pose_selection/KORP-PL_clustered.sdf
 tests/test_files/pose_selection/RMSD_clustered.sdf
+tests/test_files/setup/test_software/

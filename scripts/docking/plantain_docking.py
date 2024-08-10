@@ -1,30 +1,27 @@
+import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict
-import os
 
 import pandas as pd
 from rdkit import Chem, RDLogger
 from rdkit.Chem import PandasTools
+
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
 from scripts.docking.docking_function import DockingFunction
+from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
 from scripts.utilities.pocket_extraction import extract_pocket
-
-import subprocess
-from pathlib import Path
-from typing import Dict
-import os
-
-import pandas as pd
-from rdkit import Chem, RDLogger
-from rdkit.Chem import PandasTools
-from scripts.docking.docking_function import DockingFunction
-from scripts.utilities.logging import printlog
-from scripts.utilities.pocket_extraction import extract_pocket
-
+from scripts.utilities.utilities import parallel_SDF_loader
 
 class PlantainDocking(DockingFunction):
 
+	@ensure_software_installed("PLANTAIN")
 	def __init__(self, software_path: Path):
 		super().__init__("PLANTAIN", software_path)
 
@@ -80,7 +77,7 @@ class PlantainDocking(DockingFunction):
 
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		try:
-			df = PandasTools.LoadSDF(str(result_file),
+			df = parallel_SDF_loader(result_file,
 										molColName="Molecule",
 										smilesName="SMILES",
 										idName='ID',

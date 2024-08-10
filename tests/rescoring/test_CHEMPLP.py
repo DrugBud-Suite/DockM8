@@ -29,9 +29,9 @@ def test_data():
 def test_CHEMPLP_rescoring(test_data):
 	protein_file, software, clustered_sdf, n_cpus, output_dir = test_data
 
-	chemplp = CHEMPLP()
+	chemplp = CHEMPLP(software)
 
-	result = chemplp.rescore(clustered_sdf, n_cpus, software=software, protein_file=protein_file)
+	result = chemplp.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns

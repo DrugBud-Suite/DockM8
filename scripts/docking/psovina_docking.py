@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List
 
@@ -6,14 +7,21 @@ import pandas as pd
 from meeko import PDBQTMolecule, RDKitMolCreate
 from rdkit import RDLogger
 
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
 from scripts.docking.docking_function import DockingFunction
+from scripts.setup.software_manager import ensure_software_installed
+from scripts.utilities.file_splitting import split_pdbqt_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
-from scripts.utilities.file_splitting import split_pdbqt_str
 
 
 class PsovinaDocking(DockingFunction):
 
+	@ensure_software_installed("PSOVINA")
 	def __init__(self, software_path: Path):
 		super().__init__("PSOVINA", software_path)
 
@@ -30,7 +38,7 @@ class PsovinaDocking(DockingFunction):
 
 		# Convert molecules to pdbqt format
 		try:
-			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt", self.software_path)
+			pdbqt_files = convert_molecules(batch_file, temp_dir, "sdf", "pdbqt")
 			if isinstance(pdbqt_files, Path):
 				pdbqt_files = [pdbqt_files]
 		except Exception as e:
@@ -40,7 +48,7 @@ class PsovinaDocking(DockingFunction):
 
 		protein_file_pdbqt = temp_dir / "protein.pdbqt"
 		try:
-			convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt", self.software_path)
+			convert_molecules(protein_file, protein_file_pdbqt, "pdb", "pdbqt")
 		except Exception as e:
 			printlog(f"Failed to convert protein file to .pdbqt: {e}")
 			self.remove_temp_dir(temp_dir)
@@ -50,18 +58,18 @@ class PsovinaDocking(DockingFunction):
 		for file in pdbqt_files:
 			output_file = results_folder / f"{file.stem}_PSOVINA.pdbqt"
 			psovina_cmd = (f"{self.software_path}/psovina"
-							f" --receptor {protein_file_pdbqt}"
-							f" --ligand {file}"
-							f" --out {output_file}"
-							f" --center_x {pocket_definition['center'][0]}"
-							f" --center_y {pocket_definition['center'][1]}"
-							f" --center_z {pocket_definition['center'][2]}"
-							f" --size_x {pocket_definition['size'][0]}"
-							f" --size_y {pocket_definition['size'][1]}"
-							f" --size_z {pocket_definition['size'][2]}"
-							f" --exhaustiveness {exhaustiveness}"
-							" --cpu 1 --seed 1 --energy_range 10"
-							f" --num_modes {n_poses}")
+				f" --receptor {protein_file_pdbqt}"
+				f" --ligand {file}"
+				f" --out {output_file}"
+				f" --center_x {pocket_definition['center'][0]}"
+				f" --center_y {pocket_definition['center'][1]}"
+				f" --center_z {pocket_definition['center'][2]}"
+				f" --size_x {pocket_definition['size'][0]}"
+				f" --size_y {pocket_definition['size'][1]}"
+				f" --size_z {pocket_definition['size'][2]}"
+				f" --exhaustiveness {exhaustiveness}"
+				" --cpu 1 --seed 1 --energy_range 10"
+				f" --num_modes {n_poses}")
 			try:
 				subprocess.run(psovina_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				output_files.append(output_file)

@@ -1,18 +1,14 @@
-import os
-import stat
 import subprocess
 import sys
-import tempfile
 import time
-import urllib.request
-import warnings
-import zipfile
+import traceback
 from pathlib import Path
+import os
+from typing import List
 
 import pandas as pd
 from rdkit.Chem import PandasTools
 
-# Assuming the same directory structure as in KORP_PL.py
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
@@ -22,120 +18,121 @@ from scripts.utilities.file_splitting import split_sdf_single_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
 from scripts.utilities.parallel_executor import parallel_executor
-
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+from scripts.setup.software_manager import ensure_software_installed
 
 
 class DLIGAND2(ScoringFunction):
 
 	"""
-	DLIGAND2 class represents a scoring function based on the DLIGAND2 algorithm.
+    DLIGAND2 scoring function implementation.
+    """
 
-	Attributes:
-		dligand2_folder (Path): The path to the DLIGAND2 folder.
+	@ensure_software_installed("DLIGAND2")
+	def __init__(self, software_path: Path):
+		super().__init__("DLIGAND2", "DLIGAND2", "min", (-200, 100), software_path)
 
-	Methods:
-		__init__(): Initializes the DLIGAND2 object.
-		check_and_download_dligand2(): Checks if the DLIGAND2 folder exists and downloads it if not found.
-		rescore(sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame: Performs rescoring using DLIGAND2 algorithm.
-
-	"""
-
-	def __init__(self):
-		super().__init__("DLIGAND2", "DLIGAND2", "min", (-200, 100))
-		self.dligand2_folder = self.check_and_download_dligand2()
-
-	def check_and_download_dligand2(self):
+	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
-		Checks if the DLIGAND2 folder exists and downloads it if not found.
+        Rescore the molecules in the given SDF file using the DLIGAND2 scoring function.
 
-		Returns:
-			Path: The path to the DLIGAND2 folder.
+        Args:
+            sdf_file (str): The path to the SDF file.
+            n_cpus (int): The number of CPUs to use for parallel processing.
+            protein_file (str): The path to the protein file.
+            **kwargs: Additional keyword arguments.
 
-		"""
-		dligand2_folder = dockm8_path / "software" / "DLIGAND2"
-		if not dligand2_folder.exists():
-			printlog("DLIGAND2 folder not found. Downloading...")
-			download_url = "https://github.com/yuedongyang/DLIGAND2/archive/refs/heads/master.zip"
-			download_path = dockm8_path / "software" / "DLIGAND2.zip"
-			urllib.request.urlretrieve(download_url, download_path)
-			printlog("Download complete. Extracting...")
-			with zipfile.ZipFile(download_path, 'r') as zip_ref:
-				zip_ref.extractall(path=dockm8_path / "software")
-			os.rename(dockm8_path / "software" / "DLIGAND2-master", dligand2_folder)
-			printlog("Extraction complete. Removing zip file...")
-			os.remove(download_path)
-			executable_path = dligand2_folder / "bin" / "dligand2.gnu"
-			os.chmod(executable_path, os.stat(executable_path).st_mode | stat.S_IEXEC)
-			printlog(f"Changed permissions for {executable_path}")
-			printlog("DLIGAND2 setup complete.")
-		return dligand2_folder
-
-	def rescore(self, sdf: str, n_cpus: int, **kwargs) -> pd.DataFrame:
-		tic = time.perf_counter()
-		protein_file = Path(kwargs.get("protein_file"))
-		software = kwargs.get("software")
+        Returns:
+            pd.DataFrame: A DataFrame containing the rescored molecules.
+        """
+		start_time = time.perf_counter()
 
 		temp_dir = self.create_temp_dir()
 		try:
-			split_files_folder = split_sdf_single_str(Path(temp_dir), sdf)
-			split_files_sdfs = [
-				Path(split_files_folder) / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
+			split_files_folder = split_sdf_single_str(Path(temp_dir), sdf_file)
+			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
-			global dligand2_rescoring_splitted
+			rescoring_results = parallel_executor(self._rescore_split_file,
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.name,
+				protein_file=protein_file)
 
-			def dligand2_rescoring_splitted(split_file, protein_file):
-				df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
-				df = df[["Pose ID"]]
+			dligand2_rescoring_results = self._combine_rescoring_results(rescoring_results)
 
-				with tempfile.NamedTemporaryFile(suffix=".mol2", delete=False) as temp_mol2:
-					try:
-						convert_molecules(split_file, Path(temp_mol2.name), "sdf", "mol2", software)
-					except Exception as e:
-						printlog(f"Error converting molecules: {str(e)}")
-						df[self.column_name] = [None]
-						output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_score.csv"))
-						df.to_csv(output_csv, index=False)
-						return
-
-					dligand2_command = f"cd {self.dligand2_folder}/bin && ./dligand2.gnu -etype 2 -P {protein_file} -L {temp_mol2.name}"
-					process = subprocess.Popen(dligand2_command,
-							stdout=subprocess.PIPE,
-							stderr=subprocess.PIPE,
-							shell=True)
-					stdout, stderr = process.communicate()
-					output = stdout.decode().strip()
-					try:
-						energy = round(float(output), 2)
-					except (ValueError, IndexError):
-						printlog(f"Warning: Could not parse energy for file {split_file}. Setting to None.")
-						energy = None
-				os.unlink(temp_mol2.name)
-				df[self.column_name] = [energy]
-				output_csv = str(Path(temp_dir) / (str(split_file.stem) + "_score.csv"))
-				df.to_csv(output_csv, index=False)
-
-			os.environ["DATAPATH"] = str(self.dligand2_folder / "bin")
-			parallel_executor(dligand2_rescoring_splitted,
-					split_files_sdfs,
-					n_cpus,
-					display_name=self.column_name,
-					protein_file=protein_file)
-
-			score_files = list(Path(temp_dir).glob("*_score.csv"))
-			if not score_files:
-				printlog("No CSV files found with names ending in '_score.csv' in the specified folder.")
-				return pd.DataFrame()
-			combined_scores_df = pd.concat([pd.read_csv(file) for file in score_files], ignore_index=True)
-
-			toc = time.perf_counter()
-			printlog(f"Rescoring with DLIGAND2 complete in {toc-tic:0.4f}!")
-			return combined_scores_df
+			end_time = time.perf_counter()
+			printlog(f"Rescoring with DLIGAND2 complete in {end_time - start_time:.4f} seconds!")
+			return dligand2_rescoring_results
+		except Exception as e:
+			printlog(f"ERROR: An unexpected error occurred during DLIGAND2 rescoring:")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()
 		finally:
 			self.remove_temp_dir(temp_dir)
 
+	def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
+		"""
+        Rescore a single split SDF file.
 
-# Usage:
-# dligand2 = DLIGAND2()
-# results = dligand2.rescore(sdf_file, n_cpus, protein_file=protein_file_path)
+        Args:
+            split_file (Path): The path to the split SDF file.
+            protein_file (str): The path to the protein file.
+
+        Returns:
+            Path: The path to the rescored CSV file.
+        """
+		try:
+			df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
+			df = df[["Pose ID"]]
+
+			mol2_file = split_file.with_suffix('.mol2')
+			convert_molecules(split_file, mol2_file, "sdf", "mol2")
+
+			dligand2_cmd = (f"cd {self.software_path}/DLIGAND2/bin &&"
+				f" ./dligand2.gnu -etype 2"
+				f" -P {protein_file}"
+				f" -L {mol2_file}")
+
+			result = subprocess.run(dligand2_cmd, shell=True, capture_output=True, text=True)
+
+			try:
+				energy = round(float(result.stdout.strip()), 2)
+			except (ValueError, IndexError):
+				printlog(f"Warning: Could not parse energy for file {split_file}. Setting to None.")
+				energy = None
+
+			df[self.column_name] = [energy]
+			output_csv = split_file.parent / f"{split_file.stem}_score.csv"
+			df.to_csv(output_csv, index=False)
+			return output_csv
+		except Exception as e:
+			printlog(f"DLIGAND2 rescoring failed for {split_file}:")
+			printlog(traceback.format_exc())
+			return None
+
+	def _combine_rescoring_results(self, result_files: List[Path]) -> pd.DataFrame:
+		"""
+        Combine rescoring results from multiple CSV files.
+
+        Args:
+            result_files (List[Path]): List of paths to rescored CSV files.
+
+        Returns:
+            pd.DataFrame: Combined DataFrame with rescoring results.
+        """
+		try:
+			dataframes = []
+			for file in result_files:
+				if file and file.is_file():
+					df = pd.read_csv(file)
+					dataframes.append(df)
+
+			if not dataframes:
+				printlog("No valid CSV files found with DLIGAND2 scores.")
+				return pd.DataFrame()
+
+			combined_results = pd.concat(dataframes, ignore_index=True)
+			return combined_results[["Pose ID", self.column_name]]
+		except Exception as e:
+			printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
+			printlog(traceback.format_exc())
+			return pd.DataFrame()
