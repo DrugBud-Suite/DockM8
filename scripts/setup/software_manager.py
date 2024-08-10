@@ -93,7 +93,7 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"MGLTOOLS": {
 	"install": install_mgltools, "check": check_mgltools},
 	"P2RANK": {
-        "install": install_p2rank, "check": lambda path: (path / "p2rank" / "prank").is_file()}}
+		"install": install_p2rank, "check": lambda path: (path / "p2rank" / "prank").is_file()}}
 
 
 def ensure_software_installed(program_name: str):
@@ -101,7 +101,7 @@ def ensure_software_installed(program_name: str):
 	def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
 
 		@wraps(func)
-		def wrapper(*args, **kwargs):
+		def wrapper(self, *args, **kwargs):
 			if program_name not in SOFTWARE_INFO:
 				raise ValueError(f"Unknown program: {program_name}")
 
@@ -110,15 +110,14 @@ def ensure_software_installed(program_name: str):
 				if not is_software_installed(program_name, Path("/")):
 					install_software(program_name, Path("/"))
 			else:
-				software_path = kwargs.get('software_path')
-				if software_path is None:
-					raise ValueError("Software path not provided")
+				if not hasattr(self, 'software_path'):
+					raise AttributeError(f"'software_path' not found in {self.__class__.__name__}")
 
-				software_path = Path(software_path)
+				software_path = self.software_path
 				if not is_software_installed(program_name, software_path):
 					install_software(program_name, software_path)
 
-			return func(*args, **kwargs)
+			return func(self, *args, **kwargs)
 
 		return wrapper
 
