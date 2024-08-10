@@ -16,7 +16,7 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-from scripts.utilities.pocket_extraction import extract_pocket
+from scripts.pocket_finding.utils import extract_pocket
 from scripts.setup.software_manager import ensure_software_installed
 
 
@@ -63,16 +63,16 @@ class GenScore(ScoringFunction):
 		try:
 			pocket_file = Path(str(protein_file).replace(".pdb", "_pocket.pdb"))
 			if not pocket_file.is_file():
-				pocket_file = extract_pocket(kwargs.get('pocket_definition'), protein_file)
+				pocket_file = extract_pocket(kwargs.get("pocket_definition"), protein_file)
 
 			split_files_folder = split_sdf_str(Path(temp_dir), sdf_file, n_cpus)
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.name,
-						pocket_file=pocket_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.name,
+				pocket_file=pocket_file)
 
 			genscore_rescoring_results = self._combine_rescoring_results(rescoring_results)
 

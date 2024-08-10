@@ -16,7 +16,7 @@ sys.path.append(str(dockm8_path))
 from scripts.docking.docking_function import DockingFunction
 from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
-from scripts.utilities.pocket_extraction import extract_pocket
+from scripts.pocket_finding.utils import extract_pocket
 from scripts.utilities.utilities import parallel_SDF_loader
 
 class PlantainDocking(DockingFunction):
@@ -26,11 +26,11 @@ class PlantainDocking(DockingFunction):
 		super().__init__("PLANTAIN", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
 
@@ -53,9 +53,9 @@ class PlantainDocking(DockingFunction):
 		# Construct the PLANTAIN command
 		predictions_dir = temp_dir / f"{batch_file.stem}_predictions"
 		plantain_cmd = (f"cd {self.software_path}/plantain && python ./inference.py "
-						f"{smiles_file} {protein_pocket} "
-						f"--out {predictions_dir} "
-						f"--num_workers 1 --no_gpu")
+			f"{smiles_file} {protein_pocket} "
+			f"--out {predictions_dir} "
+			f"--num_workers 1 --no_gpu")
 
 		try:
 			# Execute the PLANTAIN command
@@ -78,10 +78,10 @@ class PlantainDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		try:
 			df = parallel_SDF_loader(result_file,
-										molColName="Molecule",
-										smilesName="SMILES",
-										idName='ID',
-										strictParsing=False)
+					molColName="Molecule",
+					smilesName="SMILES",
+					idName='ID',
+					strictParsing=False)
 			# Add ranking based on the order of poses in the file
 			df['PLANTAIN_Rank'] = df.groupby('ID').cumcount() + 1
 

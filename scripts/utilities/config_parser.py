@@ -15,7 +15,7 @@ from scripts.pose_selection.clustering.clustering_metrics.clustering_metrics imp
 from scripts.consensus.consensus import CONSENSUS_METHODS
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.library_preparation.library_preparation import CONFORMER_OPTIONS, PROTONATION_OPTIONS
-from scripts.pocket_finding.pocket_finding import POCKET_DETECTION_OPTIONS
+from scripts.pocket_finding.pocket_finder import POCKET_DETECTION_OPTIONS
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.logging import printlog
 

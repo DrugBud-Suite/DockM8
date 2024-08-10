@@ -89,19 +89,17 @@ def protonate_GypsumDL(df: pd.DataFrame,
 
 		# Parallel execution function (you'll need to implement this)
 		parallel_executor(gypsum_dl_run,
-							list_of_objects=split_files_sdfs,
-							n_cpus=3,
-							display_name="Protomer Generation with GypsumDL",
-							output_dir=output_dir,
-							cpus=math.ceil(n_cpus // 3))
+				list_of_objects=split_files_sdfs,
+				n_cpus=3,
+				display_name="Protomer Generation with GypsumDL",
+				output_dir=output_dir,
+				cpus=math.ceil(n_cpus // 3))
 
 		results_dfs = []
 
 		for file in os.listdir(output_dir / "GypsumDL_results"):
 			if file.endswith(".sdf"):
-				sdf_df = parallel_SDF_loader(output_dir / "GypsumDL_results" / file),
-					molColName="Molecule",
-					idName="ID")
+				sdf_df = parallel_SDF_loader(output_dir / "GypsumDL_results" / file, molColName="Molecule", idName="ID")
 				results_dfs.append(sdf_df)
 
 		final_df = pd.concat(results_dfs)
