@@ -53,21 +53,21 @@ def standardize_scores(df: pd.DataFrame, standardization_type: str):
 				if standardization_type == "min_max":
 					# Standardise using the score's (current distribution) min and max values
 					df[col] = min_max_standardization(df[col],
-														function_info["best_value"],
-														df[col].min(),
-														df[col].max())
+								function_info["best_value"],
+								df[col].min(),
+								df[col].max())
 				elif standardization_type == "scaled":
 					# Standardise using the range defined in the RESCORING_FUNCTIONS dictionary
 					if function_info["best_value"] == "max":
 						df[col] = min_max_standardization(df[col],
-															function_info["best_value"],
-															function_info["score_range"][0],
-															function_info["score_range"][1])
+									function_info["best_value"],
+									function_info["score_range"][0],
+									function_info["score_range"][1])
 					else:
 						df[col] = min_max_standardization(df[col],
-															function_info["best_value"],
-															function_info["score_range"][1],
-															function_info["score_range"][0])
+									function_info["best_value"],
+									function_info["score_range"][1],
+									function_info["score_range"][0])
 				elif standardization_type == "percentiles":
 					# Standardise using the 1st and 99th percentiles of this distribution
 					column_data = df[col].dropna().values
@@ -93,9 +93,9 @@ def rank_scores(df: pd.DataFrame) -> pd.DataFrame:
 	"""
 	df = df.assign(
 		**{
-			col: df[col].rank(method="average", ascending=False)
-			for col in df.columns
-			if col not in ["Pose ID", "ID", 'SMILES', 'Molecule']})
+		col: df[col].rank(method="average", ascending=False)
+		for col in df.columns
+		if col not in ["Pose ID", "ID", 'SMILES', 'Molecule']})
 	return df
 
 
@@ -104,7 +104,10 @@ from rdkit.Chem import PandasTools
 from pathlib import Path
 
 
-def apply_consensus_methods(input_file: Path, consensus_methods: str, standardization_type: str):
+def apply_consensus_methods(input_file: Path,
+							consensus_methods: str,
+							standardization_type: str,
+							normalize: bool = True):
 	"""
 	Applies consensus methods to rescored data from a CSV or SDF file and saves the results.
 
@@ -162,11 +165,13 @@ def apply_consensus_methods(input_file: Path, consensus_methods: str, standardiz
 		if consensus_type == "rank":
 			consensus_dataframe = consensus_function(
 				ranked_dataframe,
-				[col for col in ranked_dataframe.columns if col not in ["Pose ID", "ID", "Molecule", "SMILES"]])
+				[col for col in ranked_dataframe.columns if col not in ["Pose ID", "ID", "Molecule", "SMILES"]],
+				normalize)
 		elif consensus_type == "score":
 			consensus_dataframe = consensus_function(
 				standardized_dataframe,
-				[col for col in standardized_dataframe.columns if col not in ["Pose ID", "ID", "Molecule", "SMILES"]])
+				[col for col in standardized_dataframe.columns if col not in ["Pose ID", "ID", "Molecule", "SMILES"]],
+				normalize)
 		else:
 			raise ValueError(f"Invalid consensus method type: {consensus_type}")
 
@@ -176,24 +181,24 @@ def apply_consensus_methods(input_file: Path, consensus_methods: str, standardiz
 		# Save results
 		if 'Molecule' in rescored_dataframe.columns:
 			consensus_dataframe = pd.merge(consensus_dataframe,
-											rescored_dataframe[["ID", "Molecule", "SMILES"]],
-											on="ID",
-											how="left")
+					rescored_dataframe[["ID", "Molecule", "SMILES"]],
+					on="ID",
+					how="left")
 			PandasTools.WriteSDF(consensus_dataframe,
-									str(input_file.parent /
-										f"consensus_results_{consensus_method}_{standardization_type}.sdf"),
-									molColName="Molecule",
-									idName="ID",
-									properties=list(consensus_dataframe.columns))
+					str(input_file.parent /
+					f"consensus_results_{consensus_method}_{standardization_type}.sdf"),
+					molColName="Molecule",
+					idName="ID",
+					properties=list(consensus_dataframe.columns))
 		else:
 			consensus_dataframe = pd.merge(consensus_dataframe,
-											rescored_dataframe[["ID", "SMILES"]],
-											on="ID",
-											how="left")
+					rescored_dataframe[["ID", "SMILES"]],
+					on="ID",
+					how="left")
 		consensus_dataframe = consensus_dataframe.drop(columns="Molecule", errors="ignore")
 		consensus_dataframe.to_csv(input_file.parent /
-									f"consensus_results_{consensus_method}_{standardization_type}.csv",
-									index=False)
+				f"consensus_results_{consensus_method}_{standardization_type}.csv",
+				index=False)
 
 		return consensus_dataframe
 
