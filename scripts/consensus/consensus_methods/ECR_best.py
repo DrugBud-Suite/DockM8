@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def ECR_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
+def ECR_best(df: pd.DataFrame, selected_columns: list, normalize: bool = True) -> pd.DataFrame:
 	"""
     Calculates the Exponential Consensus Ranking (ECR) score for each ID in the rescored dataframe. Returns the highest ECR score for each ID.
 
@@ -37,7 +37,8 @@ def ECR_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	# Drop duplicate rows based on ID, keeping only the highest ECR score
 	df.drop_duplicates(subset="ID", inplace=True)
 	# Normalize the ECR column
-	df["ECR"] = (df["ECR"] - df["ECR"].min()) / (df["ECR"].max() - df["ECR"].min())
+	if normalize:
+		df["ECR"] = (df["ECR"] - df["ECR"].min()) / (df["ECR"].max() - df["ECR"].min())
 	df = df.rename(columns={"ECR": "ECR_best"})
 	# Return dataframe with ID and ECR scores
 	return df[["ID", "ECR_best"]]

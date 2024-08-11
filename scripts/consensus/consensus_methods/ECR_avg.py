@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def ECR_avg(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
+def ECR_avg(df: pd.DataFrame, selected_columns: list, normalize: bool = True) -> pd.DataFrame:
 	"""
     Calculates the Exponential Consensus Ranking (ECR) score for each ID in the input dataframe. Averaging of the score is done across all selected poses.
 
@@ -35,7 +35,8 @@ def ECR_avg(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	# Group the dataframe by 'ID' and calculate the mean of numeric columns
 	df = df.groupby("ID", as_index=False).mean(numeric_only=True)
 	# Normalize the ECR column
-	df["ECR"] = (df["ECR"] - df["ECR"].min()) / (df["ECR"].max() - df["ECR"].min())
+	if normalize:
+		df["ECR"] = (df["ECR"] - df["ECR"].min()) / (df["ECR"].max() - df["ECR"].min())
 	df = df.rename(columns={"ECR": "ECR_avg"})
 	# Return the dataframe with 'ID' and 'ECR_avg' columns
 	return df[["ID", "ECR_avg"]]

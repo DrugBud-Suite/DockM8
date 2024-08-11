@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def RbR_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
+def RbR_best(df: pd.DataFrame, selected_columns: list, normalize: bool = True) -> pd.DataFrame:
 	"""
     Calculates the Rank by Rank (RbR) consensus score for each ID in the input dataframe.
 
@@ -31,6 +31,7 @@ def RbR_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	# Drop duplicate rows based on ID, keeping only the lowest mean rank
 	df = df.drop_duplicates(subset="ID", inplace=False)
 	# Normalize the RbR column
-	df["RbR"] = (df["RbR"].max() - df["RbR"]) / (df["RbR"].max() - df["RbR"].min())
+	if normalize:
+		df["RbR"] = (df["RbR"].max() - df["RbR"]) / (df["RbR"].max() - df["RbR"].min())
 	df = df.rename(columns={"RbR": "RbR_best"})
 	return df[["ID", "RbR_best"]]

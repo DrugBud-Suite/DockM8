@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def RbV_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
+def RbV_best(df: pd.DataFrame, selected_columns: list, normalize: bool = True) -> pd.DataFrame:
 	"""
     Calculates the Rank by Vote consensus for a given DataFrame. Returns only the best score for each ID. No averaging is carried out.
 
@@ -35,6 +35,7 @@ def RbV_best(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	# Drop duplicate rows based on ID, keeping only the highest RbV value
 	df = df.drop_duplicates("ID", inplace=False)
 	# Normalize the RbV column
-	df["RbV"] = (df["RbV"] - df["RbV"].min()) / (df["RbV"].max() - df["RbV"].min())
+	if normalize:
+		df["RbV"] = (df["RbV"] - df["RbV"].min()) / (df["RbV"].max() - df["RbV"].min())
 	df = df.rename(columns={"RbV": "RbV_best"})
 	return df[["ID", "RbV_best"]]

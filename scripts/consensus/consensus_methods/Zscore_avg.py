@@ -7,7 +7,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
-def Zscore_avg(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
+def Zscore_avg(df: pd.DataFrame, selected_columns: list, normalize: bool = True) -> pd.DataFrame:
 	"""
     Calculates the Z-score consensus scores for each row in the given DataFrame. Averaging of the score is done across all selected poses.
 
@@ -33,7 +33,8 @@ def Zscore_avg(df: pd.DataFrame, selected_columns: list) -> pd.DataFrame:
 	df["Zscore"] = z_scores.mean(axis=1)
 	df = df[["ID", "Zscore"]]
 	# Normalize the Zscore column
-	df["Zscore"] = (df["Zscore"] - df["Zscore"].min()) / (df["Zscore"].max() - df["Zscore"].min())
+	if normalize:
+		df["Zscore"] = (df["Zscore"] - df["Zscore"].min()) / (df["Zscore"].max() - df["Zscore"].min())
 	df = df.rename(columns={"Zscore": "Zscore_avg"})
 	# Return DataFrame with 'ID' and 'avg_S_Zscore' columns
 	return df[["ID", "Zscore_avg"]]
