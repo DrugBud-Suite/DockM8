@@ -54,23 +54,23 @@ def standardize_molecule(molecule: Chem.Mol,
 
 
 def standardize_ids(df: pd.DataFrame, id_column: str = 'ID') -> pd.DataFrame:
-	"""
-	Standardizes the IDs in the given DataFrame.
+    """
+    Standardizes the IDs in the given DataFrame without using hyphens.
 
-	Args:
-		df (pd.DataFrame): The DataFrame containing the IDs to be standardized.
-		id_column (str, optional): The name of the column containing the IDs. Defaults to 'ID'.
+    Args:
+        df (pd.DataFrame): The DataFrame containing the IDs to be standardized.
+        id_column (str, optional): The name of the column containing the IDs. Defaults to 'ID'.
 
-	Returns:
-		pd.DataFrame: The DataFrame with standardized IDs.
+    Returns:
+        pd.DataFrame: The DataFrame with standardized IDs.
 
-	"""
-	if df[id_column].isnull().all():
-		df[id_column] = [f"DOCKM8-{i+1}" for i in range(len(df))]
-	else:
-		df[id_column] = df[id_column].astype(str).apply(lambda x: f"DOCKM8-{x}" if x.isdigit() else x)
-		df[id_column] = df[id_column].apply(lambda x: re.sub(r"[^a-zA-Z0-9-]", "", x))
-	return df
+    """
+    if df[id_column].isnull().all():
+        df[id_column] = [f"DOCKM8{i+1:06d}" for i in range(len(df))]
+    else:
+        df[id_column] = df[id_column].astype(str).apply(lambda x: f"DOCKM8{x.zfill(6)}" if x.isdigit() else x)
+        df[id_column] = df[id_column].apply(lambda x: re.sub(r"[^a-zA-Z0-9]", "", x))
+    return df
 
 
 def standardize_library(df: pd.DataFrame,
