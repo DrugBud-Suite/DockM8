@@ -165,8 +165,6 @@ class PantherDocking(DockingFunction):
 													display_name="Conformer Generation",
 													temp_dir=temp_dir)
 
-			print(conformer_results)
-
 			# Remove any None results (failed conformer generations)
 			conformer_results = [result for result in conformer_results if result is not None]
 
