@@ -9,7 +9,7 @@ tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p /
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.postprocessing import standardize_scores
+from scripts.consensus.score_manipulation import standardize_scores
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 
 
