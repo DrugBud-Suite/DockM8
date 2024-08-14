@@ -86,18 +86,20 @@ def dockm8_docking(library: Union[pd.DataFrame, Path],
 		output_paths = []
 
 		for program in docking_programs:
-			printlog(f"Running {program} docking...")
-			docking_function = DOCKING_PROGRAMS[program](software_path=software)
-			(w_dir / program.lower()).mkdir(exist_ok=True, parents=True)
 			output_sdf = w_dir / program.lower() / f"{program.lower()}_poses.sdf"
-			docking_results = docking_function.dock(library_path,
-						protein_file,
-						pocket_definition,
-						exhaustiveness,
-						n_poses,
-						n_cpus,
-						job_manager,
-						output_sdf=output_sdf)
+			if not output_sdf.exists():
+				printlog(f"Running {program} docking...")
+				docking_function = DOCKING_PROGRAMS[program](software_path=software)
+				(w_dir / program.lower()).mkdir(exist_ok=True, parents=True)
+				output_sdf = w_dir / program.lower() / f"{program.lower()}_poses.sdf"
+				docking_results = docking_function.dock(library_path,
+							protein_file,
+							pocket_definition,
+							exhaustiveness,
+							n_poses,
+							n_cpus,
+							job_manager,
+							output_sdf=output_sdf)
 
 			if output_sdf.exists() and output_sdf.stat().st_size > 0:
 				printlog(f"{program} docking completed. Results saved to {output_sdf}")
