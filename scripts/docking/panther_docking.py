@@ -208,7 +208,7 @@ class PantherDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog('rdApp.*')
 		try:
-			df = parallel_SDF_loader(result_file, molColName="Molecule", smilesName="SMILES", strictParsing=False)
+			df = parallel_SDF_loader(result_file, molColName="Molecule", idName="ID")
 			# Sort by Similarity_best in descending order and create new rank
 			df = df.sort_values('Similarity_best', ascending=False)
 			df['PANTHER_Rank'] = df.groupby('ID')['Similarity_best'].rank(method='first', ascending=False)

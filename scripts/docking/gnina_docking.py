@@ -63,7 +63,7 @@ class GninaDocking(DockingFunction):
 	def process_docking_result(self, result_file: Path, n_poses: int) -> pd.DataFrame:
 		RDLogger.DisableLog("rdApp.*")
 		try:
-			df = parallel_SDF_loader(result_file, molColName="Molecule", smilesName="SMILES", idName="ID")
+			df = parallel_SDF_loader(result_file, molColName="Molecule", idName="ID")
 			df['CNN-Score'] = df['CNNscore'].astype(float)
 
 			# Sort by CNN-Score (higher is better) and rank within each ID group

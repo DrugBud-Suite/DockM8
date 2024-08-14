@@ -50,8 +50,8 @@ class FABindDocking(DockingFunction):
 		index_csv = temp_dir / f"{batch_file.stem}_index.csv"
 
 		# Create index CSV from input SDF
-		df = parallel_SDF_loader(batch_file, molColName='ROMol', smilesName='SMILES')
-		df['Cleaned_SMILES'] = df['ROMol'].apply(
+		df = parallel_SDF_loader(batch_file, molColName='Molecule')
+		df['Cleaned_SMILES'] = df['Molecule'].apply(
 			lambda mol: Chem.MolToSmiles(Chem.MolFromSmiles(Chem.MolToSmiles(mol))))
 		df['pdb_id'] = protein_file_path.stem
 		csv_df = df[['Cleaned_SMILES', 'pdb_id', 'ID']]
