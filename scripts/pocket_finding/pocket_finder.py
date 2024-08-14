@@ -8,13 +8,13 @@ import pandas as pd
 from rdkit.Chem import Descriptors3D
 
 from scripts.pocket_finding.dogsitescorer import (calculate_pocket_coordinates_from_pocket_pdb_file,
-													get_dogsitescorer_metadata,
-													get_selected_pocket_location,
-													save_binding_site_to_file,
-													sort_binding_sites,
-													submit_dogsitescorer_job_with_pdbid,
-													upload_pdb_file,
-													)
+				get_dogsitescorer_metadata,
+				get_selected_pocket_location,
+				save_binding_site_to_file,
+				sort_binding_sites,
+				submit_dogsitescorer_job_with_pdbid,
+				upload_pdb_file,
+				)
 from scripts.pocket_finding.utils import extract_pocket
 from scripts.setup.software_manager import ensure_software_installed
 from scripts.utilities.logging import printlog
@@ -61,12 +61,12 @@ class PocketFinder:
 		self.software_path = software_path
 
 	def find_pocket(self,
-					mode: str,
-					receptor: Path,
-					ligand: Path = None,
-					radius: int = 10,
-					manual_pocket: str = None,
-					dogsitescorer_method: str = 'Volume') -> Dict[str, List[float]]:
+		mode: str,
+		receptor: Path,
+		ligand: Path = None,
+		radius: int = 10,
+		manual_pocket: str = None,
+		dogsitescorer_method: str = 'Volume') -> Dict[str, List[float]]:
 		"""
 		Find and extract a docking pocket based on the specified mode.
 
@@ -203,7 +203,6 @@ class PocketFinder:
 			str(pdbpath).replace(".pdb", "_pocket.pdb"))
 		return pocket_coordinates
 
-	@ensure_software_installed("P2RANK")
 	def _find_pocket_p2rank(self, receptor: Path, radius: int) -> Dict[str, List[float]]:
 		"""
 		Finds the pocket coordinates using p2rank software.
@@ -222,6 +221,7 @@ class PocketFinder:
 			IndexError: If the predictions file doesn't contain the expected data.
 			ValueError: If there's an issue with the pocket coordinates.
 		"""
+		ensure_software_installed("P2RANK", self.software_path)
 		try:
 			p2rank_path = self.software_path / "p2rank" / "prank"
 
@@ -278,7 +278,7 @@ class PocketFinder:
 			return pocket_coordinates
 		except Exception as e:
 			raise ValueError(f"Error parsing pocket coordinates: {e}. "
-								"Make sure the pocket coordinates are in the format 'center:1,2,3*size:1,2,3'")
+					"Make sure the pocket coordinates are in the format 'center:1,2,3*size:1,2,3'")
 
 	def _get_ligand_coordinates(self, ligand_molecule) -> pd.DataFrame:
 		"""
