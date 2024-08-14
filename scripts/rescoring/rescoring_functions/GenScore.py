@@ -29,7 +29,7 @@ class GenScore(ScoringFunction):
 	def __init__(self, score_type: str, software_path: Path):
 		genscore_path = software_path / "GenScore"
 		self.software_path = software_path
-		ensure_software_installed("GenScore", software_path)
+		ensure_software_installed("GENSCORE", software_path)
 		if score_type == "scoring":
 			super().__init__("GenScore-scoring", "GenScore-scoring", "max", (0, 200), genscore_path)
 			self.model = genscore_path / "trained_models" / "GatedGCN_ft_1.0_1.pth"
