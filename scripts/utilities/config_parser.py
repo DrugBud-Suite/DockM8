@@ -53,6 +53,9 @@ def check_config(config):
 	software_path = general_config.get("software")
 	if software_path == "None" or not software_path:
 		software_path = dockm8_path / "software"
+		DockM8Warning(
+			f"DockM8 configuration warning: Software path not specified in the configuration file. Defaulting to {software_path}"
+		)
 	# Check if the software path is a valid directory
 	if not Path(software_path).is_dir():
 		raise DockM8Error(
@@ -80,15 +83,15 @@ def check_config(config):
 	decoy_config = config.get("decoy_generation", {})
 	# Check if decoy generation is enabled and validate conditions
 	if decoy_config.get("gen_decoys", False):                                                                                     # Default to False if gen_decoys is not specified
-		# Validate the active compounds path
+		                                                                                                                               # Validate the active compounds path
 		active_path = decoy_config.get("actives")
-		if not Path(active_path).is_dir():
+		if not Path(active_path).is_file():
 			raise DockM8Error(
 				f"DockM8 configuration error: Invalid actives path ({active_path}) specified in the configuration file."
 			)
 		else:
 			config["decoy_generation"]["actives"] = active_path
-		# Validate the number of decoys to generate
+		                                                                                                                               # Validate the number of decoys to generate
 		try:
 			int(decoy_config.get("n_decoys"))
 		except ValueError:
@@ -162,9 +165,9 @@ def check_config(config):
 		"minimize",
 		"fix_nonstandard_residues",
 		"fix_missing_residues",
-		"remove_heteroatoms",
+		"remove_hetero",
 		"remove_water",
-		"protonation", ]
+		"protonate", ]
 
 	# Check each condition for boolean type
 	for condition in conditions:
@@ -209,6 +212,39 @@ def check_config(config):
 	if not isinstance(n_conformers, int):
 		raise DockM8Error(
 			"DockM8 configuration error: 'n_conformers' in 'ligand_preparation' section must be an integer value.")
+
+	# Validate 'min_ph' is a float
+	min_ph = ligand_preparation.get("min_ph")
+	if not isinstance(min_ph, (float, int)):
+		raise DockM8Error("DockM8 configuration error: 'min_ph' in 'ligand_preparation' section must be a float value.")
+
+	# Validate 'max_ph' is a float
+	max_ph = ligand_preparation.get("max_ph")
+	if not isinstance(max_ph, (float, int)):
+		raise DockM8Error("DockM8 configuration error: 'max_ph' in 'ligand_preparation' section must be a float value.")
+
+	# Validate 'pka_precision' is a float
+	pka_precision = ligand_preparation.get("pka_precision")
+	if not isinstance(pka_precision, (float, int)):
+		raise DockM8Error(
+			"DockM8 configuration error: 'pka_precision' in 'ligand_preparation' section must be a float value.")
+
+	# Validate standardize_ids, standardize_tautomers, remove_salts are booleans
+	standardize_ids = ligand_preparation.get("standardize_ids")
+	if not isinstance(standardize_ids, bool):
+		raise DockM8Error(
+			"DockM8 configuration error: 'standardize_ids' in 'ligand_preparation' section must be a boolean (true/false) value."
+		)
+	standardize_tautomers = ligand_preparation.get("standardize_tautomers")
+	if not isinstance(standardize_tautomers, bool):
+		raise DockM8Error(
+			"DockM8 configuration error: 'standardize_tautomers' in 'ligand_preparation' section must be a boolean (true/false) value."
+		)
+	remove_salts = ligand_preparation.get("remove_salts")
+	if not isinstance(remove_salts, bool):
+		raise DockM8Error(
+			"DockM8 configuration error: 'remove_salts' in 'ligand_preparation' section must be a boolean (true/false) value."
+		)
 
 	# Check pocket detection configuration
 	pocket_detection = config.get("pocket_detection", {})
@@ -318,14 +354,15 @@ def check_config(config):
 		raise DockM8Error(
 			"DockM8 configuration error: 'classy_pose' in 'post_docking' section must be a boolean (true/false) value.")
 	classy_pose_model = post_docking.get("classy_pose_model")
-	if classy_pose_model and not classy_pose:
+	if classy_pose_model in ["SVM", "LGBM"] and not classy_pose:
 		classy_pose = True
 		DockM8Warning(
 			"DockM8 warning: 'classy_pose_model' in 'post_docking' section is set but 'classy_pose' is not enabled. Setting 'classy_pose' to True."
 		)
-	if classy_pose_model not in ["SVM", "LGBM"]:
+	if classy_pose_model not in ["SVM", "LGBM", "None", None]:
 		raise DockM8Error(
-			"DockM8 configuration error: 'classy_pose_model' in 'post_docking' section must be either 'SVM' or 'LGBM'.")
+			"DockM8 configuration error: 'classy_pose_model' in 'post_docking' section must be either 'SVM' or 'LGBM' or 'None'."
+		)
 
 	# Check pose selection configuration
 	pose_selection = config.get("pose_selection", {})
