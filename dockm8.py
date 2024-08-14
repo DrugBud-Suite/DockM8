@@ -37,34 +37,37 @@ config = check_config(Path(parser.parse_args().config))
 
 # Main function to manage docking process
 def dockm8(software: Path,
-			receptor: Path,
-			prepare_proteins: dict,
-			ligand_preparation: dict,
-			pocket_detection: dict,
-			reference_ligand: Path,
-			docking_library: Path,
-			docking: dict,
-			post_docking: dict,
-			pose_selection: dict,
-			n_cpus: int,
-			rescoring: list,
-			consensus: str,
-			threshold: float):
+	receptor: Path,
+	prepare_proteins: dict,
+	ligand_preparation: dict,
+	pocket_detection: dict,
+	reference_ligand: Path,
+	docking_library: Path,
+	docking: dict,
+	post_docking: dict,
+	pose_selection: dict,
+	n_cpus: int,
+	rescoring: list,
+	consensus: str,
+	threshold: float):
 
 	# Set working directory based on the receptor file
 	w_dir = Path(receptor).parent / Path(receptor).stem
-	printlog("The working directory has been set to:", w_dir)
+	printlog(f"The working directory has been set to: {w_dir}")
 	w_dir.mkdir(exist_ok=True)
 
 	# Prepare the protein for docking
 	prepared_receptor = prepare_protein(protein_file_or_code=receptor, output_dir=w_dir, **prepare_proteins)
 
 	# Prepare the ligands for docking
-	prepared_library = prepare_library(input_sdf=docking_library,
-										id_column="ID",
-										**ligand_preparation,
-										software=software,
-										n_cpus=n_cpus)
+	if not (w_dir / "prepared_library.sdf").exists():
+		prepared_library = prepare_library(input_data=docking_library,
+											**ligand_preparation,
+											software=software,
+											n_cpus=n_cpus,
+											output_sdf=w_dir / "prepared_library.sdf")
+	else:
+		prepared_library = w_dir / "prepared_library.sdf"
 
 	# Determine the docking pocket
 	pocket_finder = PocketFinder(software_path=software)
@@ -81,26 +84,26 @@ def dockm8(software: Path,
 
 	# Perform the docking operation
 	all_poses_path = dockm8_docking(library=prepared_library,
+									w_dir=w_dir,
 									protein_file=prepared_receptor,
 									pocket_definition=pocket_definition,
 									software=software,
 									docking_programs=docking["docking_programs"],
 									exhaustiveness=docking["exhaustiveness"],
 									n_poses=docking["n_poses"],
-									n_cpus=n_cpus,
-									output_sdf=w_dir / "docking/allposes.sdf")
+									n_cpus=n_cpus)
 
 	# Postprocessing
 	processed_poses = docking_postprocessing(input_data=all_poses_path,
-												protein_file=prepared_receptor,
-												minimize_poses=post_docking["minimize_poses"],
-												bust_poses=post_docking["bust_poses"],
-												strain_cutoff=post_docking["strain_cutoff"],
-												clash_cutoff=post_docking["clash_cutoff"],
-												classy_pose=post_docking["classy_pose"],
-												classy_pose_model=post_docking["classy_pose_model"],
-												n_cpus=n_cpus,
-												output_sdf=w_dir / "allposes_processed.sdf")
+				protein_file=prepared_receptor,
+				minimize_poses=post_docking["minimize_poses"],
+				bust_poses=post_docking["bust_poses"],
+				strain_cutoff=post_docking["strain_cutoff"],
+				clash_cutoff=post_docking["clash_cutoff"],
+				classy_pose=post_docking["classy_pose"],
+				classy_pose_model=post_docking["classy_pose_model"],
+				n_cpus=n_cpus,
+				output_sdf=w_dir / "allposes_processed.sdf")
 
 	# Create clustering directory
 	(w_dir / "clustering").mkdir(exist_ok=True)
@@ -109,34 +112,34 @@ def dockm8(software: Path,
 	pose_selection_methods = pose_selection["pose_selection_method"]
 	for method in pose_selection_methods:
 		selected_poses = select_poses(poses=processed_poses,
-										selection_method=method,
-										clustering_method=pose_selection["clustering_method"],
-										pocket_definition=pocket_definition,
-										protein_file=prepared_receptor,
-										software=software,
-										n_cpus=n_cpus,
-										output_file=w_dir / f"clustering/{method}_clustered.sdf")
+				selection_method=method,
+				clustering_method=pose_selection["clustering_method"],
+				pocket_definition=pocket_definition,
+				protein_file=prepared_receptor,
+				software=software,
+				n_cpus=n_cpus,
+				output_file=w_dir / f"clustering/{method}_clustered.sdf")
 
 		# Create rescoring directory
 		(w_dir / "rescoring").mkdir(exist_ok=True)
 
 		# Rescore poses for each selection method
 		rescored_poses = rescore_poses(protein_file=prepared_receptor,
-										pocket_definition=pocket_definition,
-										software=software,
-										poses=selected_poses,
-										functions=rescoring,
-										n_cpus=n_cpus,
-										output_file=w_dir / f"rescoring/{method}_rescored.csv")
+				pocket_definition=pocket_definition,
+				software=software,
+				poses=selected_poses,
+				functions=rescoring,
+				n_cpus=n_cpus,
+				output_file=w_dir / f"rescoring/{method}_rescored.csv")
 
 		# Create consensus directory
 		(w_dir / "consensus").mkdir(exist_ok=True)
 
 		# Apply consensus methods to the poses
 		consensus_results = apply_consensus_methods(poses_input=rescored_poses,
-													consensus_methods=consensus,
-													standardization_type="min_max",
-													output_path=w_dir / "consensus")
+					consensus_methods=consensus,
+					standardization_type="min_max",
+					output_path=w_dir / "consensus")
 
 	return consensus_results
 
@@ -147,9 +150,9 @@ def run_dockm8(config):
 	decoy_generation = config["decoy_generation"]
 	if decoy_generation["gen_decoys"]:
 		decoy_library = generate_decoys(Path(decoy_generation.get("actives")),
-										decoy_generation.get("n_decoys"),
-										decoy_generation.get("decoy_model"),
-										software)
+				decoy_generation.get("n_decoys"),
+				decoy_generation.get("decoy_model"),
+				software)
 
 		if config["general"]["mode"] == "single":
 			# Run DockM8 on the decoy library
