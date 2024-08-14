@@ -43,15 +43,15 @@ DOCKING_PROGRAMS = {
 
 
 def dockm8_docking(library: Union[pd.DataFrame, Path],
-					w_dir: Path,
-					protein_file: Path,
-					pocket_definition: dict,
-					software: Path,
-					docking_programs: list,
-					exhaustiveness: int,
-					n_poses: int,
-					n_cpus: int,
-					job_manager="concurrent_process"):
+		w_dir: Path,
+		protein_file: Path,
+		pocket_definition: dict,
+		software: Path,
+		docking_programs: list,
+		exhaustiveness: int,
+		n_poses: int,
+		n_cpus: int,
+		job_manager="concurrent_process"):
 	"""
 	Dock ligands into a protein binding site using one or more docking programs and concatenate all poses.
 
@@ -87,17 +87,17 @@ def dockm8_docking(library: Union[pd.DataFrame, Path],
 
 		for program in docking_programs:
 			printlog(f"Running {program} docking...")
-			docking_function = DOCKING_PROGRAMS[program](software)
+			docking_function = DOCKING_PROGRAMS[program](software_path=software)
 			(w_dir / program.lower()).mkdir(exist_ok=True, parents=True)
 			output_sdf = w_dir / program.lower() / f"{program.lower()}_poses.sdf"
 			docking_results = docking_function.dock(library_path,
-													protein_file,
-													pocket_definition,
-													exhaustiveness,
-													n_poses,
-													n_cpus,
-													job_manager,
-													output_sdf=output_sdf)
+						protein_file,
+						pocket_definition,
+						exhaustiveness,
+						n_poses,
+						n_cpus,
+						job_manager,
+						output_sdf=output_sdf)
 
 			if output_sdf.exists() and output_sdf.stat().st_size > 0:
 				printlog(f"{program} docking completed. Results saved to {output_sdf}")
@@ -114,10 +114,10 @@ def dockm8_docking(library: Union[pd.DataFrame, Path],
 				all_poses = pd.concat([all_poses, df], ignore_index=True)
 			try:
 				PandasTools.WriteSDF(all_poses,
-										str(all_poses_path),
-										molColName="Molecule",
-										idName="Pose ID",
-										properties=list(all_poses.columns))
+						str(all_poses_path),
+						molColName="Molecule",
+						idName="Pose ID",
+						properties=list(all_poses.columns))
 				printlog(f"All poses successfully combined and saved to {all_poses_path}")
 				return all_poses_path
 			except Exception as e:
