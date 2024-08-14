@@ -18,6 +18,7 @@ from scripts.utilities.file_splitting import split_sdf_str
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.utilities import parallel_SDF_loader
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -46,7 +47,7 @@ def protonate_GypsumDL(df: pd.DataFrame,
 		Exception: If failed to generate protomers.
 	"""
 	printlog("Generating protomers using GypsumDL...")
-
+	ensure_software_installed("GYPSUM_DL", software)
 	with tempfile.TemporaryDirectory() as temp_dir:
 		temp_dir_path = Path(temp_dir)
 		input_sdf = temp_dir_path / "input.sdf"

@@ -18,6 +18,7 @@ from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.library_preparation.conformer_generation.confgen_RDKit import generate_conformers_RDKit
 from scripts.utilities.utilities import parallel_SDF_loader
+from scripts.setup.software_manager import ensure_software_installed
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -40,7 +41,7 @@ def generate_conformers_GypsumDL(df: pd.DataFrame, software: Path, n_cpus: int) 
 
 	"""
 	printlog("Generating 3D conformers using GypsumDL...")
-
+	ensure_software_installed("GYPSUM_DL", software)
 	with tempfile.TemporaryDirectory() as temp_dir:
 		temp_dir_path = Path(temp_dir)
 		input_sdf = temp_dir_path / "input.sdf"
