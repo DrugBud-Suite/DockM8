@@ -104,7 +104,6 @@ class ITScoreAff(ScoringFunction):
 				shell=True,
 				capture_output=True,
 				text=True,
-				check=True,
 				cwd=split_file.parent)
 
 			scores = []

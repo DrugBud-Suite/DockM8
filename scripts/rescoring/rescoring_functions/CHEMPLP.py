@@ -64,7 +64,6 @@ class CHEMPLP(ScoringFunction):
 			try:
 				subprocess.run(chemplp_cmd,
 					shell=True,
-					check=True,
 					stdout=subprocess.DEVNULL,
 					stderr=subprocess.DEVNULL)
 			except subprocess.CalledProcessError as e:
