@@ -255,20 +255,19 @@ def install_fabind(software_path):
 	subprocess.run(['git', 'clone', 'https://github.com/QizhiPei/FABind.git', '--recursive', '--depth', '1'],
 					cwd=software_path,
 					stderr=subprocess.DEVNULL,
-					stdout=subprocess.DEVNULL,
-					check=True)
+					stdout=subprocess.DEVNULL)
 	remove_git_files(fabind_path)
 
 	# Create and set up conda environment
 	env_name = "fabind"
-	subprocess.run(f"conda create -n {env_name} python=3.8 -y", shell=True, check=True)
+	subprocess.run(f"conda create -n {env_name} python=3.8 -y", shell=True)
 
 	# Install conda packages
 	conda_install_cmd = (
 		f"conda run -n {env_name} conda install -c conda-forge graph-tool -y && "
 		f"conda run -n {env_name} conda install pytorch==1.12.0 torchvision==0.13.0 torchaudio==0.12.0 cpuonly -c pytorch -y && "
 		f"conda run -n {env_name} conda install -c conda-forge openbabel -y")
-	subprocess.run(conda_install_cmd, shell=True, check=True)
+	subprocess.run(conda_install_cmd, shell=True)
 
 	# Install pip packages
 	pip_install_cmd = (
@@ -279,7 +278,7 @@ def install_fabind(software_path):
 		f"conda run -n {env_name} pip install https://data.pyg.org/whl/torch-1.12.0%2Bcpu/pyg_lib-0.2.0%2Bpt112cpu-cp38-cp38-linux_x86_64.whl &&"
 		f"conda run -n {env_name} pip install torch-geometric==2.4.0 torchdrug==0.1.2 torchmetrics==0.10.2 tqdm mlcrate pyarrow accelerate Bio lmdb fair-esm tensorboard &&"
 		f"conda run -n {env_name} pip install wandb spyrmsd rdkit-pypi==2021.03.4 setuptools==69.5.1")
-	subprocess.run(pip_install_cmd, shell=True, check=True)
+	subprocess.run(pip_install_cmd, shell=True)
 
 
 def install_censible(software_path):
@@ -335,7 +334,7 @@ def install_genscore(software_path):
 
 	# Create and activate conda environment
 	env_name = "genscore"
-	subprocess.run(f"conda create -n {env_name} python=3.8 -y", shell=True, check=True)
+	subprocess.run(f"conda create -n {env_name} python=3.8 -y", shell=True)
 
 	# Install dependencies
 	conda_install_cmd = (
@@ -343,19 +342,19 @@ def install_genscore(software_path):
 		"pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cpuonly -c pytorch -y && "
 		f"conda run -n {env_name} conda install MDAnalysis==2.0.0 prody==2.1.0 pandas rdkit==2021.03.5 openbabel "
 		"scikit-learn scipy seaborn numpy joblib matplotlib -y")
-	subprocess.run(conda_install_cmd, shell=True, check=True)
+	subprocess.run(conda_install_cmd, shell=True)
 
 	# Install PyTorch Geometric and related packages
 	pip_install_cmd = (f"conda run -n {env_name} pip install torch-geometric==2.0.3 "
 						"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_scatter-2.0.9-cp38-cp38-linux_x86_64.whl "
 						"https://data.pyg.org/whl/torch-1.11.0%2Bcpu/torch_sparse-0.6.13-cp38-cp38-linux_x86_64.whl")
-	subprocess.run(pip_install_cmd, shell=True, check=True)
+	subprocess.run(pip_install_cmd, shell=True)
 
 
 def install_mgltools():
 	env_name = 'mgltools'
-	subprocess.run(f"conda create -n {env_name} python=2.7 -y", shell=True, check=True)
-	subprocess.run(f"conda run -n {env_name} conda install -c bioconda mgltools -y", shell=True, check=True)
+	subprocess.run(f"conda create -n {env_name} python=2.7 -y", shell=True)
+	subprocess.run(f"conda run -n {env_name} conda install -c bioconda mgltools -y", shell=True)
 
 
 def install_p2rank(software_path):

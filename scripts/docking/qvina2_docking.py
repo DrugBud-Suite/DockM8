@@ -72,7 +72,7 @@ class Qvina2Docking(DockingFunction):
 				" --cpu 1 --seed 1 --energy_range 10"
 				f" --num_modes {n_poses}")
 			try:
-				subprocess.run(qvina2_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+				subprocess.run(qvina2_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				output_files.append(output_file)
 			except subprocess.CalledProcessError as e:
 				printlog(f"QVINA2 docking failed: {e}")

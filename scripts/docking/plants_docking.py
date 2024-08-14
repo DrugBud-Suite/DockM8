@@ -66,7 +66,6 @@ class PlantsDocking(DockingFunction):
 			plants_docking_command = f'{self.software_path}/PLANTS --mode screen {plants_docking_config_path}'
 			subprocess.run(plants_docking_command,
 							shell=True,
-							check=True,
 							stdout=subprocess.DEVNULL,
 							stderr=subprocess.STDOUT)
 		except subprocess.CalledProcessError as e:

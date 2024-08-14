@@ -230,7 +230,7 @@ class PocketFinder:
 
 			p2rank_command = f'{p2rank_path} predict -f {receptor} -o {output_dir}'
 			try:
-				subprocess.run(p2rank_command, shell=True, check=True, capture_output=True, text=True)
+				subprocess.run(p2rank_command, shell=True, capture_output=True, text=True)
 			except subprocess.CalledProcessError as e:
 				raise subprocess.CalledProcessError(
 					e.returncode, e.cmd, "p2rank command failed. \n" + f"Stdout: {e.stdout} \n" + f"Stderr: {e.stderr}")

@@ -53,7 +53,7 @@ class NNScore(ScoringFunction):
 			try:
 				subprocess.run(nnscore_cmd,
 								shell=True,
-								check=True,
+	
 								stdout=subprocess.DEVNULL,
 								stderr=subprocess.DEVNULL)
 			except subprocess.CalledProcessError as e:

@@ -23,7 +23,7 @@ def prepare_receptor(protein_file: Path, output_file: Path) -> None:
         mgltools_path (Path): Path to the MGLTools directory.
     """
 	cmd = f"conda run -n mgltools prepare_receptor4.py -r {protein_file} -o {output_file} -A bond_hydrogens -U lps"
-	subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+	subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def prepare_input_file(protein_file: Path, poses_dir: Path, input_file: Path) -> None:
@@ -51,7 +51,7 @@ def run_optimization(input_file: Path, output_dir: Path, software_path: Path) ->
     """
 	cmd = f"bash ./run_pose_optimization.sh {str(input_file)}"
 	try:
-		subprocess.run(cmd, check=True, shell=True, cwd=software_path / "DeepRMSD-Vina_Optimization")
+		subprocess.run(cmd, shell=True, cwd=software_path / "DeepRMSD-Vina_Optimization")
 	except subprocess.CalledProcessError as e:
 		printlog(f"Error running optimization: {e}")
 		raise
@@ -63,7 +63,7 @@ def convert_sdf_to_mol2(compound_data: tuple) -> List[Path]:
 	mol2_files = []
 	for pose_id in pose_ids:
 		cmd = f"obabel {sdf_file} -O {output_dir}/{pose_id}.mol2 -f {pose_ids.index(pose_id)+1} -l {pose_ids.index(pose_id)+1}"
-		subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+		subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		mol2_files.append(output_dir / f"{pose_id}.mol2")
 	return mol2_files
 
@@ -73,7 +73,6 @@ def prepare_ligand(ligand_data: tuple) -> None:
 	cmd = f"conda run -n mgltools prepare_ligand4.py -l {mol2_file.name} -o {pdbqt_file} -A bond_hydrogens -U lps"
 	subprocess.run(cmd,
 					shell=True,
-					check=True,
 					cwd=mol2_file.parent,
 					stdout=subprocess.DEVNULL,
 					stderr=subprocess.DEVNULL)

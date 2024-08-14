@@ -39,7 +39,7 @@ from scripts.utilities.logging import printlog
 def check_mgltools(software_path) -> bool:
 	env_name = 'mgltools'
 	try:
-		result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True, check=True)
+		result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True)
 		return env_name in result.stdout
 	except subprocess.CalledProcessError:
 		printlog(f"Error checking for {env_name} environment")
@@ -51,13 +51,13 @@ def check_posecheck(software_path) -> bool:
     
     try:
         # First, check if the environment exists
-        env_result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True, check=True)
+        env_result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True)
         if env_name not in env_result.stdout:
             printlog(f"Environment {env_name} not found")
             return False
         
         # If the environment exists, check for the library
-        list_result = subprocess.run(["conda", "list", "-n", env_name], capture_output=True, text=True, check=True)
+        list_result = subprocess.run(["conda", "list", "-n", env_name], capture_output=True, text=True)
         return library_name in list_result.stdout
     
     except subprocess.CalledProcessError as e:

@@ -53,7 +53,7 @@ class PLECScore(ScoringFunction):
 			try:
 				subprocess.run(plecscore_cmd,
 								shell=True,
-								check=True,
+	
 								stdout=subprocess.DEVNULL,
 								stderr=subprocess.DEVNULL)
 			except subprocess.CalledProcessError as e:

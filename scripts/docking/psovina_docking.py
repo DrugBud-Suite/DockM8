@@ -72,7 +72,7 @@ class PsovinaDocking(DockingFunction):
 				" --cpu 1 --seed 1 --energy_range 10"
 				f" --num_modes {n_poses}")
 			try:
-				subprocess.run(psovina_cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+				subprocess.run(psovina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 				output_files.append(output_file)
 			except subprocess.CalledProcessError as e:
 				printlog(f"PSOVINA docking failed: {e}")
