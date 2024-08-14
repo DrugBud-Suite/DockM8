@@ -79,9 +79,6 @@ def dockm8(software: Path,
 													dogsitescorer_method=pocket_detection.get(
 														"dogsitescorer_method", 'Volume'))
 
-	# Create docking directory
-	(w_dir / "docking").mkdir(exist_ok=True)
-
 	# Perform the docking operation
 	all_poses_path = dockm8_docking(library=prepared_library,
 									w_dir=w_dir,
