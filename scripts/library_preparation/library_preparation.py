@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 PROTONATION_OPTIONS = ["GypsumDL", "None"]
-CONFORMER_OPTIONS = ["RDKit", "MMFF", "GypsumDL"]
+CONFORMER_OPTIONS = ["UFF", "MMFF", "GypsumDL"]
 
 
 def prepare_library(input_data: Union[pd.DataFrame, Path],
@@ -102,10 +102,10 @@ def prepare_library(input_data: Union[pd.DataFrame, Path],
 	# Save output to SDF if specified
 	if output_sdf:
 		PandasTools.WriteSDF(final_df,
-				str(output_sdf),
-				molColName="Molecule",
-				idName="ID",
-				properties=list(final_df.columns))
+								str(output_sdf),
+								molColName="Molecule",
+								idName="ID",
+								properties=list(final_df.columns))
 		return output_sdf
 	else:
 		return final_df
