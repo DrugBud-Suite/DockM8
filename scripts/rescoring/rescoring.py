@@ -216,7 +216,7 @@ def rescore_poses(protein_file: Path,
 									idName='Pose ID',
 									properties=list(sdf_df.columns))
 			printlog(f"Final rescored poses SDF written to: {output_file.with_suffix('.sdf')}")
-
+			return output_file
 		toc = time.perf_counter()
 		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
 
