@@ -61,7 +61,7 @@ docking:
   exhaustiveness: 8                                                 # Exhaustiveness of the docking; higher values increase accuracy and computation time. Only valid for Vina derivatives
 
 post_docking:
-  minimize: true                                                    # Control whether poses are minimized (true) or not (false)
+  minimize_poses: true                                                    # Control whether poses are minimized (true) or not (false)
   clash_cutoff: 5                                                   # Clash cutoff used for pose filtering.
   strain_cutoff: 5000                                               # Strain cutoff used for pose filtering.
   bust_poses: true                                                  # Control whether problematic poses are removed (true) or not (false). Can be slow for large datasets
