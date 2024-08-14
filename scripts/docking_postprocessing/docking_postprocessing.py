@@ -4,6 +4,7 @@ from typing import Union, Optional
 
 import pandas as pd
 from rdkit.Chem import PandasTools
+import traceback
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -90,6 +91,8 @@ def docking_postprocessing(input_data: Union[Path, pd.DataFrame],
 									molColName="Molecule",
 									idName="Pose ID",
 									properties=list(sdf_dataframe.columns))
+			return output_sdf
 	except Exception as e:
 		printlog(f"An error occurred during docking postprocessing: {str(e)}")
+		printlog(traceback.format_exc(e))
 	return sdf_dataframe
