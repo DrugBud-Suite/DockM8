@@ -131,11 +131,11 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str,
 			actives_df = pd.DataFrame()
 			actives_df["Molecule"] = actives_mols
 			actives_df["Activity"] = 1
-			actives_df["ID"] = ["Active-" + str(i) for i in range(1, len(actives_df) + 1)]
+			actives_df["ID"] = ["Active_" + str(i) for i in range(1, len(actives_df) + 1)]
 			decoys_df = pd.DataFrame()
 			decoys_df["Molecule"] = decoys_mols
 			decoys_df["Activity"] = 0
-			decoys_df["ID"] = ["Decoy-" + str(i) for i in range(1, len(decoys_df) + 1)]
+			decoys_df["ID"] = ["Decoy_" + str(i) for i in range(1, len(decoys_df) + 1)]
 			output_df = pd.concat([actives_df, decoys_df], ignore_index=True)
 
 			# Save the dataframe as an SDF file
