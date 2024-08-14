@@ -333,10 +333,10 @@ def check_config(config):
 
 	# Check Docking postprocessing settings
 	post_docking = config.get("post_docking", {})
-	minimize = post_docking.get("minimize")
-	if not isinstance(minimize, bool):
+	minimize_poses = post_docking.get("minimize_poses")
+	if not isinstance(minimize_poses, bool):
 		raise DockM8Error(
-			"DockM8 configuration error: 'minimize' in 'post_docking' section must be a boolean (true/false) value.")
+			"DockM8 configuration error: 'minimize_poses' in 'post_docking' section must be a boolean (true/false) value.")
 	clash_cutoff = post_docking.get("clash_cutoff")
 	if not (isinstance(clash_cutoff, int) or clash_cutoff is None):
 		raise DockM8Error(
