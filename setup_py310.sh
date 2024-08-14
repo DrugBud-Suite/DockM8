@@ -133,7 +133,7 @@ else
 
     conda install -c conda-forge rdkit=2023.09 spyrmsd kneed molvs xgboost openbabel docopt pdbfixer smina lightning -q -y
 	conda install ipykernel scipy seaborn tqdm pytest pydantic -q -y
-	conda install -c mx reduct -q -y
+	conda install -c mx reduce -q -y
 
     echo -e """
     ###############################################################
