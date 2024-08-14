@@ -27,17 +27,22 @@ protein_preparation:
   fix_missing_residues: true                                        # Whether to add missing residues
   minimize: true                                                    # Whether to minimize the protein (also fixes missing atoms and residues)
   with_solvent: true                                               # Whether to include solvent in the energy minimization (solvent is removed afterwards)
-  remove_heteroatoms: true                                          # Whether to remove heteroatoms (ligands, ions, etc.)
+  remove_hetero: true                                          # Whether to remove heteroatoms (ligands, ions, etc.)
   remove_water: true                                                # Whether to remove water molecules
-  add_hydrogens: 7.0                                                # Whether to add hydrogens to the protein; 7.0 is the default pH. Will be ignored if "protonation" is set to true
-  protonation: true                                                 # Whether to protonate the protein using Protoss webserver
+  add_missing_hydrogens_pH: 7.0                                                # Whether to add hydrogens to the protein; 7.0 is the default pH. Will be ignored if "protonation" is set to true
+  protonate: true                                                 # Whether to protonate the protein using Protoss webserver
 
 ## Ligand Preparation
 ligand_preparation:
   protonation: "GypsumDL"                                           # Method used for ligand protonation. Options are : "GypsumDL", "None"
-  conformers: "RDKit"                                               # Method used for ligand conformer generation. Options are : "RDKit", "GypsumDL"
+  conformers: "MMFF"                                               # Method used for ligand conformer generation. Options are : "MMFF", "UFF", "GypsumDL"
   n_conformers: 1                                                   # Number of conformers to generate per ligand. Default is 1
-
+  standardize_ids: true
+  standardize_tautomers: true
+  remove_salts: true
+  min_ph: 6.4
+  max_ph: 8.4
+  pka_precision: 1.0
 ## Pocket Detection
 pocket_detection:
   method: "Reference"                                               # Method used for pocket detection. Options are : "Reference", "RoG", "Dogsitescorer", "P2Rank", "Manual"
@@ -61,7 +66,7 @@ post_docking:
   strain_cutoff: 5000                                               # Strain cutoff used for pose filtering.
   bust_poses: true                                                  # Control whether problematic poses are removed (true) or not (false). Can be slow for large datasets
   classy_pose: false                                               # Control whether poses are classified as "good" or "bad" (true) or not (false). Can be slow for large datasets
-  classy_pose_model: 'SVM'                                          # Options are : 'SVM' or 'LGBM'
+  classy_pose_model: None                                          # Options are : 'SVM' or 'LGBM'
 
 ## Pose selection configuration
 pose_selection:
