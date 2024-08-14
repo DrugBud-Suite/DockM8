@@ -16,13 +16,14 @@ from scripts.utilities.logging import printlog
 from scripts.setup.software_manager import ensure_software_installed
 
 
-@ensure_software_installed("POSECHECK")
+
 def pose_checker(dataframe: pd.DataFrame,
-					protein_file: Path,
-					clash_cutoff: int = 5,
-					strain_cutoff: int = 5000,
-					n_cpus: int = int(os.cpu_count() * 0.9),
-				):
+		protein_file: Path,
+		clash_cutoff: int = 5,
+		strain_cutoff: int = 5000,
+		n_cpus: int = int(os.cpu_count() * 0.9),
+	):
+	ensure_software_installed("POSECHECK", Path("/"))
 	from posecheck import PoseCheck
 	try:
 		tic = time.perf_counter()

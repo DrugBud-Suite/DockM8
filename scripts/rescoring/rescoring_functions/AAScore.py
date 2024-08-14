@@ -24,9 +24,10 @@ class AAScore(ScoringFunction):
     AAScore scoring function implementation.
     """
 
-	@ensure_software_installed("AA_SCORE")
 	def __init__(self, software_path: Path):
 		super().__init__("AAScore", "AAScore", "max", (100, -100), software_path)
+		self.software_path = software_path
+		ensure_software_installed("AA_SCORE", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
@@ -76,9 +77,9 @@ class AAScore(ScoringFunction):
         """
 		results = temp_dir / "rescored_AAScore.csv"
 		aascore_cmd = (f"conda run -n AAScore {self.software_path}/AA-Score-Tool-main/AA_Score.py"
-			f" --Rec {pocket_file}"
-			f" --Lig {sdf_file}"
-			f" --Out {results}")
+						f" --Rec {pocket_file}"
+						f" --Lig {sdf_file}"
+						f" --Out {results}")
 		try:
 			subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			return pd.read_csv(results, delimiter="\t", header=None, names=["Pose ID", self.column_name])
@@ -104,10 +105,10 @@ class AAScore(ScoringFunction):
 		split_files_sdfs = list(split_files_folder.glob("*.sdf"))
 
 		rescoring_results = parallel_executor(self._rescore_split_file,
-												split_files_sdfs,
-												n_cpus,
-												display_name=self.name,
-												pocket_file=pocket_file)
+					split_files_sdfs,
+					n_cpus,
+					display_name=self.name,
+					pocket_file=pocket_file)
 
 		return self._combine_rescoring_results(rescoring_results)
 
@@ -124,9 +125,9 @@ class AAScore(ScoringFunction):
         """
 		results = split_file.parent / f"{split_file.stem}_AAScore.csv"
 		aascore_cmd = (f"python {self.software_path}/AA-Score-Tool-main/AA_Score.py"
-						f" --Rec {pocket_file}"
-						f" --Lig {split_file}"
-						f" --Out {results}")
+			f" --Rec {pocket_file}"
+			f" --Lig {split_file}"
+			f" --Out {results}")
 		try:
 			subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 			return results

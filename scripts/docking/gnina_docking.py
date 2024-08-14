@@ -20,35 +20,36 @@ from scripts.utilities.utilities import parallel_SDF_loader
 
 class GninaDocking(DockingFunction):
 
-	@ensure_software_installed("GNINA")
 	def __init__(self, software_path: Path):
 		super().__init__("GNINA", software_path)
+		self.software_path = software_path
+		ensure_software_installed("GNINA", software_path)
 
 	def dock_batch(self,
-					batch_file: Path,
-					protein_file: Path,
-					pocket_definition: Dict[str, list],
-					exhaustiveness: int,
-					n_poses: int) -> Path:
+		batch_file: Path,
+		protein_file: Path,
+		pocket_definition: Dict[str, list],
+		exhaustiveness: int,
+		n_poses: int) -> Path:
 
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
 		results_path = temp_dir / f"{batch_file.stem}_gnina.sdf"
 
 		gnina_cmd = (f"{self.software_path}/gnina"
-						f" --receptor {protein_file}"
-						f" --ligand {batch_file}"
-						f" --out {results_path}"
-						f" --center_x {pocket_definition['center'][0]}"
-						f" --center_y {pocket_definition['center'][1]}"
-						f" --center_z {pocket_definition['center'][2]}"
-						f" --size_x {pocket_definition['size'][0]}"
-						f" --size_y {pocket_definition['size'][1]}"
-						f" --size_z {pocket_definition['size'][2]}"
-						f" --exhaustiveness {exhaustiveness}"
-						" --cpu 1 --seed 1"
-						f" --num_modes {n_poses}"
-						" --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu")
+			f" --receptor {protein_file}"
+			f" --ligand {batch_file}"
+			f" --out {results_path}"
+			f" --center_x {pocket_definition['center'][0]}"
+			f" --center_y {pocket_definition['center'][1]}"
+			f" --center_z {pocket_definition['center'][2]}"
+			f" --size_x {pocket_definition['size'][0]}"
+			f" --size_y {pocket_definition['size'][1]}"
+			f" --size_z {pocket_definition['size'][2]}"
+			f" --exhaustiveness {exhaustiveness}"
+			" --cpu 1 --seed 1"
+			f" --num_modes {n_poses}"
+			" --cnn_scoring rescore --cnn crossdock_default2018 --no_gpu")
 
 		try:
 			subprocess.call(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)

@@ -21,9 +21,10 @@ from scripts.utilities.molecule_conversion import convert_molecules
 
 class QvinawDocking(DockingFunction):
 
-	@ensure_software_installed("QVINAW")
 	def __init__(self, software_path: Path):
 		super().__init__("QVINAW", software_path)
+		self.software_path = software_path
+		ensure_software_installed("QVINAW", software_path)
 
 	def dock_batch(self,
 		batch_file: Path,

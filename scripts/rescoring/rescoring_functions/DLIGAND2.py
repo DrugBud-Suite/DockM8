@@ -27,9 +27,10 @@ class DLIGAND2(ScoringFunction):
     DLIGAND2 scoring function implementation.
     """
 
-	@ensure_software_installed("DLIGAND2")
 	def __init__(self, software_path: Path):
 		super().__init__("DLIGAND2", "DLIGAND2", "min", (-200, 100), software_path)
+		self.software_path = software_path
+		ensure_software_installed("DLIGAND2", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""

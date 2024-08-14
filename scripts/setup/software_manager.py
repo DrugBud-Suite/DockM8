@@ -44,6 +44,25 @@ def check_mgltools(software_path) -> bool:
 	except subprocess.CalledProcessError:
 		printlog(f"Error checking for {env_name} environment")
 		return False
+      
+def check_posecheck(software_path) -> bool:
+    env_name = 'dockm8'
+    library_name = 'posecheck'
+    
+    try:
+        # First, check if the environment exists
+        env_result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True, check=True)
+        if env_name not in env_result.stdout:
+            printlog(f"Environment {env_name} not found")
+            return False
+        
+        # If the environment exists, check for the library
+        list_result = subprocess.run(["conda", "list", "-n", env_name], capture_output=True, text=True, check=True)
+        return library_name in list_result.stdout
+    
+    except subprocess.CalledProcessError as e:
+        printlog(f"Error checking for {library_name} in {env_name} environment: {e}")
+        return False
 
 
 # Define a dictionary mapping docking programs to their installation functions and check methods
@@ -89,68 +108,53 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"GENSCORE": {
 	"install": install_genscore, "check": lambda path: (path / "GenScore").is_dir()},
 	"POSECHECK": {
-	"install": install_posecheck, "check": lambda path: (path / "posecheck-main").is_dir()},
+	"install": install_posecheck, "check": check_posecheck},
 	"MGLTOOLS": {
 	"install": install_mgltools, "check": check_mgltools},
 	"P2RANK": {
-		"install": install_p2rank, "check": lambda path: (path / "p2rank" / "prank").is_file()}}
+	"install": install_p2rank, "check": lambda path: (path / "p2rank" / "prank").is_file()}}
 
 
-def ensure_software_installed(program_name: str):
-
-	def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
-
-		@wraps(func)
-		def wrapper(self, *args, **kwargs):
-			if program_name not in SOFTWARE_INFO:
-				raise ValueError(f"Unknown program: {program_name}")
-
-			if program_name == "MGLTOOLS":
-				# For MGLTOOLS, we only need to check if the conda environment exists
-				if not is_software_installed(program_name, Path("/")):
-					install_software(program_name, Path("/"))
-			else:
-				if not hasattr(self, 'software_path'):
-					raise AttributeError(f"'software_path' not found in {self.__class__.__name__}")
-
-				software_path = self.software_path
-				if not is_software_installed(program_name, software_path):
-					install_software(program_name, software_path)
-
-			return func(self, *args, **kwargs)
-
-		return wrapper
-
-	return decorator
-
-def is_software_installed(program_name: str, software_path: Path) -> bool:
-	"""
-    Check if the specified software is installed.
+def ensure_software_installed(program_name: str, software_path: Path):
+    """
+    Check if the specified software is installed and install it if not.
 
     Args:
         program_name (str): The name of the software program.
         software_path (Path): The path to the software installation.
 
-    Returns:
-        bool: True if the software is installed, False otherwise.
+    Raises:
+        ValueError: If the program name is not found in SOFTWARE_INFO.
     """
-	check_func = SOFTWARE_INFO.get(program_name, {}).get("check")
-	if check_func is None:
-		printlog(f"No check function found for {program_name}")
-		return False
-	return check_func(software_path)
+    if program_name not in SOFTWARE_INFO:
+        raise ValueError(f"Unknown program: {program_name}")
+
+    check_func = SOFTWARE_INFO.get(program_name, {}).get("check")
+    if check_func is None:
+        printlog(f"No check function found for {program_name}")
+        is_installed = False
+    else:
+        is_installed = check_func(software_path)
+
+    if program_name == "MGLTOOLS":
+        # For MGLTOOLS, we only need to check if the conda environment exists
+        if not is_installed:
+            install_software(program_name, Path("/"))
+    else:
+        if not is_installed:
+            install_software(program_name, software_path)
 
 def install_software(program_name: str, software_path: Path) -> None:
 	"""
-    Install the specified software using the provided installation function.
+	Install the specified software using the provided installation function.
 
-    Args:
-        program_name (str): The name of the software to install.
-        software_path (Path): The path to the software.
+	Args:
+		program_name (str): The name of the software to install.
+		software_path (Path): The path to the software.
 
-    Raises:
-        Exception: If an error occurs during installation.
-    """
+	Raises:
+		Exception: If an error occurs during installation.
+	"""
 	install_func = SOFTWARE_INFO.get(program_name, {}).get("install")
 	if install_func is None:
 		printlog(f"No installation function found for {program_name}")

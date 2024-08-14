@@ -23,9 +23,10 @@ from scripts.utilities.utilities import parallel_SDF_loader
 
 class SminaDocking(DockingFunction):
 
-	@ensure_software_installed("SMINA")
 	def __init__(self, software_path: Path):
 		super().__init__("SMINA", software_path)
+		self.software_path = software_path
+		ensure_software_installed("SMINA", software_path)
 
 	def dock_batch(self,
 					batch_file: Path,

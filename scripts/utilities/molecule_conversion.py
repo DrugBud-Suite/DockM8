@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 pybel.ob.obErrorLog.StopLogging()
 
 
-@ensure_software_installed("MGLTOOLS")
+
 def convert_molecules(input_file: Path, output_file_or_path: Path, input_format: str, output_format: str):
 	"""
 	Converts molecules from one format to another using various conversion tools.
@@ -46,6 +46,7 @@ def convert_molecules(input_file: Path, output_file_or_path: Path, input_format:
 
 	# For protein conversion to pdbqt file format using MGLTools
 	if input_format == "pdb" and output_format == "pdbqt":
+		ensure_software_installed("MGLTOOLS", Path("/"))
 		try:
 			cmd = f"conda run -n mgltools prepare_receptor4.py -r {input_file} -o {output_file_or_path} -A bond_hydrogens"
 			subprocess.run(cmd, shell=True)

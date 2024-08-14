@@ -26,9 +26,10 @@ class GenScore(ScoringFunction):
     GenScore scoring function implementation.
     """
 
-	@ensure_software_installed("GENSCORE")
 	def __init__(self, score_type: str, software_path: Path):
 		genscore_path = software_path / "GenScore"
+		self.software_path = software_path
+		ensure_software_installed("GenScore", software_path)
 		if score_type == "scoring":
 			super().__init__("GenScore-scoring", "GenScore-scoring", "max", (0, 200), genscore_path)
 			self.model = genscore_path / "trained_models" / "GatedGCN_ft_1.0_1.pth"
@@ -43,6 +44,8 @@ class GenScore(ScoringFunction):
 			self.encoder = "gt"
 		else:
 			raise ValueError(f"Invalid GenScore type: {score_type}")
+
+
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""

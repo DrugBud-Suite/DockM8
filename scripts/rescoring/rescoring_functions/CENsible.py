@@ -28,9 +28,10 @@ class CENsible(ScoringFunction):
     CENsible scoring function implementation.
     """
 
-	@ensure_software_installed("CENSIBLE")
 	def __init__(self, software_path: Path):
 		super().__init__("CENsible", "CENsible", "max", (0, 20), software_path)
+		self.software_path = software_path
+		ensure_software_installed("CENSIBLE", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""

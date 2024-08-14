@@ -26,9 +26,10 @@ class Vinardo(ScoringFunction):
     Vinardo scoring function implementation.
     """
 
-	@ensure_software_installed("GNINA")
 	def __init__(self, software_path: Path):
 		super().__init__("Vinardo", "Vinardo", "min", (200, 20), software_path)
+		self.software_path = software_path
+		ensure_software_installed("Vinardo", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
@@ -51,10 +52,10 @@ class Vinardo(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.name,
-						protein_file=protein_file)
+				split_files_sdfs,
+				n_cpus,
+				display_name=self.name,
+				protein_file=protein_file)
 
 			vinardo_dataframes = self._load_rescoring_results(rescoring_results)
 			vinardo_rescoring_results = self._combine_rescoring_results(vinardo_dataframes)
@@ -109,10 +110,10 @@ class Vinardo(ScoringFunction):
 		for file in result_files:
 			try:
 				df = PandasTools.LoadSDF(str(file),
-						idName="Pose ID",
-						molColName=None,
-						includeFingerprints=False,
-						embedProps=False)
+					idName="Pose ID",
+					molColName=None,
+					includeFingerprints=False,
+					embedProps=False)
 				dataframes.append(df)
 			except Exception as e:
 				printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")

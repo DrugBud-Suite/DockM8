@@ -21,9 +21,10 @@ from scripts.utilities.molecule_conversion import convert_molecules
 
 class PsovinaDocking(DockingFunction):
 
-	@ensure_software_installed("PSOVINA")
 	def __init__(self, software_path: Path):
 		super().__init__("PSOVINA", software_path)
+		self.software_path = software_path
+		ensure_software_installed("PSOVINA", software_path)
 
 	def dock_batch(self,
 		batch_file: Path,

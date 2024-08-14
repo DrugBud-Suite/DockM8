@@ -27,9 +27,10 @@ class ITScoreAff(ScoringFunction):
     ITScoreAff scoring function implementation.
     """
 
-	@ensure_software_installed("IT_SCORE_AFF")
 	def __init__(self, software_path: Path):
 		super().__init__("ITScoreAff", "ITScoreAff", "min", (-200, 100), software_path)
+		self.software_path = software_path
+		ensure_software_installed("IT_SCORE_AFF", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
@@ -60,10 +61,10 @@ class ITScoreAff(ScoringFunction):
 				return pd.DataFrame()
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.name,
-						protein_mol2=protein_mol2)
+													split_files_sdfs,
+													n_cpus,
+													display_name=self.name,
+													protein_mol2=protein_mol2)
 
 			itscoreaff_rescoring_results = self._combine_rescoring_results(rescoring_results)
 

@@ -20,16 +20,17 @@ from scripts.utilities.utilities import parallel_SDF_loader
 
 class PlantsDocking(DockingFunction):
 
-	@ensure_software_installed("PLANTS")
 	def __init__(self, software_path: Path):
 		super().__init__("PLANTS", software_path)
+		self.software_path = software_path
+		ensure_software_installed("PLANTS", software_path)
 
 	def dock_batch(self,
-		batch_file: Path,
-		protein_file: Path,
-		pocket_definition: Dict[str, list],
-		exhaustiveness: int,
-		n_poses: int) -> Path:
+					batch_file: Path,
+					protein_file: Path,
+					pocket_definition: Dict[str, list],
+					exhaustiveness: int,
+					n_poses: int) -> Path:
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
 		results_folder = temp_dir / "results"
@@ -105,12 +106,12 @@ class PlantsDocking(DockingFunction):
 			self.remove_temp_dir(result_file.parent)
 
 	def generate_plants_config(self,
-			protein_mol2: Path,
-			ligands_mol2: Path,
-			pocket_definition: dict,
-			n_poses: int,
-			output_dir: Path,
-			config_path: Path):
+								protein_mol2: Path,
+								ligands_mol2: Path,
+								pocket_definition: dict,
+								n_poses: int,
+								output_dir: Path,
+								config_path: Path):
 		config_lines = [
 			"# search algorithm\n",
 			"search_speed speed1\n",

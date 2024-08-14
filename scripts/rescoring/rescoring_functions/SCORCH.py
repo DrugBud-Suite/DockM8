@@ -27,9 +27,10 @@ class SCORCH(ScoringFunction):
     SCORCH scoring function implementation.
     """
 
-	@ensure_software_installed("SCORCH")
 	def __init__(self, software_path: Path):
 		super().__init__("SCORCH", "SCORCH", "max", (0, 1), software_path)
+		self.software_path = software_path
+		ensure_software_installed("SCORCH", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
@@ -60,10 +61,10 @@ class SCORCH(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.name,
-						scorch_protein=scorch_protein)
+													split_files_sdfs,
+													n_cpus,
+													display_name=self.name,
+													scorch_protein=scorch_protein)
 
 			scorch_dataframes = self._load_rescoring_results(rescoring_results)
 			scorch_rescoring_results = self._combine_rescoring_results(scorch_dataframes)

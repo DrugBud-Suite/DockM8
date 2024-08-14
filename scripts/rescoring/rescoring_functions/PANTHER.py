@@ -26,7 +26,6 @@ class PANTHER(ScoringFunction):
     PANTHER scoring function implementation.
     """
 
-	@ensure_software_installed("PANTHER")
 	def __init__(self, score_type: str, software_path: Path):
 		if score_type == "PANTHER":
 			super().__init__("PANTHER", "PANTHER", "max", (0, 10), software_path)
@@ -36,6 +35,8 @@ class PANTHER(ScoringFunction):
 			super().__init__("PANTHER-Shape", "PANTHER-Shape", "max", (0, 10), software_path)
 		else:
 			raise ValueError(f"Invalid PANTHER score type: {score_type}")
+		self.software_path = software_path
+		ensure_software_installed("PANTHER", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
@@ -61,10 +62,10 @@ class PANTHER(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.name,
-						negative_image=negative_image)
+													split_files_sdfs,
+													n_cpus,
+													display_name=self.name,
+													negative_image=negative_image)
 
 			panther_dataframes = self._load_rescoring_results(rescoring_results)
 			panther_rescoring_results = self._combine_rescoring_results(panther_dataframes)
@@ -116,8 +117,8 @@ class PANTHER(ScoringFunction):
 						f_out.write(line)
 
 			panther_cmd = (f"conda run -n panther python {self.software_path}/panther/panther.py"
-				f" {panther_input}"
-				f" {negative_image}")
+							f" {panther_input}"
+							f" {negative_image}")
 
 			result = subprocess.run(panther_cmd, shell=True, capture_output=True, text=True)
 
@@ -188,10 +189,10 @@ class PANTHER(ScoringFunction):
 			if file and file.is_file():
 				try:
 					df = PandasTools.LoadSDF(str(file),
-							idName="Pose ID",
-							molColName=None,
-							includeFingerprints=False,
-							embedProps=False)
+												idName="Pose ID",
+												molColName=None,
+												includeFingerprints=False,
+												embedProps=False)
 					dataframes.append(df)
 				except Exception as e:
 					printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")
@@ -213,7 +214,7 @@ class PANTHER(ScoringFunction):
 			combined_results = combined_results[["Pose ID", "Similarity_best", "Similarity_ESP", "Similarity_shape"]]
 			combined_results.rename(columns={
 				"Similarity_best": "PANTHER", "Similarity_ESP": "PANTHER-ESP", "Similarity_shape": "PANTHER-Shape"},
-					inplace=True)
+									inplace=True)
 			return combined_results[["Pose ID", self.column_name]]
 		except Exception as e:
 			printlog(f"ERROR: Could not combine {self.column_name} rescored poses")

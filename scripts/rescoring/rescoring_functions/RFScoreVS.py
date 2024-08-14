@@ -25,9 +25,10 @@ class RFScoreVS(ScoringFunction):
     RFScoreVS scoring function implementation.
     """
 
-	@ensure_software_installed("RF_SCORE_VS")
 	def __init__(self, software_path: Path):
 		super().__init__("RFScoreVS", "RFScoreVS", "max", (5, 10), software_path)
+		self.software_path = software_path
+		ensure_software_installed("RF_SCORE_VS", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
@@ -50,10 +51,10 @@ class RFScoreVS(ScoringFunction):
 			split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
 			rescoring_results = parallel_executor(self._rescore_split_file,
-						split_files_sdfs,
-						n_cpus,
-						display_name=self.name,
-						protein_file=protein_file)
+													split_files_sdfs,
+													n_cpus,
+													display_name=self.name,
+													protein_file=protein_file)
 
 			rfscorevs_dataframes = self._load_rescoring_results(rescoring_results)
 			rfscorevs_rescoring_results = self._combine_rescoring_results(rfscorevs_dataframes)
@@ -81,10 +82,10 @@ class RFScoreVS(ScoringFunction):
         """
 		results = split_file.parent / f"{split_file.stem}_RFScoreVS_scores.csv"
 		rfscorevs_cmd = (f"{self.software_path}/rf-score-vs"
-				f" --receptor {protein_file}"
-				f" {split_file}"
-				f" -O {results}"
-				" -n 1")
+							f" --receptor {protein_file}"
+							f" {split_file}"
+							f" -O {results}"
+							" -n 1")
 		try:
 			subprocess.run(rfscorevs_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 		except subprocess.CalledProcessError as e:

@@ -21,9 +21,10 @@ from scripts.utilities.utilities import parallel_SDF_loader
 
 class FABindDocking(DockingFunction):
 
-	@ensure_software_installed("FABind")
 	def __init__(self, software_path: Path):
 		super().__init__("FABind", software_path)
+		self.software_path = software_path
+		ensure_software_installed("FABind", software_path)
 
 	def dock_batch(self,
 		batch_file: Path,
