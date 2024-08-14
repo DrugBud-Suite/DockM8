@@ -25,7 +25,7 @@ class RTMScore(ScoringFunction):
 	def __init__(self, software_path: Path):
 		super().__init__("RTMScore", "RTMScore", "max", (0, 100), software_path)
 		self.software_path = software_path
-		ensure_software_installed("RTMScore", software_path)
+		ensure_software_installed("RTMSCORE", software_path)
 
 	def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
 		"""
