@@ -66,4 +66,4 @@ def Pareto_rank_best(df: pd.DataFrame, selected_columns: list, normalize: bool =
 		df['Pareto_rank'] = (df['Pareto_rank'].max() - df['Pareto_rank']) / (df['Pareto_rank'].max() -
 							df['Pareto_rank'].min())
 	df = df.rename(columns={'Pareto_rank': 'Pareto_rank_best'})
-	return df[['ID', 'Pareto_rank_best']]
+	return df[['ID', 'Pareto_rank_best']].sort_values('Pareto_rank_best', ascending=False)

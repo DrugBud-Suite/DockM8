@@ -62,4 +62,4 @@ def Pareto_rank_avg(df: pd.DataFrame, selected_columns: list, normalize: bool = 
 		df['Pareto_rank'] = (df['Pareto_rank'].max() - df['Pareto_rank']) / (df['Pareto_rank'].max() -
 																				df['Pareto_rank'].min())
 	df = df.rename(columns={'Pareto_rank': 'Pareto_rank_avg'})
-	return df[['ID', 'Pareto_rank_avg']]
+	return df[['ID', 'Pareto_rank_avg']].sort_values('Pareto_rank_avg', ascending=False)
