@@ -10,8 +10,6 @@ tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p /
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.consensus.consensus_methods.avg_ECR import avg_ECR
-from scripts.consensus.consensus_methods.avg_R_ECR import avg_R_ECR
 from scripts.consensus.consensus_methods.ECR_avg import ECR_avg
 from scripts.consensus.consensus_methods.ECR_best import ECR_best
 from scripts.consensus.consensus_methods.RbR_best import RbR_best
@@ -20,6 +18,9 @@ from scripts.consensus.consensus_methods.RbV_best import RbV_best
 from scripts.consensus.consensus_methods.RbV_avg import RbV_avg
 from scripts.consensus.consensus_methods.Zscore_avg import Zscore_avg
 from scripts.consensus.consensus_methods.Zscore_best import Zscore_best
+from scripts.consensus.consensus_methods.Pareto_rank_best import Pareto_rank_best
+from scripts.consensus.consensus_methods.Pareto_rank_avg import Pareto_rank_avg
+
 from scripts.consensus.score_manipulation import rank_scores, standardize_scores
 
 
@@ -43,6 +44,22 @@ def test_data():
 		"CNN-Affinity",
 		"ConvexPLR",
 		"RTMScore"]
+	return standardized_df, ranked_df, selected_columns
+
+@pytest.fixture
+def test_data_singlepose():
+	df = pd.read_csv(str(dockm8_path / "tests" / "test_files" / "consensus" / "allposes_rescored_singlepose.csv"))
+	standardized_df = standardize_scores(df, 'min_max')
+	standardized_df["ID"] = standardized_df["Pose ID"].str.split("_").str[0]
+	ranked_df = rank_scores(standardized_df)
+	ranked_df["ID"] = ranked_df["Pose ID"].str.split("_").str[0]
+	selected_columns = [
+		"KORP-PL",
+		"GenScore-scoring",
+		"CNN-Score",
+		"Vinardo",
+		"CNN-Affinity",
+		"ConvexPLR",]
 	return standardized_df, ranked_df, selected_columns
 
 
@@ -75,38 +92,6 @@ def test_ECR_avg(test_data):
 			0.17387747217794491,
 			0.010157824388389454]})
 	output = ECR_avg(ranked_df, selected_columns).reset_index(drop=True)
-	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
-
-
-def test_avg_ECR(test_data):
-	standardized_df, ranked_df, selected_columns = test_data
-	expected_output = pd.DataFrame({
-		'ID': ['FCG1390566', 'FCG16141527', 'FCG16425532', 'FCG16600623', 'FCG17585042', 'FCG17822054', 'FCG18066182'],
-		'avg_ECR': [
-			2.424818421603799e-06,
-			0.04843430298365792,
-			0.0,
-			1.0,
-			0.00631222571619443,
-			1.029015873468495e-05,
-			7.598878966962663e-09]})
-	output = avg_ECR(ranked_df, selected_columns).reset_index(drop=True)
-	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
-
-
-def test_avg_R_ECR(test_data):
-	standardized_df, ranked_df, selected_columns = test_data
-	expected_output = pd.DataFrame({
-		'ID': ['FCG1390566', 'FCG16141527', 'FCG16425532', 'FCG16600623', 'FCG17585042', 'FCG17822054', 'FCG18066182'],
-		'avg_R_ECR': [
-			0.2351831858175574,
-			1.0,
-			0.0,
-			0.5392849712705954,
-			0.462815721489136,
-			0.22324562885339497,
-			0.012046980673249483]})
-	output = avg_R_ECR(ranked_df, selected_columns).reset_index(drop=True)
 	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
 
 
@@ -190,3 +175,36 @@ def test_Zscore_avg(test_data):
 			0.40016972853383725]})
 	output = Zscore_avg(standardized_df, selected_columns).reset_index(drop=True)
 	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
+
+def test_best_and_avg_consensus(test_data_singlepose):
+	standardized_df, ranked_df, selected_columns = test_data_singlepose
+	zscore_best = Zscore_best(standardized_df, selected_columns)
+	zscore_avg = Zscore_avg(standardized_df, selected_columns)
+	merged_zscore = zscore_best.merge(zscore_avg, on='ID')
+	pd.testing.assert_series_equal(merged_zscore['Zscore_best'], merged_zscore['Zscore_avg'], 
+                                    check_dtype=False, check_exact=False, check_names=False,
+									rtol=1e-5, atol=1e-8)
+	rbr_best = RbR_best(ranked_df, selected_columns)
+	rbr_avg = RbR_avg(ranked_df, selected_columns)
+	merged_rbr = rbr_best.merge(rbr_avg, on='ID')
+	pd.testing.assert_series_equal(merged_rbr['RbR_best'], merged_rbr['RbR_avg'], 
+                                    check_dtype=False, check_exact=False, check_names=False,
+									rtol=1e-5, atol=1e-8)
+	rbv_best = RbV_best(standardized_df, selected_columns)
+	rbv_avg = RbV_avg(standardized_df, selected_columns)
+	merged_rbv = rbv_best.merge(rbv_avg, on='ID')
+	pd.testing.assert_series_equal(merged_rbv['RbV_best'], merged_rbv['RbV_avg'], 
+                                    check_dtype=False, check_exact=False, check_names=False,
+									rtol=1e-5, atol=1e-8)
+	ecr_best = ECR_best(ranked_df, selected_columns)
+	ecr_avg = ECR_avg(ranked_df, selected_columns)
+	merged_ecr = ecr_best.merge(ecr_avg, on='ID')
+	pd.testing.assert_series_equal(merged_ecr['ECR_best'], merged_ecr['ECR_avg'], 
+                                    check_dtype=False, check_exact=False, check_names=False,
+									rtol=1e-5, atol=1e-8)
+	pareto_best = Pareto_rank_best(ranked_df, selected_columns)
+	pareto_avg = Pareto_rank_avg(ranked_df, selected_columns)
+	merged_pareto = pareto_best.merge(pareto_avg, on='ID')
+	pd.testing.assert_series_equal(merged_pareto['Pareto_rank_best'], merged_pareto['Pareto_rank_avg'], 
+                                    check_dtype=False, check_exact=False, check_names=False,
+									rtol=1e-5, atol=1e-8)
