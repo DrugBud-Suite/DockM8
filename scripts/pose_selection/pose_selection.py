@@ -80,6 +80,7 @@ def select_poses(poses: Union[Path, pd.DataFrame],
 	# Filter the original DataFrame based on the clustered poses
 	filtered_poses = poses_df[poses_df["Pose ID"].isin(selected_poses["Pose ID"])]
 	filtered_poses = filtered_poses[["Pose ID", "Molecule", "ID"]]
+	filtered_poses = filtered_poses.sort_values('Pose ID')
 	# Write the filtered poses to a SDF file
 	if output_file:
 		PandasTools.WriteSDF(filtered_poses,
