@@ -102,128 +102,116 @@ def remove_temp_dir(temp_dir: Path):
 
 
 def rescore_poses(protein_file: Path,
-					pocket_definition: dict,
-					software: Path,
-					poses: Union[Path, pd.DataFrame],
-					functions: List[str],
-					n_cpus: int,
-					output_file: Optional[Path] = None) -> pd.DataFrame:
-	"""
-	Rescores poses using specified scoring functions. If an output file is provided and exists,
-	it will only run the missing scoring functions. Saves results to CSV and SDF incrementally
-	if output_file is specified, and adds a SMILES column to the output.
+                  pocket_definition: dict,
+                  software: Path,
+                  poses: Union[Path, pd.DataFrame],
+                  functions: List[str],
+                  n_cpus: int,
+                  output_file: Optional[Path] = None) -> pd.DataFrame:
+    RDLogger.DisableLog("rdApp.*")
+    tic = time.perf_counter()
 
-	Args:
-		protein_file (Path): Path to the protein file.
-		pocket_definition (dict): Dictionary defining the pocket.
-		software (Path): Path to the software.
-		poses (Union[Path, pd.DataFrame]): Path to the clustered SDF file or DataFrame of poses.
-		functions (List[str]): List of scoring function names.
-		n_cpus (int): Number of CPUs to use for parallel processing.
-		output_file (Optional[Path], optional): Path to the output CSV file. Defaults to None.
+    # Process input
+    temp_dir = create_temp_dir("rescore_poses")
+    try:
+        if isinstance(poses, Path):
+            sdf = poses
+            original_poses = parallel_SDF_loader(sdf, molColName='Molecule', idName='Pose ID')
+        elif isinstance(poses, pd.DataFrame):
+            sdf = temp_dir / "temp_clustered.sdf"
+            original_poses = poses.copy()
+            PandasTools.WriteSDF(original_poses,
+                                 sdf,
+                                 molColName='Molecule',
+                                 idName='Pose ID',
+                                 properties=list(original_poses.columns))
+        else:
+            raise ValueError("poses must be a Path or DataFrame")
 
-	Returns:
-		pd.DataFrame: Combined DataFrame of the rescored poses, including SMILES.
-	"""
-	RDLogger.DisableLog("rdApp.*")
-	tic = time.perf_counter()
+        # Sort original_poses by 'Pose ID' to ensure consistent ordering
+        original_poses = original_poses.sort_values('Pose ID')
 
-	# Process input
-	temp_dir = create_temp_dir("rescore_poses")
-	try:
-		if isinstance(poses, Path):
-			sdf = poses
-			original_poses = parallel_SDF_loader(sdf, molColName='Molecule', idName='Pose ID')
-		elif isinstance(poses, pd.DataFrame):
-			sdf = temp_dir / "temp_clustered.sdf"
-			original_poses = poses.copy()
-			PandasTools.WriteSDF(original_poses,
-									sdf,
-									molColName='Molecule',
-									idName='Pose ID',
-									properties=list(original_poses.columns))
-		else:
-			raise ValueError("poses must be a Path or DataFrame")
+        existing_results = pd.DataFrame()
+        functions_to_run = functions.copy()
 
-		existing_results = pd.DataFrame()
-		functions_to_run = functions.copy()
+        if output_file and output_file.exists():
+            existing_results = pd.read_csv(output_file)
+            existing_results = existing_results[[
+                col for col in existing_results.columns if col in list(RESCORING_FUNCTIONS.keys()) + ["Pose ID"]]]
+            printlog(f"Found existing results in {output_file}")
+            existing_functions = [
+                col for col in existing_results.columns if col != "Pose ID" and col in list(RESCORING_FUNCTIONS.keys())]
+            functions_to_run = [f for f in functions if f not in existing_functions]
+            printlog(f"Functions to run: {', '.join(functions_to_run)}")
+            combined_df = pd.merge(original_poses, existing_results, on="Pose ID", how="left").sort_values('Pose ID')
+        elif output_file:
+            original_poses['Pose ID'].to_csv(output_file, index=False)
+            combined_df = original_poses
 
-		if output_file and output_file.exists():
-			existing_results = pd.read_csv(output_file)
-			existing_results = existing_results[[
-				col for col in existing_results.columns if col in list(RESCORING_FUNCTIONS.keys()) + ["Pose ID"]]]
-			printlog(f"Found existing results in {output_file}")
-			existing_functions = [
-				col for col in existing_results.columns if col != "Pose ID" and col in list(RESCORING_FUNCTIONS.keys())]
-			functions_to_run = [f for f in functions if f not in existing_functions]
-			printlog(f"Functions to run: {', '.join(functions_to_run)}")
-			combined_df = pd.merge(original_poses, existing_results, on="Pose ID", how="left")
-		elif output_file:
-			original_poses['Pose ID'].to_csv(output_file, index=False)
-			combined_df = original_poses
+        for function in functions_to_run:
+            scoring_function_class = RESCORING_FUNCTIONS.get(function)['class']
+            if scoring_function_class:
+                try:
+                    scoring_function: ScoringFunction = scoring_function_class(software_path=software)
+                    result = scoring_function.rescore(sdf,
+                                                      n_cpus,
+                                                      protein_file=protein_file,
+                                                      pocket_definition=pocket_definition)
+                    combined_df = pd.merge(combined_df, result, on="Pose ID", how="left").sort_values('Pose ID')
+                    if output_file:
+                        columns_to_write = [col for col in combined_df.columns if col != 'Molecule']
+                        combined_df[columns_to_write].to_csv(output_file, index=False)
+                except Exception as e:
+                    printlog(f"Failed for {function} : {e}")
+                    printlog(traceback.format_exc())
+            else:
+                printlog(f"Unknown scoring function: {function}")
 
-		for function in functions_to_run:
-			scoring_function_class = RESCORING_FUNCTIONS.get(function)['class']
-			if scoring_function_class:
-				try:
-					scoring_function: ScoringFunction = scoring_function_class(software_path=software)
-					result = scoring_function.rescore(sdf,
-														n_cpus,
-														protein_file=protein_file,
-														pocket_definition=pocket_definition)
-					combined_df = pd.merge(combined_df, result, on="Pose ID", how="left")
-					if output_file:
-						columns_to_write = [col for col in combined_df.columns if col != 'Molecule']
-						combined_df[columns_to_write].to_csv(output_file, index=False)
-				except Exception as e:
-					printlog(f"Failed for {function} : {e}")
-					printlog(traceback.format_exc())
-			else:
-				printlog(f"Unknown scoring function: {function}")
+        # Ensure required columns are present
+        if 'ID' not in combined_df.columns:
+            combined_df['ID'] = combined_df['Pose ID'].str.split("_").str[0]
+        if 'SMILES' not in combined_df.columns:
+            combined_df['SMILES'] = combined_df['Molecule'].apply(lambda x: Chem.MolToSmiles(x)
+                                                                  if x is not None else None)
 
-		# Ensure required columns are present
-		if 'ID' not in combined_df.columns:
-			combined_df['ID'] = combined_df['Pose ID'].str.split("_").str[0]
-		if 'SMILES' not in combined_df.columns:
-			combined_df['SMILES'] = combined_df['Molecule'].apply(lambda x: Chem.MolToSmiles(x)
-																	if x is not None else None)
+        # Reorder columns for CSV output
+        csv_columns = ['Pose ID', 'ID', 'SMILES'] + [
+            col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
+        csv_df = combined_df[csv_columns].sort_values('Pose ID')
 
-		# Reorder columns for CSV output
-		csv_columns = ['Pose ID', 'ID', 'SMILES'] + [
-			col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
-		csv_df = combined_df[csv_columns]
+        # Convert columns to float where possible
+        for col in csv_df.columns:
+            if col not in ["Pose ID", "ID", "SMILES"]:
+                csv_df[col] = pd.to_numeric(csv_df[col], errors='coerce')
 
-		# Convert columns to float where possible
-		for col in csv_df.columns:
-			if col not in ["Pose ID", "ID", "SMILES"]:
-				csv_df[col] = pd.to_numeric(csv_df[col], errors='coerce')
+        # Write final CSV
+        if output_file:
+            csv_df.to_csv(output_file, index=False)
+            if len(functions_to_run) > 0:
+                printlog(f"Final rescored poses CSV written to: {output_file}")
 
-		# Write final CSV
-		if output_file:
-			csv_df.to_csv(output_file, index=False)
-			printlog(f"Final rescored poses CSV written to: {output_file}")
+        # Reorder columns for SDF output
+        sdf_columns = ['Pose ID', 'ID', 'SMILES', 'Molecule'] + [
+            col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
+        sdf_df = combined_df[sdf_columns].sort_values('Pose ID')
 
-		# Reorder columns for SDF output
-		sdf_columns = ['Pose ID', 'ID', 'SMILES', 'Molecule'] + [
-			col for col in combined_df.columns if col not in ['Pose ID', 'ID', 'SMILES', 'Molecule']]
-		sdf_df = combined_df[sdf_columns]
+        # Write final SDF
+        if output_file:
+            PandasTools.WriteSDF(sdf_df,
+                                 str(output_file.with_suffix(".sdf")),
+                                 molColName='Molecule',
+                                 idName='Pose ID',
+                                 properties=list(sdf_df.columns))
+            if len(functions_to_run) > 0:
+                printlog(f"Final rescored poses SDF written to: {output_file.with_suffix('.sdf')}")
+            return output_file
+        toc = time.perf_counter()
+        printlog(f"Rescoring complete in {toc - tic:0.4f}!")
 
-		# Write final SDF
-		if output_file:
-			PandasTools.WriteSDF(sdf_df,
-									str(output_file.with_suffix(".sdf")),
-									molColName='Molecule',
-									idName='Pose ID',
-									properties=list(sdf_df.columns))
-			printlog(f"Final rescored poses SDF written to: {output_file.with_suffix('.sdf')}")
-			return output_file
-		toc = time.perf_counter()
-		printlog(f"Rescoring complete in {toc - tic:0.4f}!")
+        return combined_df.sort_values('Pose ID')
 
-		return combined_df
-
-	finally:
-		remove_temp_dir(temp_dir)
+    finally:
+        remove_temp_dir(temp_dir)
 
 
 def rescore_docking(poses: Union[Path, pd.DataFrame],
