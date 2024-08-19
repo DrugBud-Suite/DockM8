@@ -152,10 +152,12 @@ def check_config(config):
 		raise DockM8Error(
 			f"DockM8 configuration error: Invalid docking library path ({docking_library}) specified in the configuration file."
 		)
-	if not docking_library.endswith(".sdf"):
+	elif not docking_library.endswith(".sdf"):
 		raise DockM8Error(
 			f"DockM8 configuration error: Invalid docking library file format ({docking_library}) specified in the configuration file. Please use .sdf files."
 		)
+	else:
+		config["docking_library"] = Path(docking_library)
 	# Check protein preparation configuration
 	protein_preparation = config.get("protein_preparation", {})
 
