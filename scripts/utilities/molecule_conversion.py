@@ -41,7 +41,7 @@ def convert_molecules(input_file: Path, output_file_or_path: Path, input_format:
 		subprocess.CalledProcessError: If an error occurs during conversion using MGLTools.
 		Exception: If an error occurs during conversion using Meeko or Pybel.
 	"""
-	if not input_file.exists():
+	if not Path(input_file).exists():
 		raise FileNotFoundError(f"Input file for molecule conversion not found: {input_file}")
 
 	# For protein conversion to pdbqt file format using MGLTools
