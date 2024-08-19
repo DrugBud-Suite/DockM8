@@ -33,7 +33,8 @@ class PlantsDocking(DockingFunction):
 					n_poses: int) -> Path:
 		RDLogger.DisableLog("rdApp.*")
 		temp_dir = self.create_temp_dir()
-		results_folder = temp_dir / "results"
+		results_folder = temp_dir / f"results_{batch_file.stem}"
+		
 
 		# Convert molecules to mol2 format
 		plants_protein_mol2 = temp_dir / "protein.mol2"
@@ -67,7 +68,8 @@ class PlantsDocking(DockingFunction):
 			subprocess.run(plants_docking_command,
 							shell=True,
 							stdout=subprocess.DEVNULL,
-							stderr=subprocess.STDOUT)
+							stderr=subprocess.STDOUT,
+							cwd=str(temp_dir))
 		except subprocess.CalledProcessError as e:
 			printlog(f"ERROR: PLANTS docking command failed: {str(e)}")
 			self.remove_temp_dir(temp_dir)
@@ -122,6 +124,7 @@ class PlantsDocking(DockingFunction):
 			"rescore_mode simplex\n",
 			"flip_ring_corners 0\n",
 			"# scoring functions\n",
+			'# Intermolecular (protein-ligand interaction scoring)\n',
 			"scoring_function chemplp\n",
 			"outside_binding_site_penalty 50.0\n",
 			"enable_sulphur_acceptors 1\n",

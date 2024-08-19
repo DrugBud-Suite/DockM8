@@ -54,8 +54,10 @@ class CHEMPLP(ScoringFunction):
 				printlog("Error converting molecules:")
 				printlog(traceback.format_exc())
 				return pd.DataFrame()
+			
+			pocket_definition = kwargs.get("pocket_definition")
 
-			config_file = self._create_config_file(temp_dir, plants_protein_mol2, plants_ligands_mol2)
+			config_file = self._create_config_file(temp_dir, plants_protein_mol2, plants_ligands_mol2, pocket_definition)
 
 			chemplp_cmd = (f"{self.software_path}/PLANTS"
 				f" --mode rescore"
@@ -65,7 +67,8 @@ class CHEMPLP(ScoringFunction):
 				subprocess.run(chemplp_cmd,
 					shell=True,
 					stdout=subprocess.DEVNULL,
-					stderr=subprocess.DEVNULL)
+					stderr=subprocess.DEVNULL
+					)
 			except subprocess.CalledProcessError as e:
 				printlog("Error running PLANTS docking:")
 				printlog(traceback.format_exc())
@@ -89,9 +92,10 @@ class CHEMPLP(ScoringFunction):
 			printlog(traceback.format_exc())
 			return pd.DataFrame()
 		finally:
-			self.remove_temp_dir(temp_dir)
+			pass
+			#self.remove_temp_dir(temp_dir)
 
-	def _create_config_file(self, temp_dir: Path, protein_file: Path, ligands_file: Path) -> Path:
+	def _create_config_file(self, temp_dir: Path, protein_file: Path, ligands_file: Path, pocket_definition: dict) -> Path:
 		"""
         Create a configuration file for PLANTS.
 
@@ -104,36 +108,47 @@ class CHEMPLP(ScoringFunction):
             Path: The path to the created configuration file.
         """
 		config_content = [
-			"# search algorithm",
-			"search_speed speed1",
-			"aco_ants 20",
-			"flip_amide_bonds 0",
-			"flip_planar_n 1",
-			"force_flipped_bonds_planarity 0",
-			"force_planar_bond_rotation 1",
-			"rescore_mode simplex",
-			"flip_ring_corners 0",
-			"# scoring functions",
-			"scoring_function chemplp",
-			"outside_binding_site_penalty 50.0",
-			"enable_sulphur_acceptors 1",
-			"ligand_intra_score clash2",
-			"chemplp_clash_include_14 1",
-			"chemplp_clash_include_HH 0",
-			f"protein_file {protein_file}",
-			f"ligand_file {ligands_file}",
-			f"output_dir {temp_dir / 'results'}",
-			"write_multi_mol2 1",
-			"cluster_structures 10",
-			"cluster_rmsd 2.0",
-			"write_ranking_links 0",
-			"write_protein_bindingsite 0",
-			"write_protein_conformations 0",
-			"write_protein_splitted 0",
-			"write_merged_protein 0", ]
+			"# search algorithm\n",
+			"search_speed speed1\n",
+			"aco_ants 20\n",
+			"flip_amide_bonds 0\n",
+			"flip_planar_n 1\n",
+			"force_flipped_bonds_planarity 0\n",
+			"force_planar_bond_rotation 1\n",
+			"rescore_mode s\n",
+			"flip_ring_corners 0\n",
+			"# scoring functions\n",
+			'# Intermolecular (protein-ligand interaction scoring)\n',
+			"scoring_function chemplp\n",
+			"outside_binding_site_penalty 50.0\n",
+			"enable_sulphur_acceptors 1\n",
+			'# Intramolecular ligand scoring\n',
+			"ligand_intra_score clash2\n",
+			"chemplp_clash_include_14 1\n",
+			"chemplp_clash_include_HH 0\n",
+			"# input\n",
+			f"protein_file {protein_file}\n",
+			f"ligand_file {ligands_file}\n",
+			"# output\n",
+			f"output_dir {temp_dir / 'results'}\n",
+			'# write single mol2 files (e.g. for RMSD calculation)\n',
+			"write_multi_mol2 1\n",
+			"# binding site definition\n",
+			f'bindingsite_center {pocket_definition["center"][0]} {pocket_definition["center"][1]} {pocket_definition["center"][2]}\n',
+			f'bindingsite_radius {pocket_definition["size"][0] / 2}\n',
+			'# cluster algorithm\n',
+			"cluster_structures 10\n",
+			"cluster_rmsd 2.0\n",
+			"# write\n",
+			"write_ranking_links 0\n",
+			"write_protein_bindingsite 0\n",
+			"write_protein_conformations 0\n",
+			"write_protein_splitted 0\n",
+			"write_merged_protein 0\n", 
+			"####\n", ]
 
 		config_file = temp_dir / "config.txt"
 		with config_file.open("w") as f:
-			f.write("\n".join(config_content))
+			f.writelines(config_content)
 
 		return config_file
