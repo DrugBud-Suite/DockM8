@@ -21,8 +21,9 @@ from scripts.consensus.consensus_methods.RbV_avg import RbV_avg
 from scripts.consensus.consensus_methods.RbV_best import RbV_best
 from scripts.consensus.consensus_methods.Zscore_avg import Zscore_avg
 from scripts.consensus.consensus_methods.Zscore_best import Zscore_best
-from scripts.consensus.consensus_methods.Pareto_rank_avg import Pareto_rank_avg
-from scripts.consensus.consensus_methods.Pareto_rank_best import Pareto_rank_best
+from scripts.consensus.consensus_methods.Pareto_rank import Pareto_rank_best, Pareto_rank_avg
+from scripts.consensus.consensus_methods.TOPSIS import TOPSIS_best, TOPSIS_avg
+from scripts.consensus.consensus_methods.WeightedSumModel import WeightedSumModel_best, WeightedSumModel_avg
 from scripts.consensus.score_manipulation import rank_scores, standardize_scores
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 from scripts.utilities.logging import printlog
@@ -51,7 +52,16 @@ CONSENSUS_METHODS = {
 	'Pareto_rank_avg': {
 		'function': Pareto_rank_avg, 'type': 'score'},
 	'Pareto_rank_best': {
-		'function': Pareto_rank_best, 'type': 'score'}}
+		'function': Pareto_rank_best, 'type': 'score'},
+	'TOPSIS_avg': {
+		'function': TOPSIS_avg, 'type': 'score'},
+	'TOPSIS_best': {
+		'function': TOPSIS_best, 'type': 'score'},
+	'WeightedSumModel_avg': {
+		'function': WeightedSumModel_avg, 'type': 'score'},
+	'WeightedSumModel_best': {
+		'function': WeightedSumModel_best, 'type': 'score'}
+	}
 
 
 def apply_consensus_methods(poses_input: Union[Path, pd.DataFrame],
