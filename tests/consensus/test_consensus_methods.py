@@ -18,8 +18,9 @@ from scripts.consensus.consensus_methods.RbV_best import RbV_best
 from scripts.consensus.consensus_methods.RbV_avg import RbV_avg
 from scripts.consensus.consensus_methods.Zscore_avg import Zscore_avg
 from scripts.consensus.consensus_methods.Zscore_best import Zscore_best
-from scripts.consensus.consensus_methods.Pareto_rank_best import Pareto_rank_best
-from scripts.consensus.consensus_methods.Pareto_rank_avg import Pareto_rank_avg
+from scripts.consensus.consensus_methods.Pareto_rank import Pareto_rank_best, Pareto_rank_avg
+from scripts.consensus.consensus_methods.TOPSIS import TOPSIS_best, TOPSIS_avg
+from scripts.consensus.consensus_methods.WeightedSumModel import WeightedSumModel_best, WeightedSumModel_avg
 
 from scripts.consensus.score_manipulation import rank_scores, standardize_scores
 
@@ -176,6 +177,55 @@ def test_Zscore_avg(test_data):
 	output = Zscore_avg(standardized_df, selected_columns).reset_index(drop=True)
 	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
 
+def test_Pareto_rank_avg(test_data):
+	standardized_df, ranked_df, selected_columns = test_data
+	expected_output = pd.DataFrame({
+		'ID': ['FCG16141527', 'FCG18066182', 'FCG16425532', 'FCG1390566', 'FCG16600623', 'FCG17585042', 'FCG17822054'],
+		'Pareto_rank_avg':[0.3333333333333333, 0.6666666666666666, 0.8, 1.0, 1.0, 1.0, 1.0]})
+	output = Pareto_rank_avg(standardized_df, selected_columns).reset_index(drop=True)
+	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
+
+def test_Pareto_rank_best(test_data):
+	standardized_df, ranked_df, selected_columns = test_data
+	expected_output = pd.DataFrame({
+		'ID': ['FCG16141527', 'FCG16425532', 'FCG18066182', 'FCG17585042', 'FCG16600623', 'FCG1390566', 'FCG17822054'],
+		'Pareto_rank_best': [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]})
+	output = Pareto_rank_best(standardized_df, selected_columns).reset_index(drop=True)
+	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
+
+def test_TOPSIS_avg(test_data):
+	standardized_df, ranked_df, selected_columns = test_data
+	expected_output = pd.DataFrame({
+		'ID': ['FCG1390566', 'FCG16141527', 'FCG16425532', 'FCG16600623', 'FCG17585042', 'FCG17822054', 'FCG18066182'],
+		'TOPSIS_avg': [0.0, 1.0, 0.2956521739130434, 0.8369565217391304, 0.8369565217391304, 0.5760869565217391, 0.4130434782608695]})
+	output = TOPSIS_avg(standardized_df, selected_columns).reset_index(drop=True)
+	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
+
+def test_TOPSIS_best(test_data):
+	standardized_df, ranked_df, selected_columns = test_data
+	expected_output = pd.DataFrame({
+		'ID': ['FCG16141527', 'FCG16600623', 'FCG17585042', 'FCG17822054', 'FCG18066182', 'FCG16425532', 'FCG1390566'],
+		'TOPSIS_best': [1.0, 0.875, 0.8125, 0.75, 0.5, 0.4375, 0.0]})
+	output = TOPSIS_best(standardized_df, selected_columns).reset_index(drop=True)
+	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
+
+def test_WeightedSumModel_avg(test_data):
+	standardized_df, ranked_df, selected_columns = test_data
+	expected_output = pd.DataFrame({
+		'ID': ['FCG1390566', 'FCG16141527', 'FCG16425532', 'FCG16600623', 'FCG17585042', 'FCG17822054', 'FCG18066182'],
+		'WeightedSumModel_avg': [0.0, 1.0, 0.26666666666666666, 0.9666666666666667, 0.7666666666666667, 0.5, 0.4]})
+	output = WeightedSumModel_avg(standardized_df, selected_columns).reset_index(drop=True)
+	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
+	
+def test_WeightedSumModel_best(test_data):
+	standardized_df, ranked_df, selected_columns = test_data
+	expected_output = pd.DataFrame({
+		'ID': ['FCG16141527', 'FCG16600623', 'FCG17585042', 'FCG17822054', 'FCG18066182', 'FCG16425532', 'FCG1390566'],
+		'WeightedSumModel_best': [1.0, 0.875, 0.75, 0.625, 0.5, 0.4375, 0.0]})
+	output = WeightedSumModel_best(standardized_df, selected_columns).reset_index(drop=True)
+	pd.testing.assert_frame_equal(output, expected_output, check_index_type=False)
+
+
 def test_best_and_avg_consensus(test_data_singlepose):
 	standardized_df, ranked_df, selected_columns = test_data_singlepose
 	zscore_best = Zscore_best(standardized_df, selected_columns)
@@ -206,5 +256,17 @@ def test_best_and_avg_consensus(test_data_singlepose):
 	pareto_avg = Pareto_rank_avg(ranked_df, selected_columns)
 	merged_pareto = pareto_best.merge(pareto_avg, on='ID')
 	pd.testing.assert_series_equal(merged_pareto['Pareto_rank_best'], merged_pareto['Pareto_rank_avg'], 
+                                    check_dtype=False, check_exact=False, check_names=False,
+									rtol=1e-5, atol=1e-8)
+	topsis_best = TOPSIS_best(ranked_df, selected_columns)
+	topsis_avg = TOPSIS_avg(ranked_df, selected_columns)
+	merged_topsis = topsis_best.merge(topsis_avg, on='ID')
+	pd.testing.assert_series_equal(merged_topsis['TOPSIS_best'], merged_topsis['TOPSIS_avg'], 
+                                    check_dtype=False, check_exact=False, check_names=False,
+									rtol=1e-5, atol=1e-8)
+	weightedsum_best = WeightedSumModel_best(ranked_df, selected_columns)
+	weightedsum_avg = WeightedSumModel_avg(ranked_df, selected_columns)
+	merged_weightedsum = weightedsum_best.merge(weightedsum_avg, on='ID')
+	pd.testing.assert_series_equal(merged_weightedsum['WeightedSumModel_best'], merged_weightedsum['WeightedSumModel_avg'], 
                                     check_dtype=False, check_exact=False, check_names=False,
 									rtol=1e-5, atol=1e-8)
