@@ -31,7 +31,7 @@ def test_CHEMPLP_rescoring(test_data):
 
 	chemplp = CHEMPLP(software)
 
-	result = chemplp.rescore(clustered_sdf, n_cpus, protein_file=protein_file)
+	result = chemplp.rescore(clustered_sdf, n_cpus, protein_file=protein_file, pocket_definition={"center": [-9.67, 207.73, 113.41], "size": [20.0, 20.0, 20.0]})
 
 	assert isinstance(result, DataFrame)
 	assert "Pose ID" in result.columns
