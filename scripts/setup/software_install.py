@@ -225,17 +225,49 @@ def install_rtmscore(software_path):
 	os.remove(os.path.join(rtmscore_path, '121.jpg'))
 	remove_git_files(rtmscore_path)
 
-
 def install_posecheck(software_path):
-	posecheck_path = os.path.join(software_path, 'posecheck-main')
-	url = "https://github.com/cch1999/posecheck/archive/refs/heads/main.zip"
-	zip_file = os.path.join(software_path, 'posecheck-main.zip')
-	download_file(url, zip_file)
-	with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-		zip_ref.extractall(software_path)
-	os.remove(zip_file)
-	remove_git_files(posecheck_path)
-	subprocess.run(['pip', 'install', '-e', './posecheck-main'], cwd=software_path)
+    posecheck_path = Path(software_path) / 'posecheck-main'
+    url = "https://github.com/cch1999/posecheck/archive/refs/heads/main.zip"
+    
+    try:
+        # Use a temporary directory for downloading and extracting
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_path = Path(temp_dir)
+            zip_file = temp_path / 'posecheck-main.zip'
+            
+            # Download the file
+            download_file(url, str(zip_file))
+            
+            # Extract the contents
+            with zipfile.ZipFile(zip_file, 'r') as zip_ref:
+                zip_ref.extractall(temp_path)
+            
+            # Move the extracted directory to the final location
+            temp_posecheck_path = temp_path / 'posecheck-main'
+            if posecheck_path.exists():
+                shutil.rmtree(posecheck_path)
+            shutil.move(str(temp_posecheck_path), str(posecheck_path))
+    
+        # Remove git files
+        remove_git_files(posecheck_path)
+        
+        # Apply permissions recursively
+        for root, dirs, files in os.walk(posecheck_path):
+            for dir in dirs:
+                dir_path = Path(root) / dir
+                dir_path.chmod(dir_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            for file in files:
+                file_path = Path(root) / file
+                file_path.chmod(file_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        		
+		# Print the output of the installation process
+        print(subprocess.run(['conda', 'run', '-n', 'dockm8', 'pip', 'install', '-e', './posecheck-main'], 
+                       cwd=software_path, check=True, capture_output=True).stdout.decode('utf-8'))
+        
+        print("POSECHECK installed successfully.")
+    except Exception as e:
+        print(f"Error installing POSECHECK: {str(e)}")
+        raise
 
 
 def install_deepcoy_models(software_path):
