@@ -2,7 +2,7 @@ import os
 import sys
 import time
 from pathlib import Path
-
+from posecheck import PoseCheck
 import pandas as pd
 
 # Search for 'DockM8' in parent directories
@@ -23,8 +23,6 @@ def pose_checker(dataframe: pd.DataFrame,
 		strain_cutoff: int = 5000,
 		n_cpus: int = int(os.cpu_count() * 0.9),
 	):
-	ensure_software_installed("POSECHECK", Path("/"))
-	from posecheck import PoseCheck
 	try:
 		tic = time.perf_counter()
 		printlog("Checking poses using PoseCheck...")

@@ -145,7 +145,7 @@ else
     pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf medchem molgrid -q
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 	pip install streamlit_molstar sh scikit-learn -q
-	pip install roma pytorch_lightning omegaconf terrace dgllife scikit-learn-extra -q
+	pip install roma pytorch_lightning omegaconf terrace dgllife scikit-learn-extra posecheck -q
 
     echo -e """
     ###############################################################

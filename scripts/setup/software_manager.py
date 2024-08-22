@@ -45,25 +45,6 @@ def check_mgltools(software_path) -> bool:
 		printlog(f"Error checking for {env_name} environment")
 		return False
       
-def check_posecheck(software_path) -> bool:
-    env_name = 'dockm8'
-    library_name = 'posecheck'
-    
-    try:
-        # First, check if the environment exists
-        env_result = subprocess.run(["conda", "env", "list"], capture_output=True, text=True)
-        if env_name not in env_result.stdout:
-            printlog(f"Environment {env_name} not found")
-            return False
-        
-        # If the environment exists, check for the library
-        list_result = subprocess.run(["conda", "list", "-n", env_name], capture_output=True, text=True)
-        return library_name in list_result.stdout
-    
-    except subprocess.CalledProcessError as e:
-        printlog(f"Error checking for {library_name} in {env_name} environment: {e}")
-        return False
-
 
 # Define a dictionary mapping docking programs to their installation functions and check methods
 SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
@@ -107,8 +88,6 @@ SOFTWARE_INFO: Dict[str, Dict[str, Callable]] = {
 	"install": install_korp_pl, "check": lambda path: (path / "KORP-PL").is_file()},
 	"GENSCORE": {
 	"install": install_genscore, "check": lambda path: (path / "GenScore").is_dir()},
-	"POSECHECK": {
-	"install": install_posecheck, "check": check_posecheck},
 	"MGLTOOLS": {
 	"install": install_mgltools, "check": check_mgltools},
 	"P2RANK": {
