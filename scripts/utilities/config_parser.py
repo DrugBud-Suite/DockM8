@@ -6,6 +6,13 @@ from pathlib import Path
 
 import yaml
 
+
+def none_constructor(loader, node):
+	return None
+
+
+yaml.add_constructor('tag:yaml.org,2002:null', none_constructor)
+
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
 dockm8_path = scripts_path.parent
@@ -51,7 +58,7 @@ def check_config(config):
 
 	# Retrieve the software path from the configuration, defaulting to None if not found or if explicitly set to "None"
 	software_path = general_config.get("software")
-	if software_path == "None" or not software_path:
+	if software_path is None or software_path == "None":
 		software_path = dockm8_path / "software"
 		DockM8Warning(
 			f"DockM8 configuration warning: Software path not specified in the configuration file. Defaulting to {software_path}"
@@ -338,15 +345,17 @@ def check_config(config):
 	minimize_poses = post_docking.get("minimize_poses")
 	if not isinstance(minimize_poses, bool):
 		raise DockM8Error(
-			"DockM8 configuration error: 'minimize_poses' in 'post_docking' section must be a boolean (true/false) value.")
+			"DockM8 configuration error: 'minimize_poses' in 'post_docking' section must be a boolean (true/false) value."
+		)
 	clash_cutoff = post_docking.get("clash_cutoff")
 	if not (isinstance(clash_cutoff, int) or clash_cutoff is None):
 		raise DockM8Error(
-			"DockM8 configuration error: 'clash_cutoff' in 'post_docking' section must be a integer value.")
+			"DockM8 configuration error: 'clash_cutoff' in 'post_docking' section must be an integer value or None.")
+
 	strain_cutoff = post_docking.get("strain_cutoff")
 	if not (isinstance(strain_cutoff, int) or strain_cutoff is None):
 		raise DockM8Error(
-			"DockM8 configuration error: 'strain_cutoff' in 'post_docking' section must be a integer value.")
+			"DockM8 configuration error: 'strain_cutoff' in 'post_docking' section must be an integer value or None.")
 	bust_poses = post_docking.get("bust_poses")
 	if not isinstance(bust_poses, bool):
 		raise DockM8Error(
