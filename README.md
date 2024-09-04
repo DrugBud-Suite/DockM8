@@ -5,151 +5,150 @@
 [![Watching](https://img.shields.io/github/watchers/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 ![License](https://img.shields.io/github/license/DrugBud-Suite/DockM8?style=for-the-badge)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/pulls)
-[![Last Commut](https://img.shields.io/github/last-commit/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
+[![Last Commit](https://img.shields.io/github/last-commit/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8)
 [![Open Issues](https://img.shields.io/github/issues/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
 
 <a href="https://www.buymeacoffee.com/tonylac77" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
-**DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [**contribution guide**](https://gitlab.com/Tonylac77/DockM8/-/blob/main/CONTRIBUTING.md) for details.**
+**DockM8 is an all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [contribution guide](https://gitlab.com/Tonylac77/DockM8/-/blob/main/CONTRIBUTING.md) for details.**
 
 DockM8 only runs on Linux systems. However, we have tested the installation on Windows Subsystem for Linux v2 and using VirtualBox virtual machines.
 
-## Automatic installation (Python 3.10 / Ubuntu 22.04)
+<details>
+<summary><b>Installation</b></summary>
 
-For automatic installation, download and run [**setup_py310.sh**](https://gitlab.com/Tonylac77/DockM8/-/blob/main/setup_py310.sh) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup.sh` and then `./setup_py310.sh`.
+### Automatic Installation (Python 3.10 / Ubuntu 22.04)
 
-## Manual Installation (Python 3.10 / Ubuntu 22.04)
+For automatic installation, download and run [setup_py310.sh](https://gitlab.com/Tonylac77/DockM8/-/blob/main/setup_py310.sh). This script will set up the required conda environments and install all necessary packages. Make sure the installation script can be executed by running:
 
-1. Anaconda or Miniconda should be installed to be able to create a local environment [For more info](https://docs.anaconda.com/anaconda/install/index.html)
+```bash
+chmod +x setup_py310.sh
+./setup_py310.sh
+```
 
-2. Download DockM8 repository:  
-`wget https://github.com/Tonylac77/DockM8/main.zip -O DockM8.zip --no-check-certificate`  
-`unzip DockM8.zip`  
-`rm DockM8.zip`  
-or by using git : `git clone https://github.com/Tonylac77/DockM8/main.zip`  
+The script will create the main `dockm8` environment and additional specialized environments.
 
-3. Create and activate a DockM8 conda environment:  
+### Manual Installation (Python 3.10 / Ubuntu 22.04)
 
-- From environment file:  
-      `conda env create -f environment.yml`  
-      `conda activate dockm8`
-- Manual installation:  
-      `conda create -n dockm8 python=3.10`  
-      `conda activate dockm8`  
-  - Install required packages using the following commands:  
-    `conda install -c conda-forge rdkit ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt -y`  
-    `pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko chembl_structure_pipeline streamlit posebusters`  
-    `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu`  
-    `pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric`  
+Create the main `dockm8` environment and install the following packages:
 
-4. If GNINA does not run, you may need to run the following command to point GNINA to the lib folder in the anaconda installation directory : `export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:**PATH_TO**/anaconda3/lib/`  
+```bash
+conda create -n dockm8 python=3.10
+conda install -c conda-forge rdkit=2023.09 spyrmsd kneed molvs xgboost openbabel docopt pdbfixer smina lightning -y
+conda install ipykernel scipy seaborn tqdm pytest pydantic -y
+conda install -c mx reduce -y
 
-5. **Optional** : Ensure you have permissions to run the scripts required:
-On Linux, right-click the script file, and ensure 'allow executing file as program' is ticked. This applies to gnina.sh, PLANTS.sh, rf-score-vs.sh, Convex-PL.sh, KORP-PL.sh, qvina-w.sh, qvina2.1.sh, and smina.static.  Alternatively you can use the following command to give execution permissions to all files in the DockM8 folder: `chmod +x **PATH_TO**/DockM8/software`
+pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 dgl Pebble tensorflow meeko posebusters streamlit prolif datamol yapf medchem molgrid
+pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric
+pip install streamlit_molstar sh scikit-learn
+pip install roma pytorch_lightning omegaconf terrace dgllife scikit-learn-extra posecheck
+```
 
-## Running DockM8 (via streamlit GUI)
+#### Installing binaries
 
-DockM8 comes with a simple form-based GUI for ease of use. To launch it, run the following command :
+DockM8 will automatically download and install binaries/programs when required.
 
-`streamlit run **PATH_TO**/gui.py`
 
-You can click the `localhost` link to access the GUI.
+</details>
 
-## Running DockM8 (via command-line / dockm8.py script)
+<details>
+<summary><b>Running DockM8</b></summary>
 
-1. Ensure the required files are available:
+### Via Streamlit GUI
 
-- protein/receptor file as a .pdb file
-- If using a ligand to define the binding pocket : reference ligand file as an .sdf file
-- docking library as a .sdf file
+DockM8 comes with a simple form-based GUI for ease of use. To launch it, run:
 
-2. Open a terminal and activate the dockm8 python environment (`conda activate dockm8`)
+```bash
+streamlit run **PATH_TO**/gui.py
+```
+
+Click the `localhost` link to access the GUI.
+
+### Via Command-line (dockm8.py script)
+
+DockM8 now uses a configuration file (`config.yml`) to specify all parameters for the workflow when running via command-line. This file should be located in the root directory of DockM8.
+
+#### Configuration File
+
+Here's a sample of what the `config.yml` file might look like:
+
+```yaml
+general:
+  software: "/path/to/DockM8/software"
+  mode: "single"
+  n_cpus: 0
+
+receptor(s):
+  - "/path/to/receptor.pdb"
+
+docking_library: "/path/to/library.sdf"
+
+docking:
+  docking_programs:
+    - "SMINA"
+    - "GNINA"
+  n_poses: 10
+  exhaustiveness: 8
+
+# ... other configuration options ...
+```
+
+#### Configuration Sections
+
+- `general`: Overall settings for DockM8
+- `decoy_generation`: Settings for generating decoy compounds
+- `receptor(s)`: Path(s) to receptor file(s)
+- `docking_library`: Path to the compound library for docking
+- `protein_preparation`: Settings for preparing the protein structure
+- `ligand_preparation`: Settings for preparing the ligands
+- `pocket_detection`: Settings for detecting the binding pocket
+- `docking`: Settings for the docking process
+- `post_docking`: Settings for post-docking processing
+- `pose_selection`: Settings for selecting poses
+- `rescoring`: List of rescoring methods to use
+- `consensus`: Method for consensus scoring
+- `threshold`: Threshold for ensemble and active learning modes
+
+Refer to the `config.yml` file in the DockM8 repository for a complete list of available options and their descriptions.
+
+#### Running DockM8
+
+1. Ensure you have set up the `config.yml` file with your desired parameters.
+
+2. Open a terminal and activate the dockm8 python environment:
+   ```bash
+   conda activate dockm8
+   ```
 
 3. Run the following command:
+   ```bash
+   python **PATH_TO**/dockm8.py --config **PATH_TO**/config.yml
+   ```
 
-`python **PATH_TO**/dockm8.py --args`  
+   DockM8 will automatically read the configuration and warn you of any errors in the configuration file.
 
-`--software`: The path to the software folder. In most cases this is where the DockM8 repository was downloaded to (`path/to/DockM8/software`)  
-`--mode`: Choose mode with which to run dockm8. Options are:
+### Via Jupyter Notebook
 
-- 'single' : Regular docking on one receptor.
-- 'ensemble' : Ensemble docking on multiple receptor conformations.  
+1. Open `dockm8.ipynb`, `dockm8_ensemble.ipynb`, or `dockm8_decoys.ipynb` in your favorite IDE, depending on which DockM8 mode you want to use.
 
-`--gen_decoys`: Whether or not to generate decoys suing DeepCoy for the supplied list of acive compounds. DockM8 will then determine the optimal combination of scoring functions, pose selection and consensus method for the protein target (True/False).  
-`--decoy_model`: Model for decoy generation.  
-`--n_decoys`: Number of decoys to generate per active compound (default:20).  
-`--actives`: The path to the .sdf file containing the active ligands.  
+2. Ensure that the notebook is configured to use the `config.yml` file.
 
-`--receptor`: The path to the protein file (.pdb) or multiple paths (separated by spaces) if using ensemble mode.  
-`--pocket`: The method to use for pocket determination. Must be one of:
+3. Follow the instructions in the Markdown cells.
 
-- 'reference' : Uses reference ligand to define pocket.
-- 'RoG' (radius of gyration) : Uses reference ligand's radius of gyration to define pocket.  
-- 'dogsitescorer' :  Use the DogSiteScorer webserver to determine pocket coordinates, works on pocket volume by default although this can be changed in *dogsitescorer.py*.  
-
-`--reffile`: The path to the reference ligand to use for pocket determination. Must be provided if using 'reference' or 'RoG' pocket mode.  
-`--docking_library`: The path to the docking library file (.sdf format).  
-`--idcolumn`: The unique identifier column used in the docking library.  
-`--conformers`: The method to use for compound protonation. Must be one of:
-
-- 'GypsumDL' : Use GypsumDL library to generate 3D conformers
-- 'RDKit' : Use RDKit MMFF forcefield to generate 3D conformers  
-
-`--protonation`: The method to use for compound protonation. Must be one of:
-
-- 'GypsumDL' : Use GypsumDL library to protonate library
-- 'None' : Do not protonate library  
-
-`--docking_programs`: The method(s) to use for docking. Must be one or more of:
-
-- 'GNINA'
-- 'SMINA'
-- 'QVINAW'
-- 'QVINA2'
-- 'PLANTS'
-
-`--bust_poses`: Whether or not to use the PoseBusters library to remove bad docking poses. WARNING: takes a long time to run.
-
-`--pose_selection`: The method(s) to use for pose clustering. Must be one or more of:
-
-- 'RMSD' : Cluster compounds on RMSD matrix of poses
-- 'spyRMSD' : Cluster compounds on symmetry-corrected RMSD matrix of poses
-- 'espsim' : Cluster compounds on electrostatic shape similarity matrix of poses
-- 'USRCAT' : Cluster compounds on shape similarity matrix of poses
-- '3DScore' : Selects pose with the lowest average RMSD to all other poses
-- 'bestpose' : Takes the best pose from each docking program
-- 'bestpose_GNINA' : Takes the best pose from GNINA docking program
-- 'bestpose_SMINA' : Takes the best pose from SMINA docking program
-- 'bestpose_QVINAW' : Takes the best pose from QVINAW docking program
-- 'bestpose_QVINA2' : Takes the best pose from QVINA2 docking program
-- 'bestpose_PLANTS' : Takes the best pose from PLANTS docking program  
-- You can also use any of the scoring functions (see rescoring argument) and DockM8 will select the best pose for each compound according to the specified scoring function.
-
-`--n_poses`: The number of poses to generate for each docking software. Default=10  
-`--exhaustiveness`: The precision used if docking with SMINA/GNINA/QVINA. Default=8  
-`--n_cpus`: The number of cpus to use for the workflow. Default behavior is to use 90% of the available cpus.  
-`--clustering_method`: Which algorithm to use for clustering. Must be one of 'KMedoids', 'Aff_prop'. Must be set when using 'RMSD', 'spyRMSD', 'espsim', 'USRCAT' clustering metrics.  
-`--rescoring`: Which scoring functions to use for rescoring. Must be one or more of 'GNINA-Affinity', 'CNN-Score', 'CNN-Affinity', 'AD4', 'CHEMPLP', 'RFScoreVS', 'LinF9', 'Vinardo', 'PLP', 'AAScore', 'SCORCH', 'RTMScore', 'NNScore', 'PLECScore', 'KORP-PL', 'ConvexPLR'.  
-`--consensus`: Which consensus method to use. Must be one of 'ECR_best', 'ECR_avg', 'avg_ECR', 'RbR', 'RbV', 'Zscore_best', 'Zscore_avg'.  
-`--threshold`: Threshold in % to use when using 'ensemble' mode. Will find the hits in common in the x% of top ranked compounds in all of the receptor conformations.
-
-## Running DockM8 (via Jupyter Notebook)
-
-1. Open dockm8.ipynb, dockm8_ensemble.ipynb or dockm8_decoys.ipynb in your favorite IDE, depending on which DockM8 mode you want to use.
-
-2. Follow the instructions in the Markdown cells
+</details>
 
 ## Acknowledgements
 
-We acknoyledge and thank the authors of the packages used in DockM8. Please see the publication for citations.
+We acknowledge and thank the authors of the packages used in DockM8. Please see the publication for citations.
 
 ## Citation
 
 Coming Soon
 
-## License (NEEDS CHECKING...)
+## License
 
 This project is licensed under the GNU GPL v3.0 License - see the [LICENSE.md](https://gitlab.com/Tonylac77/DockM8/-/blob/main/LICENSE) file for details.
 
