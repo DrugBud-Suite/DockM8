@@ -213,3 +213,5 @@ tests/test_files/pose_selection/KORP-PL_clustered.sdf
 tests/test_files/pose_selection/RMSD_clustered.sdf
 tests/test_files/setup/test_software/
 notebooks/analysis
+lit-pcba_run.ipynb
+test.ipynb
