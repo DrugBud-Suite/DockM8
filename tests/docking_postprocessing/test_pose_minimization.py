@@ -12,7 +12,7 @@ dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.docking_postprocessing.minimization.ff_pose_minimization import minimize_poses, extract_pocket_from_coords
-
+from scripts.docking_postprocessing.deeprmsd.deeprmsd import optimize_poses
 
 @pytest.fixture
 def common_test_data():
@@ -191,3 +191,9 @@ def test_minimize_poses_missing_molecule_column(common_test_data, cleanup):
 	result_df = minimize_poses(invalid_df, str(protein_file), str(output_path), config, n_cpus=n_cpus)
 
 	assert result_df is None
+
+def test_deeprmsd(common_test_data):
+	regular_input_sdf, _, output_path, protein_file, n_cpus = common_test_data
+	dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
+	output_path = dockm8_path / "tests" / "test_files" / "docking_postprocessing" / "deeprmsd"
+	result_df = optimize_poses(regular_input_sdf, protein_file, output_path, dockm8_path / "software")
