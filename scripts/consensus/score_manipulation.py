@@ -20,8 +20,9 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 def standardize_scores(df: pd.DataFrame, standardization_type: str):
 
 	def min_max_standardization(score, best_value, min_value, max_value):
-		return (score-min_value) / (max_value-min_value) if best_value == "max" else (max_value-score) / (max_value-
-																											min_value)
+		standardized = (score-min_value) / (max_value-min_value) if best_value == "max" else (max_value-score) / (
+			max_value-min_value)
+		return np.clip(standardized, 0, 1)             # Clip values to be between 0 and 1
 
 	for col in df.columns:
 		try:
@@ -61,7 +62,7 @@ def rank_scores(input_dataframe: pd.DataFrame):
 	"""
 	ranked_dataframe = input_dataframe.assign(
 		**{
-			col: input_dataframe[col].rank(method="average", ascending=False)
-			for col in input_dataframe.columns
-			if col not in ["Pose ID", "ID", "SMILES", "Molecule"]})
+		col: input_dataframe[col].rank(method="average", ascending=False)
+		for col in input_dataframe.columns
+		if col not in ["Pose ID", "ID", "SMILES", "Molecule"]})
 	return ranked_dataframe
