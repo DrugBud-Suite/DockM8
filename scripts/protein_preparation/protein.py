@@ -150,11 +150,11 @@ class Protein:
 			raise
 
 	def fix_structure(self,
-						fix_nonstandard_residues: bool = True,
-						fix_missing_residues: bool = True,
-						add_missing_hydrogens_pH: float = 7.0,
-						remove_hetero: bool = True,
-						remove_water: bool = True) -> None:
+			fix_nonstandard_residues: bool = True,
+			fix_missing_residues: bool = True,
+			add_missing_hydrogens_pH: float = 7.0,
+			remove_hetero: bool = True,
+			remove_water: bool = True) -> None:
 		"""
 		Fix various issues in the protein structure.
 
@@ -288,9 +288,9 @@ class Protein:
 				modeller.addSolvent(forcefield, padding=1.0 * nanometers)
 
 			system = forcefield.createSystem(modeller.topology,
-												nonbondedMethod=openmm.app.PME,
-												nonbondedCutoff=1.0 * nanometers,
-												constraints=openmm.app.HBonds)
+						nonbondedMethod=openmm.app.PME,
+						nonbondedCutoff=1.0 * nanometers,
+						constraints=openmm.app.HBonds)
 
 			integrator = openmm.LangevinIntegrator(300 * kelvin, 1 / picoseconds, 0.002 * picoseconds)
 			simulation = openmm.app.Simulation(modeller.topology, system, integrator)
@@ -330,6 +330,7 @@ class Protein:
 						fix_structure: bool = True,
 						protonate: bool = True,
 						minimize: bool = False,
+						select_best_chain: bool = False,
 						**kwargs) -> None:
 		"""
 		Prepare the protein structure by fixing, protonating, and minimizing.
@@ -337,21 +338,38 @@ class Protein:
 		Args:
 			fix_structure (bool, optional): Whether to fix the structure. Defaults to True.
 			protonate (bool, optional): Whether to protonate the structure. Defaults to True.
-			minimize (bool, optional): Whether to minimize the structure. Defaults to True.
+			minimize (bool, optional): Whether to minimize the structure. Defaults to False.
+			select_best_chain (bool, optional): Whether to select the best chain. Defaults to False.
 			**kwargs: Additional keyword arguments for the individual preparation steps.
 
 		Raises:
 			Exception: If there's an error during protein preparation.
 		"""
 		try:
+			if select_best_chain:
+				self.get_best_chain()
+
 			if fix_structure:
-				self.fix_structure(**kwargs)
+				fix_kwargs = {
+					k: v for k,
+					v in kwargs.items() if k in [
+						'fix_nonstandard_residues',
+						'fix_missing_residues',
+						'add_missing_hydrogens_pH',
+						'remove_hetero',
+						'remove_water']}
+				self.fix_structure(**fix_kwargs)
+
 			if protonate:
-				self.protonate(**kwargs)
+				protonate_kwargs = {k: v for k, v in kwargs.items() if k in ['method']}
+				self.protonate(**protonate_kwargs)
+
 			if self.source == ProteinSource.ALPHAFOLD:
 				minimize = True
+
 			if minimize:
-				self.minimize(**kwargs)
+				minimize_kwargs = {k: v for k, v in kwargs.items() if k in ['solvent']}
+				self.minimize(**minimize_kwargs)
 
 			# Rename the final PDB file to end with _prepared.pdb
 			prepared_pdb = self.pdb_file.with_name(f"{self.pdb_file.stem.split('_')[0]}_prepared.pdb")
