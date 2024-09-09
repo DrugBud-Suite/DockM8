@@ -45,23 +45,80 @@ class DockM8Warning(Warning):
 		super().__init__(message)  # Call the superclass constructor with the message
 
 
-def check_config(config):
-	"""Check the configuration file for any errors or warnings."""
+def resolve_path(path, config_dir):
+	if isinstance(path, str):
+		# Convert to Path object for easier manipulation
+		path_obj = Path(path)
+
+		# If it's an absolute path, use it as is
+		if path_obj.is_absolute():
+			if path_obj.exists():
+				return str(path_obj)
+			else:
+				raise FileNotFoundError(f"File not found: {path}")
+
+		# For relative paths, always resolve relative to config_dir
+		resolved_path = config_dir / path_obj
+		if resolved_path.exists():
+			return str(resolved_path.resolve())
+		else:
+			raise FileNotFoundError(f"File not found: {resolved_path}")
+
+	return path
+
+
+def process_config_paths(config, config_file_path):
+	config_dir = Path(config_file_path).parent
+
+	# Process receptor paths
+	if 'receptor(s)' in config:
+		config['receptor(s)'] = [resolve_path(r, config_dir) for r in config['receptor(s)']]
+
+	# Process docking library path
+	if 'docking_library' in config:
+		config['docking_library'] = resolve_path(config['docking_library'], config_dir)
+
+	# Process reference ligand paths
+	if 'pocket_detection' in config and 'reference_ligand(s)' in config['pocket_detection']:
+		config['pocket_detection']['reference_ligand(s)'] = [
+			resolve_path(r, config_dir) for r in config['pocket_detection']['reference_ligand(s)']]
+
+	return config
+
+
+def check_config(config_input):
+	"""Check the configuration file or dictionary for any errors or warnings."""
 	printlog("Validating DockM8 configuration...")
-	# Open the configuration file
-	try:
-		config = yaml.safe_load(open(config, "r"))
-	except yaml.YAMLError as e:
-		raise DockM8Error(f"Error loading configuration file: {e}")
+
+	if isinstance(config_input, (str, Path)):
+		config_file_path = Path(config_input).resolve()
+		if not config_file_path.is_file():
+			raise DockM8Error(f"Configuration file not found: {config_file_path}")
+
+		try:
+			with open(config_file_path, "r") as f:
+				config = yaml.safe_load(f)
+		except yaml.YAMLError as e:
+			raise DockM8Error(f"Error loading configuration file: {e}")
+
+		# Process paths after loading the config
+		try:
+			config = process_config_paths(config, config_file_path)
+		except FileNotFoundError as e:
+			raise DockM8Error(f"Error processing paths in configuration: {str(e)}")
+	elif isinstance(config_input, dict):
+		config = config_input
+	else:
+		raise DockM8Error("Invalid configuration input. Expected a dictionary or a file path.")
 
 	general_config = config.get("general", {})
 
-	# Retrieve the software path from the configuration, defaulting to None if not found or if explicitly set to "None"
+	# Handle software path
 	software_path = general_config.get("software")
-	if software_path is None or software_path == "None":
+	if software_path in [None, "None", "none", ""]:
 		software_path = dockm8_path / "software"
 		DockM8Warning(
-			f"DockM8 configuration warning: Software path not specified in the configuration file. Defaulting to {software_path}"
+			f"DockM8 configuration warning: Software path not specified or set to None in the configuration file. Defaulting to {software_path}"
 		)
 	# Check if the software path is a valid directory
 	if not Path(software_path).is_dir():
@@ -98,7 +155,7 @@ def check_config(config):
 			)
 		else:
 			config["decoy_generation"]["actives"] = active_path
-		                                                                                                                               # Validate the number of decoys to generate
+			                                                                                                                               # Validate the number of decoys to generate
 		try:
 			int(decoy_config.get("n_decoys"))
 		except ValueError:
@@ -348,14 +405,20 @@ def check_config(config):
 			"DockM8 configuration error: 'minimize_poses' in 'post_docking' section must be a boolean (true/false) value."
 		)
 	clash_cutoff = post_docking.get("clash_cutoff")
-	if not (isinstance(clash_cutoff, int) or clash_cutoff is None):
+	if clash_cutoff not in [None, "None", "none"] and not isinstance(clash_cutoff, int):
 		raise DockM8Error(
 			"DockM8 configuration error: 'clash_cutoff' in 'post_docking' section must be an integer value or None.")
 
 	strain_cutoff = post_docking.get("strain_cutoff")
-	if not (isinstance(strain_cutoff, int) or strain_cutoff is None):
+	if strain_cutoff not in [None, "None", "none"] and not isinstance(strain_cutoff, int):
 		raise DockM8Error(
 			"DockM8 configuration error: 'strain_cutoff' in 'post_docking' section must be an integer value or None.")
+
+	# Convert "None" and "none" to None for consistency
+	if clash_cutoff in ["None", "none"]:
+		config["post_docking"]["clash_cutoff"] = None
+	if strain_cutoff in ["None", "none"]:
+		config["post_docking"]["strain_cutoff"] = None
 	bust_poses = post_docking.get("bust_poses")
 	if not isinstance(bust_poses, bool):
 		raise DockM8Error(
