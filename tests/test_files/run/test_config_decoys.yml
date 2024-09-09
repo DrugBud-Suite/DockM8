@@ -1,0 +1,87 @@
+### DOCKM8 CONFIGURATION FILE ###
+
+# Default values are provided for all parameters for testing purposes, please adapt them to your needs
+
+## General configuration
+general:
+  software: None                                                    # Path to the software folder required for operation
+  mode: "single"                                                    # Mode of operation (options : single, ensemble, active_learning)       
+  n_cpus: 0                                                          # Number of CPUs to allocate for the process. Default is 0 (all available CPUs)
+
+## Decoy generation configuration
+decoy_generation:
+  gen_decoys: true                                                 # Control whether decoys are generated (true) or not (false)
+  decoy_model: "DUDE"                                               # Model to use for decoy generation (DUDE, DEKOIS, DUDE_P)
+  n_decoys: 10                                                      # Number of decoys to generate per active compound
+  actives: "test_actives.sdf"    # Path to the file containing active compounds
+
+## Input file configuration
+receptor(s):
+  - "test_protein.pdb"                                 # Can also be a PDB code (will be downloaded from the PDB) or a UniProt ID (AlphaFold2 model will be used)
+docking_library: "test_library.sdf"   # Path to the file containing the compounds to dock (SDF format)
+
+## Protein Preparation
+protein_preparation:
+  select_best_chain: false                                           # Control whether the best chain is selected (true) or not (false), only works when supplying a PDB code in the receptor section
+  fix_nonstandard_residues: true                                    # Whether to replace non-standard residues with standard ones
+  fix_missing_residues: true                                        # Whether to add missing residues
+  minimize: false                                                    # Whether to minimize the protein (also fixes missing atoms and residues)
+  with_solvent: false                                               # Whether to include solvent in the energy minimization (solvent is removed afterwards)
+  remove_hetero: true                                          # Whether to remove heteroatoms (ligands, ions, etc.)
+  remove_water: true                                                # Whether to remove water molecules
+  add_missing_hydrogens_pH: 7.0                                                # Whether to add hydrogens to the protein; 7.0 is the default pH. Will be ignored if "protonation" is set to true
+  protonate: true                                                 # Whether to protonate the protein using Protoss webserver
+
+## Ligand Preparation
+ligand_preparation:
+  protonation: "None"                                           # Method used for ligand protonation. Options are : "GypsumDL", "None"
+  conformers: "MMFF"                                               # Method used for ligand conformer generation. Options are : "MMFF", "UFF", "GypsumDL"
+  n_conformers: 1                                                   # Number of conformers to generate per ligand. Default is 1
+  standardize_ids: true
+  standardize_tautomers: true
+  remove_salts: true
+  min_ph: 6.4
+  max_ph: 8.4
+  pka_precision: 1.0
+## Pocket Detection
+pocket_detection:
+  method: "Reference"                                               # Method used for pocket detection. Options are : "Reference", "RoG", "Dogsitescorer", "P2Rank", "Manual"
+  reference_ligand(s):                                              # List of paths to reference ligand files; include multiple rows when using ensemble mode (order is important). Only valid for "Reference" and "RoG" pocket detection method
+    - "test_reference_ligand.sdf"
+  radius: 10                                                        # Radius used for pocket detection (only for "Reference" method)
+  manual_pocket: "center:x,y,z*size:x,y,z"                          # Manual pocket definition (only for "Manual" method). Format is "center:x,y,z*size:x,y,z". Ensure that the size is in Angstroms
+  dogsitescorer_method: "Volume"                                    # Method used for pocket detection in Dogsitescorer. Options are : 'Druggability_Score', 'Volume', 'Surface' or 'Depth'
+
+## Docking configuration
+docking:
+  docking_programs:                                                 # List of methods used for docking (options : "SMINA", "GNINA", "QVINA2", "QVINAW", "PLANTS"). 
+    - "SMINA"                                                       # Include multiple rows to use multiple docking engines
+    - "PLANTS"                                                       # Control whether problematic poses are removed. Can be slow for large datasets
+  n_poses: 10                                                       # Number of poses to generate per compound
+  exhaustiveness: 8                                                 # Exhaustiveness of the docking; higher values increase accuracy and computation time. Only valid for Vina derivatives
+
+post_docking:
+  minimize_poses: false                                                    # Control whether poses are minimized (true) or not (false)
+  clash_cutoff: None                                                   # Clash cutoff used for pose filtering.
+  strain_cutoff: None                                               # Strain cutoff used for pose filtering.
+  bust_poses: true                                                  # Control whether problematic poses are removed (true) or not (false). Can be slow for large datasets
+  classy_pose: false                                               # Control whether poses are classified as "good" or "bad" (true) or not (false). Can be slow for large datasets
+  classy_pose_model: None                                          # Options are : 'SVM' or 'LGBM'
+
+## Pose selection configuration
+pose_selection:
+  pose_selection_method:                                            # Methods used for pose selection. Options are : "bestpose", "bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINA2", "bestpose_QVINAW"
+  - "KORP-PL"                                                # You can also use any of the bundled scoring functions to select the poses. See the "scoring" section for more details
+  clustering_method: "KMedoids"                                     # Clustering method used for grouping similar poses. Options are : "KMedoids", "Aff_prop". Only valid for "RMSD", "spyRMSD", "espsim", "USRCAT" methods.
+
+## Scoring configuration
+rescoring:                                                          # Scoring function used for rescoring the selected poses. Include multiple rows to use multiple scoring functions
+  - "ConvexPLR"                                                     # Options are : 'GNINA-Affinity', 'CNN-Score', 'CNN-Affinity', 'Vinardo', 'AD4', 'RFScoreVS', 'PLP', 'CHEMPLP', 
+  - "KORP-PL"
+  - "LinF9"                                                       # 'NNScore', 'PLECScore', 'LinF9', 'AAScore', 'SCORCH', 'RTMScore', 'KORP-PL', 'ConvexPLR'
+
+## Consensus configuration
+consensus: "Zscore_best"                                               # Consensus method used to rank compounds. Options are "ECR_best", "ECR_avg", "avg_ECR", "RbV", "RbR", "Zscore_best", "Zscore_avg".
+
+## Threshold configuration
+threshold: 0.01                                                     # Threshold used for ensemble and active learning methods to make decisions. Only valid when using "ensemble" or "active_learning" mode.
