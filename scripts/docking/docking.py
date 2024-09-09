@@ -43,15 +43,15 @@ DOCKING_PROGRAMS = {
 
 
 def dockm8_docking(library: Union[pd.DataFrame, Path],
-		w_dir: Path,
-		protein_file: Path,
-		pocket_definition: dict,
-		software: Path,
-		docking_programs: list,
-		exhaustiveness: int,
-		n_poses: int,
-		n_cpus: int,
-		job_manager="concurrent_process"):
+	w_dir: Path,
+	protein_file: Path,
+	pocket_definition: dict,
+	software: Path,
+	docking_programs: list,
+	exhaustiveness: int,
+	n_poses: int,
+	n_cpus: int,
+	job_manager="concurrent_process"):
 	"""
 	Dock ligands into a protein binding site using one or more docking programs and concatenate all poses.
 
@@ -93,13 +93,13 @@ def dockm8_docking(library: Union[pd.DataFrame, Path],
 				(w_dir / program.lower()).mkdir(exist_ok=True, parents=True)
 				output_sdf = w_dir / program.lower() / f"{program.lower()}_poses.sdf"
 				docking_results = docking_function.dock(library_path,
-							protein_file,
-							pocket_definition,
-							exhaustiveness,
-							n_poses,
-							n_cpus,
-							job_manager,
-							output_sdf=output_sdf)
+					protein_file,
+					pocket_definition,
+					exhaustiveness,
+					n_poses,
+					n_cpus,
+					job_manager,
+					output_sdf=output_sdf)
 
 			if output_sdf.exists() and output_sdf.stat().st_size > 0:
 				printlog(f"{program} docking completed. Results saved to {output_sdf}")
@@ -110,20 +110,21 @@ def dockm8_docking(library: Union[pd.DataFrame, Path],
 		# Concatenate all poses
 		if output_paths:
 			all_poses_path = w_dir / "all_poses.sdf"
-			all_poses = pd.DataFrame()
-			for path in output_paths:
-				df = parallel_SDF_loader(str(path), molColName="Molecule", idName="Pose ID", n_cpus=n_cpus)
-				all_poses = pd.concat([all_poses, df], ignore_index=True)
-			try:
-				PandasTools.WriteSDF(all_poses,
-						str(all_poses_path),
-						molColName="Molecule",
-						idName="Pose ID",
-						properties=list(all_poses.columns))
-				printlog(f"All poses successfully combined and saved to {all_poses_path}")
-				return all_poses_path
-			except Exception as e:
-				printlog(f"ERROR: Failed to write all_poses SDF file: {str(e)}")
+			if not all_poses_path.exists():
+				all_poses = pd.DataFrame()
+				for path in output_paths:
+					df = parallel_SDF_loader(str(path), molColName="Molecule", idName="Pose ID", n_cpus=n_cpus)
+					all_poses = pd.concat([all_poses, df], ignore_index=True)
+				try:
+					PandasTools.WriteSDF(all_poses,
+											str(all_poses_path),
+											molColName="Molecule",
+											idName="Pose ID",
+											properties=list(all_poses.columns))
+					printlog(f"All poses successfully combined and saved to {all_poses_path}")
+					return all_poses_path
+				except Exception as e:
+					printlog(f"ERROR: Failed to write all_poses SDF file: {str(e)}")
 		else:
 			printlog("ERROR: No poses were generated from any docking program")
 	except Exception as e:
