@@ -49,19 +49,19 @@ CONSENSUS_METHODS = {
 		'function': Zscore_avg, 'type': 'score'},
 	'Zscore_best': {
 		'function': Zscore_best, 'type': 'score'},
-	'Pareto_rank_avg': {
-		'function': Pareto_rank_avg, 'type': 'score'},
-	'Pareto_rank_best': {
-		'function': Pareto_rank_best, 'type': 'score'},
-	'TOPSIS_avg': {
-		'function': TOPSIS_avg, 'type': 'score'},
-	'TOPSIS_best': {
-		'function': TOPSIS_best, 'type': 'score'},
-	'WeightedSumModel_avg': {
-		'function': WeightedSumModel_avg, 'type': 'score'},
-	'WeightedSumModel_best': {
-		'function': WeightedSumModel_best, 'type': 'score'}
-	}
+                                                                     #'Pareto_rank_avg': {
+                                                                     #'function': Pareto_rank_avg, 'type': 'score'},
+                                                                     #'Pareto_rank_best': {
+                                                                     #'function': Pareto_rank_best, 'type': 'score'},
+                                                                     #'TOPSIS_avg': {
+                                                                     #	'function': TOPSIS_avg, 'type': 'score'},
+                                                                     #'TOPSIS_best': {
+                                                                     #	'function': TOPSIS_best, 'type': 'score'},
+                                                                     #'WeightedSumModel_avg': {
+                                                                     #	'function': WeightedSumModel_avg, 'type': 'score'},
+                                                                     #'WeightedSumModel_best': {
+                                                                     #	'function': WeightedSumModel_best, 'type': 'score'}
+}
 
 
 def apply_consensus_methods(poses_input: Union[Path, pd.DataFrame],
@@ -171,10 +171,10 @@ def apply_consensus_methods(poses_input: Union[Path, pd.DataFrame],
 		try:
 			csv_output.to_csv(csv_file, index=False)
 			PandasTools.WriteSDF(sdf_output,
-					str(sdf_file),
-					molColName="Molecule",
-					idName="ID",
-					properties=list(sdf_output.columns))
+									str(sdf_file),
+									molColName="Molecule",
+									idName="ID",
+									properties=list(sdf_output.columns))
 
 			printlog(f"Results saved to {csv_file} and {sdf_file}")
 		except PermissionError:
@@ -216,11 +216,11 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-			RESCORING_FUNCTIONS.keys()):
+				RESCORING_FUNCTIONS.keys()):
 			consensus_file = parallel_SDF_loader(w_dir / "consensus" /
-						f"{selection_method}_{consensus_method}_results.sdf",
-						molColName="Molecule",
-						idName="ID")
+													f"{selection_method}_{consensus_method}_results.sdf",
+													molColName="Molecule",
+													idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -243,11 +243,11 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 		# Read the consensus clustering results for the receptor
 		if selection_method in [
 			"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-			RESCORING_FUNCTIONS.keys()):
+				RESCORING_FUNCTIONS.keys()):
 			consensus_file = parallel_SDF_loader(w_dir / "consensus" /
-						f"{selection_method}_{consensus_method}_results.sdf",
-						molColName="Molecule",
-						idName="ID")
+													f"{selection_method}_{consensus_method}_results.sdf",
+													molColName="Molecule",
+													idName="ID")
 
 		else:
 			consensus_file = pd.read_csv(
@@ -258,12 +258,12 @@ def ensemble_consensus(receptors: list, selection_method: str, consensus_method:
 	# Save the common compounds and CSV or SDF file
 	if selection_method in [
 		"bestpose_GNINA", "bestpose_SMINA", "bestpose_PLANTS", "bestpose_QVINAW", "bestpose_QVINA2", ] + list(
-		RESCORING_FUNCTIONS.keys()):
+			RESCORING_FUNCTIONS.keys()):
 		PandasTools.WriteSDF(common_compounds_df,
-				str(Path(receptors[0]).parent / "ensemble_results.sdf"),
-				molColName="Molecule",
-				idName="ID",
-				properties=list(common_compounds_df.columns))
+								str(Path(receptors[0]).parent / "ensemble_results.sdf"),
+								molColName="Molecule",
+								idName="ID",
+								properties=list(common_compounds_df.columns))
 
 	else:
 		common_compounds_df.to_csv(Path(receptors[0]).parent / "ensemble_results.csv", index=False)
