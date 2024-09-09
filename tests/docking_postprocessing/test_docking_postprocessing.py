@@ -48,15 +48,15 @@ def test_docking_postprocessing(common_test_data, cleanup):
 	classy_pose = False
 	classy_pose_model = None
 	result = docking_postprocessing(input_data,
-									protein_file,
-									minimize_poses,
-									bust_poses,
-									strain_cutoff,
-									clash_cutoff,
-									classy_pose,
-									classy_pose_model,
-									n_cpus,
-									output_sdf)
+			protein_file,
+			minimize_poses,
+			bust_poses,
+			strain_cutoff,
+			clash_cutoff,
+			classy_pose,
+			classy_pose_model,
+			n_cpus,
+			output_sdf)
 	assert isinstance(result, pd.DataFrame)
 	assert len(result) == 14
 
@@ -71,15 +71,15 @@ def test_docking_postprocessing_without_pose_busting(common_test_data, cleanup):
 	classy_pose = False
 	classy_pose_model = None
 	result = docking_postprocessing(input_data,
-									protein_file,
-									minimize_poses,
-									bust_poses,
-									strain_cutoff,
-									clash_cutoff,
-									classy_pose,
-									classy_pose_model,
-									n_cpus,
-									output_sdf)
+			protein_file,
+			minimize_poses,
+			bust_poses,
+			strain_cutoff,
+			clash_cutoff,
+			classy_pose,
+			classy_pose_model,
+			n_cpus,
+			output_sdf)
 	assert isinstance(result, pd.DataFrame)
 	assert len(result) == 14
 
@@ -94,15 +94,15 @@ def test_docking_postprocessing_with_no_cutoffs(common_test_data, cleanup):
 	classy_pose = False
 	classy_pose_model = None
 	result = docking_postprocessing(input_data,
-									protein_file,
-									minimize_poses,
-									bust_poses,
-									strain_cutoff,
-									clash_cutoff,
-									classy_pose,
-									classy_pose_model,
-									n_cpus,
-									output_sdf)
+			protein_file,
+			minimize_poses,
+			bust_poses,
+			strain_cutoff,
+			clash_cutoff,
+			classy_pose,
+			classy_pose_model,
+			n_cpus,
+			output_sdf)
 	assert isinstance(result, pd.DataFrame)
 	assert len(result) == 40
 
@@ -117,15 +117,15 @@ def test_docking_postprocessing_minimization(common_test_data, cleanup):
 	classy_pose = False
 	classy_pose_model = None
 	result = docking_postprocessing(input_data,
-									protein_file,
-									minimize_poses,
-									bust_poses,
-									strain_cutoff,
-									clash_cutoff,
-									classy_pose,
-									classy_pose_model,
-									n_cpus,
-									output_sdf)
+			protein_file,
+			minimize_poses,
+			bust_poses,
+			strain_cutoff,
+			clash_cutoff,
+			classy_pose,
+			classy_pose_model,
+			n_cpus,
+			output_sdf)
 	assert isinstance(result, pd.DataFrame)
 	assert len(result) == 40
 
@@ -140,17 +140,17 @@ def test_docking_postprocessing_classy_pose(common_test_data, cleanup):
 	classy_pose = True
 	classy_pose_model = 'SVM'                       # You might need to adjust this based on your actual model options
 	result = docking_postprocessing(input_data,
-									protein_file,
-									minimize_poses,
-									bust_poses,
-									strain_cutoff,
-									clash_cutoff,
-									classy_pose,
-									classy_pose_model,
-									n_cpus,
-									output_sdf)
+			protein_file,
+			minimize_poses,
+			bust_poses,
+			strain_cutoff,
+			clash_cutoff,
+			classy_pose,
+			classy_pose_model,
+			n_cpus,
+			output_sdf)
 	assert isinstance(result, pd.DataFrame)
-	                                                 # The expected length might need to be adjusted based on your actual data and model behavior
+	# The expected length might need to be adjusted based on your actual data and model behavior
 	assert len(result) == 2
 
 
