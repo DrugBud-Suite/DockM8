@@ -64,7 +64,7 @@ echo -e """
 # check if conda is installed, and install miniconda3 if not
 
 # if conda is not a recognised command then download and install
-if ! command -v conda &> /dev/null; then
+if ! (source ~/.bashrc && command -v conda &> /dev/null); then
     
     echo -e "No conda found - installing..."
     mkdir -p $HOME/miniconda3
@@ -139,13 +139,15 @@ else
     ###############################################################
     """
 
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 prody==2.1.0 Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit -q
 
     pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
 
     pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
 
 	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html -q
+
+	pip install prody
 
     echo -e """
     ###############################################################
