@@ -116,7 +116,7 @@ $CONDA_PATH config --set auto_activate_base false
 $CONDA_PATH config --set ssl_verify False
 
 # create the conda environment
-ENV_NAME="dockm8_test"
+ENV_NAME="dockm8"
 
 if conda env list | grep -q "^$ENV_NAME\s"; then
     echo "Conda environment '$ENV_NAME' already exists. Skipping creation."
