@@ -116,7 +116,7 @@ $CONDA_PATH config --set auto_activate_base false
 $CONDA_PATH config --set ssl_verify False
 
 # create the conda environment
-ENV_NAME="dockm8"
+ENV_NAME="dockm8_test"
 
 if conda env list | grep -q "^$ENV_NAME\s"; then
     echo "Conda environment '$ENV_NAME' already exists. Skipping creation."
@@ -131,7 +131,7 @@ else
 	conda config --add channels bioconda 
 	conda config --add channels schrodinger
 
-    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pydantic -q -y
+    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pydantic -y
 
     echo -e """
     ###############################################################
@@ -139,13 +139,13 @@ else
     ###############################################################
     """
 
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit -q
+    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit
 
-    pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu -q
+    pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-    pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric -q
+    pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric
 
-	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html -q
+	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html
 
 	pip install prody
 
