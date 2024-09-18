@@ -1,20 +1,17 @@
-g#!/bin/bash
+#!/bin/bash
 
-USE_GIT=0
+# DockM8 Setup Script
+# This script installs DockM8 and its dependencies on a Linux system.
+# It checks for conda, installs it if necessary, creates a conda environment,
+# installs required packages, and downloads necessary software.
 
-while getopts "g" opt; do
-  case $opt in
-    g)
-      USE_GIT=1
-      ;;
-    \?)
-      echo "Usage: $0 [-g]" >&2
-      exit 1
-      ;;
-  esac
-done
-BASEDIR=$PWD
+set -x  # Exit immediately if a command exits with a non-zero status
 
+# Check if running on Linux
+if [[ "$OSTYPE" != "linux-gnu"* ]]; then
+    echo "Error: This script is designed to run on Linux only."
+    exit 1
+fi
 
 # Check for the existence of required utilities
 
@@ -27,11 +24,9 @@ function check_dependency() {
 }
 
 check_dependency "wget"
-if [ $USE_GIT -eq 1 ]; then
-    check_dependency "git"
-fi
 check_dependency "unzip"
 check_dependency "gcc"
+check_dependency "rsync"
 
 
 ###############################################################
@@ -42,17 +37,6 @@ echo -e """
 ###############################################################
 """
 
-# install dependencies for xgboost, GWOVina & MGLTools
-if [[ "$OSTYPE" == "darwin"* || "$OSTYPE" == "msys"* ]]; then
-    # dependencies for mac and windows
-    echo -e "DockM8 is not compatible with Mac OS or Windows!"
-    exit
-
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo -e "Detected Linux OS!"
-
-fi
-
 ###############################################################
 
 echo -e """
@@ -61,33 +45,164 @@ echo -e """
 ###############################################################
 """
 
-# check if conda is installed, and install miniconda3 if not
+# Function to check for conda installation
+check_conda() {
+    if command -v conda &>/dev/null; then
+        echo "Conda is already installed."
+        return 0
+    fi
 
-# if conda is not a recognised command then download and install
-if ! (source ~/.bashrc && command -v conda &> /dev/null); then
-    
-    echo -e "No conda found - installing..."
-    mkdir -p $HOME/miniconda3
-    cd $HOME/miniconda3
-    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh --no-check-certificate -q --show-progress
-    # install miniconda3
-    cd $HOME/miniconda3 && chmod -x miniconda.sh
-    cd $BASEDIR && bash $HOME/miniconda3/miniconda.sh -b -u -p $HOME/miniconda3
+    # Check common conda installation paths
+    local conda_paths=("$HOME/anaconda3/bin/conda" "$HOME/miniconda3/bin/conda" "/opt/conda/bin/conda")
+    for path in "${conda_paths[@]}"; do
+        if [[ -x "$path" ]]; then
+            echo "Conda found at $path"
+            export PATH="$(dirname "$path"):$PATH"
+            return 0
+        fi
+    done
 
-    # remove the installer
-    rm -f $HOME/miniconda3/miniconda.sh
+    echo "Conda not found. Will install Miniconda."
+    return 1
+}
 
-    # define conda installation paths
-    CONDA_PATH="$HOME/miniconda3/bin/conda"
-    CONDA_BASE=$BASEDIR/$HOME/miniconda3
-    CONDA_SH="$HOME/miniconda3/etc/profile.d/conda.sh"
-else
-    echo -e "Found existing conda install!"
-    # if conda not installed then find location of existing installation
-    CONDA_PATH=$(which conda)
-    CONDA_BASE=$(conda info --base)
-    CONDA_SH=$CONDA_BASE/etc/profile.d/conda.sh
+# Function to install Miniconda
+install_miniconda() {
+    echo "Installing Miniconda..."
+    local miniconda_installer="Miniconda3-latest-Linux-x86_64.sh"
+    local miniconda_url="https://repo.anaconda.com/miniconda/$miniconda_installer"
+
+    # Download Miniconda installer with retry
+    for i in {1..3}; do
+        if wget "$miniconda_url" -O "$miniconda_installer" --no-check-certificate -q --show-progress; then
+            break
+        fi
+        echo "Download failed. Retrying in 5 seconds..."
+        sleep 5
+    done
+
+    if [[ ! -f "$miniconda_installer" ]]; then
+        echo "Error: Failed to download Miniconda installer after 3 attempts."
+        exit 1
+    fi
+
+    bash "$miniconda_installer" -b -p "$HOME/miniconda3"
+    rm "$miniconda_installer"
+    export PATH="$HOME/miniconda3/bin:$PATH"
+    echo 'export PATH="$HOME/miniconda3/bin:$PATH"' >> "$HOME/.bashrc"
+    source "$HOME/.bashrc"
+}
+
+# Check for conda or install it
+if ! check_conda; then
+    install_miniconda
 fi
+
+CONDA_PATH=$(which conda)
+
+# Function to download DockM8
+download_dockm8() {
+    local target_dir="$1"
+    echo "Downloading DockM8 repository..."
+    mkdir -p "$target_dir"
+    local download_url="https://api.github.com/repos/DrugBud-Suite/DockM8/tarball"
+    if ! wget "$download_url" -O - --no-check-certificate -q --show-progress | tar -xzf - -C "$target_dir" --strip-components=1; then
+        echo "Failed to download DockM8. Please check your internet connection and try again."
+        return 1
+    fi
+    echo "DockM8 repository downloaded and extracted to $target_dir."
+}
+
+# Function to verify DockM8 installation
+verify_dockm8() {
+    local dir="$1"
+    if [[ ! -f "$dir/dockm8.py" ]]; then
+        echo "DockM8 installation in $dir appears to be incomplete or corrupted."
+        return 1
+    fi
+    echo "DockM8 installation in $dir verified."
+    return 0
+}
+
+# Function to update DockM8
+update_dockm8() {
+    local dir="$1"
+    echo "Updating DockM8 in $dir..."
+    local temp_dir=$(mktemp -d)
+    if download_dockm8 "$temp_dir"; then
+        rsync -a --delete "$temp_dir/" "$dir/"
+        rm -rf "$temp_dir"
+        echo "DockM8 updated successfully."
+    else
+        rm -rf "$temp_dir"
+        echo "Failed to update DockM8. The existing installation will be kept."
+        return 1
+    fi
+}
+
+# Main logic
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+# Check for dockm8.py in the current folder
+if [[ -f "./dockm8.py" ]]; then
+    DOCKM8_FOLDER="$PWD"
+    echo "DockM8 found in current directory: $DOCKM8_FOLDER"
+    if ! verify_dockm8 "$DOCKM8_FOLDER"; then
+        read -p "DockM8 installation may be corrupted. Would you like to update it? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            update_dockm8 "$DOCKM8_FOLDER"
+        fi
+    fi
+else
+    # Check for DockM8 folder in the script directory or one level up
+    for dir in "$SCRIPT_DIR" "$SCRIPT_DIR/.."; do
+        if [[ -d "$dir/DockM8" ]]; then
+            DOCKM8_FOLDER="$dir/DockM8"
+            echo "Existing DockM8 folder found: $DOCKM8_FOLDER"
+            if verify_dockm8 "$DOCKM8_FOLDER"; then
+                read -p "Would you like to update DockM8? (y/n) " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    update_dockm8 "$DOCKM8_FOLDER"
+                fi
+            else
+                read -p "DockM8 installation may be corrupted. Would you like to reinstall it? (y/n) " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    rm -rf "$DOCKM8_FOLDER"
+                    download_dockm8 "$DOCKM8_FOLDER"
+                fi
+            fi
+            break
+        fi
+    done
+
+    # If no DockM8 folder found, offer to download
+    if [[ -z "$DOCKM8_FOLDER" ]]; then
+        echo "No existing DockM8 installation found."
+        read -p "Would you like to download DockM8 to $SCRIPT_DIR/DockM8? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            DOCKM8_FOLDER="$SCRIPT_DIR/DockM8"
+            download_dockm8 "$DOCKM8_FOLDER"
+        else
+            echo "DockM8 installation skipped."
+            exit 0
+        fi
+    fi
+fi
+
+if [[ -n "$DOCKM8_FOLDER" ]]; then
+    cd "$DOCKM8_FOLDER"
+    echo "Current working directory: $PWD"
+else
+    echo "DockM8 folder not set. Installation may have failed or been skipped."
+    exit 1
+fi
+
+cd $DOCKM8_FOLDER
+###############################################################
 
 ###############################################################
 
@@ -115,73 +230,30 @@ source $CONDA_SH
 $CONDA_PATH config --set auto_activate_base false
 $CONDA_PATH config --set ssl_verify False
 
-# create the conda environment
-ENV_NAME="dockm8"
+# Create or update conda environment
+ENV_NAME="dockm8_v1"
+ENV_FILE="$DOCKM8_FOLDER/environment.yml"
 
-if conda env list | grep -q "^$ENV_NAME\s"; then
-    echo "Conda environment '$ENV_NAME' already exists. Skipping creation."
-	conda deactivate
-    conda activate $ENV_NAME
-else
-    conda create -n $ENV_NAME python=3.10 -y
-    conda deactivate
-    conda activate $ENV_NAME
-
-    conda config --add channels conda-forge 
-	conda config --add channels bioconda 
-	conda config --add channels schrodinger
-
-    conda install rdkit=2023.09 ipykernel scipy spyrmsd kneed scikit-learn-extra molvs seaborn xgboost openbabel docopt chembl_structure_pipeline tqdm pydantic -y
-
-    echo -e """
-    ###############################################################
-    # Installing Pip packages, please wait...
-    ###############################################################
-    """
-
-    pip install pymesh espsim oddt biopandas redo MDAnalysis==2.0.0 Pebble tensorflow==2.15 keras==2.15 meeko posebusters streamlit
-
-    pip3 install torch==2.2.0 torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-
-    pip install torch_scatter torch_sparse torch_spline_conv torch_cluster torch_geometric
-
-	pip install dgl -f https://data.dgl.ai/wheels/torch-2.2/repo.html
-
-	pip install prody
-
-    echo -e """
-    ###############################################################
-    # Finished installing pip packages
-    ###############################################################
-    """
+if [[ ! -f "$ENV_FILE" ]]; then
+    echo "Error: environment.yml not found in $DOCKM8_FOLDER"
+    exit 1
 fi
 
-###############################################################
-DOCKM8_FOLDER=""
-if [[ -f dockm8.py ]]; then
-    echo -e "\nDockM8 repository found in current folder."
-    DOCKM8_FOLDER=$(pwd)
+if conda env list | grep -q "^$ENV_NAME "; then
+    echo "Updating existing $ENV_NAME environment..."
+    if ! conda env update -n "$ENV_NAME" -f "$ENV_FILE" --prune; then
+        echo "Error: Failed to update $ENV_NAME environment"
+        exit 1
+    fi
 else
-    if [ $USE_GIT -eq 1 ]; then
-        echo -e "\nDownloading DockM8 repository using Git..."
-        rm -rf ./DockM8
-        git clone https://gitlab.com/DrugBud-Suite/DockM8.git -b main DockM8
-        DOCKM8_FOLDER=$(pwd)/DockM8
-        echo -e "\nDockM8 repository downloaded using Git."
-    else
-        echo -e "\nDownloading DockM8 repository using wget..."
-        rm -rf ./DockM8
-        mkdir -p DockM8
-        LATEST_RELEASE=$(curl -s "https://api.github.com/repos/DrugBud-Suite/DockM8/releases/latest")
-        DOWNLOAD_URL=$(echo "$LATEST_RELEASE" | grep "tarball_url" | cut -d '"' -f 4)
-        wget "$DOWNLOAD_URL" -O - --no-check-certificate -q --show-progress | tar -xzf - -C DockM8 --strip-components=1
-        DOCKM8_FOLDER=$(pwd)/DockM8
-        echo -e "\nDockM8 repository downloaded using wget and extracted."
+    echo "Creating new $ENV_NAME environment..."
+    if ! conda env create -n "$ENV_NAME" -f "$ENV_FILE"; then
+        echo "Error: Failed to create $ENV_NAME environment"
+        exit 1
     fi
 fi
 
-cd $DOCKM8_FOLDER
-###############################################################
+echo "$ENV_NAME environment setup completed successfully"
 
 echo -e """
 ###############################################################
@@ -305,23 +377,16 @@ echo -e """
 ###############################################################
 """
 
-# Check if conda environment is present in the list of environments
-if conda env list | grep -q $ENV_NAME; then
-    echo -e "\nDockM8 conda environment is present!"
+# Installation verification
+conda list -n "$ENV_NAME" | grep -E "rdkit|ipykernel|scipy|spyrmsd|kneed|scikit-learn-extra|molvs|seaborn|xgboost|openbabel|torch|torch-geonetric"
+if [ $? -eq 0 ]; then
+    echo "All required packages are installed."
 else
-    echo -e "\nINSTALLATION ERROR : DockM8 conda environment is not present!"
+    echo "Error: Some required packages are missing."
+    exit 1
 fi
 
-# Check if required packages are installed in the $ENV_NAME environment
-required_packages=("rdkit" "ipykernel" "scipy" "spyrmsd" "kneed" "scikit-learn-extra" "molvs" "seaborn" "xgboost" "openbabel" "pymesh" "espsim" "oddt" "biopandas" "redo" "MDAnalysis==2.0.0" "prody==2.1.0" "dgl" "Pebble" "tensorflow" "meeko" "chembl_structure_pipeline" "posebusters" "streamlit" "torch" "torchvision" "torchaudio" "torch_scatter" "torch_sparse" "torch_spline_conv" "torch_cluster" "torch_geometric")
-
-for package in "${required_packages[@]}"; do
-    if conda list -n $ENV_NAME "$package" &> /dev/null; then
-        echo -e "$package is installed in the $ENV_NAME environment!"
-    else
-        echo -e "\nINSTALLATION ERROR : $package is not installed in the $ENV_NAME environment!"
-    fi
-
+conda init bash
 conda activate $ENV_NAME
 cd $DOCKM8_FOLDER
 
