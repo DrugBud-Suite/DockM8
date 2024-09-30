@@ -5,7 +5,7 @@
 # It checks for conda, installs it if necessary, creates a conda environment,
 # installs required packages, and downloads necessary software.
 
-set -x  # Exit immediately if a command exits with a non-zero status
+set -e  # Exit immediately if a command exits with a non-zero status
 
 # Check if running on Linux
 if [[ "$OSTYPE" != "linux-gnu"* ]]; then
@@ -437,9 +437,3 @@ else
     echo "Error: Some required packages are missing."
     exit 1
 fi
-
-conda init bash
-conda activate $ENV_NAME
-cd $DOCKM8_FOLDER
-
-done
