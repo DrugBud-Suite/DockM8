@@ -9,9 +9,9 @@ dependencies:
   - jupyter_core=5.7.2
   - joblib=1.4.2
   - matplotlib-base=3.9.2
-  - matplotlib-inlin
+  - matplotlib-inline
   - molvs=0.1.1
-  - numpy
+  - numpy=1.26.4
   - openbabel=3.1.1
   - pandas=2.1.4
   - py-xgboost=2.1.1
@@ -21,7 +21,7 @@ dependencies:
   - scipy
   - seaborn
   - spyrmsd
-  - xgboos
+  - xgboost
   - chembl_structure_pipeline=1.2.0
   - rdkit=2023.09
   - biopandas=0.5.1
@@ -29,23 +29,23 @@ dependencies:
   - docopt
   - pip:
     - streamlit
-    - biopython=1.79    
-    - espsim=0.0.1
-    - meeko=0.5.1
-    - oddt=0.7
-    - posebusters=0.3.1
-    - prody=2.4.1
-    - Pebble=5.0.7
+    - biopython==1.79    
+    - espsim==0.0.1
+    - meeko==0.5.1
+    - oddt==0.7
+    - posebusters==0.3.1
+    - prody==2.4.1
+    - Pebble==5.0.7
     - redo
     - MDAnalysis
     - tensorflow==2.15
     - tqdm
     - --extra-index-url https://download.pytorch.org/whl/cpu
     - torch==2.2.0
-    - torch-cluster=1.6.3
-    - torch-geometric=2.6.0
-    - torch-scatter=2.1.2
-    - torch-sparse=0.6.18
-    - torch-spline-conv=1.2.2
+    - torch-cluster==1.6.3
+    - torch-geometric==2.6.0
+    - torch-scatter==2.1.2
+    - torch-sparse==0.6.18
+    - torch-spline-conv==1.2.2
     - --extra-index-url https://data.dgl.ai/wheels/torch-2.2/repo.html
-    - dgl=2.4.0
+    - dgl
