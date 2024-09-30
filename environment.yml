@@ -11,7 +11,7 @@ dependencies:
   - matplotlib-base=3.9.2
   - matplotlib-inline
   - molvs=0.1.1
-  - numpy=1.26.4
+  - numpy
   - openbabel=3.1.1
   - pandas=2.1.4
   - py-xgboost=2.1.1
