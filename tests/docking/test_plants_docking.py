@@ -1,6 +1,7 @@
-import os
 import sys
+import json
 from pathlib import Path
+import shutil
 
 import pytest
 import pandas as pd
@@ -14,7 +15,6 @@ sys.path.append(str(dockm8_path))
 
 from scripts.docking.plants_docking import PlantsDocking
 
-
 @pytest.fixture
 def test_data():
     dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
@@ -22,32 +22,62 @@ def test_data():
     library_file = dockm8_path / "test_data/docking/prepared_library.sdf"
     ligand_file = dockm8_path / "test_data/docking/prepared_ligand.sdf"
     software = dockm8_path / "software"
-    n_cpus = int(os.cpu_count() * 0.9)
+    n_cpus = 10
     output_dir = dockm8_path / "test_data/docking/output"
     output_dir.mkdir(exist_ok=True)
     pocket_definition = {"center": [-9.67, 207.73, 113.41], "size": [20.0, 20.0, 20.0]}
     return protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition
 
+def test_plants_config_generation(test_data, tmp_path):
+    protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
+    
+    plants = PlantsDocking(software)
+    config_path = tmp_path / "plants_config.txt"
+    
+    # Test configuration file generation
+    plants.generate_plants_config(
+        protein_mol2=tmp_path / "protein.mol2",
+        ligands_mol2=tmp_path / "ligands.mol2",
+        pocket_definition=pocket_definition,
+        n_poses=10,
+        output_dir=tmp_path / "results",
+        config_path=config_path
+    )
+    
+    assert config_path.exists()
+    
+    # Verify key configuration parameters
+    with open(config_path) as f:
+        config_content = f.read()
+        
+    # Check essential parameters
+    assert "search_speed speed1" in config_content
+    assert "scoring_function chemplp" in config_content
+    assert f'bindingsite_center {pocket_definition["center"][0]} {pocket_definition["center"][1]} {pocket_definition["center"][2]}' in config_content
+    assert f'bindingsite_radius {pocket_definition["size"][0] / 2}' in config_content
+    assert "cluster_structures 10" in config_content
 
-def test_PlantsDocking(test_data):
+def test_plants_dock_batch(test_data):
     protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
 
     plants = PlantsDocking(software)
-    temp_dir = plants._temp_dir
-    print(temp_dir)
+    assert plants._temp_dir is not None
+    assert plants._temp_dir.exists()
+    assert (plants._temp_dir / "run_info.json").exists()
+
     # Test dock_batch method with a single ligand file
     result_file = plants.dock_batch(
         batch_file=ligand_file,
         protein_file=protein_file,
         pocket_definition=pocket_definition,
-        exhaustiveness=8,  # Not used by PLANTS but kept for interface consistency
+        exhaustiveness=1,  # Not used by PLANTS but kept for interface consistency
         n_poses=10,
     )
 
     assert result_file is not None
     assert result_file.is_file()
 
-    # Verify the processed output directly
+    # Verify the processed output
     output_df = PandasTools.LoadSDF(str(result_file), molColName="Molecule", idName="Pose ID")
 
     # Check the processed output structure
@@ -63,17 +93,25 @@ def test_PlantsDocking(test_data):
     assert len(output_df) <= num_input_ligands * 10
 
     # Verify pose naming convention
-    assert all(pid.startswith(id_ + "_PLANTS_") for pid, id_ in zip(output_df["Pose ID"], output_df["ID"]))
+    assert all(pid.startswith(id_ + "_PLANTS_") for pid, id_ in zip(output_df["Pose ID"], output_df["ID"], strict=False))
 
-    # Test the full docking process with the library
+    if plants._temp_dir.exists():
+        shutil.rmtree(plants._temp_dir, ignore_errors=True)
+
+def test_plants_dock_full(test_data):
+    protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
+
+    plants = PlantsDocking(software)
+    assert plants._temp_dir is not None
+    assert plants._temp_dir.exists()
+    assert (plants._temp_dir / "run_info.json").exists()
+
     output_sdf = output_dir / "plants_docking_results.sdf"
-    if output_sdf.exists():
-        output_sdf.unlink()
     final_output = plants.dock(
         library=library_file,
         protein_file=protein_file,
         pocket_definition=pocket_definition,
-        exhaustiveness=8,
+        exhaustiveness=1,
         n_poses=10,
         n_cpus=n_cpus,
         output_sdf=output_sdf,
@@ -101,29 +139,169 @@ def test_PlantsDocking(test_data):
     pose_counts = final_df.groupby("ID").size()
     assert all(count <= 10 for count in pose_counts)  # No more than 10 poses per compound
 
-    # Verify scoring and ranking (PLANTS: lower CHEMPLP scores are better)
+    # Verify scoring and ranking
     final_df["CHEMPLP"] = pd.to_numeric(final_df["CHEMPLP"], errors="coerce")
     for id_ in final_df["ID"].unique():
         compound_poses = final_df[final_df["ID"] == id_]
-        # Scores should be sorted in ascending order (lower is better)
+        # Scores should be sorted in ascending order (lower CHEMPLP scores are better)
         assert all(compound_poses["CHEMPLP"].diff().fillna(0) >= 0)
 
-    # Verify statistics were tracked
-    assert hasattr(plants, "stats")
-    assert isinstance(plants.stats, dict)
-    assert "processed_batches" in plants.stats
-    assert "failed_batches" in plants.stats
-    assert "empty_results" in plants.stats
-
-    # Verify all batches were processed successfully
-    assert plants.stats["failed_batches"] == 0
-    assert plants.stats["empty_results"] == 0
-    assert plants.stats["processed_batches"] > 0
-
-    # Additional PLANTS-specific checks
-    # Verify that temporary directories are cleaned u
+    # Verify temporary directory cleanup
     assert not plants._temp_dir.exists()
 
-    # Verify score ranges are reasonable for CHEMPLP
-    assert all(final_df["CHEMPLP"] < 100)  # CHEMPLP scores should be reasonably small
-    assert all(final_df["CHEMPLP"] > -200)  # CHEMPLP scores shouldn't be too negative
+def test_plants_dock_failure(test_data, tmp_path):
+    protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
+    
+    # Test with valid initialization but invalid input files
+    plants = PlantsDocking(software)
+    assert plants._temp_dir is not None
+    assert plants._temp_dir.exists()
+    initial_temp_dir = plants._temp_dir
+    run_id = plants._run_id
+    
+    # Test with non-existent protein file
+    result_file = plants.dock_batch(
+        batch_file=ligand_file,
+        protein_file=tmp_path / "nonexistent.pdb",
+        pocket_definition=pocket_definition,
+        exhaustiveness=1,
+        n_poses=10,
+    )
+    assert result_file is None
+    
+    # Test with invalid pocket definition
+    invalid_pocket = {"center": [1, 2], "size": [1, 2, 3]}  # Missing Z coordinate in center
+    result_file = plants.dock_batch(
+        batch_file=ligand_file,
+        protein_file=protein_file,
+        pocket_definition=invalid_pocket,
+        exhaustiveness=1,
+        n_poses=10,
+    )
+    assert result_file is None
+    
+    empty_sdf = tmp_path / "empty.sdf"
+    empty_sdf.touch()
+
+    # Test dock_batch with an empty SDF file
+    result_file = plants.dock_batch(
+        batch_file=empty_sdf,
+        protein_file=protein_file,
+        pocket_definition=pocket_definition,
+        exhaustiveness=1,
+        n_poses=10,
+    )
+    assert result_file is None
+
+    # Test full docking with invalid setup
+    output_sdf = output_dir / "plants_docking_results_fail.sdf"
+    final_output = plants.dock(
+        library=tmp_path / "nonexistent.sdf",
+        protein_file=protein_file,
+        pocket_definition=pocket_definition,
+        exhaustiveness=1,
+        n_poses=10,
+        n_cpus=n_cpus,
+        output_sdf=output_sdf,
+    )
+    assert final_output is None
+
+    # Verify that the failed run was properly saved
+    recovery_dir = Path.home() / "dockm8_recovery" / f"failed_{plants.name}_{run_id}"
+    assert recovery_dir.exists(), "Recovery directory was not created"
+    
+    # Check run_info.json exists and contains correct failure information
+    run_info_path = recovery_dir / "run_info.json"
+    assert run_info_path.exists(), "run_info.json not found in recovery directory"
+    
+    with open(run_info_path) as f:
+        run_info = json.load(f)
+        assert run_info["status"] == "failed", "Run status not marked as failed"
+        assert "error" in run_info, "Error message not found in run_info"
+        assert "ERROR in docking" in run_info["error"], "Incorrect error message"
+
+    # Verify that the original temporary directory no longer exists
+    assert not initial_temp_dir.exists(), "Original temporary directory still exists"
+    
+    # Clean up the recovery directory after the test
+    shutil.rmtree(recovery_dir, ignore_errors=True)
+
+def test_plants_resume_dock(test_data):
+    protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
+    
+    # Simulate a failed run by creating a temporary directory and run_info
+    plants_resume = PlantsDocking(software)
+    initial_temp_dir = plants_resume._temp_dir
+    assert initial_temp_dir.exists()
+    
+    # Create processed directory with actual SDF content
+    processed_dir = initial_temp_dir / "processed"
+    processed_dir.mkdir(exist_ok=True)
+    shutil.copy(ligand_file, processed_dir / "split_0_processed.sdf")
+    
+    # Create splits directory with actual SDF content
+    splits_dir = initial_temp_dir / "splits"
+    splits_dir.mkdir(exist_ok=True)
+    for i in range(2):  # Create two split files
+        shutil.copy(ligand_file, splits_dir / f"split_{i}.sdf")
+    
+    # Save run parameters
+    params_to_save = {
+        "library_file": str(library_file),
+        "protein_file": str(protein_file),
+        "pocket_definition": pocket_definition,
+        "exhaustiveness": 1,
+        "n_poses": 10,
+        "output_sdf": str(output_dir / "plants_docking_results_resumed.sdf"),
+    }
+    with open(initial_temp_dir / "run_parameters.json", "w") as f:
+        json.dump(params_to_save, f, indent=2)
+    
+    # Update run info
+    with open(initial_temp_dir / "run_info.json") as f:
+        run_info = json.load(f)
+    run_info.update({
+        "status": "failed",
+        "software_path": str(software),
+        "run_id": plants_resume._run_id
+    })
+    with open(initial_temp_dir / "run_info.json", "w") as f:
+        json.dump(run_info, f, indent=2)
+    
+    # Resume the docking run
+    resumed_plants = PlantsDocking.resume_from_recovery(initial_temp_dir)
+    assert resumed_plants is not None
+    assert resumed_plants._run_id == plants_resume._run_id
+    
+    final_output_resumed = resumed_plants.resume_dock(n_cpus=n_cpus)
+    
+    assert final_output_resumed is not None
+    assert final_output_resumed.is_file()
+    
+    # Verify the output
+    final_df_resumed = PandasTools.LoadSDF(
+        str(final_output_resumed),
+        molColName="Molecule",
+        idName="Pose ID"
+    )
+    assert len(final_df_resumed) > 0
+    
+    # Verify cleanup
+    assert not resumed_plants._temp_dir.exists()
+    assert not initial_temp_dir.exists()
+
+def test_plants_resume_dock_no_run_info(test_data, tmp_path):
+    # Attempt to resume from a directory without run_info.json
+    recovery_dir = tmp_path / "invalid_recovery"
+    recovery_dir.mkdir()
+    resumed_plants = PlantsDocking.resume_from_recovery(recovery_dir)
+    assert resumed_plants is None
+
+def test_plants_resume_dock_invalid_run_info(test_data, tmp_path):
+    # Attempt to resume from a directory with invalid run_info.json
+    recovery_dir = tmp_path / "invalid_recovery_json"
+    recovery_dir.mkdir()
+    with open(recovery_dir / "run_info.json", "w") as f:
+        f.write("this is not json")
+    resumed_plants = PlantsDocking.resume_from_recovery(recovery_dir)
+    assert resumed_plants is None

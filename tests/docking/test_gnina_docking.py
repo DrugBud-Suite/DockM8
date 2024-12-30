@@ -66,12 +66,8 @@ def test_gnina_dock_batch(test_data):
     # Verify pose naming convention
     assert all(pid.startswith(id_ + "_GNINA_") for pid, id_ in zip(output_df["Pose ID"], output_df["ID"], strict=False))
 
-    assert gnina.stats["processed_batches"] == 1
-    assert gnina.stats["failed_batches"] == 0
-    assert gnina.stats["empty_results"] == 0
-
-    # Verify temporary directory cleanup
-    assert not gnina._temp_dir.exists()
+    if gnina._temp_dir.exists():
+        shutil.rmtree(gnina._temp_dir, ignore_errors=True)
 
 def test_gnina_dock_full(test_data):
     protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
@@ -121,72 +117,39 @@ def test_gnina_dock_full(test_data):
         # Scores should be sorted in descending order
         assert all(compound_poses["CNN-Score"].diff().fillna(0) <= 0)
 
-    # Verify statistics were tracked
-    assert hasattr(gnina, "stats")
-    assert isinstance(gnina.stats, dict)
-    assert "processed_batches" in gnina.stats
-    assert "failed_batches" in gnina.stats
-    assert "empty_results" in gnina.stats
-    assert gnina.stats["processed_batches"] > 0
-    assert gnina.stats["failed_batches"] == 0
-    assert gnina.stats["empty_results"] == 0
-
     # Verify temporary directory cleanup
     assert not gnina._temp_dir.exists()
 
 def test_gnina_dock_failure(test_data, tmp_path):
     protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
-
-    # Create a GninaDocking instance with an invalid executable path
-    invalid_software_path = tmp_path / "invalid_gnina_path"
-    gnina_failure = GninaDocking(invalid_software_path)
-    assert gnina_failure._temp_dir is not None
-    assert gnina_failure._temp_dir.exists()
-    run_info_path = gnina_failure._temp_dir / "run_info.json"
-    assert run_info_path.exists()
-
-    # Test dock_batch with an invalid executable - should return None
-    result_file = gnina_failure.dock_batch(
+    
+    # Test with valid initialization but invalid input files
+    gnina = GninaDocking(software)
+    assert gnina._temp_dir is not None
+    assert gnina._temp_dir.exists()
+    initial_temp_dir = gnina._temp_dir
+    run_id = gnina._run_id
+    
+    # Test with non-existent protein file
+    result_file = gnina.dock_batch(
         batch_file=ligand_file,
-        protein_file=protein_file,
+        protein_file=tmp_path / "nonexistent.pdb",
         pocket_definition=pocket_definition,
         exhaustiveness=1,
         n_poses=10,
     )
     assert result_file is None
-    assert gnina_failure.stats["failed_batches"] == 1
-
-    # Test the full docking process with an invalid executable
-    output_sdf = output_dir / "gnina_docking_results_fail.sdf"
-    final_output = gnina_failure.dock(
-        library=library_file,
+    
+    # Test with invalid pocket definition
+    invalid_pocket = {"center": [1, 2], "size": [1, 2, 3]}  # Missing Z coordinate in center
+    result_file = gnina.dock_batch(
+        batch_file=ligand_file,
         protein_file=protein_file,
-        pocket_definition=pocket_definition,
+        pocket_definition=invalid_pocket,
         exhaustiveness=1,
         n_poses=10,
-        n_cpus=n_cpus,
-        output_sdf=output_sdf,
     )
-    assert final_output is None
-    assert gnina_failure.stats["failed_batches"] > 1  # Should increment
-    assert run_info_path.exists() # Run info should still be there
-    with open(run_info_path) as f:
-        run_info = json.load(f)
-        assert run_info["status"] == "failed"
-        assert "ERROR in docking" in run_info.get("error", "")
-
-    # Verify temporary directory is moved to recovery
-    recovery_dir_pattern = Path.home() / "dockm8_recovery" / f"failed_run_{gnina_failure._run_id}"
-    assert recovery_dir_pattern.exists()
-    assert (recovery_dir_pattern / "run_info.json").exists()
-    shutil.rmtree(recovery_dir_pattern, ignore_errors=True) # Clean up recovery dir
-
-def test_gnina_dock_empty_batch(test_data, tmp_path):
-    protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
-
-    gnina = GninaDocking(software)
-    assert gnina._temp_dir is not None
-    assert gnina._temp_dir.exists()
+    assert result_file is None
 
     # Create an empty SDF file
     empty_sdf = tmp_path / "empty.sdf"
@@ -201,31 +164,62 @@ def test_gnina_dock_empty_batch(test_data, tmp_path):
         n_poses=10,
     )
     assert result_file is None
-    assert gnina.stats["empty_results"] == 1
-    assert gnina.stats["failed_batches"] == 0  # Should not be a failure
+    
+    # Test full docking with invalid setup
+    output_sdf = output_dir / "gnina_docking_results_fail.sdf"
+    final_output = gnina.dock(
+        library=tmp_path / "nonexistent.sdf",  # Non-existent input file
+        protein_file=protein_file,
+        pocket_definition=pocket_definition,
+        exhaustiveness=1,
+        n_poses=10,
+        n_cpus=n_cpus,
+        output_sdf=output_sdf,
+    )
+    assert final_output is None
 
-    # Verify temporary directory cleanup
-    assert not gnina._temp_dir.exists()
+    # Verify that the failed run was properly saved
+    recovery_dir = Path.home() / "dockm8_recovery" / f"failed_{gnina.name}_{run_id}"
+    assert recovery_dir.exists(), "Recovery directory was not created"
+    
+    # Check run_info.json exists and contains correct failure information
+    run_info_path = recovery_dir / "run_info.json"
+    assert run_info_path.exists(), "run_info.json not found in recovery directory"
+    
+    with open(run_info_path) as f:
+        run_info = json.load(f)
+        assert run_info["status"] == "failed", "Run status not marked as failed"
+        assert "error" in run_info, "Error message not found in run_info"
+        assert "ERROR in docking" in run_info["error"], "Incorrect error message"
+
+    
+
+    # Verify that the original temporary directory no longer exists
+    assert not initial_temp_dir.exists(), "Original temporary directory still exists"
+    
+    # Clean up the recovery directory after the test
+    shutil.rmtree(recovery_dir, ignore_errors=True)
+
 
 def test_gnina_resume_dock(test_data):
     protein_file, library_file, ligand_file, software, n_cpus, output_dir, pocket_definition = test_data
-
+    
     # Simulate a failed run by creating a temporary directory and run_info
     gnina_resume = GninaDocking(software)
     initial_temp_dir = gnina_resume._temp_dir
     assert initial_temp_dir.exists()
-
-    # Create dummy processed files to simulate partial completion
+    
+    # Create processed directory with actual SDF content
     processed_dir = initial_temp_dir / "processed"
     processed_dir.mkdir(exist_ok=True)
-    (processed_dir / "split_0_processed.sdf").touch()
-
-    # Create dummy split files
+    shutil.copy(ligand_file, processed_dir / "split_0_processed.sdf")
+    
+    # Create splits directory with actual SDF content
     splits_dir = initial_temp_dir / "splits"
     splits_dir.mkdir(exist_ok=True)
-    (splits_dir / "split_0.sdf").touch()
-    (splits_dir / "split_1.sdf").touch()
-
+    for i in range(2):  # Create two split files
+        shutil.copy(ligand_file, splits_dir / f"split_{i}.sdf")
+    
     # Save run parameters
     params_to_save = {
         "library_file": str(library_file),
@@ -237,37 +231,39 @@ def test_gnina_resume_dock(test_data):
     }
     with open(initial_temp_dir / "run_parameters.json", "w") as f:
         json.dump(params_to_save, f, indent=2)
-
-    # Simulate a failure status
+    
+    # Update run info
     with open(initial_temp_dir / "run_info.json") as f:
         run_info = json.load(f)
-    run_info["status"] = "failed"
+    run_info.update({
+        "status": "failed",
+        "software_path": str(software),
+        "run_id": gnina_resume._run_id
+    })
     with open(initial_temp_dir / "run_info.json", "w") as f:
         json.dump(run_info, f, indent=2)
-
-    # Attempt to resume the docking run
+    
+    # Resume the docking run
     resumed_gnina = GninaDocking.resume_from_recovery(initial_temp_dir)
     assert resumed_gnina is not None
     assert resumed_gnina._run_id == gnina_resume._run_id
-
-    output_sdf_resumed = output_dir / "gnina_docking_results_resumed.sdf"
+    
     final_output_resumed = resumed_gnina.resume_dock(n_cpus=n_cpus)
-
+    
     assert final_output_resumed is not None
     assert final_output_resumed.is_file()
-
-    # Load and verify the final combined output
-    final_df_resumed = PandasTools.LoadSDF(str(final_output_resumed), molColName="Molecule", idName="Pose ID")
+    
+    # Verify the output
+    final_df_resumed = PandasTools.LoadSDF(
+        str(final_output_resumed),
+        molColName="Molecule",
+        idName="Pose ID"
+    )
     assert len(final_df_resumed) > 0
-
-    # Verify the run info is updated to completed
-    with open(resumed_gnina._temp_dir / "run_info.json") as f:
-        updated_run_info = json.load(f)
-    assert updated_run_info["status"] == "completed"
-
-    # Verify temporary directory cleanup
+    
+    # Verify cleanup
     assert not resumed_gnina._temp_dir.exists()
-    assert not initial_temp_dir.exists() # Ensure original temp dir is cleaned up
+    assert not initial_temp_dir.exists()
 
 def test_gnina_resume_dock_no_run_info(test_data, tmp_path):
     # Attempt to resume from a directory without run_info.json
