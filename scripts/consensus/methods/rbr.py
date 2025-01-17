@@ -14,10 +14,10 @@ def rbr_consensus(data: pd.DataFrame, columns: list[str], id_column: str = "ID")
     values = data[columns].values
     n_samples, n_cols = values.shape
     
-    # Vectorized rank calculation
+    # Vectorized rank calculation - reversed to make higher values get higher ranks
     ranks = np.zeros_like(values, dtype=float)
     for i in range(n_cols):
-        ranks[:, i] = values[:, i].argsort().argsort() + 1
+        ranks[:, i] = (-values[:, i]).argsort().argsort() + 1
     
     mean_ranks = ranks.mean(axis=1)
     
