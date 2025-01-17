@@ -309,6 +309,48 @@ echo "$ENV_NAME environment setup completed successfully"
 
 echo -e """
 ###############################################################
+# Installing MGLTools environment
+###############################################################
+"""
+
+# Create MGLTools environment
+ENV_NAME_MGL="mgltools"
+
+if conda env list | grep -q "^$ENV_NAME_MGL "; then
+    echo "Updating existing $ENV_NAME_MGL environment..."
+    conda install -n "$ENV_NAME_MGL" python=2.7 -y
+    conda run -n "$ENV_NAME_MGL" conda install -c bioconda mgltools -y
+else
+    echo "Creating new $ENV_NAME_MGL environment..."
+    conda create -n "$ENV_NAME_MGL" python=2.7 -y
+    conda run -n "$ENV_NAME_MGL" conda install -c bioconda mgltools -y
+fi
+
+echo "$ENV_NAME_MGL environment setup completed successfully"
+
+echo -e """
+###############################################################
+# Installing AAScore environment
+###############################################################
+"""
+
+# Create MGLTools environment
+ENV_NAME_AASCORE="AAScore"
+
+if conda env list | grep -q "^$ENV_NAME_AASCORE "; then
+    echo "Updating existing $ENV_NAME_AASCORE environment..."
+    conda install -n "$ENV_NAME_AASCORE" python=3.6 -y
+    conda run -n "$ENV_NAME_AASCORE" conda install openbabel rdkit numpy scipy pandas py3dmol biopandas -y
+else
+    echo "Creating new $ENV_NAME_AASCORE environment..."
+    conda create -n "$ENV_NAME_AASCORE" python=3.6 -y
+    conda run -n "$ENV_NAME_AASCORE" conda install openbabel rdkit numpy scipy pandas py3dmol biopandas -y
+fi
+
+echo "$ENV_NAME_AASCORE environment setup completed successfully"
+
+echo -e """
+###############################################################
 # Downloading Executables...
 ###############################################################
 """
@@ -362,8 +404,8 @@ fi
 
 if [[ ! -f $DOCKM8_FOLDER/software/smina.static ]]; then
     echo -e "\nDownloading Lin_F9!"
-    wget https://github.com/cyangNYU/Lin_F9_test/raw/master/smina.static -q --show-progress
-    chmod +x smina.static
+    wget -O LinF9 https://github.com/cyangNYU/Lin_F9_test/raw/master/smina.static -q --show-progress
+    chmod +x LinF9
 fi
 
 if [[ ! -d $DOCKM8_FOLDER/software/AA-Score-Tool-main ]]; then
@@ -385,6 +427,16 @@ if [[ ! -d $DOCKM8_FOLDER/software/SCORCH-1.0.0 ]]; then
     wget https://github.com/SMVDGroup/SCORCH/archive/refs/tags/v1.0.0.tar.gz -q --show-progress
     tar -xf v1.0.0.tar.gz
     rm v1.0.0.tar.gz
+		# Remove git files if they exist
+	find $DOCKM8_FOLDER/software/SCORCH-1.0.0 -name ".git*" -exec rm -rf {} +
+
+	# Modify dock_functions.py - replace 'import pybel' with 'from openbabel import pybel'
+	sed -i 's/import pybel/from openbabel import pybel/' "$DOCKM8_FOLDER/software/SCORCH-1.0.0/utils/dock_functions.py"
+
+	# Modify scorch.py - update the DMatrix initialization
+	sed -i 's/dtest = xgb.DMatrix(df, feature_names=df.columns)/dtest = xgb.DMatrix(df, feature_names=list(df.columns))/' "$DOCKM8_FOLDER/software/SCORCH-1.0.0/scorch.py"
+
+	echo "SCORCH installation and configuration completed!"
 fi
 
 if [[ ! -f $DOCKM8_FOLDER/software/rf-score-vs ]]; then
