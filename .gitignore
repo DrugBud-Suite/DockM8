@@ -196,3 +196,5 @@ dekois_glide_processing.ipynb
 docker.ipynb
 lit-pcba_glide_shenetal_processing.ipynb
 max_AL.ipynb
+NNScore_pdbbind2016.pickle
+optimal_conditions.txt
