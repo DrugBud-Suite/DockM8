@@ -1,7 +1,7 @@
-name: dockm8_test
+name: dockm8_manual
 channels:
- - conda-forge
- - defaults
+  - conda-forge
+  - defaults
 dependencies:
   - ipykernel=6.29.5
   - ipython=8.27.0
@@ -11,41 +11,43 @@ dependencies:
   - matplotlib-base=3.9.2
   - matplotlib-inline
   - molvs=0.1.1
-  - numpy
+  - numpy=1.26.4
   - openbabel=3.1.1
   - pandas=2.1.4
   - py-xgboost=2.1.1
-  - python=3.10
-  - scikit-learn
-  - scikit-learn-extra
-  - scipy
+  - scikit-learn=1.2.2
+  - scikit-learn-extra=0.3.0
+  - scipy=1.14.1
   - seaborn
-  - spyrmsd
-  - xgboost
+  - spyrmsd=0.8.0
   - chembl_structure_pipeline=1.2.0
   - rdkit=2023.09
   - biopandas=0.5.1
   - pip
   - docopt
+  - pytorch::pytorch=2.2.0
+  - pytorch::cpuonly
+  - openmm=8.1.2
+  - redo=2.0.4
+  - mdanalysis
+  - prody=2.4.1
+  - tqdm
+  - meeko=0.5.1
+  - biopython=1.79
+  - espsim
+  - streamlit
+  - numpydoc
+  - pytest
+  - pdbfixer=1.9
+  - pyg::pytorch-spline-conv=1.2.2
+  - pyg::pyg
+  - pyg::pytorch-cluster=1.6.3
+  - pyg::pytorch-scatter=2.1.2
+  - pyg::pytorch-sparse=0.6.18
+  - dglteam/label/th22_cpu::dgl=2.4.0
+  - tensorflow==2.18
   - pip:
-    - streamlit
-    - biopython==1.79    
-    - espsim==0.0.1
-    - meeko==0.5.1
+    - stqdm
     - oddt==0.7
     - posebusters==0.3.1
-    - prody==2.4.1
-    - Pebble==5.0.7
-    - redo
-    - MDAnalysis
-    - tensorflow==2.15
-    - tqdm
-    - --extra-index-url https://download.pytorch.org/whl/cpu
-    - torch==2.2.0
-    - torch-cluster==1.6.3
-    - torch-geometric==2.6.0
-    - torch-scatter==2.1.2
-    - torch-sparse==0.6.18
-    - torch-spline-conv==1.2.2
-    - --extra-index-url https://data.dgl.ai/wheels/torch-2.2/repo.html
-    - dgl
+    - paretoset
