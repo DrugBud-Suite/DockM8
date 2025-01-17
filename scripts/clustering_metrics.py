@@ -12,8 +12,9 @@ from spyrmsd import molecule, rmsd
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+
 def simpleRMSD_calc(*args):
-    '''
+    """
     Calculates the root mean square deviation (RMSD) metric between two molecules.
 
     Args:
@@ -21,23 +22,29 @@ def simpleRMSD_calc(*args):
 
     Returns:
         float: The calculated RMSD value between the two molecules.
-    '''
+    """
     # Find the maximum common substructure (MCS) between the reference and target molecules
     mcs = rdFMCS.FindMCS([args[0], args[1]])
-    
+
     # Get the atom map for the reference and target molecules
     ref_atoms = args[0].GetSubstructMatch(Chem.MolFromSmarts(mcs.smartsString))
     target_atoms = args[1].GetSubstructMatch(Chem.MolFromSmarts(mcs.smartsString))
-    
+
     # Generate the atom map by zipping the atom indices from the reference and target molecules
     atom_map = list(zip(ref_atoms, target_atoms))
-    
+
     # Calculate the distances between corresponding atoms in the two molecules
-    distances = [np.linalg.norm(np.array(args[0].GetConformer().GetAtomPosition(ref)) - np.array(args[1].GetConformer().GetAtomPosition(target))) for ref, target in atom_map]
-    
+    distances = [
+        np.linalg.norm(
+            np.array(args[0].GetConformer().GetAtomPosition(ref))
+            - np.array(args[1].GetConformer().GetAtomPosition(target))
+        )
+        for ref, target in atom_map
+    ]
+
     # Apply the RMSD formula
     rmsd = np.sqrt(np.mean(np.square(distances)))
-    
+
     return round(rmsd, 3)
 
 
@@ -74,12 +81,12 @@ def spyRMSD_calc(*args):
 
 
 def espsim_calc(*args):
-    '''Calculates the electrostatic shape similarity metric between two molecules'''
+    """Calculates the electrostatic shape similarity metric between two molecules"""
     return GetEspSim(args[0], args[1])
 
 
 def SPLIF_calc(molecule1: str, molecule2: str, pocket_file: str) -> float:
-    '''
+    """
     Calculates the Protein-Ligand Interaction fingerprint similarity metric between two molecules
 
     Args:
@@ -89,12 +96,12 @@ def SPLIF_calc(molecule1: str, molecule2: str, pocket_file: str) -> float:
 
     Returns:
         float: Rounded similarity score between the two molecules
-    '''
+    """
     # Generate the path to the pocket file
-    pocket_file = pocket_file.replace('.pdb', '_pocket.pdb')
+    pocket_file = pocket_file.replace(".pdb", "_pocket.pdb")
 
     # Read the protein structure from the pocket file
-    protein = next(oddt.toolkit.readfile('pdb', pocket_file))
+    protein = next(oddt.toolkit.readfile("pdb", pocket_file))
     protein.protein = True
 
     # Create Molecule objects for the two molecules
@@ -136,14 +143,13 @@ def USRCAT_calc(*args):
     # Round the similarity score to 3 decimal places
     return round(usr_sim, 3)
 
-CLUSTERING_METRICS = {
-    'RMSD':     {'function': simpleRMSD_calc},
-    'spyRMSD':  {'function': spyRMSD_calc},
-    'espsim':   {'function': espsim_calc},
-    'USRCAT':   {'function': USRCAT_calc},
-    '3DScore':   {'function': None},
-    }
 
-BROKEN_CLUSTERING_METRICS = {
-    'SPLIF':    {'function': SPLIF_calc},
+CLUSTERING_METRICS = {
+    "RMSD": {"function": simpleRMSD_calc},
+    "spyRMSD": {"function": spyRMSD_calc},
+    "espsim": {"function": espsim_calc},
+    "USRCAT": {"function": USRCAT_calc},
+    "3DScore": {"function": None},
 }
+
+BROKEN_CLUSTERING_METRICS = {"SPLIF": {"function": SPLIF_calc}}
