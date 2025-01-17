@@ -1,0 +1,131 @@
+import subprocess
+import sys
+import traceback
+from pathlib import Path
+import os
+
+import pandas as pd
+from rdkit.Chem import PandasTools
+
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
+from scripts.rescoring.scoring_function import ScoringFunction
+from scripts.utilities.file_splitting import split_sdf
+from scripts.utilities.logging import printlog
+from scripts.utilities.parallel_executor import parallel_executor
+from scripts.utilities.molecule_conversion import convert_molecules
+
+
+class KORPL(ScoringFunction):
+    """
+    KORP-PL scoring function implementation.
+    """
+
+    def __init__(self, software_path: Path):
+        super().__init__(
+            name="KORP-PL",
+            column_name="KORP-PL",
+            best_value="min",
+            score_range=(200, -1000),
+            software_path=software_path,
+        )
+
+    def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+        """
+        Rescore the molecules in the given SDF file using the KORP-PL scoring function.
+
+        Args:
+            sdf_file (str): The path to the SDF file.
+            n_cpus (int): The number of CPUs to use for parallel processing.
+            protein_file (str): The path to the protein file.
+            **kwargs: Additional keyword arguments.
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the rescored molecules.
+        """
+        try:
+            split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="cpu", splits=n_cpus)
+            split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
+
+            rescoring_results = parallel_executor(
+                self._rescore_split_file, split_files_sdfs, n_cpus, display_name=self.name, protein_file=protein_file
+            )
+
+            korpl_rescoring_results = self._combine_rescoring_results(rescoring_results)
+
+            
+            
+            return korpl_rescoring_results
+        except Exception:
+            printlog("ERROR: An unexpected error occurred during KORP-PL rescoring:")
+            printlog(traceback.format_exc())
+            return pd.DataFrame()
+        finally:
+            self.cleanup()
+
+    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
+        """
+        Rescore a single split SDF file.
+
+        Args:
+            split_file (Path): The path to the split SDF file.
+            protein_file (str): The path to the protein file.
+
+        Returns:
+            Path: The path to the rescored CSV file.
+        """
+        try:
+            df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
+            df = df[["Pose ID"]]
+
+            mol2_file = convert_molecules(split_file, split_file.with_suffix(".mol2"), "sdf", "mol2")
+
+            korpl_cmd = f"{self.software_path}/KORP-PL" f" --receptor {protein_file}" f" --ligand {mol2_file}" " --mol2"
+
+            result = subprocess.run(korpl_cmd, shell=True, capture_output=True, text=True)
+
+            energies = []
+            for line in result.stdout.splitlines():
+                if line.startswith("model"):
+                    parts = line.split(",")
+                    energy = round(float(parts[1].split("=")[1]), 2)
+                    energies.append(energy)
+
+            df[self.column_name] = energies
+            output_csv = split_file.parent / f"{split_file.stem}_scores.csv"
+            df.to_csv(output_csv, index=False)
+            return output_csv
+        except Exception as e:
+            printlog(f"KORP-PL rescoring failed for {split_file}: {e}")
+            printlog(traceback.format_exc())
+            return None
+
+    def _combine_rescoring_results(self, result_files: list[Path]) -> pd.DataFrame:
+        """
+        Combine rescoring results from multiple CSV files.
+
+        Args:
+            result_files (List[Path]): List of paths to rescored CSV files.
+
+        Returns:
+            pd.DataFrame: Combined DataFrame with rescoring results.
+        """
+        try:
+            dataframes = []
+            for file in result_files:
+                if file and file.is_file():
+                    df = pd.read_csv(file)
+                    dataframes.append(df)
+
+            if not dataframes:
+                printlog("No valid CSV files found with KORP-PL scores.")
+                return pd.DataFrame()
+
+            combined_results = pd.concat(dataframes, ignore_index=True)
+            return combined_results[["Pose ID", self.column_name]]
+        except Exception:
+            printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
+            printlog(traceback.format_exc())
+            return pd.DataFrame()
