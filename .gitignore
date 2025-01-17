@@ -186,3 +186,13 @@ TRPM5.ipynb
 results/DUD-E_RESULTS/results_dockm8_AUC_ROC.csv
 results/DUD-E_RESULTS/results_dockm8_AUC.csv
 results/DUD-E_RESULTS/results_dockm8_BEDROC.csv
+software/LinF9
+test_data/rescoring/output/
+scripts/performance/normalization.py
+test_data/docking/output/
+dekois_dockm8_processing.ipynb
+dekois_glide_plotting.ipynb
+dekois_glide_processing.ipynb
+docker.ipynb
+lit-pcba_glide_shenetal_processing.ipynb
+max_AL.ipynb
