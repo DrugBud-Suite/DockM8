@@ -209,8 +209,11 @@ class DockingFunction(ABC):
                 f.stem.replace("_processed", "")
                 for f in (self._temp_dir / "processed").glob("*.sdf")
             }
+            print(len(processed_files))
             all_batches = sorted((self._temp_dir / "splits").glob("split_*.sdf"))
+            print(len(all_batches))
             batches_to_process = [b for b in all_batches if b.stem not in processed_files]
+            print(len(batches_to_process))
 
             if not batches_to_process:
                 printlog("No remaining batches to process.")
