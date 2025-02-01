@@ -198,3 +198,7 @@ lit-pcba_glide_shenetal_processing.ipynb
 max_AL.ipynb
 NNScore_pdbbind2016.pickle
 optimal_conditions.txt
+harmonizer.ipynb
+lit-pcba_dockm8_processing.ipynb
+sdf_loader.ipynb
+test_data/fast_sdf_loader/test_data.ipynb
