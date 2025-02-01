@@ -41,7 +41,7 @@ def load_and_validate_data(
         raise ValueError("Input data is empty")
     
     if id_column not in data.columns:
-        raise ValueError(f"ID column '{id_column}' not found in the data")
+        raise ValueError(f"ID column '{id_column}' not found in the data") 
     
     # Pre-compute numeric columns once
     numeric_mask = data.dtypes.apply(pd.api.types.is_numeric_dtype)
