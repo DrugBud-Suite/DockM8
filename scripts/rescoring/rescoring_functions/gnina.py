@@ -1,54 +1,36 @@
-import subprocess
-import sys
-import traceback
 from pathlib import Path
 import os
-
 import pandas as pd
 from rdkit.Chem import PandasTools
-
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.path_check import get_executable_path
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class Gnina(ScoringFunction):
-    """
-    Gnina scoring function implementation.
-    """
+    """Gnina scoring function implementation."""
 
     def __init__(self, score_type: str, software_path: Path):
-        if score_type == "affinity":
-            super().__init__(
-                name="GNINA-Affinity",
-                column_name="GNINA-Affinity",
-                best_value="min",
-                score_range=(100, -100),
-                software_path=software_path,
-            )
-        elif score_type == "cnn_score":
-            super().__init__(
-                name="CNN-Score",
-                column_name="CNN-Score",
-                best_value="max",
-                score_range=(0, 1),
-                software_path=software_path,
-            )
-        elif score_type == "cnn_affinity":
-            super().__init__(
-                name="CNN-Affinity",
-                column_name="CNN-Affinity",
-                best_value="max",
-                score_range=(0, 20),
-                software_path=software_path,
-            )
-        else:
+        score_configs = {
+            "affinity": ("GNINA-Affinity", "min", (100, -100)),
+            "cnn_score": ("CNN-Score", "max", (0, 1)),
+            "cnn_affinity": ("CNN-Affinity", "max", (0, 20))
+        }
+        
+        if score_type not in score_configs:
             raise ValueError("Invalid score type for Gnina")
+            
+        name, best_value, score_range = score_configs[score_type]
+        super().__init__(
+            name=name,
+            column_name=name,
+            best_value=best_value,
+            score_range=score_range,
+            software_path=software_path,
+        )
         self.score_type = score_type
         self.software_path = software_path
         self.executable_path = get_executable_path(software_path, "gnina")
@@ -71,33 +53,24 @@ class Gnina(ScoringFunction):
             split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
             rescoring_results = parallel_executor(
-                self._rescore_split_file, split_files_sdfs, n_cpus, display_name=self.name, protein_file=protein_file
+                self._rescore_split_file,
+                split_files_sdfs,
+                n_cpus,
+                display_name=self.name,
+                protein_file=protein_file
             )
 
             gnina_dataframes = self._load_rescoring_results(rescoring_results)
-            gnina_rescoring_results = self._combine_rescoring_results(gnina_dataframes)
+            return self._combine_rescoring_results(gnina_dataframes)
 
-            
-            
-            return gnina_rescoring_results
-        except Exception:
+        except Exception as e:
             printlog(f"ERROR: An unexpected error occurred during {self.name} rescoring:")
-            printlog(traceback.format_exc())
+            printlog(str(e))
             return pd.DataFrame()
         finally:
             self.cleanup()
 
-    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
-        """
-        Rescore a single split SDF file.
-
-        Args:
-            split_file (Path): The path to the split SDF file.
-            protein_file (str): The path to the protein file.
-
-        Returns:
-            Path: The path to the rescored SDF file.
-        """
+    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path | None:
         results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
         gnina_cmd = (
             f"{self.executable_path}"
@@ -108,11 +81,16 @@ class Gnina(ScoringFunction):
             " --score_only"
             " --cnn crossdock_default2018"
         )
-        try:
-            subprocess.run(gnina_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError:
-            printlog(f"{self.column_name} rescoring failed for {split_file}:")
-            printlog(traceback.format_exc())
+
+        stdout, stderr = run_subprocess_command(command=gnina_cmd)
+        
+        if not results.exists():
+            printlog(f"Gnina output file not found: {results}")
+            if stderr:
+                printlog(f"Gnina command output:\n{stdout}")
+                printlog(f"Gnina command error output:\n{stderr}")
+            return None
+
         return results
 
     def _load_rescoring_results(self, result_files: list[Path]) -> list[pd.DataFrame]:
@@ -127,14 +105,21 @@ class Gnina(ScoringFunction):
         """
         dataframes = []
         for file in result_files:
+            if not file or not file.is_file():
+                continue
+                
             try:
                 df = PandasTools.LoadSDF(
-                    str(file), idName="Pose ID", molColName=None, includeFingerprints=False, embedProps=False
+                    str(file),
+                    idName="Pose ID",
+                    molColName=None,
+                    includeFingerprints=False,
+                    embedProps=False
                 )
                 dataframes.append(df)
-            except Exception:
-                printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")
-                printlog(traceback.format_exc())
+            except Exception as e:
+                printlog(f"ERROR: Failed to load {self.column_name} rescoring SDF file {file}: {str(e)}")
+                
         return dataframes
 
     def _combine_rescoring_results(self, dataframes: list[pd.DataFrame]) -> pd.DataFrame:
@@ -148,13 +133,21 @@ class Gnina(ScoringFunction):
             pd.DataFrame: Combined DataFrame with rescoring results.
         """
         try:
+            if not dataframes:
+                printlog(f"No valid {self.name} rescoring results to combine")
+                return pd.DataFrame()
+                
             combined_results = pd.concat(dataframes, ignore_index=True)
             combined_results.rename(
-                columns={"minimizedAffinity": "GNINA-Affinity", "CNNscore": "CNN-Score", "CNNaffinity": "CNN-Affinity"},
-                inplace=True,
+                columns={
+                    "minimizedAffinity": "GNINA-Affinity",
+                    "CNNscore": "CNN-Score",
+                    "CNNaffinity": "CNN-Affinity"
+                },
+                inplace=True
             )
             return combined_results[["Pose ID", self.column_name]]
-        except Exception:
-            printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
-            printlog(traceback.format_exc())
+            
+        except Exception as e:
+            printlog(f"ERROR: Could not combine {self.column_name} rescored poses: {str(e)}")
             return pd.DataFrame()

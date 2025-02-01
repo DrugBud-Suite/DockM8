@@ -1,24 +1,13 @@
-import subprocess
-import sys
-import traceback
 from pathlib import Path
-
 import pandas as pd
-
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
-
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class AAScore(ScoringFunction):
-    """
-    AAScore scoring function implementation.
-    """
+    """AAScore scoring function implementation."""
 
     def __init__(self, software_path: Path):
         super().__init__(
@@ -51,25 +40,14 @@ class AAScore(ScoringFunction):
                 aascore_rescoring_results = self._rescore_multi_process(sdf_file, pocket_file, n_cpus, self._temp_dir)
 
             return aascore_rescoring_results
-        except Exception:
+        except Exception as e:
             printlog("ERROR: An unexpected error occurred during AAScore rescoring:")
-            printlog(traceback.format_exc())
+            printlog(str(e))
             return pd.DataFrame()
         finally:
             self.cleanup()
 
     def _rescore_single_process(self, sdf_file: str, pocket_file: str, temp_dir: Path) -> pd.DataFrame:
-        """
-        Rescore using a single process.
-
-        Args:
-            sdf_file (str): The path to the SDF file.
-            pocket_file (str): The path to the pocket file.
-            temp_dir (Path): The temporary directory path.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing the rescoring results.
-        """
         results = temp_dir / "rescored_AAScore.csv"
         aascore_cmd = (
             f"cd {self.software_path}/AA-Score-Tool-main &&"
@@ -78,12 +56,20 @@ class AAScore(ScoringFunction):
             f" --Lig {sdf_file}"
             f" --Out {results}"
         )
+
+        stdout, stderr = run_subprocess_command(aascore_cmd)
+        
+        if not results.exists():
+            printlog(f"AAScore output file not found: {results}")
+            if stderr:
+                printlog(f"AAScore command output:\n{stdout}")
+                printlog(f"AAScore command error output:\n{stderr}")
+            return pd.DataFrame()
+
         try:
-            subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return pd.read_csv(results, delimiter="\t", header=None, names=["Pose ID", self.column_name])
-        except subprocess.CalledProcessError:
-            printlog("AAScore rescoring failed:")
-            printlog(traceback.format_exc())
+        except Exception as e:
+            printlog(f"Failed to read AAScore results from {results}: {str(e)}")
             return pd.DataFrame()
 
     def _rescore_multi_process(self, sdf_file: str, pocket_file: str, n_cpus: int, temp_dir: Path) -> pd.DataFrame:
@@ -108,17 +94,7 @@ class AAScore(ScoringFunction):
 
         return self._combine_rescoring_results(rescoring_results)
 
-    def _rescore_split_file(self, split_file: Path, pocket_file: str) -> Path:
-        """
-        Rescore a single split SDF file.
-
-        Args:
-            split_file (Path): The path to the split SDF file.
-            pocket_file (str): The path to the pocket file.
-
-        Returns:
-            Path: The path to the rescored CSV file.
-        """
+    def _rescore_split_file(self, split_file: Path, pocket_file: str) -> Path | None:
         results = split_file.parent / f"{split_file.stem}_AAScore.csv"
         aascore_cmd = (
             f"cd {self.software_path}/AA-Score-Tool-main &&"
@@ -127,13 +103,17 @@ class AAScore(ScoringFunction):
             f" --Lig {split_file}"
             f" --Out {results}"
         )
-        try:
-            subprocess.run(aascore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return results
-        except subprocess.CalledProcessError:
-            printlog(f"AAScore rescoring failed for {split_file}:")
-            printlog(traceback.format_exc())
+
+        stdout, stderr = run_subprocess_command(aascore_cmd)
+        
+        if not results.exists():
+            printlog(f"AAScore output file not found: {results}")
+            if stderr:
+                printlog(f"AAScore command output:\n{stdout}")
+                printlog(f"AAScore command error output:\n{stderr}")
             return None
+
+        return results
 
     def _combine_rescoring_results(self, result_files: list[Path]) -> pd.DataFrame:
         """
@@ -158,7 +138,6 @@ class AAScore(ScoringFunction):
 
             combined_results = pd.concat(dataframes, ignore_index=True)
             return combined_results[["Pose ID", self.column_name]]
-        except Exception:
-            printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
-            printlog(traceback.format_exc())
+        except Exception as e:
+            printlog(f"ERROR: Could not combine {self.column_name} rescored poses: {str(e)}")
             return pd.DataFrame()

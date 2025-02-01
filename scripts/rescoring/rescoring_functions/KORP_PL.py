@@ -1,27 +1,17 @@
-import subprocess
-import sys
-import traceback
 from pathlib import Path
 import os
-
 import pandas as pd
 from rdkit.Chem import PandasTools
-
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.molecule_conversion import convert_molecules
-
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class KORPL(ScoringFunction):
-    """
-    KORP-PL scoring function implementation.
-    """
+    """KORP-PL scoring function implementation."""
 
     def __init__(self, software_path: Path):
         super().__init__(
@@ -50,56 +40,64 @@ class KORPL(ScoringFunction):
             split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
             rescoring_results = parallel_executor(
-                self._rescore_split_file, split_files_sdfs, n_cpus, display_name=self.name, protein_file=protein_file
+                self._rescore_split_file,
+                split_files_sdfs,
+                n_cpus,
+                display_name=self.name,
+                protein_file=protein_file
             )
 
-            korpl_rescoring_results = self._combine_rescoring_results(rescoring_results)
+            return self._combine_rescoring_results(rescoring_results)
 
-            
-            
-            return korpl_rescoring_results
-        except Exception:
+        except Exception as e:
             printlog("ERROR: An unexpected error occurred during KORP-PL rescoring:")
-            printlog(traceback.format_exc())
+            printlog(str(e))
             return pd.DataFrame()
         finally:
             self.cleanup()
 
-    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
-        """
-        Rescore a single split SDF file.
-
-        Args:
-            split_file (Path): The path to the split SDF file.
-            protein_file (str): The path to the protein file.
-
-        Returns:
-            Path: The path to the rescored CSV file.
-        """
+    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path | None:
         try:
             df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
             df = df[["Pose ID"]]
 
             mol2_file = convert_molecules(split_file, split_file.with_suffix(".mol2"), "sdf", "mol2")
-
-            korpl_cmd = f"{self.software_path}/KORP-PL" f" --receptor {protein_file}" f" --ligand {mol2_file}" " --mol2"
-
-            result = subprocess.run(korpl_cmd, shell=True, capture_output=True, text=True)
-
-            energies = []
-            for line in result.stdout.splitlines():
-                if line.startswith("model"):
-                    parts = line.split(",")
-                    energy = round(float(parts[1].split("=")[1]), 2)
-                    energies.append(energy)
-
-            df[self.column_name] = energies
             output_csv = split_file.parent / f"{split_file.stem}_scores.csv"
-            df.to_csv(output_csv, index=False)
-            return output_csv
+
+            korpl_cmd = (
+                f"{self.software_path}/KORP-PL"
+                f" --receptor {protein_file}"
+                f" --ligand {mol2_file}"
+                " --mol2"
+            )
+
+            stdout, stderr = run_subprocess_command(command=korpl_cmd)
+            
+            if not stdout or "model" not in stdout:
+                printlog(f"KORP-PL output not found or invalid for {split_file}")
+                if stderr:
+                    printlog(f"KORP-PL command output:\n{stdout}")
+                    printlog(f"KORP-PL command error output:\n{stderr}")
+                return None
+
+            try:
+                energies = []
+                for line in stdout.splitlines():
+                    if line.startswith("model"):
+                        parts = line.split(",")
+                        energy = round(float(parts[1].split("=")[1]), 2)
+                        energies.append(energy)
+
+                df[self.column_name] = energies
+                df.to_csv(output_csv, index=False)
+                return output_csv
+
+            except (ValueError, IndexError) as e:
+                printlog(f"Error parsing KORP-PL output for {split_file}: {str(e)}")
+                return None
+
         except Exception as e:
-            printlog(f"KORP-PL rescoring failed for {split_file}: {e}")
-            printlog(traceback.format_exc())
+            printlog(f"KORP-PL rescoring failed for {split_file}: {str(e)}")
             return None
 
     def _combine_rescoring_results(self, result_files: list[Path]) -> pd.DataFrame:
@@ -115,9 +113,15 @@ class KORPL(ScoringFunction):
         try:
             dataframes = []
             for file in result_files:
-                if file and file.is_file():
+                if not file or not file.is_file():
+                    continue
+
+                try:
                     df = pd.read_csv(file)
                     dataframes.append(df)
+                except Exception as e:
+                    printlog(f"Failed to read results from {file}: {str(e)}")
+                    continue
 
             if not dataframes:
                 printlog("No valid CSV files found with KORP-PL scores.")
@@ -125,7 +129,7 @@ class KORPL(ScoringFunction):
 
             combined_results = pd.concat(dataframes, ignore_index=True)
             return combined_results[["Pose ID", self.column_name]]
-        except Exception:
-            printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
-            printlog(traceback.format_exc())
+
+        except Exception as e:
+            printlog(f"ERROR: Could not combine {self.column_name} rescored poses: {str(e)}")
             return pd.DataFrame()

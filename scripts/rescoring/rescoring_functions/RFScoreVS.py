@@ -1,26 +1,16 @@
-import subprocess
-import sys
-import traceback
+import glob
 from pathlib import Path
 import os
-import glob
-
 import pandas as pd
-
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class RFScoreVS(ScoringFunction):
-    """
-    RFScoreVS scoring function implementation.
-    """
+    """RFScoreVS scoring function implementation."""
 
     def __init__(self, software_path: Path):
         super().__init__(
@@ -37,65 +27,68 @@ class RFScoreVS(ScoringFunction):
         Rescore the molecules in the given SDF file using the RFScoreVS scoring function.
 
         Args:
-        sdf_file (str): The path to the SDF file.
-        n_cpus (int): The number of CPUs to use for parallel processing.
-        protein_file (str): The path to the protein file.
-        **kwargs: Additional keyword arguments.
+            sdf_file (str): The path to the SDF file.
+            n_cpus (int): The number of CPUs to use for parallel processing.
+            protein_file (str): The path to the protein file.
+            **kwargs: Additional keyword arguments.
 
         Returns:
-        pd.DataFrame: A DataFrame containing the rescored molecules.
+            pd.DataFrame: A DataFrame containing the rescored molecules.
         """
         try:
             split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="cpu", splits=n_cpus)
             split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
             rescoring_results = parallel_executor(
-                self._rescore_split_file, split_files_sdfs, n_cpus, display_name=self.name, protein_file=protein_file
+                self._rescore_split_file,
+                split_files_sdfs,
+                n_cpus,
+                display_name=self.name,
+                protein_file=protein_file
             )
 
             rfscorevs_dataframes = self._load_rescoring_results(rescoring_results)
-            rfscorevs_rescoring_results = self._combine_rescoring_results(rfscorevs_dataframes)
+            return self._combine_rescoring_results(rfscorevs_dataframes)
 
-            
-            
-            return rfscorevs_rescoring_results
-        except Exception:
+        except Exception as e:
             printlog("ERROR: An unexpected error occurred during RFScoreVS rescoring:")
-            printlog(traceback.format_exc())
+            printlog(str(e))
             return pd.DataFrame()
         finally:
+            self._cleanup_all()
+
+    def _cleanup_all(self):
+        """Perform cleanup of temporary files including compiledtrees files."""
+        try:
             self.cleanup()
-            # Clean up compiledtrees files in /tmp
-            try:
-                compiledtrees_files = glob.glob("/tmp/compiledtrees*")
-                for file in compiledtrees_files:
-                    try:
-                        os.remove(file)
-                    except OSError:
-                        pass
-            except Exception as e:
-                printlog(f"Error during compiledtrees cleanup: {e}")
+            compiledtrees_files = glob.glob("/tmp/compiledtrees*")
+            for file in compiledtrees_files:
+                try:
+                    os.remove(file)
+                except OSError as e:
+                    printlog(f"Failed to remove compiledtrees file {file}: {str(e)}")
+        except Exception as e:
+            printlog(f"Error during cleanup: {str(e)}")
 
-    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
-        """
-        Rescore a single split SDF file.
-
-        Args:
-        split_file (Path): The path to the split SDF file.
-        protein_file (str): The path to the protein file.
-
-        Returns:
-        Path: The path to the rescored CSV file.
-        """
+    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path | None:
         results = split_file.parent / f"{split_file.stem}_RFScoreVS_scores.csv"
         rfscorevs_cmd = (
-            f"{self.software_path}/rf-score-vs" f" --receptor {protein_file}" f" {split_file}" f" -O {results}" " -n 1"
+            f"{self.software_path}/rf-score-vs"
+            f" --receptor {protein_file}"
+            f" {split_file}"
+            f" -O {results}"
+            " -n 1"
         )
-        try:
-            subprocess.run(rfscorevs_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError:
-            printlog(f"{self.column_name} rescoring failed for {split_file}:")
-            printlog(traceback.format_exc())
+
+        stdout, stderr = run_subprocess_command(command=rfscorevs_cmd)
+        
+        if not results.exists():
+            printlog(f"RFScoreVS output file not found: {results}")
+            if stderr:
+                printlog(f"RFScoreVS command output:\n{stdout}")
+                printlog(f"RFScoreVS command error output:\n{stderr}")
+            return None
+
         return results
 
     def _load_rescoring_results(self, result_files: list[Path]) -> list[pd.DataFrame]:
@@ -103,19 +96,22 @@ class RFScoreVS(ScoringFunction):
         Load rescoring results from CSV files.
 
         Args:
-        result_files (List[Path]): List of paths to rescored CSV files.
+            result_files (List[Path]): List of paths to rescored CSV files.
 
         Returns:
-        List[pd.DataFrame]: List of DataFrames containing the rescoring results.
+            List[pd.DataFrame]: List of DataFrames containing the rescoring results.
         """
         dataframes = []
         for file in result_files:
+            if not file or not file.is_file():
+                continue
+                
             try:
                 df = pd.read_csv(file, delimiter=",", header=0)
                 dataframes.append(df)
-            except Exception:
-                printlog(f"ERROR: Failed to Load {self.column_name} rescoring CSV file: {file}")
-                printlog(traceback.format_exc())
+            except Exception as e:
+                printlog(f"ERROR: Failed to load {self.column_name} rescoring CSV file {file}: {str(e)}")
+                
         return dataframes
 
     def _combine_rescoring_results(self, dataframes: list[pd.DataFrame]) -> pd.DataFrame:
@@ -123,22 +119,31 @@ class RFScoreVS(ScoringFunction):
         Combine rescoring results from multiple DataFrames.
 
         Args:
-        dataframes (List[pd.DataFrame]): List of DataFrames containing rescoring results.
+            dataframes (List[pd.DataFrame]): List of DataFrames containing rescoring results.
 
         Returns:
-        pd.DataFrame: Combined DataFrame with rescoring results.
+            pd.DataFrame: Combined DataFrame with rescoring results.
         """
         try:
+            if not dataframes:
+                printlog(f"No valid {self.name} rescoring results to combine")
+                return pd.DataFrame()
+
             combined_results = pd.concat(dataframes, ignore_index=True)
-            # Find the column containing 'RFScoreVS'
-            rfscorevs_column = next((col for col in combined_results.columns if "RFScoreVS" in col), None)
+            rfscorevs_column = next(
+                (col for col in combined_results.columns if "RFScoreVS" in col),
+                None
+            )
 
-            if rfscorevs_column is None:
-                raise ValueError("No column containing 'RFScoreVS' found in the DataFrame")
+            if not rfscorevs_column:
+                raise ValueError("No column containing 'RFScoreVS' found in the results")
 
-            combined_results.rename(columns={"name": "Pose ID", rfscorevs_column: self.column_name}, inplace=True)
+            combined_results.rename(
+                columns={"name": "Pose ID", rfscorevs_column: self.column_name},
+                inplace=True
+            )
             return combined_results[["Pose ID", self.column_name]]
-        except Exception:
-            printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
-            printlog(traceback.format_exc())
+
+        except Exception as e:
+            printlog(f"ERROR: Could not combine {self.column_name} rescored poses: {str(e)}")
             return pd.DataFrame()

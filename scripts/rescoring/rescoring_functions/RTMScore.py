@@ -1,46 +1,36 @@
-import subprocess
-import sys
-import traceback
 from pathlib import Path
-import os
-
 import pandas as pd
-
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
-
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class RTMScore(ScoringFunction):
-    """
-    RTMScore scoring function implementation.
-    """
+    """RTMScore scoring function implementation."""
 
     def __init__(self, software_path: Path):
         super().__init__(
-            name="RTMScore", column_name="RTMScore", best_value="max", score_range=(0, 100), software_path=software_path
+            name="RTMScore",
+            column_name="RTMScore",
+            best_value="max",
+            score_range=(0, 100),
+            software_path=software_path
         )
         self.software_path = software_path
+        self.rtmscore_script = self.software_path / "RTMScore-main/example/rtmscore.py"
+        self.model_path = self.software_path / "RTMScore-main/trained_models/rtmscore_model1.pth"
 
     def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
-        """
-        Rescore the molecules in the given SDF file using the RTMScore scoring function.
-
-        Args:
-        sdf_file (str): The path to the SDF file.
-        n_cpus (int): The number of CPUs to use for parallel processing.
-        protein_file (str): The path to the protein file.
-        **kwargs: Additional keyword arguments.
-
-        Returns:
-        pd.DataFrame: A DataFrame containing the rescored molecules.
-        """
         try:
+            if not self.rtmscore_script.is_file():
+                raise FileNotFoundError(
+                    "RTMScore script not found. Please ensure RTMScore is properly installed."
+                )
+
             rtmscore_results = Path(self._temp_dir) / f"{self.column_name}_scores"
             pocket_file = Path(str(protein_file).replace(".pdb", "_pocket.pdb"))
+            if not pocket_file.is_file():
+                raise FileNotFoundError(f"Pocket file not found at {pocket_file}")
 
             rtmscore_cmd = (
                 f"cd {self.software_path}/RTMScore-main/example/ &&"
@@ -49,34 +39,35 @@ class RTMScore(ScoringFunction):
                 f" -l {sdf_file}"
                 f" -o {rtmscore_results}"
                 " -pl"
-                f" -m {self.software_path}/RTMScore-main/trained_models/rtmscore_model1.pth"
+                f" -m {self.model_path}"
             )
 
-            try:
-                subprocess.run(rtmscore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                rtmscore_results_df = pd.read_csv(rtmscore_results.with_suffix(".csv"))
-                rtmscore_results_df = rtmscore_results_df.rename(columns={"id": "Pose ID", "score": self.column_name})
-                rtmscore_results_df["Pose ID"] = rtmscore_results_df["Pose ID"].str.rsplit("-", n=1).str[0]
-                rtmscore_results_df = rtmscore_results_df[["Pose ID", self.column_name]]
+            output_csv = rtmscore_results.with_suffix(".csv")
+            stdout, stderr = run_subprocess_command(command=rtmscore_cmd)
 
-                
-                
-                return rtmscore_results_df
-            except subprocess.CalledProcessError:
-                if not os.path.exists(os.path.join(self.software_path, "RTMScore-main", "example", "rtmscore.py")):
-                    printlog(
-                        "ERROR: Failed to run RTMScore! The software folder does not contain rtmscore.py, please reinstall RTMScore."
-                    )
-                else:
-                    printlog(
-                        "ERROR: Failed to run RTMScore! This was likely caused by a failure in generating the pocket graph."
-                    )
-                printlog(traceback.format_exc())
+            if not output_csv.exists():
+                printlog(f"RTMScore output file not found: {output_csv}")
+                if stderr:
+                    printlog(f"RTMScore command output:\n{stdout}")
+                    printlog(f"RTMScore command error output:\n{stderr}")
                 return pd.DataFrame()
 
-        except Exception:
+            try:
+                rtmscore_df = pd.read_csv(output_csv)
+                rtmscore_df = rtmscore_df.rename(columns={
+                    "id": "Pose ID",
+                    "score": self.column_name
+                })
+                rtmscore_df["Pose ID"] = rtmscore_df["Pose ID"].str.rsplit("-", n=1).str[0]
+                return rtmscore_df[["Pose ID", self.column_name]]
+
+            except Exception as e:
+                printlog(f"Error processing RTMScore results: {str(e)}")
+                return pd.DataFrame()
+
+        except Exception as e:
             printlog("ERROR: An unexpected error occurred during RTMScore rescoring:")
-            printlog(traceback.format_exc())
+            printlog(str(e))
             return pd.DataFrame()
         finally:
             self.cleanup()

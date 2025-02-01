@@ -1,4 +1,3 @@
-import subprocess
 import sys
 import traceback
 from pathlib import Path
@@ -12,7 +11,7 @@ sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.logging import printlog
-
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class NNScore(ScoringFunction):
     """
@@ -25,21 +24,10 @@ class NNScore(ScoringFunction):
         )
 
     def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
-        """
-        Rescore the molecules in the given SDF file using the NNScore scoring function.
-
-        Args:
-            sdf_file (str): The path to the SDF file.
-            n_cpus (int): The number of CPUs to use for parallel processing.
-            protein_file (str): The path to the protein file.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            pd.DataFrame: A DataFrame containing the rescored molecules.
-        """
         try:
-            results = self._temp_dir / "rescored_NNscore.sdf"
+            printlog("Running NNScore...")
 
+            results = self._temp_dir / "rescored_NNscore.sdf"
             nnscore_cmd = (
                 f"oddt_cli {sdf_file}"
                 f" --receptor {protein_file}"
@@ -48,23 +36,26 @@ class NNScore(ScoringFunction):
                 f" -O {results}"
             )
 
-            try:
-                subprocess.run(nnscore_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            except subprocess.CalledProcessError:
-                printlog("ERROR: NNScore rescoring failed:")
-                printlog(traceback.format_exc())
+            stdout, stderr = run_subprocess_command(command=nnscore_cmd)
+
+            if not results.exists():
+                printlog(f"NNScore output file not found: {results}")
+                if stderr:
+                    printlog(f"NNScore command output:\n{stdout}")
+                    printlog(f"NNScore command error output:\n{stderr}")
                 return pd.DataFrame()
 
             nnscore_results_df = PandasTools.LoadSDF(
-                str(results), idName="Pose ID", molColName=None, includeFingerprints=False, removeHs=False
+                str(results),
+                idName="Pose ID",
+                molColName=None,
+                includeFingerprints=False,
+                removeHs=False
             )
 
             nnscore_results_df.rename(columns={"nnscore": self.column_name}, inplace=True)
-            nnscore_results_df = nnscore_results_df[["Pose ID", self.column_name]]
+            return nnscore_results_df[["Pose ID", self.column_name]]
 
-            
-            
-            return nnscore_results_df
         except Exception:
             printlog("ERROR: An unexpected error occurred during NNScore rescoring:")
             printlog(traceback.format_exc())

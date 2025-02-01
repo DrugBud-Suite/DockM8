@@ -1,5 +1,4 @@
 import os
-import subprocess
 import sys
 import traceback
 from pathlib import Path
@@ -16,7 +15,7 @@ from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.molecule_conversion import convert_molecules
 from scripts.utilities.parallel_executor import parallel_executor
-
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class ConvexPLR(ScoringFunction):
     """
@@ -66,13 +65,6 @@ class ConvexPLR(ScoringFunction):
     def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
         """
         Rescore a single split SDF file.
-
-        Args:
-            split_file (Path): The path to the split SDF file.
-            protein_file (str): The path to the protein file.
-
-        Returns:
-            Path: The path to the rescored CSV file.
         """
         try:
             df = PandasTools.LoadSDF(str(split_file), idName="Pose ID", molColName=None)
@@ -87,10 +79,17 @@ class ConvexPLR(ScoringFunction):
                 " --regscore --mol2"
             )
 
-            result = subprocess.run(convexplr_cmd, shell=True, capture_output=True, text=True)
+            stdout, stderr = run_subprocess_command(convexplr_cmd)
+        
+            if not stdout:
+                printlog(f"ConvexPLR output not found for {split_file}")
+                if stderr:
+                    printlog(f"ConvexPLR command output:\n{stdout}")
+                    printlog(f"ConvexPLR command error output:\n{stderr}")
+                return None
 
             energies = []
-            for line in result.stdout.splitlines():
+            for line in stdout.splitlines():
                 if line.startswith("model"):
                     parts = line.split(",")
                     energy = round(float(parts[1].split("=")[1]), 2)
@@ -100,9 +99,10 @@ class ConvexPLR(ScoringFunction):
             output_csv = split_file.parent / f"{split_file.stem}_scores.csv"
             df.to_csv(output_csv, index=False)
             return output_csv
+
         except Exception as e:
             printlog(f"ConvexPLR rescoring failed for {split_file}:")
-            printlog(traceback.format_exc(e))
+            printlog(str(e))
             return None
 
     def _combine_rescoring_results(self, result_files: list[Path]) -> pd.DataFrame:

@@ -1,30 +1,24 @@
-import subprocess
-import sys
-import traceback
 from pathlib import Path
 import os
-
 import pandas as pd
 from rdkit.Chem import PandasTools
-
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class Vinardo(ScoringFunction):
-    """
-    Vinardo scoring function implementation.
-    """
+    """Vinardo scoring function implementation."""
 
     def __init__(self, software_path: Path):
         super().__init__(
-            name="Vinardo", column_name="Vinardo", best_value="min", score_range=(200, 20), software_path=software_path
+            name="Vinardo",
+            column_name="Vinardo",
+            best_value="min",
+            score_range=(200, 20),
+            software_path=software_path
         )
 
     def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
@@ -45,33 +39,24 @@ class Vinardo(ScoringFunction):
             split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
             rescoring_results = parallel_executor(
-                self._rescore_split_file, split_files_sdfs, n_cpus, display_name=self.name, protein_file=protein_file
+                self._rescore_split_file,
+                split_files_sdfs,
+                n_cpus,
+                display_name=self.name,
+                protein_file=protein_file
             )
 
             vinardo_dataframes = self._load_rescoring_results(rescoring_results)
-            vinardo_rescoring_results = self._combine_rescoring_results(vinardo_dataframes)
+            return self._combine_rescoring_results(vinardo_dataframes)
 
-            
-            
-            return vinardo_rescoring_results
-        except Exception:
+        except Exception as e:
             printlog("ERROR: An unexpected error occurred during Vinardo rescoring:")
-            printlog(traceback.format_exc())
+            printlog(str(e))
             return pd.DataFrame()
         finally:
             self.cleanup()
 
-    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
-        """
-        Rescore a single split SDF file.
-
-        Args:
-            split_file (Path): The path to the split SDF file.
-            protein_file (str): The path to the protein file.
-
-        Returns:
-            Path: The path to the rescored SDF file.
-        """
+    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path | None:
         results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
         vinardo_cmd = (
             f"{self.software_path}/gnina"
@@ -82,11 +67,16 @@ class Vinardo(ScoringFunction):
             " --scoring vinardo"
             " --cnn_scoring none"
         )
-        try:
-            subprocess.run(vinardo_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError:
-            printlog(f"{self.column_name} rescoring failed:")
-            printlog(traceback.format_exc())
+
+        stdout, stderr = run_subprocess_command(command=vinardo_cmd)
+        
+        if not results.exists():
+            printlog(f"Vinardo output file not found: {results}")
+            if stderr:
+                printlog(f"Vinardo command output:\n{stdout}")
+                printlog(f"Vinardo command error output:\n{stderr}")
+            return None
+
         return results
 
     def _load_rescoring_results(self, result_files: list[Path]) -> list[pd.DataFrame]:
@@ -101,14 +91,21 @@ class Vinardo(ScoringFunction):
         """
         dataframes = []
         for file in result_files:
+            if not file or not file.is_file():
+                continue
+
             try:
                 df = PandasTools.LoadSDF(
-                    str(file), idName="Pose ID", molColName=None, includeFingerprints=False, embedProps=False
+                    str(file),
+                    idName="Pose ID",
+                    molColName=None,
+                    includeFingerprints=False,
+                    embedProps=False
                 )
                 dataframes.append(df)
-            except Exception:
-                printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")
-                printlog(traceback.format_exc())
+            except Exception as e:
+                printlog(f"Error loading Vinardo results from {file}: {str(e)}")
+
         return dataframes
 
     def _combine_rescoring_results(self, dataframes: list[pd.DataFrame]) -> pd.DataFrame:
@@ -122,10 +119,14 @@ class Vinardo(ScoringFunction):
             pd.DataFrame: Combined DataFrame with rescoring results.
         """
         try:
+            if not dataframes:
+                printlog("No valid Vinardo results to combine")
+                return pd.DataFrame()
+
             combined_results = pd.concat(dataframes, ignore_index=True)
             combined_results.rename(columns={"minimizedAffinity": self.column_name}, inplace=True)
             return combined_results[["Pose ID", self.column_name]]
-        except Exception:
-            printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
-            printlog(traceback.format_exc())
+
+        except Exception as e:
+            printlog(f"Error combining Vinardo results: {str(e)}")
             return pd.DataFrame()

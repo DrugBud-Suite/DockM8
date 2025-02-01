@@ -1,30 +1,25 @@
 import os
-import subprocess
-import sys
-import traceback
 from pathlib import Path
-
 import pandas as pd
 from rdkit.Chem import PandasTools
-
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.path_check import get_executable_path
+from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class AD4(ScoringFunction):
-    """
-    AD4 scoring function implementation.
-    """
+    """AD4 scoring function implementation."""
 
     def __init__(self, software_path: Path):
         super().__init__(
-            name="AD4", column_name="AD4", best_value="min", score_range=(100, -100), software_path=software_path
+            name="AD4",
+            column_name="AD4",
+            best_value="min",
+            score_range=(100, -100),
+            software_path=software_path
         )
         self.software_path = software_path
         self.executable_path = get_executable_path(software_path, "gnina")
@@ -47,31 +42,25 @@ class AD4(ScoringFunction):
             split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
             rescoring_results = parallel_executor(
-                self._rescore_split_file, split_files_sdfs, n_cpus, display_name=self.name, protein_file=protein_file
+                self._rescore_split_file,
+                split_files_sdfs,
+                n_cpus,
+                display_name=self.name,
+                protein_file=protein_file
             )
 
             ad4_dataframes = self._load_rescoring_results(rescoring_results)
             ad4_rescoring_results = self._combine_rescoring_results(ad4_dataframes)
 
             return ad4_rescoring_results
-        except Exception:
+        except Exception as e:
             printlog("ERROR: An unexpected error occurred during AD4 rescoring:")
-            printlog(traceback.format_exc())
+            printlog(str(e))
             return pd.DataFrame()
         finally:
             self.cleanup()
 
-    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path:
-        """
-        Rescore a single split SDF file.
-
-        Args:
-            split_file (Path): The path to the split SDF file.
-            protein_file (str): The path to the protein file.
-
-        Returns:
-            Path: The path to the rescored SDF file.
-        """
+    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path | None:
         results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
         ad4_cmd = (
             f"{self.executable_path}"
@@ -82,11 +71,16 @@ class AD4(ScoringFunction):
             " --scoring ad4_scoring"
             " --cnn_scoring none"
         )
-        try:
-            subprocess.run(ad4_cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        except subprocess.CalledProcessError:
-            printlog(f"{self.column_name} rescoring failed for {split_file}:")
-            printlog(traceback.format_exc())
+
+        stdout, stderr = run_subprocess_command(command=ad4_cmd)
+        
+        if not results.exists():
+            printlog(f"AD4 output file not found: {results}")
+            if stderr:
+                printlog(f"AD4 command output:\n{stdout}")
+                printlog(f"AD4 command error output:\n{stderr}")
+            return None
+
         return results
 
     def _load_rescoring_results(self, result_files: list[Path]) -> list[pd.DataFrame]:
@@ -101,14 +95,21 @@ class AD4(ScoringFunction):
         """
         dataframes = []
         for file in result_files:
+            if not file or not file.is_file():
+                continue
+                
             try:
                 df = PandasTools.LoadSDF(
-                    str(file), idName="Pose ID", molColName=None, includeFingerprints=False, embedProps=False
+                    str(file),
+                    idName="Pose ID",
+                    molColName=None,
+                    includeFingerprints=False,
+                    embedProps=False
                 )
                 dataframes.append(df)
-            except Exception:
-                printlog(f"ERROR: Failed to Load {self.column_name} rescoring SDF file: {file}")
-                printlog(traceback.format_exc())
+            except Exception as e:
+                printlog(f"ERROR: Failed to load {self.column_name} rescoring SDF file {file}: {str(e)}")
+        
         return dataframes
 
     def _combine_rescoring_results(self, dataframes: list[pd.DataFrame]) -> pd.DataFrame:
@@ -122,10 +123,13 @@ class AD4(ScoringFunction):
             pd.DataFrame: Combined DataFrame with rescoring results.
         """
         try:
+            if not dataframes:
+                printlog(f"No valid {self.column_name} rescoring results to combine")
+                return pd.DataFrame()
+                
             combined_results = pd.concat(dataframes, ignore_index=True)
             combined_results.rename(columns={"minimizedAffinity": self.column_name}, inplace=True)
             return combined_results[["Pose ID", self.column_name]]
-        except Exception:
-            printlog(f"ERROR: Could not combine {self.column_name} rescored poses")
-            printlog(traceback.format_exc())
+        except Exception as e:
+            printlog(f"ERROR: Could not combine {self.column_name} rescored poses: {str(e)}")
             return pd.DataFrame()
