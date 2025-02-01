@@ -9,6 +9,7 @@ from pathlib import Path
 import pandas as pd
 from rdkit import Chem, RDLogger
 from rdkit.Chem import PandasTools
+import traceback
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -89,54 +90,71 @@ def load_poses(poses_input: Path | pd.DataFrame, requested_functions: list[str],
         - Dictionary mapping functions to list of Pose IDs that need scoring
         - Dictionary of existing valid scores
     """
-    # Load poses
+    # Load poses from input
     if isinstance(poses_input, Path):
         printlog(f"Loading poses from {poses_input}")
-        poses_df = parallel_SDF_loader(poses_input, molColName="Molecule", idName="Pose ID", SMILES="SMILES")
-    else:
+        if poses_input.suffix == ".sdf":
+            poses_df = parallel_SDF_loader(poses_input, molColName="Molecule", idName="Pose ID", SMILES="SMILES")
+        else:
+            raise ValueError(f"Input poses must be in .sdf format. Path supplied was: {poses_input}")
+    elif isinstance(poses_input, pd.DataFrame):
         poses_df = poses_input.copy()
+    else:
+        raise ValueError("Input poses must be in .sdf format or supplied as a dataframe.")
 
     all_pose_ids = poses_df["Pose ID"].tolist()
-    poses_to_score = {func: all_pose_ids for func in requested_functions}
+    poses_to_score = {func: all_pose_ids.copy() for func in requested_functions}
     existing_scores = {}
 
-    # If no output file exists, all poses need scoring
-    if not output_file or not output_file.exists():
-        return poses_df, poses_to_score, existing_scores
-
-    # Load existing results once
-    try:
-        if output_file.suffix == ".sdf":
-            existing_results = PandasTools.LoadSDF(output_file, molColName=None, idName="Pose ID")
-        else:
-            existing_results = pd.read_csv(output_file)
-            
-        # Convert score columns to numeric
-        score_columns = [RESCORING_FUNCTIONS[func]["column_name"] for func in requested_functions
-                        if RESCORING_FUNCTIONS[func]["column_name"] in existing_results.columns]
-        for col in score_columns:
-            existing_results[col] = pd.to_numeric(existing_results[col], errors='coerce')
-            
-    except Exception as e:
-        printlog(f"Error loading existing results: {e}. Will score all poses.")
-        return poses_df, poses_to_score, existing_scores
-
-    # For each function, identify poses that need scoring
+    # Check for existing scores in input file
     for function in requested_functions:
         column_name = RESCORING_FUNCTIONS[function]["column_name"]
-        
-        if column_name in existing_results.columns:
-            # Find pose IDs with NaN values
-            nan_pose_ids = existing_results[existing_results[column_name].isna()]["Pose ID"].tolist()
-            # Also include any poses that aren't in the existing results
-            missing_pose_ids = set(all_pose_ids) - set(existing_results["Pose ID"])
-            poses_to_score[function] = list(set(nan_pose_ids) | missing_pose_ids)
+        if column_name in poses_df.columns:
+            # Convert score column to numeric if it exists
+            poses_df[column_name] = pd.to_numeric(poses_df[column_name], errors='coerce')
             
-            # Store valid existing scores
-            valid_scores = existing_results[~existing_results[column_name].isna()].set_index("Pose ID")[column_name]
+            # Find poses that don't need scoring (have valid scores)
+            valid_scores = poses_df[~poses_df[column_name].isna()].set_index("Pose ID")[column_name]
             if not valid_scores.empty:
                 existing_scores[column_name] = valid_scores
-                
+                # Remove poses with valid scores from the to-score list
+                poses_to_score[function] = [pid for pid in poses_to_score[function]
+                                          if pid not in valid_scores.index]
+
+    # If output file exists, check for additional existing scores
+    if output_file and output_file.exists():
+        try:
+            if output_file.suffix == ".sdf":
+                existing_results = PandasTools.LoadSDF(output_file, molColName=None, idName="Pose ID")
+            else:
+                existing_results = pd.read_csv(output_file)
+            
+            # Process each scoring function
+            for function in requested_functions:
+                column_name = RESCORING_FUNCTIONS[function]["column_name"]
+                if column_name in existing_results.columns:
+                    # Convert score column to numeric
+                    existing_results[column_name] = pd.to_numeric(existing_results[column_name], errors='coerce')
+                    
+                    # Find additional valid scores from output file
+                    valid_scores = existing_results[~existing_results[column_name].isna()].set_index("Pose ID")[column_name]
+                    if not valid_scores.empty:
+                        # Update existing scores, preferring input file scores if they exist
+                        if column_name in existing_scores:
+                            valid_scores = valid_scores[~valid_scores.index.isin(existing_scores[column_name].index)]
+                        if not valid_scores.empty:
+                            if column_name in existing_scores:
+                                existing_scores[column_name] = pd.concat([existing_scores[column_name], valid_scores])
+                            else:
+                                existing_scores[column_name] = valid_scores
+                            
+                            # Remove poses with valid scores from the to-score list
+                            poses_to_score[function] = [pid for pid in poses_to_score[function]
+                                                      if pid not in valid_scores.index]
+                    
+        except Exception as e:
+            printlog(f"Error loading existing results from output file: {e}. Will use scores from input file only.")
+
     return poses_df, poses_to_score, existing_scores
 
 def create_working_files(poses_df: pd.DataFrame, temp_dir: Path) -> Path:
@@ -195,10 +213,16 @@ def prepare_results(df: pd.DataFrame) -> pd.DataFrame:
     ]
     result_df = df[result_columns].sort_values("Pose ID")
 
-    # Convert numeric columns
+    # Define non-numeric columns
+    non_numeric_columns = ["Pose ID", "ID", "SMILES", "Molecule"]
+
+    # Convert only numeric columns
     for col in result_df.columns:
-        if col not in ["Pose ID", "ID", "SMILES", "Molecule"]:
-            result_df[col] = pd.to_numeric(result_df[col], errors="coerce")
+        if col not in non_numeric_columns:
+            try:
+                result_df[col] = pd.to_numeric(result_df[col].values, errors="coerce")
+            except TypeError as e:
+                print(f"Could not convert column {col}: {e}")
 
     return result_df
 
@@ -258,8 +282,10 @@ def rescore_poses(
                 save_results(final_results, output_file)
 
         except Exception as e:
-            printlog(f"Error rescoring poses: {e}")
-
+            error_traceback = traceback.format_exc()
+            printlog(f"Error rescoring poses:\n{error_traceback}")
+            raise Exception(f"Rescoring error: {str(e)}\n\nTraceback:\n{error_traceback}") from e
+        
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
