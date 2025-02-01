@@ -321,7 +321,7 @@ fi
 
 if [[ ! -f $DOCKM8_FOLDER/software/gnina ]]; then
     echo -e "\nDownloading GNINA!"
-    wget https://github.com/gnina/gnina/releases/latest/download/gnina -q --show-progress
+    wget https://github.com/gnina/gnina/releases/download/v1.1/gnina -q --show-progress
     chmod +x gnina
 fi
 
