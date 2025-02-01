@@ -154,13 +154,13 @@ class DockingFunction(ABC):
 
     @classmethod
     def resume_from_recovery(cls, recovery_dir: Path) -> Optional["DockingFunction"]:
-        """Creates a new GninaDocking instance from a failed run.
+        """Creates a new DockingFunction instance from a failed run.
 
         Args:
             recovery_dir (Path): Path to the recovery directory containing the failed run's files.
 
         Returns:
-            GninaDocking | None: A new instance of GninaDocking, or None if recovery fails.
+            DockingFunction | None: A new instance of DockingFunction, or None if recovery fails.
         """
         info_file = recovery_dir / "run_info.json"
         if not info_file.exists():
@@ -178,7 +178,7 @@ class DockingFunction(ABC):
             instance._temp_dir = recovery_dir
             instance._run_id = run_info["run_id"]
             
-            printlog(f"Resuming GNINA docking run from {recovery_dir}")
+            printlog(f"Resuming {instance.name} docking run from {recovery_dir}")
             return instance
             
         except json.JSONDecodeError:
