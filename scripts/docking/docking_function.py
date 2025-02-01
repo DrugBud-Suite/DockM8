@@ -204,23 +204,6 @@ class DockingFunction(ABC):
         try:
             self._save_run_info("resuming")
 
-            # Get remaining unprocessed batches
-            processed_files = {
-                f.stem.replace("_processed", "")
-                for f in (self._temp_dir / "processed").glob("*.sdf")
-            }
-            print(len(processed_files))
-            all_batches = sorted((self._temp_dir / "splits").glob("split_*.sdf"))
-            print(len(all_batches))
-            batches_to_process = [b for b in all_batches if b.stem not in processed_files]
-            print(len(batches_to_process))
-
-            if not batches_to_process:
-                printlog("No remaining batches to process.")
-                self._save_run_info("completed")
-                output_sdf = self._temp_dir / "combined_results.sdf"
-                return output_sdf if output_sdf.exists() else None
-
             # Load original parameters
             params_file = self._temp_dir / "run_parameters.json"
             if not params_file.exists():
@@ -234,6 +217,26 @@ class DockingFunction(ABC):
                 k: Path(v) if isinstance(v, str) and k.endswith('_file') else v
                 for k, v in params.items()
             }
+
+            # Get remaining unprocessed batches
+            processed_files = {
+                f.stem.replace("_processed", "")
+                for f in (self._temp_dir / "processed").glob("*.sdf")
+            }
+            printlog(f"Already processed batches: {len(processed_files)}")
+            all_batches = sorted((self._temp_dir / "splits").rglob("split_*.sdf"))
+            printlog(f"Total input batches: {len(all_batches)}")
+            batches_to_process = [b for b in all_batches if b.stem not in processed_files]
+            printlog(f"Remaining batches requiring processing: {len(batches_to_process)}")
+
+            if not batches_to_process or len(batches_to_process) == 0:
+                printlog("No remaining batches to process.")
+                self._save_run_info("completed")
+                output_sdf = params.get("output_sdf", self._temp_dir / "combined_results.sdf")
+                if isinstance(output_sdf, str):
+                    output_sdf = Path(output_sdf)
+                self._combine_results_atomic([f for f in (self._temp_dir / "processed").glob("*.sdf")],output_sdf)
+                return output_sdf if output_sdf.exists() else None
 
             # Process remaining batches
             results = parallel_executor(
