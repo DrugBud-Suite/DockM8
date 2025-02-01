@@ -20,7 +20,7 @@ def test_data():
     software = dockm8_path / "software"
     sdf = dockm8_path / "test_data/rescoring/example_poses_1fvv.sdf"
     pocket_definition = {"center": [-9.67, 207.73, 113.41], "size": [20.0, 20.0, 20.0]}
-    functions = [key for key in RESCORING_FUNCTIONS.keys() if key not in ["AAScore", "PLECScore"]]
+    functions = [key for key in RESCORING_FUNCTIONS.keys() if key not in ["AAScore", "PLECScore", "RTMScore", "SCORCH"]]
     n_cpus = int(os.cpu_count() * 0.9)
     return protein_file, pocket_definition, software, sdf, functions, n_cpus
 
