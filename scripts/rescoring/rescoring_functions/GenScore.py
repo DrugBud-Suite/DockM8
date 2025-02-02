@@ -57,7 +57,7 @@ class GenScore(ScoringFunction):
                     raise ValueError("Pocket definition is required when pocket file is not available")
                 pocket_file = extract_pocket(pocket_definition, protein_file)
 
-            split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="cpu", splits=n_cpus)
+            split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="count", splits=1)
             split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
 
             rescoring_results = parallel_executor(
