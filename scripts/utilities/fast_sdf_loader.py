@@ -6,12 +6,9 @@ import mmap
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import pandas as pd
 from rdkit import Chem
-from tqdm import tqdm
 from contextlib import contextmanager
 from functools import partial
 import array
-
-BATCH_SIZE = 10000  # Process molecules in batches for better efficiency
 
 class MoleculeData(NamedTuple):
     """Lightweight container for essential molecule data"""
@@ -19,9 +16,13 @@ class MoleculeData(NamedTuple):
     properties: dict[str, str]
     mol_block: str  # Store molecular block instead of RDKit object for serialization
 
+class SDFValidationError(Exception):
+    """Custom exception for SDF validation errors"""
+    pass
+
 def process_batch_worker(
     batch_data: list[bytes],
-    id_name: str,
+    idName: str,
     required_props: set[str] | None = None
 ) -> list[MoleculeData | None]:
     """Process a batch of molecules efficiently"""
@@ -52,7 +53,7 @@ def process_batch_worker(
                         properties[prop] = mol.GetProp(prop)
             
             # Always include ID property
-            properties[id_name] = mol_name
+            properties[idName] = mol_name
 
             # Store molecular block instead of full RDKit object
             mol_block = Chem.MolToMolBlock(mol)
@@ -88,16 +89,26 @@ class OptimizedSDFLoader:
     def __init__(
         self,
         sdf_path: Path,
-        mol_col_name: str,
-        id_name: str,
+        molColName: str,
+        idName: str,
+        batch_size: int = 10000,
         n_cpus: int | None = None,
         required_props: set[str] | None = None
     ):
         self.sdf_path = sdf_path
-        self.mol_col_name = mol_col_name
-        self.id_name = id_name
+        self.molColName = molColName
+        self.idName = idName
+        self.batch_size = batch_size
         self.n_cpus = n_cpus if n_cpus is not None else max(1, int(os.cpu_count() * 0.9))
         self.required_props = required_props
+
+    def _validate_input_file(self) -> None:
+        """Validate SDF file before processing"""
+        if not self.sdf_path.exists():
+            raise FileNotFoundError(f"SDF file not found: {self.sdf_path}")
+        
+        if self.sdf_path.stat().st_size == 0:
+            raise SDFValidationError("SDF file is empty")
         
     @contextmanager
     def _mapped_file(self):
@@ -130,13 +141,13 @@ class OptimizedSDFLoader:
         """Process molecules in optimized batches"""
         results = []
         batches = [
-            molecule_data[i:i + BATCH_SIZE]
-            for i in range(0, len(molecule_data), BATCH_SIZE)
+            molecule_data[i:i + self.batch_size]
+            for i in range(0, len(molecule_data), self.batch_size)
         ]
         
         process_func = partial(
             process_batch_worker,
-            id_name=self.id_name,
+            idName=self.idName,
             required_props=self.required_props
         )
         
@@ -146,11 +157,7 @@ class OptimizedSDFLoader:
                 for batch in batches
             ]
             
-            for future in tqdm(
-                as_completed(futures),
-                total=len(futures),
-                desc="Processing molecule batches"
-            ):
+            for future in as_completed(futures):
                 try:
                     batch_results = future.result()
                     results.extend(batch_results)
@@ -159,7 +166,7 @@ class OptimizedSDFLoader:
                     
         return results
 
-    def _parallel_create_molecules(self, mol_blocks: list[str], batch_size: int = 5000) -> list[Chem.Mol | None]:
+    def _parallel_create_molecules(self, mol_blocks: list[str]) -> list[Chem.Mol | None]:
         """Create RDKit molecules in parallel"""
         def process_mol_batch(mol_block_batch: list[str]) -> list[Chem.Mol | None]:
             return [
@@ -169,8 +176,8 @@ class OptimizedSDFLoader:
 
         # Split into batches
         batches = [
-            mol_blocks[i:i + batch_size]
-            for i in range(0, len(mol_blocks), batch_size)
+            mol_blocks[i:i + self.batch_size]
+            for i in range(0, len(mol_blocks), self.batch_size)
         ]
         
         mol_objects = []
@@ -182,59 +189,59 @@ class OptimizedSDFLoader:
                 futures.append(executor.submit(process_mol_batch, mol_block_batch))
             
             # Collect results
-            for future in tqdm(
-                as_completed(futures),
-                total=len(batches),
-                desc="Converting to RDKit molecules"
-            ):
+            for future in as_completed(futures):
                 try:
                     batch_results = future.result()
                     mol_objects.extend(batch_results)
                 except Exception as e:
                     print(f"Error in batch processing: {str(e)}")
-                    mol_objects.extend([None] * batch_size)
+                    mol_objects.extend([None] * self.batch_size)
                     
         return mol_objects
 
-    def _optimize_numeric_columns(self, df: pd.DataFrame) -> None:
-        """Optimize numeric columns in-place using parallel processing"""
-        exclude_cols = {self.id_name, self.mol_col_name, "ID", "Pose ID", "SMILES"}
-        numeric_cols = [col for col in df.columns if col not in exclude_cols]
+    def _optimize_column_types(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Optimize DataFrame column types using pandas' modern type system.
+        Handles both numeric and string columns intelligently while preserving precision.
+        """
+        exclude_cols = {self.idName, self.molColName}
         
-        def convert_column(col: str) -> pd.Series:
-            return pd.to_numeric(df[col], errors='coerce', downcast='float')
+        # Create a copy to avoid modifying the original during optimization
+        df_optimized = df.copy()
         
-        with ProcessPoolExecutor(max_workers=self.n_cpus) as executor:
-            future_to_col = {
-                executor.submit(convert_column, col): col
-                for col in numeric_cols
-            }
-            
-            for future in as_completed(future_to_col):
-                col = future_to_col[future]
-                try:
-                    df[col] = future.result()
-                except Exception:
-                    pass
+        # Remove molecule column temporarily as it's not compatible with convert_dtypes
+        mol_column = df_optimized[self.molColName]
+        df_optimized = df_optimized.drop(columns=[self.molColName])
+        
+        # Use pandas' modern type inference system
+        df_optimized = df_optimized.convert_dtypes(
+            convert_integer=True,
+            convert_boolean=True,
+            convert_floating=True,
+            convert_string=True
+        )
+        
+        # Restore molecule column
+        df_optimized[self.molColName] = mol_column
+        
+        return df_optimized
 
     def _create_dataframe(self, data: list[MoleculeData]) -> pd.DataFrame:
-        """Create optimized DataFrame with combined property and molecule processing"""
+        """Create optimized DataFrame with robust type handling for all columns"""
         if not data:
             return pd.DataFrame()
         
-        print("Preparing data for parallel processing...")
-        # Prepare combined data for processing
-        batch_data = [(d.mol_block, {self.id_name: d.id, **d.properties}) for d in data]
-        batch_size = 10000  # Increased batch size for better performance
-        batches = [batch_data[i:i + batch_size] for i in range(0, len(batch_data), batch_size)]
+        batch_data = [(d.mol_block, {self.idName: d.id, **d.properties}) for d in data]
+        batches = [
+            batch_data[i:i + self.batch_size]
+            for i in range(0, len(batch_data), self.batch_size)
+        ]
         
-        print("Processing molecules and properties...")
         results = []
         with ProcessPoolExecutor(max_workers=self.n_cpus) as executor:
             futures = [executor.submit(process_mol_batch, batch) for batch in batches]
             
-            for future in tqdm(as_completed(futures), total=len(batches),
-                             desc="Processing batches"):
+            for future in as_completed(futures):
                 try:
                     batch_results = future.result()
                     results.extend(batch_results)
@@ -242,49 +249,50 @@ class OptimizedSDFLoader:
                     print(f"Error in batch processing: {str(e)}")
                     continue
         
-        print("Creating final DataFrame...")
-        # Separate molecules and properties
         mols, props = zip(*results, strict=False)
         
-        # Create DataFrame from properties
+        # Create initial DataFrame
         df = pd.DataFrame(props)
-        df[self.mol_col_name] = mols
+        df[self.molColName] = mols
         
-        print("Optimizing numeric columns...")
-        # Convert numeric columns efficiently
-        exclude_cols = {self.id_name, self.mol_col_name, "ID", "Pose ID", "SMILES"}
-        numeric_cols = [col for col in df.columns if col not in exclude_cols]
-        
-        # Process numeric columns in larger chunks
-        chunk_size = 1000
-        for col in numeric_cols:
-            chunks = [df[col][i:i + chunk_size] for i in range(0, len(df), chunk_size)]
-            converted_chunks = []
-            for chunk in chunks:
-                converted_chunks.append(pd.to_numeric(chunk, errors='coerce', downcast='float'))
-            df[col] = pd.concat(converted_chunks)
+        df = self._optimize_column_types(df)
         
         return df
 
     def load(self) -> pd.DataFrame:
-        """Main loading method with optimized batch processing"""
+        """Load SDF file into DataFrame"""
         try:
-            # Count molecules efficiently
-            with open(self.sdf_path, 'rb') as f:
-                total_molecules = f.read().count(b'$$$$')
+            self._validate_input_file()
             
             with self._mapped_file() as mm:
-                # Extract molecules using memory mapping
-                molecule_data = list(tqdm(
-                    self._extract_molecules(mm),
-                    total=total_molecules,
-                    desc="Reading molecules"
-                ))
+                molecule_data = list(self._extract_molecules(mm))
                 
-                # Process in optimized batches
-                processed_data = self._process_batches(molecule_data, total_molecules)
+                total_molecules = len(molecule_data)
+                batches = [
+                    molecule_data[i:i + self.batch_size]
+                    for i in range(0, total_molecules, self.batch_size)
+                ]
                 
-                return self._create_dataframe(processed_data)
+                results = []
+                with ProcessPoolExecutor(max_workers=self.n_cpus) as executor:
+                    futures = [
+                        executor.submit(
+                            process_batch_worker,
+                            batch,
+                            self.idName,
+                            self.required_props
+                        )
+                        for batch in batches
+                    ]
+                    
+                    for future in as_completed(futures):
+                        try:
+                            batch_results = future.result()
+                            results.extend(batch_results)
+                        except Exception:
+                            continue
+                            
+                return self._create_dataframe(results)
                 
         except Exception as e:
             print(f"Error during SDF loading: {str(e)}")
@@ -292,9 +300,10 @@ class OptimizedSDFLoader:
 
 def fast_load_sdf(
     sdf_path: Path,
-    mol_col_name: str,
-    id_name: str,
-    n_cpus: int | None = None,
+    molColName: str,
+    idName: str,
+    batch_size: int = 100,
+    n_cpus: int | None = int(os.cpu_count()*0.9),
     required_props: set[str] | None = None
 ) -> pd.DataFrame:
     """
@@ -302,13 +311,21 @@ def fast_load_sdf(
     
     Args:
         sdf_path: Path to the SDF file
-        mol_col_name: Name of the molecule column
-        id_name: Name of the ID column
-        n_cpus: Number of CPUs to use
+        molColName: Name of the molecule column
+        idName: Name of the ID column
+        batch_size: Number of molecules to process in each batch (default: 10000)
+        n_cpus: Number of CPUs to use (default: 90% of available CPUs)
         required_props: Optional set of property names to extract
         
     Returns:
         DataFrame containing the processed SDF data
     """
-    loader = OptimizedSDFLoader(sdf_path, mol_col_name, id_name, n_cpus, required_props)
+    loader = OptimizedSDFLoader(
+        sdf_path,
+        molColName,
+        idName,
+        batch_size,
+        n_cpus,
+        required_props
+    )
     return loader.load()
