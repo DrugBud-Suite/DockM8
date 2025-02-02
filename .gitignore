@@ -202,3 +202,7 @@ harmonizer.ipynb
 lit-pcba_dockm8_processing.ipynb
 sdf_loader.ipynb
 test_data/fast_sdf_loader/test_data.ipynb
+test_data/rescoring/pparg_ligand.sdf
+test_data/rescoring/pparg_poses.sdf
+test_data/rescoring/pparg_protein_prepared_pocket.pdb
+test_data/rescoring/pparg_protein_prepared.pdb
