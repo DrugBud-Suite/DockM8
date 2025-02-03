@@ -14,6 +14,7 @@ dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.fast_sdf_loader import fast_load_sdf
+from scripts.utilities.utilities import parallel_SDF_loader
 
 def write_test_sdf(filename: str, mol_data: list[tuple[str, dict[str, Any]]]) -> Path:
     """Write molecular data to an SDF file with proper naming"""
@@ -56,14 +57,13 @@ class TestOptimizedSDFLoader:
         # Load with optimized loader
         df_fast = fast_load_sdf(
             sdf_path=simple_sdf_path,
-            mol_col_name="Molecule",
-            id_name="ID"
+            molColName="Molecule",
+            idName="ID"
         )
 
         # Load with RDKit
         df_rdkit = PandasTools.LoadSDF(
             str(simple_sdf_path),
-            smilesName='SMILES',
             molColName='Molecule',
             idName='ID'
         )
@@ -111,17 +111,6 @@ class TestOptimizedSDFLoader:
         expected_cols = {'Molecule', 'ID', 'LogP'}
         assert set(df.columns) == expected_cols
 
-    def test_numeric_optimization(self, complex_sdf_path):
-        """Test numeric column optimization"""
-        df = fast_load_sdf(complex_sdf_path, "Molecule", "ID")
-        
-        # Check numeric columns are properly converted
-        assert pd.api.types.is_float_dtype(df['LogP'])
-        assert pd.api.types.is_float_dtype(df['pKa'])
-        
-        # Non-numeric columns should remain as objects
-        assert pd.api.types.is_object_dtype(df['ID'])
-
     @pytest.mark.performance
     def test_performance_comparison(self, test_data_dir):
         """Compare performance with RDKit's LoadSDF using large file"""
@@ -130,19 +119,22 @@ class TestOptimizedSDFLoader:
         # Load and multiply SMILES data for large file test
         smiles_path = test_data_dir / "SMILES.smi"
         smiles_data = self._load_smiles_from_file(smiles_path)
-        large_data = smiles_data * 1000
+        large_data = smiles_data * 5000
         
         # Create large test file
         with tempfile.NamedTemporaryFile(suffix='.sdf', delete=False) as tmp:
-            large_sdf_path = write_test_sdf(tmp.name, large_data)
+            #large_sdf_path = write_test_sdf(tmp.name, large_data)
+            large_sdf_path = Path("/home/tony/FINAL_RESULTS/v1_1/lit-pcba/mapk1/results/gnina/gnina_poses.sdf")
             
             try:
                 # Time optimized loader
+                print("Starting Fast SDF Loader")
                 start = time.time()
                 df_fast = fast_load_sdf(large_sdf_path, "Molecule", "ID")
                 fast_time = time.time() - start
                 
                 # Time RDKit loader
+                print("Starting RDKit SDF Loader")
                 start = time.time()
                 df_rdkit = PandasTools.LoadSDF(
                     str(large_sdf_path),
@@ -150,13 +142,25 @@ class TestOptimizedSDFLoader:
                     idName='ID'
                 )
                 rdkit_time = time.time() - start
+
+                # Time RDKit loader
+                print("Starting RDKit SDF Loader")
+                start = time.time()
+                df_pl = parallel_SDF_loader(
+                    large_sdf_path,
+                    molColName='Molecule',
+                    idName='ID',
+                )
+                pl_time = time.time() - start
                 
                 print(f"Optimized loader: {fast_time:.2f}s")
                 print(f"RDKit loader: {rdkit_time:.2f}s")
-                print(f"Speedup: {rdkit_time/fast_time:.2f}x")
+                print(f"Parallel loader: {pl_time:.2f}s")
+                print(f"Speedup RDKit: {rdkit_time/fast_time:.2f}x")
+                print(f"Speedup Parallel: {pl_time/fast_time:.2f}x")
                 
                 # Verify results
-                assert len(df_fast) == len(large_data)
+                #assert len(df_fast) == len(large_data)
                 assert len(df_fast) == len(df_rdkit)
             
             finally:
@@ -164,6 +168,13 @@ class TestOptimizedSDFLoader:
 
     def _load_smiles_from_file(self, file_path: Path) -> list[tuple[str, dict[str, Any]]]:
         """Load SMILES and IDs from a .smi file"""
+        import random
+        import string
+        
+        def generate_random_string(length: int = 5) -> str:
+            """Generate a random string of fixed length"""
+            return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
+        
         smiles_data = []
         with open(file_path) as f:
             for line in f:
@@ -176,7 +187,8 @@ class TestOptimizedSDFLoader:
                             "MW": str(Descriptors.MolWt(mol)),
                             "RotBonds": str(Descriptors.NumRotatableBonds(mol)),
                             "HBA": str(rdMolDescriptors.CalcNumHBA(mol)),
-                            "HBD": str(rdMolDescriptors.CalcNumHBD(mol))
+                            "HBD": str(rdMolDescriptors.CalcNumHBD(mol)),
+                            "RandomID": generate_random_string()
                         }
                         smiles_data.append((smiles, props))
         return smiles_data

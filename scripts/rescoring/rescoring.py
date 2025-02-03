@@ -1,20 +1,11 @@
 import os
 import shutil
-import sys
-import tempfile
-import warnings
+import traceback
+import uuid
 from functools import partial
 from pathlib import Path
-
 import pandas as pd
-from rdkit import Chem, RDLogger
-from rdkit.Chem import PandasTools
-import traceback
-
-# Search for 'DockM8' in parent directories
-scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
-dockm8_path = scripts_path.parent
-sys.path.append(str(dockm8_path))
+from rdkit import RDLogger
 
 from scripts.rescoring.rescoring_functions.AAScore import AAScore
 from scripts.rescoring.rescoring_functions.AD4 import AD4
@@ -31,11 +22,9 @@ from scripts.rescoring.rescoring_functions.RFScoreVS import RFScoreVS
 from scripts.rescoring.rescoring_functions.RTMScore import RTMScore
 from scripts.rescoring.rescoring_functions.SCORCH import SCORCH
 from scripts.rescoring.rescoring_functions.vinardo import Vinardo
+from scripts.utilities.fast_sdf_loader import fast_load_sdf
+from scripts.utilities.fast_sdf_writer import fast_write_sdf
 from scripts.utilities.logging import printlog
-from scripts.utilities.utilities import parallel_SDF_loader
-
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # yapf: disable
 RESCORING_FUNCTIONS = {
@@ -61,40 +50,37 @@ RESCORING_FUNCTIONS = {
 }
 # yapf: enable
 
-def create_temp_dir(name: str) -> Path:
-    """
-    Creates a temporary directory for the scoring function.
+def setup_temp_directory(base_name: str) -> Path:
+    """Create organized temporary directory structure"""
+    run_id = str(uuid.uuid4())[:8]
+    base_temp = Path.home() / "dockm8_temp_files"
+    temp_dir = base_temp / f"dockm8_{base_name.lower()}_{run_id}"
+    
+    # Create directory structure
+    os.makedirs(temp_dir, exist_ok=True)
+    os.makedirs(temp_dir / "input", exist_ok=True)
+    os.makedirs(temp_dir / "working", exist_ok=True)
+    os.makedirs(temp_dir / "output", exist_ok=True)
+    
+    return temp_dir
 
-    Args:
-    name (str): The name of the scoring function.
-
-    Returns:
-    Path: The path to the temporary directory.
-    """
-    os.makedirs(Path.home() / "dockm8_temp_files", exist_ok=True)
-    return Path(tempfile.mkdtemp(dir=Path.home() / "dockm8_temp_files", prefix=f"dockm8_{name}_"))
-
-from pathlib import Path
-
-def load_poses(poses_input: Path | pd.DataFrame, requested_functions: list[str], output_file: Path | None = None) -> tuple[pd.DataFrame, dict[str, list[str]], dict[str, pd.Series]]:
-    """Load poses and identify which poses need scoring for each function.
-
-    Args:
-        poses_input: Path to SDF file or DataFrame containing poses
-        requested_functions: List of scoring functions to process
-        output_file: Path to the existing output file (optional)
-
-    Returns:
-        tuple containing:
-        - DataFrame with poses
-        - Dictionary mapping functions to list of Pose IDs that need scoring
-        - Dictionary of existing valid scores
-    """
-    # Load poses from input
+def load_poses(
+    poses_input: Path | pd.DataFrame,
+    requested_functions: list[str],
+    output_file: Path | None = None
+) -> tuple[pd.DataFrame, dict[str, list[str]], dict[str, pd.Series]]:
+    """Efficiently load poses and identify which need scoring"""
+    # Load poses using fast_sdf_loader if input is a file
     if isinstance(poses_input, Path):
         printlog(f"Loading poses from {poses_input}")
         if poses_input.suffix == ".sdf":
-            poses_df = parallel_SDF_loader(poses_input, molColName="Molecule", idName="Pose ID", SMILES="SMILES")
+            poses_df = fast_load_sdf(
+                poses_input,
+                molColName="Molecule",
+                idName="Pose ID",
+                batch_size=100,
+                required_props={"SMILES"}
+            )
         else:
             raise ValueError(f"Input poses must be in .sdf format. Path supplied was: {poses_input}")
     elif isinstance(poses_input, pd.DataFrame):
@@ -102,140 +88,163 @@ def load_poses(poses_input: Path | pd.DataFrame, requested_functions: list[str],
     else:
         raise ValueError("Input poses must be in .sdf format or supplied as a dataframe.")
 
+    # Initialize tracking dictionaries
     all_pose_ids = poses_df["Pose ID"].tolist()
     poses_to_score = {func: all_pose_ids.copy() for func in requested_functions}
     existing_scores = {}
 
-    # Check for existing scores in input file
+    # Check for existing scores in input
     for function in requested_functions:
         column_name = RESCORING_FUNCTIONS[function]["column_name"]
         if column_name in poses_df.columns:
-            # Convert score column to numeric if it exists
+            # Efficient type conversion
             poses_df[column_name] = pd.to_numeric(poses_df[column_name], errors='coerce')
             
-            # Find poses that don't need scoring (have valid scores)
-            valid_scores = poses_df[~poses_df[column_name].isna()].set_index("Pose ID")[column_name]
-            if not valid_scores.empty:
+            # Find valid scores using vectorized operations
+            mask = ~poses_df[column_name].isna()
+            if mask.any():
+                valid_scores = poses_df.loc[mask, ["Pose ID", column_name]].set_index("Pose ID")[column_name]
                 existing_scores[column_name] = valid_scores
-                # Remove poses with valid scores from the to-score list
-                poses_to_score[function] = [pid for pid in poses_to_score[function]
-                                          if pid not in valid_scores.index]
+                # Update poses to score using set operations
+                poses_to_score[function] = list(set(poses_to_score[function]) - set(valid_scores.index))
 
-    # If output file exists, check for additional existing scores
+    # Check output file if it exists
     if output_file and output_file.exists():
         try:
             if output_file.suffix == ".sdf":
-                existing_results = PandasTools.LoadSDF(output_file, molColName=None, idName="Pose ID")
+                existing_results = fast_load_sdf(
+                    output_file,
+                    molColName=None,
+                    idName="Pose ID"
+                )
             else:
                 existing_results = pd.read_csv(output_file)
             
-            # Process each scoring function
             for function in requested_functions:
                 column_name = RESCORING_FUNCTIONS[function]["column_name"]
                 if column_name in existing_results.columns:
-                    # Convert score column to numeric
                     existing_results[column_name] = pd.to_numeric(existing_results[column_name], errors='coerce')
-                    
-                    # Find additional valid scores from output file
-                    valid_scores = existing_results[~existing_results[column_name].isna()].set_index("Pose ID")[column_name]
-                    if not valid_scores.empty:
-                        # Update existing scores, preferring input file scores if they exist
+                    mask = ~existing_results[column_name].isna()
+                    if mask.any():
+                        valid_scores = existing_results.loc[mask, ["Pose ID", column_name]].set_index("Pose ID")[column_name]
                         if column_name in existing_scores:
-                            valid_scores = valid_scores[~valid_scores.index.isin(existing_scores[column_name].index)]
-                        if not valid_scores.empty:
-                            if column_name in existing_scores:
-                                existing_scores[column_name] = pd.concat([existing_scores[column_name], valid_scores])
-                            else:
-                                existing_scores[column_name] = valid_scores
-                            
-                            # Remove poses with valid scores from the to-score list
-                            poses_to_score[function] = [pid for pid in poses_to_score[function]
-                                                      if pid not in valid_scores.index]
+                            # Use set operations for efficient updates
+                            new_scores = valid_scores[~valid_scores.index.isin(existing_scores[column_name].index)]
+                            if not new_scores.empty:
+                                existing_scores[column_name] = pd.concat([existing_scores[column_name], new_scores])
+                        else:
+                            existing_scores[column_name] = valid_scores
+                        
+                        poses_to_score[function] = list(set(poses_to_score[function]) - set(valid_scores.index))
                     
         except Exception as e:
-            printlog(f"Error loading existing results from output file: {e}. Will use scores from input file only.")
+            printlog(f"Error loading existing results from output file: {e}")
 
     return poses_df, poses_to_score, existing_scores
 
-def create_working_files(poses_df: pd.DataFrame, temp_dir: Path) -> Path:
-    """Create temporary SDF file from poses DataFrame"""
-    sdf_path = temp_dir / "temp_poses.sdf"
-    PandasTools.WriteSDF(poses_df, sdf_path, molColName="Molecule", idName="Pose ID", properties=list(poses_df.columns))
-    return sdf_path
-
 def apply_scoring_function(
-    sdf_path: Path, function_name: str, protein_file: Path, pocket_definition: dict, software: Path, n_cpus: int, pose_ids_to_score: list[str] | None = None
+    sdf_path: Path,
+    function_name: str,
+    protein_file: Path,
+    pocket_definition: dict,
+    software: Path,
+    n_cpus: int,
+    pose_ids_to_score: list[str] | None = None
 ) -> pd.DataFrame:
-    """Apply a single scoring function and return results"""
+    """Apply a scoring function to the molecules"""
     scoring_info = RESCORING_FUNCTIONS.get(function_name)
     if not scoring_info:
         printlog(f"Unknown scoring function: {function_name}")
         return pd.DataFrame()
 
-    if pose_ids_to_score:
-        temp_sdf_path = Path(tempfile.mkdtemp(prefix="dockm8_temp_sdf_")) / "filtered_poses.sdf"
-        mols = [mol for mol in Chem.SDMolSupplier(str(sdf_path), sanitize=False) if mol is not None and mol.GetProp("_Name") in pose_ids_to_score]
-        writer = Chem.SDWriter(str(temp_sdf_path))
-        for mol in mols:
-            writer.write(mol)
-        writer.close()
-        sdf_path_to_use = temp_sdf_path
-    else:
-        sdf_path_to_use = sdf_path
-
-    scoring_function = scoring_info["class"](software_path=software)
+    temp_dir = setup_temp_directory(f"score_{function_name.lower()}")
+    
     try:
-        return scoring_function.rescore(
-            sdf_path_to_use, n_cpus, protein_file=protein_file, pocket_definition=pocket_definition
-        )
-    except Exception as e:
-        printlog(f"Failed to apply {function_name}: {e}")
-        return pd.DataFrame()
-    finally:
-        scoring_function.cleanup()
+        # Create a filtered SDF if specific poses are requested
         if pose_ids_to_score:
-            shutil.rmtree(sdf_path_to_use.parent, ignore_errors=True)
+            working_sdf = temp_dir / "working" / "filtered_poses.sdf"
+            df = fast_load_sdf(sdf_path, "Molecule", "Pose ID")
+            filtered_df = df[df["Pose ID"].isin(pose_ids_to_score)]
+            fast_write_sdf(
+                df=filtered_df,
+                output_path=working_sdf,
+                molColName="Molecule",
+                idName="Pose ID",
+                properties=list(filtered_df.columns)
+            )
+            sdf_to_score = working_sdf
+        else:
+            sdf_to_score = sdf_path
+        # Initialize and run scoring function
+        scoring_function = scoring_info["class"](software_path=software)
+        result = scoring_function.rescore(
+            str(sdf_to_score),
+            n_cpus=n_cpus,
+            protein_file=str(protein_file),
+            pocket_definition=pocket_definition
+        )
+
+        if isinstance(result, pd.DataFrame) and not result.empty:
+            return result[["Pose ID", scoring_info["column_name"]]]
+        
+        return pd.DataFrame()
+
+    except Exception as e:
+        printlog(f"Error in scoring function {function_name}: {str(e)}\n{traceback.format_exc()}")
+        return pd.DataFrame()
+    
+    finally:
+        pass
+        #shutil.rmtree(temp_dir, ignore_errors=True)
+
+def save_results(df: pd.DataFrame, output_file: Path) -> None:
+    """Save results using optimized writers"""
+    if output_file:
+        # Save CSV without molecule column
+        csv_output = df.drop(columns=["Molecule"], errors="ignore")
+        csv_output.to_csv(output_file.with_suffix(".csv"), index=False)
+        
+        # Use fast_sdf_writer for SDF output
+        if "Molecule" in df.columns:
+            fast_write_sdf(
+                df=df,
+                output_path=output_file.with_suffix(".sdf"),
+                molColName="Molecule",
+                idName="Pose ID",
+                properties=list(df.columns),
+                batch_size=100
+            )
 
 def prepare_results(df: pd.DataFrame) -> pd.DataFrame:
-    """Prepare final results DataFrame with required columns and formatting"""
+    """Prepare final results with optimized operations"""
     if df.empty:
         return df
 
-    # Add required columns
+    # Add required columns efficiently
     if "ID" not in df.columns:
         df["ID"] = df["Pose ID"].str.split("_").str[0]
+    
+    # Only generate SMILES if needed
     if "SMILES" not in df.columns and "Molecule" in df.columns:
+        from rdkit import Chem
         df["SMILES"] = df["Molecule"].apply(lambda x: Chem.MolToSmiles(x) if x is not None else None)
 
-    # Select and order columns
-    result_columns = ["Pose ID", "ID", "SMILES", "Molecule"] + [
-        col for col in df.columns if col not in ["Pose ID", "ID", "SMILES", "Molecule"]
-    ]
+    # Optimize column order
+    result_columns = ["Pose ID", "ID", "SMILES", "Molecule"]
+    additional_cols = [col for col in df.columns if col not in result_columns]
+    result_columns.extend(additional_cols)
+    
+    # Efficient column selection and sorting
     result_df = df[result_columns].sort_values("Pose ID")
 
-    # Define non-numeric columns
-    non_numeric_columns = ["Pose ID", "ID", "SMILES", "Molecule"]
-
-    # Convert only numeric columns
-    for col in result_df.columns:
-        if col not in non_numeric_columns:
-            try:
-                result_df[col] = pd.to_numeric(result_df[col].values, errors="coerce")
-            except TypeError as e:
-                print(f"Could not convert column {col}: {e}")
+    # Convert numeric columns efficiently
+    non_numeric = {"Pose ID", "ID", "SMILES", "Molecule"}
+    numeric_cols = [col for col in result_df.columns if col not in non_numeric]
+    
+    if numeric_cols:
+        result_df[numeric_cols] = result_df[numeric_cols].apply(pd.to_numeric, errors='coerce')
 
     return result_df
-
-def save_results(df: pd.DataFrame, output_file: Path) -> None:
-    """Save results to both CSV and SDF formats"""
-    if output_file:
-        csv_output = df.drop(columns=["Molecule"], errors="ignore")
-        csv_output.to_csv(output_file.with_suffix(".csv"), index=False)
-        if "Molecule" in df.columns:
-            sdf_path = output_file.with_suffix(".sdf")
-            PandasTools.WriteSDF(
-                df, str(sdf_path), molColName="Molecule", idName="Pose ID", properties=list(df.columns)
-            )
 
 def rescore_poses(
     protein_file: Path,
@@ -246,96 +255,66 @@ def rescore_poses(
     n_cpus: int,
     output_file: Path | None = None,
 ) -> pd.DataFrame:
-    """Main function to orchestrate pose rescoring process"""
+    """Optimized main function for pose rescoring"""
     RDLogger.DisableLog("rdApp.*")
-    temp_dir = Path(tempfile.mkdtemp(prefix="dockm8_rescore_"))
-
+    
+    # Setup organized temporary directory
+    temp_dir = setup_temp_directory("rescore")
+    
     try:
-        # Load initial data and check for existing scores
+        # Load initial data efficiently
         poses_df, poses_to_score, existing_scores = load_poses(poses, functions, output_file)
-
-        # Create working files
-        temp_dir = Path(tempfile.mkdtemp(prefix="dockm8_rescore_"))
-        sdf_path = create_working_files(poses_df, temp_dir)
-
-        try:
-            # Score only the poses that need it for each function
-            for function in functions:
-                pose_ids_to_score = poses_to_score[function]
-                
-                if pose_ids_to_score:
-                    result = apply_scoring_function(
-                        sdf_path, function, protein_file, pocket_definition, software, n_cpus, pose_ids_to_score
-                    )
-                    if not result.empty:
-                        poses_df = pd.merge(poses_df, result, on="Pose ID", how="left")
-
-            # Merge existing scores back
-            if existing_scores:
-                existing_scores_df = pd.DataFrame(existing_scores)
-                existing_scores_df.index.name = "Pose ID"
-                poses_df = poses_df.set_index("Pose ID").combine_first(existing_scores_df).reset_index()
-
-            # Prepare and save final results
-            final_results = prepare_results(poses_df)
-            if output_file:
-                save_results(final_results, output_file)
-
-        except Exception as e:
-            error_traceback = traceback.format_exc()
-            printlog(f"Error rescoring poses:\n{error_traceback}")
-            raise Exception(f"Rescoring error: {str(e)}\n\nTraceback:\n{error_traceback}") from e
         
+        # Create working files using fast writer
+        working_sdf = temp_dir / "working" / "poses.sdf"
+        fast_write_sdf(
+            df=poses_df,
+            output_path=working_sdf,
+            molColName="Molecule",
+            idName="Pose ID",
+            properties=list(poses_df.columns),
+            batch_size=100
+        )
+
+        # Score poses that need it
+        for function in functions:
+            pose_ids_to_score = poses_to_score[function]
+            if pose_ids_to_score:
+                result = apply_scoring_function(
+                    working_sdf,
+                    function,
+                    protein_file,
+                    pocket_definition,
+                    software,
+                    n_cpus,
+                    pose_ids_to_score
+                )
+                if not result.empty:
+                    # Efficient merge using pose IDs
+                    poses_df = pd.merge(
+                        poses_df,
+                        result[["Pose ID", RESCORING_FUNCTIONS[function]["column_name"]]],
+                        on="Pose ID",
+                        how="left"
+                    )
+
+        # Merge existing scores efficiently
+        if existing_scores:
+            existing_scores_df = pd.DataFrame(existing_scores)
+            existing_scores_df.index.name = "Pose ID"
+            poses_df = poses_df.set_index("Pose ID").combine_first(existing_scores_df).reset_index()
+
+        # Prepare and save results
+        final_results = prepare_results(poses_df)
+        if output_file:
+            save_results(final_results, output_file)
+
+        return final_results
+
+    except Exception as e:
+        printlog(f"Error during rescoring: {str(e)}")
+        raise
+    
     finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-def extract_pose_metadata(df: pd.DataFrame) -> pd.DataFrame:
-    """Extract metadata from Pose IDs into separate columns"""
-    df = df.copy()
-    df["Pose_Number"] = df["Pose ID"].str.split("_").str[2].astype(int)
-    df["Docking_program"] = df["Pose ID"].str.split("_").str[1].astype(str)
-    df["ID"] = df["Pose ID"].str.split("_").str[0].astype(str)
-    return df
-
-def find_best_poses(df: pd.DataFrame, score_column: str, best_value: str) -> pd.DataFrame:
-    """Find best poses based on scoring criteria"""
-    if best_value == "min":
-        best_scores = df.groupby("ID").agg({score_column: "min"}).reset_index()
-    else:
-        best_scores = df.groupby("ID").agg({score_column: "max"}).reset_index()
-
-    best_poses = pd.merge(df, best_scores, on=["ID", score_column], how="inner")
-    best_poses = best_poses.groupby("ID").first().reset_index()
-    return best_poses[["Pose ID", "ID", score_column]]
-
-def rescore_docking(
-    poses: Path | pd.DataFrame, protein_file: Path, pocket_definition: dict, software: Path, function: str, n_cpus: int
-) -> pd.DataFrame:
-    """Rescore docking poses and find best pose for each molecule"""
-    RDLogger.DisableLog("rdApp.*")
-    temp_dir = Path(tempfile.mkdtemp(prefix="dockm8_rescore_docking_"))
-
-    try:
-        # Reuse poses loading function
-        poses_df = load_poses(poses, [function])  # Only need to load for the specific function
-        sdf_path = create_working_files(poses_df, temp_dir)
-
-        # Get scoring function configuration
-        scoring_info = RESCORING_FUNCTIONS.get(function)
-        if scoring_info is None:
-            raise ValueError(f"Unknown scoring function: {function}")
-
-        # Apply scoring function
-        score_df = apply_scoring_function(sdf_path, function, protein_file, pocket_definition, software, n_cpus)
-
-        if score_df.empty:
-            return pd.DataFrame()
-
-        # Process results to find best poses
-        score_df = extract_pose_metadata(score_df)
-        best_poses = find_best_poses(score_df, scoring_info["column_name"], scoring_info["best_value"])
-
-        return best_poses
-
-    finally:
+        # Cleanup temporary directory
         shutil.rmtree(temp_dir, ignore_errors=True)

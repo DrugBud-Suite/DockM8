@@ -93,8 +93,6 @@ class SminaDocking(DockingFunction):
 
             if not raw_results_path.exists() or raw_results_path.stat().st_size == 0:
                 printlog(f"SMINA output file is missing or empty for batch {batch_file.stem}")
-                print(result.stdout)
-                print(result.stderr)
                 return None
 
             # Process results
@@ -104,8 +102,6 @@ class SminaDocking(DockingFunction):
             
             if df.empty:
                 printlog(f"No data loaded from SMINA output file for batch {batch_file.stem}")
-                print(result.stdout)
-                print(result.stderr)
                 return None
 
             try:
