@@ -94,6 +94,7 @@ def load_poses(
     existing_scores = {}
 
     # Check for existing scores in input
+    print("Checking for scores in input file")
     for function in requested_functions:
         column_name = RESCORING_FUNCTIONS[function]["column_name"]
         if column_name in poses_df.columns:
@@ -109,6 +110,7 @@ def load_poses(
                 poses_to_score[function] = list(set(poses_to_score[function]) - set(valid_scores.index))
 
     # Check output file if it exists
+    print("Checking for scores in output file")
     if output_file and output_file.exists():
         try:
             if output_file.suffix == ".sdf":
