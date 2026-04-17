@@ -193,3 +193,4 @@ benchmark/*
 lit-pcba_AVE_processing.ipynb
 *ARCHIVE/
 dockm8_tests/*
+dockm8py_testing.py
