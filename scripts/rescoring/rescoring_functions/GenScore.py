@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import pandas as pd
 
 from scripts.rescoring.scoring_function import ScoringFunction
@@ -36,21 +35,21 @@ class GenScore(ScoringFunction):
         self.model = genscore_path / "trained_models" / model_file
         self.encoder = encoder
 
-    def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+    def rescore(self, sdf_file: Path, n_cpus: int, protein_file: Path, **kwargs) -> pd.DataFrame:
         """
         Rescore the molecules in the given SDF file using the GenScore scoring function.
 
         Args:
-            sdf_file (str): The path to the SDF file.
+            sdf_file (Path): The path to the SDF file.
             n_cpus (int): The number of CPUs to use for parallel processing.
-            protein_file (str): The path to the protein file.
+            protein_file (Path): The path to the protein file.
             **kwargs: Additional keyword arguments.
 
         Returns:
             pd.DataFrame: A DataFrame containing the rescored molecules.
         """
         try:
-            pocket_file = Path(str(protein_file).replace(".pdb", "_pocket.pdb"))
+            pocket_file = protein_file.parent / f"{protein_file.stem}_pocket.pdb"
             if not pocket_file.is_file():
                 pocket_definition = kwargs.get("pocket_definition")
                 if not pocket_definition:
@@ -58,7 +57,7 @@ class GenScore(ScoringFunction):
                 pocket_file = extract_pocket(pocket_definition, protein_file)
 
             split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="count", splits=1)
-            split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
+            split_files_sdfs = list(split_files_folder.glob("*.sdf"))
 
             rescoring_results = parallel_executor(
                 self._rescore_split_file,
@@ -95,12 +94,12 @@ class GenScore(ScoringFunction):
         try:
             output_file = split_file.parent / f"{split_file.stem}.csv"
             genscore_cmd = (
-                f"cd {self.software_path}/example/ &&"
+                f"cd {str(self.software_path)}/example/ &&"
                 f" conda run -n genscore python genscore.py"
-                f" -p {pocket_file}"
-                f" -l {split_file}"
-                f" -o {split_file.parent / split_file.stem}"
-                f" -m {self.model}"
+                f" -p {str(pocket_file)}"
+                f" -l {str(split_file)}"
+                f" -o {str(split_file.parent / split_file.stem)}"
+                f" -m {str(self.model)}"
                 f" -e {self.encoder}"
             )
 

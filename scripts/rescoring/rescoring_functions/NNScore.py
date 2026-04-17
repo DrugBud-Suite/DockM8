@@ -23,17 +23,17 @@ class NNScore(ScoringFunction):
             name="NNScore", column_name="NNScore", best_value="max", score_range=(0, 20), software_path=software_path
         )
 
-    def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+    def rescore(self, sdf_file: Path, n_cpus: int, protein_file: Path, **kwargs) -> pd.DataFrame:
         try:
             printlog("Running NNScore...")
 
             results = self._temp_dir / "rescored_NNscore.sdf"
             nnscore_cmd = (
-                f"oddt_cli {sdf_file}"
-                f" --receptor {protein_file}"
+                f"oddt_cli {str(sdf_file)}"
+                f" --receptor {str(protein_file)}"
                 f" -n {n_cpus}"
                 f" --score nnscore"
-                f" -O {results}"
+                f" -O {str(results)}"
             )
 
             stdout, stderr = run_subprocess_command(command=nnscore_cmd)

@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import pandas as pd
 from rdkit.Chem import PandasTools
 
@@ -21,14 +20,14 @@ class Vinardo(ScoringFunction):
             software_path=software_path
         )
 
-    def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+    def rescore(self, sdf_file: Path, n_cpus: int, protein_file: Path, **kwargs) -> pd.DataFrame:
         """
         Rescore the molecules in the given SDF file using the Vinardo scoring function.
 
         Args:
-            sdf_file (str): The path to the SDF file.
+            sdf_file (Path): The path to the SDF file.
             n_cpus (int): The number of CPUs to use for parallel processing.
-            protein_file (str): The path to the protein file.
+            protein_file (Path): The path to the protein file.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -36,7 +35,7 @@ class Vinardo(ScoringFunction):
         """
         try:
             split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="cpu", splits=n_cpus)
-            split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
+            split_files_sdfs = list(split_files_folder.glob("*.sdf"))
 
             rescoring_results = parallel_executor(
                 self._rescore_split_file,
@@ -56,13 +55,13 @@ class Vinardo(ScoringFunction):
         finally:
             self.cleanup()
 
-    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path | None:
+    def _rescore_split_file(self, split_file: Path, protein_file: Path) -> Path | None:
         results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
         vinardo_cmd = (
             f"{self.software_path}/gnina"
-            f" --receptor {protein_file}"
-            f" --ligand {split_file}"
-            f" --out {results}"
+            f" --receptor {str(protein_file)}"
+            f" --ligand {str(split_file)}"
+            f" --out {str(results)}"
             " --score_only"
             " --scoring vinardo"
             " --cnn_scoring none"

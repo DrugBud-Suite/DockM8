@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import pandas as pd
 
 from scripts.rescoring.scoring_function import ScoringFunction
@@ -24,14 +23,14 @@ class PLP(ScoringFunction):
         self.executable_path = get_executable_path(software_path, "PLANTS")
         self.protein_mol2 = None
 
-    def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+    def rescore(self, sdf_file: Path, n_cpus: int, protein_file: Path, **kwargs) -> pd.DataFrame:
         """
         Rescore the molecules in the given SDF file using the PLP scoring function.
 
         Args:
-            sdf_file (str): The path to the SDF file.
+            sdf_file (Path): The path to the SDF file.
             n_cpus (int): The number of CPUs to use for parallel processing.
-            protein_file (str): The path to the protein file.
+            protein_file (Path): The path to the protein file.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -53,7 +52,7 @@ class PLP(ScoringFunction):
 
             # Split input SDF for parallel processing
             split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="cpu", splits=n_cpus)
-            split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
+            split_files_sdfs = list(split_files_folder.glob("*.sdf"))
 
             # Execute parallel rescoring
             rescoring_results = parallel_executor(
@@ -110,7 +109,7 @@ class PLP(ScoringFunction):
             results_dir = process_temp_dir / "results"
             results_csv = results_dir / "ranking.csv"
             
-            plp_cmd = f"{self.executable_path} --mode rescore {config_file}"
+            plp_cmd = f"{self.executable_path} --mode rescore {str(config_file)}"
             stdout, stderr = run_subprocess_command(command=plp_cmd)
 
             if not results_csv.exists():

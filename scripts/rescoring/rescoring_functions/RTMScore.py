@@ -28,13 +28,18 @@ class RTMScore(ScoringFunction):
                 )
 
             rtmscore_results = Path(self._temp_dir) / f"{self.column_name}_scores"
-            pocket_file = Path(str(protein_file).replace(".pdb", "_pocket.pdb"))
+            protein_file = Path(protein_file)
+            pocket_file = protein_file.parent / f"{protein_file.stem}_pocket.pdb"
             if not pocket_file.is_file():
-                raise FileNotFoundError(f"Pocket file not found at {pocket_file}")
+                pocket_definition = kwargs.get("pocket_definition")
+                if not pocket_definition:
+                    raise FileNotFoundError(f"Pocket file not found at {pocket_file}")
+                from scripts.pocket_finding.utils import extract_pocket
+                pocket_file = extract_pocket(pocket_definition, protein_file)
 
             rtmscore_cmd = (
                 f"cd {self.software_path}/RTMScore-main/example/ &&"
-                f" python rtmscore.py"
+                f" conda run -n rtmscore python rtmscore.py"
                 f" -p {pocket_file}"
                 f" -l {sdf_file}"
                 f" -o {rtmscore_results}"
