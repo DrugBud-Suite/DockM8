@@ -16,7 +16,7 @@ def is_running_in_streamlit():
     try:
         from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-        return get_script_run_ctx() is not None
+        return get_script_run_ctx(suppress_warning=True) is not None
     except ImportError:
         return False
 
