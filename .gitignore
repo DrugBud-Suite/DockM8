@@ -194,3 +194,6 @@ lit-pcba_AVE_processing.ipynb
 *ARCHIVE/
 dockm8_tests/*
 dockm8py_testing.py
+test_data/DeepCoy/
+test_data/dockm8_library/
+test_data/rescoring/rescoring_output_large_new.*
