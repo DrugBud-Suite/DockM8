@@ -1,6 +1,5 @@
 import pytest
 from pathlib import Path
-import os
 import sys
 
 # Search for 'DockM8' in parent directories
@@ -67,7 +66,7 @@ def test_pdbfixer_custom_ph(common_test_data, cleanup):
     assert structure is not None
 
 
-def test_prepare_protein_with_file_input(common_test_data, cleanup):
+def test_prepare_protein_with_file_input(common_test_data):
     """Test case for preparing protein with file input."""
     input_pdb_file, output_dir = common_test_data
     output_path = prepare_protein(
@@ -90,7 +89,7 @@ def test_prepare_protein_with_pdb_input(common_test_data, cleanup):
     """Test case for preparing a protein with PDB input."""
     _, output_dir = common_test_data
     output_path = prepare_protein(
-        "2o1x",
+        "5LST",
         output_dir=output_dir,
         fix_nonstandard_residues=True,
         fix_missing_residues=True,
@@ -150,12 +149,12 @@ def test_prepare_protein_with_invalid_input(common_test_data, cleanup):
 
     # Test invalid protonation method
     with pytest.raises(ValueError) as exc_info:
-        prepare_protein("2o1x", output_dir=Path(output_dir), protonation_method="invalid")
+        prepare_protein("5LST", output_dir=Path(output_dir), protonation_method="invalid")
     assert "Protonation method must be" in str(exc_info.value)
 
     # Test invalid pH value
     with pytest.raises(ValueError) as exc_info:
-        prepare_protein("2o1x", output_dir=Path(output_dir), protonation_method=15.0)
+        prepare_protein("5LST", output_dir=Path(output_dir), protonation_method=15.0)
     assert "pH value must be between" in str(exc_info.value)
 
 
