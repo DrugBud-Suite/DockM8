@@ -224,73 +224,61 @@ class TestOptimizedSDFWriter:
                 os.unlink(tmp2.name)
 
     @pytest.mark.performance
-    def test_performance_comparison(self, test_data_dir):
-        """Compare performance with RDKit's SDWriter using large file"""
+    def test_performance_comparison(self, simple_sdf_path):
+        """Compare performance with RDKit's SDWriter"""
         import time
         from rdkit import Chem
-        
-        # Load an existing large SDF file for testing
-        large_sdf_path = Path("/home/tony/FINAL_RESULTS/v1_1/lit-pcba/mapk1/results/gnina/gnina_poses.sdf")
-        
-        # First load the data into a DataFrame
-        print("Loading test data...")
-        df = PandasTools.LoadSDF(large_sdf_path, molColName="Molecule", idName="Pose ID")
-        
-        properties_to_write = ['ID', 'GNINA_Affinity']  # Add any properties present in your data
-        
-        # Create temporary files for output
+
+        df_base = PandasTools.LoadSDF(str(simple_sdf_path), molColName="Molecule", idName="ID")
+
+        # Duplicate rows to create a larger dataset for benchmarking
+        df = pd.concat([df_base] * 200, ignore_index=True)
+        df['ID'] = [f"mol_{i}" for i in range(len(df))]
+        df['Score'] = [float(i) * 0.1 for i in range(len(df))]
+
+        properties_to_write = ['Score']
+
         with tempfile.NamedTemporaryFile(suffix='.sdf', delete=False) as tmp1, \
              tempfile.NamedTemporaryFile(suffix='.sdf', delete=False) as tmp2:
-            
+
             fast_output = Path(tmp1.name)
             rdkit_output = Path(tmp2.name)
-            
+
             try:
-                # Time optimized writer
                 print("Starting Fast SDF Writer")
                 start = time.time()
                 fast_write_sdf(
                     df=df,
                     output_path=fast_output,
                     molColName='Molecule',
-                    idName='Pose ID',
+                    idName='ID',
                     properties=properties_to_write
                 )
                 fast_time = time.time() - start
-                
-                # Time RDKit writer
+
                 print("Starting RDKit SDWriter")
                 start = time.time()
                 writer = Chem.SDWriter(str(rdkit_output))
                 for _, row in df.iterrows():
                     mol = row['Molecule']
                     if mol is not None:
-                        mol.SetProp('_Name', str(row['Pose ID']))
+                        mol.SetProp('_Name', str(row['ID']))
                         for prop in properties_to_write:
-                            if prop != 'Pose ID' and prop in row:
+                            if prop in row:
                                 mol.SetProp(prop, str(row[prop]))
                         writer.write(mol)
                 writer.close()
                 rdkit_time = time.time() - start
-                
-                # Print performance comparison
+
                 print(f"Optimized writer: {fast_time:.2f}s")
                 print(f"RDKit writer: {rdkit_time:.2f}s")
                 print(f"Speedup: {rdkit_time/fast_time:.2f}x")
-                
-                # Verify results by reading back both files
-                df_fast = fast_load_sdf(fast_output, "Molecule", "Pose ID")
-                df_rdkit = fast_load_sdf(rdkit_output, "Molecule", "Pose ID")
-                df_fast.sort_values("Pose ID", inplace=True)
-                df_rdkit.sort_values("Pose ID", inplace=True)
 
-                print(df_fast.head(20))
-                print(df_rdkit.head(20))
+                df_fast = fast_load_sdf(fast_output, "Molecule", "ID")
+                df_rdkit = fast_load_sdf(rdkit_output, "Molecule", "ID")
 
-                # Compare results
                 assert len(df_fast) == len(df_rdkit)
-                
+
             finally:
-                # Clean up temporary files
                 os.unlink(tmp1.name)
                 os.unlink(tmp2.name)
