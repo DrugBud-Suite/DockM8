@@ -69,6 +69,8 @@ class GninaGPUDocking(DockingFunction):
                 str(pocket_definition["size"][2]),
                 "--exhaustiveness",
                 str(exhaustiveness),
+                "--cpu",
+                "1",
                 "--seed",
                 "1",
                 "--num_modes",

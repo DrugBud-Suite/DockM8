@@ -17,6 +17,7 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.docking.gnina_docking import GninaDocking
+from scripts.docking.gnina_gpu_docking import GninaGPUDocking
 from scripts.docking.plants_docking import PlantsDocking
 from scripts.docking.qvina2_docking import Qvina2Docking
 from scripts.docking.qvinaw_docking import QvinawDocking
@@ -30,6 +31,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 DOCKING_PROGRAMS = {
     "SMINA": SminaDocking,
     "GNINA": GninaDocking,
+    "GNINA_GPU": GninaGPUDocking,
     "PLANTS": PlantsDocking,
     "QVINAW": QvinawDocking,
     "QVINA2": Qvina2Docking,
@@ -95,7 +97,6 @@ def dockm8_docking(
                     exhaustiveness,
                     n_poses,
                     n_cpus,
-                    job_manager,
                     output_sdf=output_sdf,
                 )
 
@@ -108,7 +109,10 @@ def dockm8_docking(
         # Concatenate all poses
         if output_paths:
             all_poses_path = w_dir / "all_poses.sdf"
-            if not all_poses_path.exists():
+            if all_poses_path.exists():
+                printlog(f"Using existing concatenated poses: {all_poses_path}")
+                return all_poses_path
+            else:
                 all_poses = pd.DataFrame()
                 for path in output_paths:
                     df = parallel_SDF_loader(str(path), molColName="Molecule", idName="Pose ID", n_cpus=n_cpus)
