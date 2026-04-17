@@ -4,7 +4,15 @@ This directory contains everything needed to reproduce the plots and analyses fr
 
 All commands are run from the **project root** (`DockM8/`, not `analysis/`).
 
+## Prerequisites
+
+- DockM8 conda environment activated (`conda activate dockm8`)
+- **~500 GB free disk space** for full extraction of all benchmark datasets
+- Python packages: numpy, pandas, polars, matplotlib, seaborn, scipy, tqdm (all included in the DockM8 environment)
+
 ## 1. Download Raw Data
+
+> **Zenodo DOI**: TODO-REPLACE-WITH-DOI — Download archives from: <https://doi.org/TODO-REPLACE-WITH-DOI>
 
 Download the five `.tar.bz2` archives from Zenodo:
 
