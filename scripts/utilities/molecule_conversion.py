@@ -48,7 +48,14 @@ def convert_molecules(input_file: Path, output_file_or_path: Path, input_format:
             cmd = (
                 f"conda run -n mgltools prepare_receptor4.py -r {input_file} -o {output_file_or_path} -A bond_hydrogens"
             )
-            subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            result = subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+            if result.returncode != 0:
+                raise RuntimeError(
+                    f"MGLTools prepare_receptor4.py failed (exit code {result.returncode}): {result.stderr.strip()}"
+                )
+            output_path = Path(output_file_or_path)
+            if not output_path.exists() or output_path.stat().st_size == 0:
+                raise RuntimeError(f"MGLTools conversion produced no output file: {output_file_or_path}")
             return output_file_or_path
         except Exception as e:
             printlog(f"Error occurred during conversion using MGLTools prepare_receptor4.py: {str(e)}")
@@ -69,28 +76,38 @@ def convert_molecules(input_file: Path, output_file_or_path: Path, input_format:
                 mol = Chem.AddHs(mol)
                 setup_list = preparator.prepare(mol)
                 pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
-                mol_name = mol.GetProp("_Name")
+                mol_name = mol.GetProp("_Name") if mol.HasProp("_Name") else "compound_1"
                 output_path = Path(output_dir) / f"{mol_name}.pdbqt"
                 with open(output_path, "w") as f:
                     f.write(pdbqt_string[0])
                 pdbqt_files.append(output_path)
             else:
-                # Multiple compounds or output is a directory
                 output_dir = output_file_or_path if output_file_or_path.is_dir() else output_file_or_path.parent
                 output_dir.mkdir(parents=True, exist_ok=True)
 
+                seen_names = {}
                 for i, mol in enumerate(mols):
                     if mol is None:
                         continue
-                    preparator = MoleculePreparation(min_ring_size=10)
-                    mol = Chem.AddHs(mol)
-                    setup_list = preparator.prepare(mol)
-                    pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
-                    mol_name = mol.GetProp("_Name") if mol.HasProp("_Name") else f"compound_{i+1}"
-                    output_path = Path(output_dir) / f"{mol_name}.pdbqt"
-                    with open(output_path, "w") as f:
-                        f.write(pdbqt_string[0])
-                    pdbqt_files.append(output_path)
+                    try:
+                        preparator = MoleculePreparation(min_ring_size=10)
+                        mol = Chem.AddHs(mol)
+                        setup_list = preparator.prepare(mol)
+                        pdbqt_string = PDBQTWriterLegacy.write_string(setup_list[0])
+                        mol_name = mol.GetProp("_Name") if mol.HasProp("_Name") else f"compound_{i+1}"
+                        if mol_name in seen_names:
+                            seen_names[mol_name] += 1
+                            mol_name = f"{mol_name}_dup{seen_names[mol_name]}"
+                        else:
+                            seen_names[mol_name] = 1
+                        output_path = Path(output_dir) / f"{mol_name}.pdbqt"
+                        with open(output_path, "w") as f:
+                            f.write(pdbqt_string[0])
+                        pdbqt_files.append(output_path)
+                    except Exception as e:
+                        mol_id = mol.GetProp("_Name") if mol.HasProp("_Name") else f"index_{i}"
+                        printlog(f"WARNING: Skipping molecule {mol_id} during PDBQT conversion: {e}")
+                        continue
 
             return pdbqt_files
         except Exception as e:
