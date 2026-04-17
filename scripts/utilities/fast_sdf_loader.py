@@ -14,7 +14,7 @@ class MoleculeData(NamedTuple):
     """Lightweight container for essential molecule data"""
     id: str
     properties: dict[str, str]
-    mol_block: str  # Store molecular block instead of RDKit object for serialization
+    mol_block: str | None = None  # Make mol_block optional
 
 class SDFValidationError(Exception):
     """Custom exception for SDF validation errors"""
@@ -23,6 +23,7 @@ class SDFValidationError(Exception):
 def process_batch_worker(
     batch_data: list[bytes],
     idName: str,
+    load_molecules: bool = True,
     required_props: set[str] | None = None
 ) -> list[MoleculeData | None]:
     """Process a batch of molecules efficiently"""
@@ -55,8 +56,8 @@ def process_batch_worker(
             # Always include ID property
             properties[idName] = mol_name
 
-            # Store molecular block instead of full RDKit object
-            mol_block = Chem.MolToMolBlock(mol)
+            # Only store molecular block if loading molecules
+            mol_block = Chem.MolToMolBlock(mol) if load_molecules else None
             
             results.append(MoleculeData(
                 id=mol_name,
@@ -74,11 +75,15 @@ def process_mol_batch(batch_data: list[tuple]) -> list[tuple]:
     results = []
     for mol_block, props in batch_data:
         try:
-            mol = Chem.MolFromMolBlock(mol_block, sanitize=True)
-            if mol is not None and 'ID' in props:
-                # Set the molecule name from the ID property
-                mol.SetProp('_Name', str(props['ID']))
-            results.append((mol, props))
+            if mol_block:
+                mol = Chem.MolFromMolBlock(mol_block, sanitize=True)
+                if mol is not None and 'ID' in props:
+                    # Set the molecule name from the ID property
+                    mol.SetProp('_Name', str(props['ID']))
+                results.append((mol, props))
+            else:
+                # If no mol_block, just pass None for the molecule
+                results.append((None, props))
         except Exception:
             results.append((None, props))
     return results
@@ -89,7 +94,7 @@ class OptimizedSDFLoader:
     def __init__(
         self,
         sdf_path: Path,
-        molColName: str,
+        molColName: str | None,
         idName: str,
         batch_size: int = 10000,
         n_cpus: int | None = None,
@@ -101,6 +106,7 @@ class OptimizedSDFLoader:
         self.batch_size = batch_size
         self.n_cpus = n_cpus if n_cpus is not None else max(1, int(os.cpu_count() * 0.9))
         self.required_props = required_props
+        self.load_molecules = molColName is not None
 
     def _validate_input_file(self) -> None:
         """Validate SDF file before processing"""
@@ -148,6 +154,7 @@ class OptimizedSDFLoader:
         process_func = partial(
             process_batch_worker,
             idName=self.idName,
+            load_molecules=self.load_molecules,
             required_props=self.required_props
         )
         
@@ -166,52 +173,24 @@ class OptimizedSDFLoader:
                     
         return results
 
-    def _parallel_create_molecules(self, mol_blocks: list[str]) -> list[Chem.Mol | None]:
-        """Create RDKit molecules in parallel"""
-        def process_mol_batch(mol_block_batch: list[str]) -> list[Chem.Mol | None]:
-            return [
-                Chem.MolFromMolBlock(block, sanitize=True)
-                for block in mol_block_batch
-            ]
-
-        # Split into batches
-        batches = [
-            mol_blocks[i:i + self.batch_size]
-            for i in range(0, len(mol_blocks), self.batch_size)
-        ]
-        
-        mol_objects = []
-        with ProcessPoolExecutor(max_workers=self.n_cpus) as executor:
-            futures = []
-            
-            # Submit all batches
-            for mol_block_batch in batches:
-                futures.append(executor.submit(process_mol_batch, mol_block_batch))
-            
-            # Collect results
-            for future in as_completed(futures):
-                try:
-                    batch_results = future.result()
-                    mol_objects.extend(batch_results)
-                except Exception as e:
-                    print(f"Error in batch processing: {str(e)}")
-                    mol_objects.extend([None] * self.batch_size)
-                    
-        return mol_objects
-
     def _optimize_column_types(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Optimize DataFrame column types using pandas' modern type system.
         Handles both numeric and string columns intelligently while preserving precision.
         """
-        exclude_cols = {self.idName, self.molColName}
+        # Create exclude_cols without molColName if it's None
+        exclude_cols = {self.idName}
+        if self.molColName:
+            exclude_cols.add(self.molColName)
         
         # Create a copy to avoid modifying the original during optimization
         df_optimized = df.copy()
         
-        # Remove molecule column temporarily as it's not compatible with convert_dtypes
-        mol_column = df_optimized[self.molColName]
-        df_optimized = df_optimized.drop(columns=[self.molColName])
+        # Only handle molecule column if it exists
+        mol_column = None
+        if self.molColName and self.molColName in df_optimized.columns:
+            mol_column = df_optimized[self.molColName]
+            df_optimized = df_optimized.drop(columns=[self.molColName])
         
         # Use pandas' modern type inference system
         df_optimized = df_optimized.convert_dtypes(
@@ -221,8 +200,9 @@ class OptimizedSDFLoader:
             convert_string=True
         )
         
-        # Restore molecule column
-        df_optimized[self.molColName] = mol_column
+        # Restore molecule column if it exists
+        if mol_column is not None and self.molColName:
+            df_optimized[self.molColName] = mol_column
         
         return df_optimized
 
@@ -231,6 +211,14 @@ class OptimizedSDFLoader:
         if not data:
             return pd.DataFrame()
         
+        # Skip molecule processing if molecules aren't being loaded
+        if not self.load_molecules:
+            # Create DataFrame directly from properties
+            props_list = [{self.idName: d.id, **d.properties} for d in data]
+            df = pd.DataFrame(props_list)
+            return self._optimize_column_types(df)
+        
+        # Process molecules if loading them
         batch_data = [(d.mol_block, {self.idName: d.id, **d.properties}) for d in data]
         batches = [
             batch_data[i:i + self.batch_size]
@@ -253,7 +241,8 @@ class OptimizedSDFLoader:
         
         # Create initial DataFrame
         df = pd.DataFrame(props)
-        df[self.molColName] = mols
+        if self.molColName:  # Only add molecule column if molColName is specified
+            df[self.molColName] = mols
         
         df = self._optimize_column_types(df)
         
@@ -280,6 +269,7 @@ class OptimizedSDFLoader:
                             process_batch_worker,
                             batch,
                             self.idName,
+                            self.load_molecules,
                             self.required_props
                         )
                         for batch in batches
@@ -300,8 +290,8 @@ class OptimizedSDFLoader:
 
 def fast_load_sdf(
     sdf_path: Path,
-    molColName: str,
-    idName: str,
+    molColName: str | None = None,
+    idName: str = "ID",
     batch_size: int = 100,
     n_cpus: int | None = int(os.cpu_count()*0.9),
     required_props: set[str] | None = None
@@ -311,7 +301,7 @@ def fast_load_sdf(
     
     Args:
         sdf_path: Path to the SDF file
-        molColName: Name of the molecule column
+        molColName: Name of the molecule column, if None, molecules won't be loaded
         idName: Name of the ID column
         batch_size: Number of molecules to process in each batch (default: 10000)
         n_cpus: Number of CPUs to use (default: 90% of available CPUs)
