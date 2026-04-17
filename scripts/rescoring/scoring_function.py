@@ -1,7 +1,5 @@
-import os
 import shutil
 import sys
-import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -32,8 +30,9 @@ class ScoringFunction(ABC):
         Creates it if it doesn't exist.
         """
         if self._temp_dir is None:
+            import os
             base_temp = Path.home() / "dockm8_temp_files"
-            os.makedirs(base_temp, exist_ok=True)
+            base_temp.mkdir(parents=True, exist_ok=True)
             self._temp_dir = base_temp / f"dockm8_{self.name.lower()}_{os.getpid()}"
             self._temp_dir.mkdir(parents=True, exist_ok=True)
         return self._temp_dir
@@ -43,17 +42,17 @@ class ScoringFunction(ABC):
         Cleans up the temporary directory and resets the reference.
         """
         if self._temp_dir and self._temp_dir.exists():
-            shutil.rmtree(str(self._temp_dir), ignore_errors=True)
+            shutil.rmtree(self._temp_dir, ignore_errors=True)
 
     @abstractmethod
-    def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+    def rescore(self, sdf_file: Path, n_cpus: int, protein_file: Path, **kwargs) -> pd.DataFrame:
         """
         Rescore the molecules in the given SDF file using the scoring function.
 
         Args:
-            sdf_file (str): The path to the SDF file.
+            sdf_file (Path): The path to the SDF file.
             n_cpus (int): The number of CPUs to use for parallel processing.
-            protein_file (str): The path to the protein file.
+            protein_file (Path): The path to the protein file.
             **kwargs: Additional keyword arguments specific to the scoring function.
 
         Returns:
