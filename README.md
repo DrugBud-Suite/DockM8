@@ -34,15 +34,147 @@ You can click the `localhost` link to access the GUI.
 
 Please refer to the [**Usage Guide**](https://github.com/DrugBud-Suite/DockM8/blob/main/DockM8_Usage_Guide.pdf) provided.
 
+## Folder Structure
+
+DockM8 creates organized directory structures based on the workflow mode and library name. The main directory is named `dockm8_{library_name}` where `{library_name}` is derived from your input library file.
+
+### Single Receptor Mode (Virtual Screening Only)
+```
+dockm8_{library_name}/
+├── prepared_receptor.pdb
+├── pocket_definition.json
+├── library/
+│   └── prepared_{library_name}.sdf
+├── docking/
+│   ├── {docking_program}_docked.sdf
+│   └── {docking_program}_busted.sdf      # Optional, if --bust_poses=True
+├── selection/
+│   └── {selection_method}_selected.sdf
+├── rescoring/
+│   ├── rescored_poses.sdf
+│   └── rescored_poses.csv
+├── consensus/
+│   └── {consensus_method}_consensus.csv # Optional, if using >1 scoring function
+└── final_results/
+    ├── final_results_with_consensus.sdf     # If consensus scoring was used
+    ├── final_results_single_function.sdf    # If a single scoring function was used
+```
+
+### Single Receptor Mode with Decoy Optimization
+```
+dockm8_{library_name}/
+├── prepared_receptor.pdb
+├── pocket_definition.json
+│
+├── decoy_optimization/  # Optional, if --generate_decoys=True
+│   ├── decoys/
+│   │   └── {actives_name}_decoys.sdf
+│   ├── library/
+│   │   └── prepared_{actives_name}_decoys.sdf
+│   ├── docking/
+│   │   └── {docking_program}/
+│   │       ├── {docking_program}_docked.sdf
+│   │       └── {docking_program}_busted.sdf
+│   ├── pose_selection/
+│   │   └── {docking_program}/
+│   │       └── {selection_method}/
+│   │           └── {selection_method}_selected.sdf
+│   ├── rescoring/
+│   │   └── {docking_program}/
+│   │       └── {selection_method}/
+│   │           ├── rescored_poses.sdf
+│   │           └── rescored_poses.csv
+│   └── performance/
+│       ├── activity_data.csv
+│       ├── all_performance_results.csv
+│       ├── optimal_parameters.json
+│       └── {docking_program}_{selection_method}_performance.csv
+│
+├── library/
+│   └── prepared_{library_name}.sdf
+├── docking/
+│   ├── {docking_program}_docked.sdf
+│   └── {docking_program}_busted.sdf      # Optional, if --bust_poses=True
+├── selection/
+│   └── {selection_method}_selected.sdf
+├── rescoring/
+│   ├── rescored_poses.sdf
+│   └── rescored_poses.csv
+├── consensus/
+│   └── {consensus_method}_consensus.csv # Optional, if using >1 scoring function
+└── final_results/
+    ├── final_results_with_consensus.sdf     # If consensus scoring was used
+    ├── final_results_single_function.sdf    # If a single scoring function was used
+```
+
+### Ensemble Mode (Multiple Receptors)
+```
+dockm8_{library_name}/
+├── library/
+│   └── prepared_{library_name}.sdf
+├── receptor_1/
+│   ├── prepared_receptor.pdb
+│   ├── pocket_definition.json
+│   ├── docking/
+│   │   ├── {docking_program}_docked.sdf
+│   │   └── {docking_program}_busted.sdf  # Optional, if --bust_poses=True
+│   ├── selection/
+│   │   └── {selection_method}_selected.sdf
+│   ├── rescoring/
+│   │   ├── rescored_poses.sdf
+│   │   └── rescored_poses.csv
+│   └── consensus/
+│       └── {consensus_method}_consensus.csv # Optional, if using >1 scoring function
+├── receptor_2/
+│   ├── prepared_receptor.pdb
+│   ├── pocket_definition.json
+│   ├── docking/
+│   │   ├── {docking_program}_docked.sdf
+│   │   └── {docking_program}_busted.sdf  # Optional, if --bust_poses=True
+│   ├── selection/
+│   │   └── {selection_method}_selected.sdf
+│   ├── rescoring/
+│   │   ├── rescored_poses.sdf
+│   │   └── rescored_poses.csv
+│   └── consensus/
+│       └── {consensus_method}_consensus.csv # Optional, if using >1 scoring function
+└── final_results/
+    └── final_ensemble_results.csv
+```
+
+### Directory Description
+- **prepared_receptor.pdb**: Processed and prepared protein structure
+- **pocket_definition.json**: Binding site definition and parameters
+- **library/**: Contains prepared compound libraries
+- **docking/**: Docking results from specified programs
+- **selection/**: Selected poses using specified methods
+- **rescoring/**: Rescored poses with various scoring functions
+- **consensus/**: Consensus scoring results (when multiple functions are used)
+- **final_results/**: Final ranked results for virtual screening
+- **decoy_optimization/**: Parameter optimization results (when decoy generation is enabled)
+- **receptor_N/**: Individual receptor results in ensemble mode
+
 ## Running DockM8 (via Jupyter Notebook)
 
 1. Open dockm8.ipynb, dockm8_ensemble.ipynb or dockm8_decoys.ipynb in your favorite IDE, depending on which DockM8 mode you want to use.
 
 2. Follow the instructions in the Markdown cells
 
+## Reproducing Benchmark Results
+
+The `analysis/` directory contains everything needed to reproduce all figures from the DockM8 paper: download/extraction scripts, analysis pipeline, and committed literature baselines.
+
+```bash
+# Quick start (3 commands from project root):
+python -m analysis.extract_zenodo /path/to/downloads /path/to/dockm8_data
+python -m analysis.run_all all --base-path /path/to/dockm8_data
+```
+
+See [analysis/README.md](analysis/README.md) for complete instructions including download links, archive contents, per-step commands, and output reference.
+
 ## Issues and bug reports
 
-Please you the [issue system](https://github.com/DrugBud-Suite/DockM8/issues) built into github to report issues. They will be resolved as soon as possible.
+Please use the [issue system](https://github.com/DrugBud-Suite/DockM8/issues) built into github to report issues. They will be resolved as soon as possible.
 
 ## Acknowledgements
 
