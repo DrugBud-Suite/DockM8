@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import pandas as pd
 from rdkit.Chem import PandasTools
 
@@ -10,39 +9,30 @@ from scripts.utilities.parallel_executor import parallel_executor
 from scripts.utilities.path_check import get_executable_path
 from scripts.utilities.subprocess_handler import run_subprocess_command
 
-class Gnina(ScoringFunction):
-    """Gnina scoring function implementation."""
+class GninaAffinity(ScoringFunction):
+    """GNINA-Affinity scoring function implementation."""
 
-    def __init__(self, score_type: str, software_path: Path):
-        score_configs = {
-            "affinity": ("GNINA-Affinity", "min", (100, -100)),
-            "cnn_score": ("CNN-Score", "max", (0, 1)),
-            "cnn_affinity": ("CNN-Affinity", "max", (0, 20))
-        }
-        
-        if score_type not in score_configs:
-            raise ValueError("Invalid score type for Gnina")
-            
-        name, best_value, score_range = score_configs[score_type]
+    def __init__(self, software_path: Path):
         super().__init__(
-            name=name,
-            column_name=name,
-            best_value=best_value,
-            score_range=score_range,
+            name="GNINA-Affinity",
+            column_name="GNINA-Affinity",
+            best_value="min",
+            score_range=(100, -100),
             software_path=software_path,
         )
-        self.score_type = score_type
+        
+        self.score_type = "affinity"
         self.software_path = software_path
         self.executable_path = get_executable_path(software_path, "gnina")
 
-    def rescore(self, sdf_file: str, n_cpus: int, protein_file: str, **kwargs) -> pd.DataFrame:
+    def rescore(self, sdf_file: Path, n_cpus: int, protein_file: Path, **kwargs) -> pd.DataFrame:
         """
-        Rescore the molecules in the given SDF file using the Gnina scoring function.
+        Rescore the molecules in the given SDF file using the GNINA-Affinity scoring function.
 
         Args:
-            sdf_file (str): The path to the SDF file.
+            sdf_file (Path): The path to the SDF file.
             n_cpus (int): The number of CPUs to use for parallel processing.
-            protein_file (str): The path to the protein file.
+            protein_file (Path): The path to the protein file.
             **kwargs: Additional keyword arguments.
 
         Returns:
@@ -50,7 +40,7 @@ class Gnina(ScoringFunction):
         """
         try:
             split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="cpu", splits=n_cpus)
-            split_files_sdfs = [split_files_folder / f for f in os.listdir(split_files_folder) if f.endswith(".sdf")]
+            split_files_sdfs = list(split_files_folder.glob("*.sdf"))
 
             rescoring_results = parallel_executor(
                 self._rescore_split_file,
@@ -70,16 +60,16 @@ class Gnina(ScoringFunction):
         finally:
             self.cleanup()
 
-    def _rescore_split_file(self, split_file: Path, protein_file: str) -> Path | None:
+    def _rescore_split_file(self, split_file: Path, protein_file: Path) -> Path | None:
         results = split_file.parent / f"{split_file.stem}_{self.column_name}.sdf"
         gnina_cmd = (
             f"{self.executable_path}"
-            f" --receptor {protein_file}"
-            f" --ligand {split_file}"
-            f" --out {results}"
+            f" --receptor {str(protein_file)}"
+            f" --ligand {str(split_file)}"
+            f" --out {str(results)}"
             " --cpu 1"
             " --score_only"
-            " --cnn crossdock_default2018"
+            " --cnn_scoring none --no_gpu"
         )
 
         stdout, stderr = run_subprocess_command(command=gnina_cmd)
@@ -138,16 +128,25 @@ class Gnina(ScoringFunction):
                 return pd.DataFrame()
                 
             combined_results = pd.concat(dataframes, ignore_index=True)
+            
             combined_results.rename(
                 columns={
                     "minimizedAffinity": "GNINA-Affinity",
-                    "CNNscore": "CNN-Score",
-                    "CNNaffinity": "CNN-Affinity"
                 },
                 inplace=True
             )
+            
+            # Check if required columns exist
+            required_columns = ["Pose ID", self.column_name]
+            missing_columns = [col for col in required_columns if col not in combined_results.columns]
+            
+            if missing_columns:
+                printlog(f"ERROR: Missing required columns: {missing_columns}")
+                printlog(f"Available columns: {list(combined_results.columns)}")
+                return pd.DataFrame()
+            
             return combined_results[["Pose ID", self.column_name]]
             
         except Exception as e:
-            printlog(f"ERROR: Could not combine {self.column_name} rescored poses: {str(e)}")
+            printlog(f"ERROR: Could not combine {self.name} rescored poses: {str(e)}")
             return pd.DataFrame()
