@@ -153,27 +153,11 @@ testing_notebook_parallel.ipynb
 lit-pcba.ipynb
 dude copy.ipynb
 dude.ipynb
-results/DEKOIS_RESULTS/DEKOIS_consensus_clustering_plots.ipynb
-results/DEKOIS_RESULTS/DEKOIS_literature.xlsx
-results/DUD-E_RESULTS/DUD-E_literature.xlsx
-results/Lit-PCBA_RESULTS/Lit-PCBA_literature.xlsx
-results/plots/
+results/output/
 performance.ipynb
-results/DEKOIS_RESULTS/results_dockm8_max.csv
-results/DUD-E_RESULTS/results_dockm8_max.csv
 tprm5.ipynb
-results/DEKOIS_RESULTS/clustering and consensus top1.ipynb
 dockm8 copy.ipynb
 software/RTMScore-main/analysis.ipynb
-results/DEKOIS_RESULTS/DEKOIS_targetclasses.xlsx
-results/DEKOIS_RESULTS/results_dockm8_EF_1%.csv
-results/DUD-E_RESULTS/DUD-E_results_dockm8_max.csv
-results/DUD-E_RESULTS/results_dockm8_EF_1%.csv
-results/Lit-PCBA_RESULTS/litpcba_results_dockm8_max.csv
-results/Lit-PCBA_RESULTS/results_dockm8_EF_1%.csv
-results/plots/DEKOIS_comparison_EF1_dark.png
-results/plots/DUD-E_comparison_EF1_dark.png
-results/plots/Lit-PCBA_comparison_EF1_dark.png
 run1_smallPharmIT.ipynb
 software/p2rank/
 software/posecheck-main/
@@ -183,9 +167,6 @@ PolA.ipynb
 CACHE5.ipynb
 PolA2.ipynb
 TRPM5.ipynb
-results/DUD-E_RESULTS/results_dockm8_AUC_ROC.csv
-results/DUD-E_RESULTS/results_dockm8_AUC.csv
-results/DUD-E_RESULTS/results_dockm8_BEDROC.csv
 software/LinF9
 test_data/rescoring/output/
 scripts/performance/normalization.py
@@ -207,3 +188,8 @@ test_data/rescoring/pparg_ligand.sdf
 test_data/rescoring/pparg_poses.sdf
 test_data/rescoring/pparg_protein_prepared_pocket.pdb
 test_data/rescoring/pparg_protein_prepared.pdb
+dude_dockm8_processing,.ipynb
+benchmark/*
+lit-pcba_AVE_processing.ipynb
+*ARCHIVE/
+dockm8_tests/*
