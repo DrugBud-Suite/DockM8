@@ -328,26 +328,29 @@ fi
 
 echo "$ENV_NAME_MGL environment setup completed successfully"
 
-echo -e """
-###############################################################
-# Installing AAScore environment
-###############################################################
-"""
-
-# Create MGLTools environment
-ENV_NAME_AASCORE="AAScore"
-
-if conda env list | grep -q "^$ENV_NAME_AASCORE "; then
-    echo "Updating existing $ENV_NAME_AASCORE environment..."
-    conda install -n "$ENV_NAME_AASCORE" python=3.6 -y
-    conda run -n "$ENV_NAME_AASCORE" conda install openbabel rdkit numpy scipy pandas py3dmol biopandas -y
-else
-    echo "Creating new $ENV_NAME_AASCORE environment..."
-    conda create -n "$ENV_NAME_AASCORE" python=3.6 -y
-    conda run -n "$ENV_NAME_AASCORE" conda install openbabel rdkit numpy scipy pandas py3dmol biopandas -y
-fi
-
-echo "$ENV_NAME_AASCORE environment setup completed successfully"
+# =============================================================================
+# AAScore environment - REMOVED FROM PUBLICATION (known to be broken)
+# =============================================================================
+# echo -e """
+# ###############################################################
+# # Installing AAScore environment
+# ###############################################################
+# """
+#
+# # Create MGLTools environment
+# ENV_NAME_AASCORE="AAScore"
+#
+# if conda env list | grep -q "^$ENV_NAME_AASCORE "; then
+#     echo "Updating existing $ENV_NAME_AASCORE environment..."
+#     conda install -n "$ENV_NAME_AASCORE" python=3.6 -y
+#     conda run -n "$ENV_NAME_AASCORE" conda install openbabel rdkit numpy scipy pandas py3dmol biopandas -y
+# else
+#     echo "Creating new $ENV_NAME_AASCORE environment..."
+#     conda create -n "$ENV_NAME_AASCORE" python=3.6 -y
+#     conda run -n "$ENV_NAME_AASCORE" conda install openbabel rdkit numpy scipy pandas py3dmol biopandas -y
+# fi
+#
+# echo "$ENV_NAME_AASCORE environment setup completed successfully"
 
 echo -e """
 ###############################################################
@@ -452,11 +455,13 @@ fi
 if [[ ! -d $DOCKM8_FOLDER/software/RTMScore-main ]]; then
     echo -e "\nDownloading RTMScore!"
     wget https://github.com/sc8668/RTMScore/archive/refs/heads/main.zip -q --show-progress
-    unzip -q main.zip 
+    unzip -q main.zip
     rm main.zip
     rm $DOCKM8_FOLDER/software/RTMScore-main/scripts -r
     rm $DOCKM8_FOLDER/software/RTMScore-main/121.jpg
 
+    sed -i 's|^os.environ\["BABEL_LIBDIR"\].*|#os.environ["BABEL_LIBDIR"] = ""|' "$DOCKM8_FOLDER/software/RTMScore-main/example/rtmscore.py"
+    echo "RTMScore BABEL_LIBDIR patch applied!"
 fi
 
 cd $SCRIPT_DIR
@@ -467,6 +472,55 @@ if [[ ! -f $DOCKM8_FOLDER/software/models/DeepCoy* ]]; then
     wget https://opig.stats.ox.ac.uk/data/downloads/DeepCoy_pretrained_models.tar.gz
     tar -xf DeepCoy_pretrained_models.tar.gz -C $DOCKM8_FOLDER/software/
     rm DeepCoy_pretrained_models.tar.gz
+fi
+
+echo -e """
+###############################################################
+# Installing GenScore environment
+###############################################################
+"""
+
+ENV_NAME_GENSCORE="genscore"
+GENSCORE_TORCH_VERSION="1.11.0"
+
+if conda env list | grep -q "^$ENV_NAME_GENSCORE "; then
+    echo "$ENV_NAME_GENSCORE environment already exists, skipping creation."
+else
+    echo "Creating $ENV_NAME_GENSCORE environment..."
+    conda create -n "$ENV_NAME_GENSCORE" python=3.8 -y
+    conda install -n "$ENV_NAME_GENSCORE" -c pytorch -c conda-forge \
+        pytorch=$GENSCORE_TORCH_VERSION cpuonly \
+        rdkit=2021.03.5 mdanalysis=2.0.0 prody=2.1.0 openbabel=3.1.1 \
+        scipy scikit-learn pandas numpy joblib tqdm biopython -y
+    conda run -n "$ENV_NAME_GENSCORE" pip install \
+        torch-geometric==2.0.3 \
+        torch-scatter==2.0.9 -f https://data.pyg.org/whl/torch-${GENSCORE_TORCH_VERSION}+cpu.html \
+        torch-sparse==0.6.13 -f https://data.pyg.org/whl/torch-${GENSCORE_TORCH_VERSION}+cpu.html
+    echo "$ENV_NAME_GENSCORE environment setup completed successfully"
+fi
+
+echo -e """
+###############################################################
+# Installing RTMScore environment
+###############################################################
+"""
+
+ENV_NAME_RTMSCORE="rtmscore"
+RTMSCORE_TORCH_VERSION="1.11.0"
+
+if conda env list | grep -q "^$ENV_NAME_RTMSCORE "; then
+    echo "$ENV_NAME_RTMSCORE environment already exists, skipping creation."
+else
+    echo "Creating $ENV_NAME_RTMSCORE environment..."
+    conda create -n "$ENV_NAME_RTMSCORE" python=3.8 -y
+    conda install -n "$ENV_NAME_RTMSCORE" -c pytorch -c conda-forge \
+        pytorch=$RTMSCORE_TORCH_VERSION cpuonly \
+        rdkit=2021.03.5 mdanalysis=2.0.0 prody=2.1.0 openbabel=3.1.1 \
+        scipy scikit-learn pandas numpy joblib tqdm biopython -y
+    conda run -n "$ENV_NAME_RTMSCORE" pip install \
+        dgl==0.9.1 \
+        torch-scatter==2.0.9 -f https://data.pyg.org/whl/torch-${RTMSCORE_TORCH_VERSION}+cpu.html
+    echo "$ENV_NAME_RTMSCORE environment setup completed successfully"
 fi
 
 echo -e """
