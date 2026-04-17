@@ -13,6 +13,7 @@ dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
 # Import the code to test
+from scripts.consensus.consensus import _METHODS
 from scripts.performance.analyzer import ConsensusAnalyzer, normalize_scores, run_consensus_analysis
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
 
@@ -245,8 +246,8 @@ def test_process_single_function(temp_csv_files):
         scoring_data_path=scoring_path,
         activity_data_path=activity_path
     )
-    result = analyzer._process_single_function("score_func1")
-    
+    result, failed = analyzer._process_batch_single_functions(["score_func1"])
+
     assert isinstance(result, pd.DataFrame)
     assert "scoring_function" in result.columns
     assert "threshold" in result.columns
@@ -310,7 +311,7 @@ def test_process_combination(temp_csv_files):
     )
     # Test with a manually created combination
     combination = ("score_func1", "score_func2")
-    result = analyzer._process_combination(combination, ["ecr"])
+    result, failed = analyzer._process_batch_combinations([combination], [_METHODS["ecr"]])
     
     assert isinstance(result, pd.DataFrame)
     required_columns = {
@@ -388,9 +389,9 @@ def test_error_handling_single_functions(temp_csv_files, sample_scoring_data):
     )
     
     # Test invalid function name
-    result = analyzer._process_single_function("invalid_function")
-    assert "error" in result.columns
-    assert len(result) == 1
+    result, failed = analyzer._process_batch_single_functions(["invalid_function"])
+    assert len(failed) == 1
+    assert failed[0][0] == "invalid_function"
     
     # Test with missing data
     bad_scoring = sample_scoring_data.copy()

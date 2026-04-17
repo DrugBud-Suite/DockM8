@@ -138,27 +138,16 @@ def test_consensus_methods(test_data_files, analyzer_results):
     
     print("\nTesting consensus methods for KORP-PL + ConvexPLR")
     
-    # Prepare consensus input data
-    consensus_data = pd.DataFrame()
-    consensus_data["ID"] = scores_df["ID"]
-    
-    # Normalize input scores
-    for col in ["KORP-PL", "ConvexPLR"]:
-        scoring_info = RESCORING_FUNCTIONS.get(col, {"best_value": "min"})
-        consensus_data[col] = normalize_scores(
-            scores_df[col].values,
-            best_value=scoring_info["best_value"]
-        )
-    
+    consensus_data = scores_df[["ID", "KORP-PL", "ConvexPLR"]].copy()
+
     for method in _METHODS:
         print(f"\nTesting {method.upper()} consensus method")
-        
+
         # Calculate consensus scores
         consensus_result = apply_consensus_scoring(
             data=consensus_data,
-            methods=[method],
-            id_column="ID",
-            normalize=False  # Already normalized
+            method=method,
+            id_column="ID"
         )
         
         # After consensus calculation, merge with activities
@@ -209,24 +198,13 @@ def test_three_way_combination(test_data_files, analyzer_results):
     
     print("\nTesting three-way combination: KORP-PL + ConvexPLR + AD4")
     
-    # Prepare consensus input data
-    consensus_data = pd.DataFrame()
-    consensus_data["ID"] = scores_df["ID"]
-    
-    # Normalize input scores
-    for col in ["KORP-PL", "ConvexPLR", "AD4"]:
-        scoring_info = RESCORING_FUNCTIONS.get(col, {"best_value": "min"})
-        consensus_data[col] = normalize_scores(
-            scores_df[col].values,
-            best_value=scoring_info["best_value"]
-        )
-    
+    consensus_data = scores_df[["ID", "KORP-PL", "ConvexPLR", "AD4"]].copy()
+
     # Calculate consensus
     consensus_result = apply_consensus_scoring(
         data=consensus_data,
-        methods=["ecr"],
-        id_column="ID",
-        normalize=False  # Already normalized
+        method="ecr",
+        id_column="ID"
     )
     
     # After consensus calculation, merge with activities
