@@ -1,6 +1,7 @@
 # =============================================================================
-# AAScore tests - REMOVED FROM PUBLICATION
-# AAScore scoring function is known to be broken and has been disabled.
+# AAScore tests - DISABLED
+# AAScore requires a separate Python 3.6 conda environment ("AAScore").
+# See setup_py310.sh for environment setup instructions.
 # Tests preserved below (commented out) for reference.
 # =============================================================================
 

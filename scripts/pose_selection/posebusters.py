@@ -20,9 +20,9 @@ from scripts.utilities.logging import printlog
 # Try to import PoseBusters, with helpful error message if not available
 try:
     from posebusters import PoseBusters
+    POSEBUSTERS_AVAILABLE = True
 except ImportError:
-    printlog("ERROR: PoseBusters is not installed. Please install it with pip install posebusters")
-    printlog("See https://github.com/maabuu/posebusters for more information")
+    POSEBUSTERS_AVAILABLE = False
 
 def bust_poses(
     poses_path: Path,
@@ -51,6 +51,12 @@ def bust_poses(
         FileNotFoundError: If input files are not found
         RuntimeError: If pose busting fails
     """
+    if not POSEBUSTERS_AVAILABLE:
+        raise ImportError(
+            "PoseBusters is required for pose validation but is not installed. "
+            "Install with: pip install posebusters"
+        )
+
     try:
         tic = time.perf_counter()
         printlog(f"Busting poses from {poses_path}...")
@@ -96,7 +102,8 @@ def bust_poses(
         
         # Initialize PoseBusters with configuration file
         printlog("Initializing PoseBusters...")
-        config = safe_load(open(config_path))
+        with open(config_path) as f:
+            config = safe_load(f)
         buster = PoseBusters(config=config)
         
         # Prepare DataFrame for PoseBusters (requires specific column names)

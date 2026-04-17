@@ -87,7 +87,8 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
         except Exception as e:
             printlog(e)
             printlog('Error generating decoys!')
-    # Delete files ending with params_zinc.json
+    # Clean up temp files written to CWD by DenseGGNNChemModel.train()
+    # Note: os.listdir() without path is intentional - model writes to CWD
     for file in os.listdir():
         if file.endswith("params_zinc.json"):
             os.remove(file)
@@ -98,8 +99,8 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
             os.remove(file)
     if not os.path.exists(DeepCoy_folder / 'decoys-selected.smi'):
         try:
-            results = select_and_evaluate_decoys('/decoys.smi',
-                                                file_loc=str(DeepCoy_folder),
+            results = select_and_evaluate_decoys('decoys.smi',
+                                                file_loc=str(DeepCoy_folder) + '/',
                                                 output_loc=str(DeepCoy_folder)+'/',
                                                 dataset="ALL",
                                                 num_cand_dec_per_act=n_decoys*2,

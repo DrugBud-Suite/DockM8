@@ -12,7 +12,7 @@ scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if 
 dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
-# from scripts.rescoring.rescoring_functions.AAScore import AAScore  # Removed from publication
+# from scripts.rescoring.rescoring_functions.AAScore import AAScore  # Disabled — requires separate Python 3.6 AAScore conda environment
 from scripts.rescoring.rescoring_functions.AD4 import AD4
 from scripts.rescoring.rescoring_functions.CHEMPLP import CHEMPLP
 from scripts.rescoring.rescoring_functions.ConvexPLR import ConvexPLR
@@ -24,7 +24,7 @@ from scripts.rescoring.rescoring_functions.gnina_all import GninaAll
 from scripts.rescoring.rescoring_functions.KORP_PL import KORPL
 from scripts.rescoring.rescoring_functions.LinF9 import LinF9
 from scripts.rescoring.rescoring_functions.NNScore import NNScore
-# from scripts.rescoring.rescoring_functions.PLECScore import PLECScore  # Removed from publication
+# from scripts.rescoring.rescoring_functions.PLECScore import PLECScore  # Disabled — PLECScore removed from active scoring functions
 from scripts.rescoring.rescoring_functions.PLP import PLP
 from scripts.rescoring.rescoring_functions.RFScoreVS import RFScoreVS
 from scripts.rescoring.rescoring_functions.RTMScore import RTMScore
@@ -36,7 +36,7 @@ from scripts.utilities.logging import printlog
 
 # yapf: disable
 RESCORING_FUNCTIONS = {
- # "AAScore": {"class": AAScore, "column_name": "AAScore", "best_value": "min", "score_range": (100, -100)},  # Removed from publication
+ # "AAScore": {"class": AAScore, "column_name": "AAScore", "best_value": "min", "score_range": (100, -100)},  # Disabled — requires separate Python 3.6 AAScore conda environment
  "AD4": {"class": AD4, "column_name": "AD4", "best_value": "min", "score_range": (1000, -100)},
  "CHEMPLP": {"class": CHEMPLP, "column_name": "CHEMPLP", "best_value": "min", "score_range": (200, -200)},
  "ConvexPLR": {"class": ConvexPLR, "column_name": "ConvexPLR", "best_value": "max", "score_range": (-10, 10)},
@@ -50,7 +50,7 @@ RESCORING_FUNCTIONS = {
  "KORP-PL": {"class": KORPL, "column_name": "KORP-PL", "best_value": "min", "score_range": (200, -500)},
  "LinF9": {"class": LinF9, "column_name": "LinF9", "best_value": "min", "score_range": (50, -50)},
  "NNScore": {"class": NNScore, "column_name": "NNScore", "best_value": "max", "score_range": (0, 20)},
- # "PLECScore": {"class": PLECScore, "column_name": "PLECScore", "best_value": "max", "score_range": (0, 20)},  # Removed from publication
+ # "PLECScore": {"class": PLECScore, "column_name": "PLECScore", "best_value": "max", "score_range": (0, 20)},  # Disabled — PLECScore removed from active scoring functions
  "PLP": {"class": PLP, "column_name": "PLP", "best_value": "min", "score_range": (200, -200)},
  "RFScoreVS": {"class": RFScoreVS, "column_name": "RFScoreVS", "best_value": "max", "score_range": (5, 10)},
  "RTMScore": {"class": RTMScore, "column_name": "RTMScore", "best_value": "max", "score_range": (0, 100)},
