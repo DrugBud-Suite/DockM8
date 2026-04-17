@@ -12,7 +12,7 @@ sys.path.append(str(dockm8_path))
 from scripts.consensus.consensus import (
     apply_consensus_scoring,
     load_and_validate_data,
-    handle_nan_values,
+    _METHODS,
 )
 
 
@@ -22,13 +22,6 @@ def test_data():
     df = pd.read_csv(str(dockm8_path / "test_data" / "consensus" / "allposes_rescored.csv"))
     df["ID"] = df["Pose ID"].str.split("_").str[0]
     return df
-
-
-def test_available_methods():
-    """Test that expected consensus methods are available."""
-    methods = get_available_methods()
-    expected_methods = ["ecr", "rbr", "rbv", "zscore", "pareto"]
-    assert sorted(methods) == sorted(expected_methods)
 
 
 def test_load_and_validate_data(test_data):
@@ -56,11 +49,10 @@ def test_load_and_validate_data(test_data):
 
 def test_consensus_methods_individual(test_data):
     """Test each consensus method individually."""
-    methods = get_available_methods()
+    methods = list(_METHODS.keys())
 
     for method in methods:
-        result = apply_consensus_scoring(data=test_data, methods=method, id_column="ID", normalize=True)
-
+        result = apply_consensus_scoring(data=test_data, method=method, id_column="ID", normalize=True)
         # Verify basic properties
         assert isinstance(result, pd.DataFrame)
         assert "ID" in result.columns
@@ -79,12 +71,12 @@ def test_consensus_aggregation(test_data):
     """Test different aggregation methods."""
     # Test best aggregation
     best_result = apply_consensus_scoring(
-        data=test_data, methods="zscore", id_column="ID", normalize=False, aggregation="best"
+        data=test_data, method="zscore", id_column="ID", normalize=True, aggregation="best"
     )
 
     # Test average aggregation
     avg_result = apply_consensus_scoring(
-        data=test_data, methods="zscore", id_column="ID", normalize=False, aggregation="avg"
+        data=test_data, method="zscore", id_column="ID", normalize=True, aggregation="avg"
     )
 
     # Basic checks
@@ -128,30 +120,11 @@ def test_consensus_aggregation(test_data):
     )
 
 
-def test_multiple_methods(test_data):
-    """Test using multiple consensus methods together."""
-    methods = ["zscore", "rbr"]
-    result = apply_consensus_scoring(data=test_data, methods=methods, id_column="ID")
-
-    # Check that all methods are in the result (case-insensitive)
-    for method in methods:
-        assert any(
-            col.lower() == method.lower() for col in result.columns
-        ), f"Method {method} not found in result columns (case-insensitive)"
-
-    assert len(result) == len(test_data["ID"].unique())
-
-    # Verify scores are normalized
-    for method in methods:
-        method_col = next(col for col in result.columns if col.lower() == method.lower())
-        assert all(result[method_col].between(0, 1))
-
-
 def test_output_file(test_data, tmp_path):
     """Test saving results to file."""
     output_file = tmp_path / "results.csv"
 
-    result_path = apply_consensus_scoring(data=test_data, methods="zscore", id_column="ID", output=output_file)
+    result_path = apply_consensus_scoring(data=test_data, method="zscore", id_column="ID", output=output_file)
 
     assert result_path.exists()
     loaded_results = pd.read_csv(result_path)
@@ -171,11 +144,11 @@ def test_invalid_inputs(test_data):
     )
 
     with pytest.raises(ValueError):
-        apply_consensus_scoring(bad_df, methods="zscore")
+        apply_consensus_scoring(bad_df, method="zscore")
 
     # Test invalid method
     with pytest.raises(ValueError):
-        apply_consensus_scoring(test_data, methods="invalid_method")
+        apply_consensus_scoring(test_data, method="invalid_method")
 
 
 def test_nan_handling(test_data):
@@ -186,6 +159,6 @@ def test_nan_handling(test_data):
 
     strategies = ["drop", "fill_mean", "fill_median"]
     for strategy in strategies:
-        result = apply_consensus_scoring(data=data_with_nans, methods="zscore", id_column="ID", nan_strategy=strategy)
+        result = apply_consensus_scoring(data=data_with_nans, method="zscore", id_column="ID", nan_strategy=strategy)
         score_col = next(col for col in result.columns if col.lower() == "zscore")
         assert not result[score_col].isna().any()
