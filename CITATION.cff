@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "DockM8: An Open-Source Consensus Docking Workflow"
+version: 1.1.0
+license: GPL-3.0
+url: "https://github.com/DrugBud-Suite/DockM8"
+repository-code: "https://github.com/DrugBud-Suite/DockM8"
+authors:
+  - name: "TODO: Add first author"
+  - name: "TODO: Add remaining authors"
+# doi: "TODO-REPLACE-WITH-DOI"
+# date-released: "TODO: Add release date"

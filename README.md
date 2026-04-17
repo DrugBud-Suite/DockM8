@@ -10,13 +10,15 @@
 [![Open Issues](https://img.shields.io/github/issues/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed/DrugBud-Suite/DockM8?style=for-the-badge&logo=github)](https://github.com/DrugBud-Suite/DockM8/issues)
 
-**DockM8 is and all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [**contribution guide**](https://github.com/DrugBud-Suite/DockM8/blob/main/CONTRIBUTING.md) for details.**
+**DockM8 is an all-in-one Structure-Based Virtual Screening workflow based on the concept of consensus docking. The workflow takes care of library and protein preparation, docking, pose selection, rescoring and ranking. We actively encourage the community to participate in the continued development of DockM8. Please see the [**contribution guide**](https://github.com/DrugBud-Suite/DockM8/blob/main/CONTRIBUTING.md) for details.**
 
 DockM8 only runs on Linux systems. However, we have tested the installation on Windows Subsystem for Linux v2 and using VirtualBox virtual machines.
 
 ## Automatic installation (Python 3.10 / Ubuntu 22.04)
 
-For automatic installation, download and run [**setup_py310.sh**](https://github.com/DrugBud-Suite/DockM8/releases/download/v1.0.2/setup_py310.sh) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup_py310.sh` and then `**PATH_TO**/setup_py310.sh`.
+For automatic installation, download and run [**setup_py310.sh**](https://github.com/DrugBud-Suite/DockM8/releases/download/v1.1.0/setup_py310.sh) This will create the required conda environment and download the respository if not done already. Make sure the installation script can be executed by running `chmod +x setup_py310.sh` and then `**PATH_TO**/setup_py310.sh`.
+
+After installation, activate the environment with `conda activate dockm8`.
 
 ## Manual Installation (Python 3.10 / Ubuntu 22.04)
 
@@ -184,11 +186,13 @@ We acknowledge and thank the authors of the various packages used in DockM8. Ple
 
 ## Citation
 
-Coming Soon
+If you use DockM8 in your research, please cite:
+
+> TODO: Citation will be added upon publication.
 
 ## License
 
-This project is licensed under the GNU GPL v3.0 License - see the [LICENSE.md](https://github.com/DrugBud-Suite/DockM8/blob/main/LICENSE) file for details.
+This project is licensed under the GNU GPL v3.0 License - see the [LICENSE](https://github.com/DrugBud-Suite/DockM8/blob/main/LICENSE) file for details.
 
 ## Contributing
 
