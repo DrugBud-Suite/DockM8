@@ -46,6 +46,7 @@ def select_poses(
     try:
         # Load poses if needed using fast_sdf_loader
         if isinstance(poses_input, Path):
+            print(f"Loading poses from {poses_input}")
             all_poses = fast_load_sdf(
                 poses_input,
                 molColName="Molecule",
@@ -72,12 +73,11 @@ def select_poses(
         elif selection_method in RESCORING_FUNCTIONS:
             score_column = RESCORING_FUNCTIONS[selection_method]["column_name"]
             best_value = RESCORING_FUNCTIONS[selection_method]["best_value"]
-            
+
             if score_column in all_poses.columns and not all_poses[score_column].isna().any():
-                # All scores present and valid, no need to rescore
                 poses_with_scores = all_poses
             else:
-                # Some scores missing or invalid, need to rescore
+                print("rescoring")
                 poses_with_scores = rescore_poses(
                     protein_file=protein_file,
                     pocket_definition=pocket_definition,
@@ -87,16 +87,18 @@ def select_poses(
                     n_cpus=n_cpus,
                     output_file=None
                 )
-            # Select best poses based on scoring function
             if best_value == "min":
                 best_pose_indices = poses_with_scores.groupby("ID")[score_column].idxmin()
             elif best_value == "max":
                 best_pose_indices = poses_with_scores.groupby("ID")[score_column].idxmax()
             else:
                 raise ValueError(f"Invalid best_value '{best_value}' for scoring function {selection_method}")
-                
+            print("selecting")
             selected_poses = poses_with_scores.loc[best_pose_indices]
-
+        else:
+            valid_methods = ["bestpose"] + list(RESCORING_FUNCTIONS.keys())
+            raise ValueError(f"Invalid selection method: '{selection_method}'. Valid methods: {valid_methods}")
+        print("writing")
         # Write output if path provided
         if output_file is not None:
             fast_write_sdf(
