@@ -30,6 +30,7 @@ from scripts.rescoring.rescoring import RESCORING_FUNCTIONS, rescore_poses
 from scripts.utilities.fast_sdf_loader import fast_load_sdf
 from scripts.utilities.fast_sdf_writer import fast_write_sdf
 from scripts.utilities.logging import printlog
+from scripts._version import __version__
 from software.DeepCoy.generate_decoys import generate_decoys
 
 # Suppress warnings
@@ -43,6 +44,7 @@ def parse_arguments():
         description="DockM8: Molecular docking, scoring, and consensus analysis pipeline",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
+    parser.add_argument("--version", action="version", version=f"DockM8 {__version__}")
 
     # Core arguments
     required = parser.add_argument_group("Required arguments")

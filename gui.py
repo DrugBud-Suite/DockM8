@@ -56,12 +56,12 @@ DOCKING_PROGRAM_OPTIONS = list(DOCKING_PROGRAMS.keys())
 
 # Sidebar
 st.sidebar.image(image="./media/dockm8_white.png", width=200)
-st.sidebar.title("V1.1")
+st.sidebar.title("V1.1.0")
 st.sidebar.subheader("Open-source consensus docking for everyone", divider="orange")
 st.sidebar.link_button("Github", url="https://github.com/DrugBud-Suite/DockM8", use_container_width=True)
 st.sidebar.link_button("Visit Website", url="https://drugbud-suite.github.io/dockm8-web/", use_container_width=True)
-st.sidebar.link_button("Publication", url="https://doi.org/your-doi", use_container_width=True)
-st.sidebar.link_button("Zenodo repository", url="https://doi.org/your-doi", use_container_width=True)
+st.sidebar.link_button("Publication", url="https://doi.org/TODO-REPLACE-WITH-DOI", use_container_width=True)
+st.sidebar.link_button("Zenodo repository", url="https://doi.org/TODO-REPLACE-WITH-DOI", use_container_width=True)
 
 # Logo
 st.columns(3)[1].image(image="./media/dockm8_white.png", width=400)

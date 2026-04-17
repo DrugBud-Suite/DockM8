@@ -1,5 +1,5 @@
 """
-DockM8 Results Analysis Scripts (v2 - Streamlined)
+DockM8 Results Analysis Scripts (v1.1)
 
 This package provides tools for analyzing molecular docking results and generating
 publication-quality figures for the DockM8 paper.
@@ -23,4 +23,4 @@ Modules:
     run_all: Master CLI orchestrator
 """
 
-__version__ = "2.0.0"
+__version__ = "1.1.0"
