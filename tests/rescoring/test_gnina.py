@@ -11,7 +11,7 @@ tests_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p /
 dockm8_path = tests_path.parent
 sys.path.append(str(dockm8_path))
 
-from scripts.rescoring.rescoring_functions.gnina import Gnina
+from scripts.rescoring.rescoring_functions.gnina_affinity import GninaAffinity
 
 
 @pytest.fixture
@@ -26,23 +26,22 @@ def test_data():
     return protein_file, software, sdf, n_cpus, output_dir
 
 
-@pytest.mark.parametrize("score_type", ["affinity", "cnn_score", "cnn_affinity"])
-def test_Gnina_rescoring(test_data, score_type):
+def test_GninaAffinity_rescoring(test_data):
     protein_file, software, sdf, n_cpus, output_dir = test_data
 
-    gnina = Gnina(score_type, software)
+    gnina_affinity = GninaAffinity(software)
 
-    result = gnina.rescore(sdf, n_cpus, protein_file=protein_file)
+    result = gnina_affinity.rescore(sdf, n_cpus, protein_file=protein_file)
 
     assert isinstance(result, DataFrame)
     assert "Pose ID" in result.columns
-    assert gnina.column_name in result.columns
+    assert gnina_affinity.column_name in result.columns
     assert len(result) > 0
 
     suppl = Chem.SDMolSupplier(str(sdf))
     num_molecules = len([mol for mol in suppl if mol is not None])
     assert len(result) == num_molecules
 
-    output_file = output_dir / f"{gnina.column_name}_scores.csv"
+    output_file = output_dir / f"{gnina_affinity.column_name}_scores.csv"
     result.to_csv(output_file, index=False)
     assert output_file.is_file()
