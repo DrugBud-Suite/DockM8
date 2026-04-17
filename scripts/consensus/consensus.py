@@ -1,30 +1,31 @@
 """Optimized core functionality for consensus scoring implementation."""
 
 from __future__ import annotations
-from collections.abc import Callable
+
+import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+
 import numpy as np
 import pandas as pd
 
-from .utils.utils import load_data
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    
 from .methods.ecr import ecr_consensus
 from .methods.rbr import rbr_consensus
-from .methods.zscore import zscore_consensus
 from .methods.rbv_tiebreaker import rbv_consensus
 from .methods.soft_rbv import soft_rbv_consensus
-# Update method dictionary with new lowercase names
+from .methods.zscore import zscore_consensus
+from scripts.rescoring.rescoring import RESCORING_FUNCTIONS
+
+# Method dictionary with lowercase names
 _METHODS = {
     "ecr": ecr_consensus,
     "rbr": rbr_consensus,
     "rbv": rbv_consensus,
     "zscore": zscore_consensus,
-    #"pareto": pareto_consensus,
-    "soft_rbv": soft_rbv_consensus
+    "softrbv": soft_rbv_consensus
 }
 
 def load_and_validate_data(
@@ -35,29 +36,36 @@ def load_and_validate_data(
     """Optimized data loading and validation."""
     # Load data if it's a file path
     if isinstance(data, (str, Path)):
-        data = load_data(data)
+        data = pd.read_csv(data)
     
     if data.empty:
         raise ValueError("Input data is empty")
     
     if id_column not in data.columns:
-        raise ValueError(f"ID column '{id_column}' not found in the data") 
+        raise ValueError(f"ID column '{id_column}' not found in the data")
     
-    # Pre-compute numeric columns once
-    numeric_mask = data.dtypes.apply(pd.api.types.is_numeric_dtype)
+    # Vectorized check for numeric columns
+    numeric_mask = np.array([pd.api.types.is_numeric_dtype(data[col].dtype) for col in data.columns])
+    column_array = np.array(data.columns)
+    
     if columns:
         # Use numpy operations for column filtering
-        valid_columns = [col for col in columns if col in data.columns and numeric_mask[col]]
+        columns_set = set(columns)
+        mask = np.array([col in columns_set and pd.api.types.is_numeric_dtype(data[col].dtype)
+                        for col in data.columns])
+        valid_columns = column_array[mask].tolist()
         if not valid_columns:
             raise ValueError("None of the specified columns were found in the data or were numeric")
     else:
-        valid_columns = data.columns[numeric_mask & (data.columns != id_column)].tolist()
+        # Get all numeric columns except ID column
+        mask = numeric_mask & (column_array != id_column)
+        valid_columns = column_array[mask].tolist()
     
     if not valid_columns:
         raise ValueError("No valid numeric columns found for scoring")
         
     # Optimize memory by selecting only needed columns
-    return data[[id_column, *valid_columns]], valid_columns
+    return data[[id_column] + valid_columns], valid_columns
 
 def handle_nan_values(
     data: pd.DataFrame,
@@ -75,92 +83,72 @@ def handle_nan_values(
         mask = ~np.isnan(numeric_data).any(axis=1)
         return data[mask]
     elif nan_strategy == "fill_mean":
+        # Vectorized mean calculation and filling
         means = np.nanmean(numeric_data, axis=0)
-        np.copyto(numeric_data, means, where=np.isnan(numeric_data))
-    elif nan_strategy == "fill_median":
-        medians = np.nanmedian(numeric_data, axis=0)
-        np.copyto(numeric_data, medians, where=np.isnan(numeric_data))
-    elif nan_strategy == "interpolate":
-        # Use more efficient interpolation
-        for i in range(numeric_data.shape[1]):
-            col = numeric_data[:, i]
-            mask = np.isnan(col)
+        for i, col in enumerate(valid_columns):
+            mask = np.isnan(numeric_data[:, i])
             if mask.any():
-                valid = ~mask
-                indices = np.arange(len(col))
-                col[mask] = np.interp(indices[mask], indices[valid], col[valid])
+                data.loc[data.index[mask], col] = means[i]
+    elif nan_strategy == "fill_median":
+        # Vectorized median calculation and filling
+        medians = np.nanmedian(numeric_data, axis=0)
+        for i, col in enumerate(valid_columns):
+            mask = np.isnan(numeric_data[:, i])
+            if mask.any():
+                data.loc[data.index[mask], col] = medians[i]
+    elif nan_strategy == "interpolate":
+        # Use pandas built-in interpolate which is optimized
+        data[valid_columns] = data[valid_columns].interpolate(method='linear', axis=0)
     else:
         raise ValueError(f"Invalid nan_strategy: {nan_strategy}")
     
-    data = data.copy()
-    data[valid_columns] = numeric_data
     return data
 
-def apply_selected_methods(
+def normalize_scores(scores: np.ndarray, scoring_info: dict) -> np.ndarray:
+    """
+    Normalize scores to [0,1] range where 1 is always best.
+    Optimized implementation that handles edge cases efficiently.
+    """
+    min_score = np.min(scores)
+    max_score = np.max(scores)
+    
+    if max_score == min_score:
+        return np.full_like(scores, 0.5)
+        
+    normalized = (scores - min_score) / (max_score - min_score)
+    if scoring_info["best_value"] == "min":
+        normalized = 1 - normalized
+    return normalized
+
+def normalize_input_data(
     data: pd.DataFrame,
     valid_columns: list[str],
-    id_column: str,
-    selected_methods: list[Callable],
-    normalize: bool = True,
-    aggregation: str = "best",
-) -> list[pd.DataFrame]:
-    results = []
+    id_column: str
+) -> pd.DataFrame:
+    """Normalize input data based on rescoring function properties.
+    Only keeps columns that are in RESCORING_FUNCTIONS and the ID column.
+    """
+    # First filter to only keep columns that are in RESCORING_FUNCTIONS
+    rescoring_columns = [col for col in valid_columns if col in RESCORING_FUNCTIONS]
     
-    for method in selected_methods:
-        # Apply method and keep original result DataFrame
-        result = method(data, valid_columns, id_column)
-        
-        # Handle duplicates if needed while preserving ID-score relationship
-        if aggregation == "best":
-            result = result.sort_values(result.columns[-1], ascending=False)
-            result = result.drop_duplicates(subset=[id_column], keep='first')
-        elif aggregation == "avg":
-            result = result.groupby(id_column)[result.columns[-1]].mean().reset_index()
-            
-        # Normalize if requested while maintaining ID-score pairing
-        if normalize and len(result) > 0:
-            score_column = result.columns[-1]
-            scores = result[score_column].values
-            min_score, max_score = np.min(scores), np.max(scores)
-            if max_score != min_score:
-                result[score_column] = (scores - min_score) / (max_score - min_score)
-            else:
-                result[score_column] = np.zeros_like(scores)
-        
-        results.append(result)
+    if not rescoring_columns:
+        raise ValueError("No valid rescoring function columns found for consensus")
     
-    return results
-
-def combine_results(results: list[pd.DataFrame], id_column: str) -> pd.DataFrame:
-    """Optimized result combination using efficient merging."""
-    if not results:
-        return pd.DataFrame()
+    # Create a new DataFrame with only the ID column and rescoring function columns
+    normalized_data = pd.DataFrame({id_column: data[id_column]})
     
-    # Use more efficient merge operation
-    final_result = results[0]
-    if len(results) > 1:
-        for result in results[1:]:
-            final_result = pd.merge(
-                final_result,
-                result,
-                on=id_column,
-                how='inner',
-            )
+    # Normalize each column based on its rescoring function
+    for col in rescoring_columns:
+        scoring_info = RESCORING_FUNCTIONS[col]
+        # Convert to numeric values, handling string values
+        scores = pd.to_numeric(data[col], errors='coerce').values
+        normalized_data[col] = normalize_scores(scores, scoring_info)
     
-    # # Optimize sorting
-    # score_columns = [col for col in final_result.columns if col != id_column]
-    # if score_columns:
-    #     final_result = final_result.sort_values(
-    #         by=score_columns,
-    #         ascending=False,
-    #         ignore_index=True
-    #     )
-    
-    return final_result
+    return normalized_data, rescoring_columns
 
 def apply_consensus_scoring(
     data: str | Path | pd.DataFrame,
-    methods: str | list[str] = "all",
+    method: str,
     columns: list[str] | None = None,
     id_column: str = "ID",
     aggregation: str = "best",
@@ -168,74 +156,54 @@ def apply_consensus_scoring(
     output: str | Path | None = None,
     normalize: bool = True,
 ) -> pd.DataFrame | Path:
-    """Optimized main consensus scoring function."""
-    # Use optimized functions
-    data, valid_columns = load_and_validate_data(data, id_column, columns)
-    data = handle_nan_values(data, valid_columns, nan_strategy)
-    selected_methods = select_methods(methods, _METHODS)
+    """Simplified consensus scoring function for a single method."""
+    # Load and validate data
+    data_df, valid_columns = load_and_validate_data(data, id_column, columns)
     
-    results = apply_selected_methods(
-        data=data,
-        valid_columns=valid_columns,
-        id_column=id_column,
-        selected_methods=selected_methods,
-        normalize=normalize,
-        aggregation=aggregation,
-    )
+    # Handle NaN values
+    data_df = handle_nan_values(data_df, valid_columns, nan_strategy)
     
-    final_result = combine_results(results, id_column)
+    # Normalize input data before consensus - this happens every time
+    # Only keep columns that are in RESCORING_FUNCTIONS
+    normalized_df, rescoring_columns = normalize_input_data(data_df, valid_columns, id_column)
     
-    if output:
-        return save_results(final_result, output)
-    return final_result
+    # Select method
+    if method not in _METHODS:
+        raise ValueError(f"Invalid method: {method}")
+    
+    consensus_method = _METHODS[method]
+    
+    # Apply the consensus method
+    result = consensus_method(normalized_df, rescoring_columns, id_column)
+    
+    # Handle duplicates if needed
+    if aggregation == "best":
+        result = result.sort_values(result.columns[-1], ascending=False)
+        result = result.drop_duplicates(subset=[id_column], keep='first')
+    elif aggregation == "avg":
+        score_column = result.columns[-1]
+        result = result.groupby(id_column)[score_column].mean().reset_index()
+    
+    # Normalize final consensus scores if requested
+    if normalize and len(result) > 0:
+        score_column = result.columns[-1]
+        scores = result[score_column].values
+        min_score, max_score = np.min(scores), np.max(scores)
+        if max_score != min_score:
+            result[score_column] = (scores - min_score) / (max_score - min_score)
+        else:
+            result[score_column] = np.zeros_like(scores)
+    
+    # Save results if output path provided
+    if output and not result.empty:
+        output_path = Path(output)
+        result.to_csv(output_path, index=False)
+        return output_path
+    
+    return result
 
-def select_methods(methods: str | list[str], available_methods: dict) -> list[Callable]:
-    """Select consensus methods to apply.
-
-    Parameters
-    ----------
-    - methods: Union[str, List[str]]
-    The consensus methods to apply. Can be 'all' or a list of method names.
-    - available_methods: dict
-    Dictionary of available methods.
-
-    Returns:
-    -------
-    - List[Callable]
-    List of selected method functions.
-    """
-    if methods == "all":
-        selected_methods = list(available_methods.values())
-    elif isinstance(methods, str):
-        if methods not in available_methods:
-            msg = f"Invalid method: {methods}"
-            raise ValueError(msg)
-        selected_methods = [available_methods[methods]]
-    else:
-        selected_methods = []
-        for method in methods:
-            if method not in available_methods:
-                msg = f"Invalid method: {method}"
-                raise ValueError(msg)
-            selected_methods.append(available_methods[method])
-
-    return selected_methods
-
-def save_results(final_result: pd.DataFrame, output: str | Path) -> Path:
-    """Save the final results to the specified output file.
-
-    Parameters
-    ----------
-    - final_result: pd.DataFrame
-    The DataFrame containing the final results.
-    - output: Union[str, Path]
-    File path to save the results.
-
-    Returns:
-    -------
-    - Path
-    The output file path.
-    """
+def save_results(result: pd.DataFrame, output: str | Path) -> Path:
+    """Save the results to the specified output file."""
     output_path = Path(output)
-    final_result.to_csv(output_path, index=False)
+    result.to_csv(output_path, index=False)
     return output_path
