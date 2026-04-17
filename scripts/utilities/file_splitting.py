@@ -131,7 +131,7 @@ def split_pdbqt_str(file):
             file (str): The path to the PDBQT file.
 
     Returns:
-            None
+            list[Path]: List of paths to the individual model files created.
     """
     models = []
     current_model = []
@@ -142,7 +142,9 @@ def split_pdbqt_str(file):
         if line.startswith("ENDMDL"):
             models.append(current_model)
             current_model = []
+    output_files = []
     for i, model in enumerate(models):
+        model_number = i + 1
         for line in model:
             if line.startswith("MODEL"):
                 model_number = int(line.split()[-1])
@@ -150,97 +152,6 @@ def split_pdbqt_str(file):
         output_filename = file.with_name(f"{file.stem}_{model_number}.pdbqt")
         with open(output_filename, "w") as output_file:
             output_file.writelines(model)
+        output_files.append(output_filename)
     os.remove(file)
-
-def split_sdf_str(dir, sdf_file, n_cpus):
-	"""
-	Split an SDF file into multiple smaller SDF files based on the number of compounds.
-
-	Args:
-		dir (str): The directory where the split SDF files will be saved.
-		sdf_file (str): The path to the input SDF file.
-		n_cpus (int): The number of CPUs to use for splitting.
-
-	Returns:
-		Path: The path to the folder containing the split SDF files.
-	"""
-	sdf_file_name = Path(sdf_file).name.replace(".sdf", "")
-	split_files_folder = Path(dir) / f"split_{sdf_file_name}"
-	split_files_folder.mkdir(parents=True, exist_ok=True)
-
-	with open(sdf_file) as infile:
-		sdf_lines = infile.readlines()
-
-	total_compounds = sdf_lines.count("$$$$\n")
-
-	if total_compounds > 100000:
-		n = max(1, math.ceil(total_compounds // n_cpus // 8))
-	else:
-		n = max(1, math.ceil(total_compounds // n_cpus // 2))
-
-	compound_count = 0
-	file_index = 1
-	current_compound_lines = []
-
-	for line in sdf_lines:
-		current_compound_lines.append(line)
-
-		if line.startswith("$$$$"):
-			compound_count += 1
-
-			if compound_count % n == 0:
-				output_file = split_files_folder / f"split_{file_index}.sdf"
-				with open(output_file, "w") as outfile:
-					outfile.writelines(current_compound_lines)
-				current_compound_lines = []
-				file_index += 1
-
-	# Write the remaining compounds to the last file
-	if current_compound_lines:
-		output_file = split_files_folder / f"split_{file_index}.sdf"
-		with open(output_file, "w") as outfile:
-			outfile.writelines(current_compound_lines)
-
-	return split_files_folder
-
-
-def split_sdf_single_str(dir, sdf_file):
-	"""
-	Split an SDF file into individual compounds and save them as separate files.
-
-	Args:
-		dir (str): The directory where the split files will be saved.
-		sdf_file (str): The path to the input SDF file.
-
-	Returns:
-		pathlib.Path: The path to the folder containing the split files.
-	"""
-	sdf_file_name = Path(sdf_file).name.replace(".sdf", "")
-	split_files_folder = Path(dir) / f"split_{sdf_file_name}"
-	split_files_folder.mkdir(parents=True, exist_ok=True)
-
-	with open(sdf_file) as infile:
-		sdf_lines = infile.readlines()
-
-	compound_count = 0
-	current_compound_lines = []
-
-	for line in sdf_lines:
-		current_compound_lines.append(line)
-
-		if line.startswith("$$$$"):
-			compound_count += 1
-
-			output_file = split_files_folder / f"split_{compound_count}.sdf"
-			with open(output_file, "w") as outfile:
-				outfile.writelines(current_compound_lines)
-			current_compound_lines = []
-
-	# Write the remaining compounds to the last file
-	if current_compound_lines:
-		compound_count += 1
-		output_file = split_files_folder / f"split_{compound_count}.sdf"
-		with open(output_file, "w") as outfile:
-			outfile.writelines(current_compound_lines)
-
-	return split_files_folder
+    return output_files
