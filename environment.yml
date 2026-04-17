@@ -1,4 +1,4 @@
-name: dockm8_manual
+name: dockm8
 channels:
   - conda-forge
   - defaults
@@ -51,3 +51,4 @@ dependencies:
     - oddt==0.7
     - posebusters==0.3.1
     - paretoset
+    - polars

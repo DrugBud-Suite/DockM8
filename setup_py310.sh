@@ -283,7 +283,7 @@ fi
 $CONDA_PATH init bash
 
 # Create or update conda environment
-ENV_NAME="dockm8_v1"
+ENV_NAME="dockm8"
 ENV_FILE="$DOCKM8_FOLDER/environment.yml"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -536,7 +536,7 @@ echo -e """
 """
 
 # Installation verification
-conda list -n "$ENV_NAME" | grep -E "rdkit|ipykernel|scipy|spyrmsd|kneed|scikit-learn-extra|molvs|seaborn|xgboost|openbabel|torch|torch-geonetric"
+conda list -n "$ENV_NAME" | grep -E "rdkit|ipykernel|scipy|spyrmsd|scikit-learn-extra|molvs|seaborn|xgboost|openbabel|torch|torch-geometric"
 if [ $? -eq 0 ]; then
     echo "All required packages are installed."
 else

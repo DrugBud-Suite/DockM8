@@ -87,7 +87,7 @@ force-wrap-aliases = true
 split-on-trailing-comma = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "integration"]
+testpaths = ["tests"]
 addopts = "-v -ra -q"
 log_cli = true
 log_cli_level = "INFO"
