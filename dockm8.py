@@ -1245,11 +1245,11 @@ def run_decoy_optimization_workflow(args):
             try:
                 docking_output = perform_docking(
                     prepared_library, prepared_receptor, pocket_definition,
-                    docking_program, args, docking_dir, software_path
+                    docking_program, args, {'docking_dir': docking_dir}, software_path
                 )
-                
+
                 # Apply PoseBusters if requested
-                docking_output = apply_posebusters(docking_output, prepared_receptor, args, docking_dir)
+                docking_output = apply_posebusters(docking_output, prepared_receptor, args, {'docking_dir': docking_dir})
                 
                 # If docking fails, continue with next program
                 if not docking_output or not docking_output.exists():
@@ -1265,7 +1265,7 @@ def run_decoy_optimization_workflow(args):
                     try:
                         selected_poses = select_docked_poses(
                             docking_output, prepared_receptor, pocket_definition,
-                            selection_method, args, selection_dir, software_path
+                            selection_method, args, {'selection_dir': selection_dir}, software_path
                         )
                         
                         # Rescore poses
@@ -1274,7 +1274,7 @@ def run_decoy_optimization_workflow(args):
                         
                         rescored_poses = rescore_selected_poses(
                             selected_poses, prepared_receptor, pocket_definition,
-                            args.rescoring_functions, args, rescoring_dir, software_path
+                            args.rescoring_functions, args, {'rescoring_dir': rescoring_dir}, software_path
                         )
                         
                         # Analyze performance
