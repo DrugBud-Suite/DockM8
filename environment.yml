@@ -1,8 +1,9 @@
 name: dockm8
 channels:
   - conda-forge
-  - defaults
+  - nodefaults
 dependencies:
+  - python=3.10
   - ipykernel=6.29.5
   - ipython=8.27.0
   - jupyter_client=8.6.3
@@ -24,9 +25,8 @@ dependencies:
   - rdkit=2023.09
   - biopandas=0.5.1
   - pip
+  - setuptools<81
   - docopt
-  - pytorch::pytorch=2.2.0
-  - pytorch::cpuonly
   - openmm=8.1.2
   - redo=2.0.4
   - mdanalysis
@@ -38,17 +38,12 @@ dependencies:
   - streamlit
   - numpydoc
   - pytest
+  - tabulate
   - pdbfixer=1.9
-  - pyg::pytorch-spline-conv=1.2.2
-  - pyg::pyg
-  - pyg::pytorch-cluster=1.6.3
-  - pyg::pytorch-scatter=2.1.2
-  - pyg::pytorch-sparse=0.6.18
-  - dglteam/label/th22_cpu::dgl=2.4.0
-  - tensorflow==2.18
+  - tensorflow=2.18
+  - oddt=0.7
+  - polars
   - pip:
     - stqdm
-    - oddt==0.7
     - posebusters==0.3.1
     - paretoset
-    - polars

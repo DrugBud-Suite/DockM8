@@ -11,6 +11,19 @@ sys.path.append(str(dockm8_path))
 
 from scripts.rescoring.rescoring import RESCORING_FUNCTIONS, rescore_poses
 
+
+def _expected_score_columns(funcs: list[str]) -> list[str]:
+    """Expand multi-output scorers via ``returns_columns``; dedup preserving order."""
+    cols: list[str] = []
+    for name in funcs:
+        info = RESCORING_FUNCTIONS[name]
+        if "returns_columns" in info:
+            cols.extend(info["returns_columns"])
+        else:
+            cols.append(info["column_name"])
+    return list(dict.fromkeys(cols))
+
+
 @pytest.fixture
 def test_data():
     dockm8_path = next((p / "tests" for p in Path(__file__).resolve().parents if (p / "tests").is_dir()), None).parent
@@ -55,8 +68,9 @@ def test_rescore_poses(test_data):
 
     scores_df = pd.read_csv(output_file)
     assert not scores_df.empty
-    required_columns = ["Pose ID", "ID", "SMILES"] + [RESCORING_FUNCTIONS[func]["column_name"] for func in functions]
-    assert all(col in scores_df.columns for col in required_columns)
+    required_columns = ["Pose ID", "ID", "SMILES"] + _expected_score_columns(functions)
+    missing = [c for c in required_columns if c not in scores_df.columns]
+    assert not missing, f"Missing columns from rescoring output: {missing}"
     
 def test_rescore_poses_large(large_test_data):
     protein_file, pocket_definition, software, sdf, functions, n_cpus = large_test_data
@@ -80,5 +94,6 @@ def test_rescore_poses_large(large_test_data):
 
     scores_df = pd.read_csv(output_file)
     assert not scores_df.empty
-    required_columns = ["Pose ID", "ID", "SMILES"] + [RESCORING_FUNCTIONS[func]["column_name"] for func in functions]
-    assert all(col in scores_df.columns for col in required_columns)
+    required_columns = ["Pose ID", "ID", "SMILES"] + _expected_score_columns(functions)
+    missing = [c for c in required_columns if c not in scores_df.columns]
+    assert not missing, f"Missing columns from rescoring output: {missing}"
