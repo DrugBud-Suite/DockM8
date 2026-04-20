@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -7,7 +8,13 @@ import pandas as pd
 from rdkit import Chem
 from rdkit.Chem import PandasTools
 
-from scripts.utilities import convert_molecules, printlog
+# Search for 'DockM8' in parent directories
+scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
+dockm8_path = scripts_path.parent
+sys.path.append(str(dockm8_path))
+
+from scripts.utilities.molecule_conversion import convert_molecules
+from scripts.utilities.logging import printlog
 
 from ..DeepCoy.data.prepare_data import preprocess, read_file
 from ..DeepCoy.DeepCoy import DenseGGNNChemModel
@@ -32,11 +39,11 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
     DeepCoy_folder = (input_sdf.parent / 'DeepCoy')
     DeepCoy_folder.mkdir(parents=True, exist_ok=True)
     if not os.path.exists(DeepCoy_folder / 'actives.smi'):
-        try: 
+        try:
             #Convert to SMILES
             convert_molecules(input_sdf, DeepCoy_folder / 'actives.smi', 'sdf', 'smi')
             #Remove IDs from SMILES file
-            with open(DeepCoy_folder / 'actives.smi', 'r') as f:
+            with open(DeepCoy_folder / 'actives.smi') as f:
                 lines = f.readlines()
                 smiles = [line.split()[0] for line in lines]
             with open(DeepCoy_folder / 'actives.smi', 'w') as f:
@@ -80,7 +87,8 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
         except Exception as e:
             printlog(e)
             printlog('Error generating decoys!')
-    # Delete files ending with params_zinc.json
+    # Clean up temp files written to CWD by DenseGGNNChemModel.train()
+    # Note: os.listdir() without path is intentional - model writes to CWD
     for file in os.listdir():
         if file.endswith("params_zinc.json"):
             os.remove(file)
@@ -91,11 +99,11 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
             os.remove(file)
     if not os.path.exists(DeepCoy_folder / 'decoys-selected.smi'):
         try:
-            results = select_and_evaluate_decoys('/decoys.smi', 
-                                                file_loc=str(DeepCoy_folder), 
-                                                output_loc=str(DeepCoy_folder)+'/', 
-                                                dataset="ALL", 
-                                                num_cand_dec_per_act=n_decoys*2, 
+            results = select_and_evaluate_decoys('decoys.smi',
+                                                file_loc=str(DeepCoy_folder) + '/',
+                                                output_loc=str(DeepCoy_folder)+'/',
+                                                dataset="ALL",
+                                                num_cand_dec_per_act=n_decoys*2,
                                                 num_dec_per_act=n_decoys)
             
             printlog("DOE score: \t\t\t%.3f" % results[8])
@@ -105,7 +113,7 @@ def generate_decoys(input_sdf: Path, n_decoys: int, model: str, software: Path) 
             printlog(e)
             printlog('Error selecting and evaluating decoys!')
     if not os.path.exists(DeepCoy_folder / 'test_set.sdf'):
-        with open(DeepCoy_folder / 'decoys-selected.smi', 'r') as f:
+        with open(DeepCoy_folder / 'decoys-selected.smi') as f:
             lines = f.readlines()
             actives = set([line.split()[0] for line in lines])
             decoys = [line.split()[1] for line in lines]

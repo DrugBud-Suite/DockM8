@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## v1.1.0
+- **Added**: PoseBusters integration for docking pose quality validation
+- **Added**: GNINA_GPU docking support for GPU-accelerated molecular docking
+- **Added**: Ensemble docking mode for multi-receptor virtual screening
+- **Added**: Decoy optimization workflow for automated parameter tuning
+- **Added**: Numba-optimized consensus analyzer with batch processing
+- **Added**: Analysis pipeline for reproducing all paper benchmark figures (`analysis/`)
+- **Added**: New scoring modules: CnnAffinity, CnnScore, GninaAffinity (split from monolithic Gnina scorer)
+- **Added**: Fast SDF loader/writer for improved I/O performance
+- **Added**: CITATION.cff for machine-readable citation metadata
+- **Added**: THIRD_PARTY_LICENSES.md for bundled software license documentation
+- **Changed**: Complete CLI rewrite (`dockm8.py`) with refactored module imports and v1.1 pipeline
+- **Changed**: Streamlit GUI rewrite with input validation, advanced options, and command preview
+- **Changed**: All Jupyter notebooks rewritten for v1.1 API with step-by-step documentation
+- **Changed**: DeepCoy upgraded to Python 3 and TensorFlow 2 compatibility
+- **Changed**: Vectorized consensus scoring with RESCORING_FUNCTIONS integration
+- **Changed**: Refactored pose selection to use fast SDF loader/writer
+- **Changed**: Conda environment renamed to `dockm8`
+- **Changed**: Multi-column scoring support with optimized set-based score lookups
+- **Deprecated**: AAScore (disabled — requires separate Python 3.6 environment)
+- **Deprecated**: PLECScore (disabled — removed from active scoring functions)
+- **Removed**: Docker support
+- **Fixed**: Path handling across all modules (use Path types consistently)
+- **Fixed**: File splitting API rewritten for SDF and PDBQT formats
+- **Fixed**: Test data and fixtures updated for v1.1 API
+- **Fixed**: Setup script verification typos and dependency checks
+
 ## v1.0.2
 - **Added**: setup script to release
 - **Changed**: None
