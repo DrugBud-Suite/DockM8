@@ -12,17 +12,15 @@ All commands are run from the **project root** (`DockM8/`, not `analysis/`).
 
 ## 1. Download Raw Data
 
-> **Zenodo DOI**: TODO-REPLACE-WITH-DOI — Download archives from: <https://doi.org/TODO-REPLACE-WITH-DOI>
-
 Download the five `.tar.bz2` archives from Zenodo:
 
-| Archive | Contents | Approx. size |
-| --- | --- | --- |
-| `DEKOIS.tar.bz2` | 79 DEKOIS 2.0 targets | 26 GB |
-| `DUD-E.tar.bz2` | 28 DUD-E targets | 20 GB |
-| `lit-pcba_1.tar.bz2` | 5 Lit-PCBA targets (part 1 of 3) | 37 GB |
-| `lit-pcba_2.tar.bz2` | 4 Lit-PCBA targets (part 2 of 3) | 47 GB |
-| `lit-pcba_3.tar.bz2` | 5 Lit-PCBA targets (part 3 of 3) | 27 GB |
+| Archive | Contents | Approx. size | Zenodo DOI |
+| --- | --- | --- | --- |
+| `DEKOIS.tar.bz2` | 79 DEKOIS 2.0 targets | 26 GB | [10.5281/zenodo.15430058](https://doi.org/10.5281/zenodo.15430058) |
+| `DUD-E.tar.bz2` | 28 DUD-E targets | 20 GB | [10.5281/zenodo.15430186](https://doi.org/10.5281/zenodo.15430186) |
+| `lit-pcba_1.tar.bz2` | 5 Lit-PCBA targets (part 1 of 3) | 37 GB | [10.5281/zenodo.16436211](https://doi.org/10.5281/zenodo.16436211) |
+| `lit-pcba_2.tar.bz2` | 4 Lit-PCBA targets (part 2 of 3) | 47 GB | [10.5281/zenodo.16436304](https://doi.org/10.5281/zenodo.16436304) |
+| `lit-pcba_3.tar.bz2` | 5 Lit-PCBA targets (part 3 of 3) | 27 GB | [10.5281/zenodo.16436306](https://doi.org/10.5281/zenodo.16436306) |
 
 ## 2. Extract Archives
 

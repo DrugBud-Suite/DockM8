@@ -61,7 +61,15 @@ st.sidebar.subheader("Open-source consensus docking for everyone", divider="oran
 st.sidebar.link_button("Github", url="https://github.com/DrugBud-Suite/DockM8", use_container_width=True)
 st.sidebar.link_button("Visit Website", url="https://drugbud-suite.github.io/dockm8-web/", use_container_width=True)
 st.sidebar.link_button("Publication", url="https://doi.org/TODO-REPLACE-WITH-DOI", use_container_width=True)
-st.sidebar.link_button("Zenodo repository", url="https://doi.org/TODO-REPLACE-WITH-DOI", use_container_width=True)
+
+with st.sidebar.expander("Benchmark datasets (Zenodo)"):
+    st.markdown(
+        "- **DEKOIS 2.0** — [10.5281/zenodo.15430058](https://doi.org/10.5281/zenodo.15430058)\n"
+        "- **DUD-E** — [10.5281/zenodo.15430186](https://doi.org/10.5281/zenodo.15430186)\n"
+        "- **Lit-PCBA (Part 1/3)** — [10.5281/zenodo.16436211](https://doi.org/10.5281/zenodo.16436211)\n"
+        "- **Lit-PCBA (Part 2/3)** — [10.5281/zenodo.16436304](https://doi.org/10.5281/zenodo.16436304)\n"
+        "- **Lit-PCBA (Part 3/3)** — [10.5281/zenodo.16436306](https://doi.org/10.5281/zenodo.16436306)"
+    )
 
 # Logo
 st.columns(3)[1].image(image="./media/dockm8_white.png", width=400)
