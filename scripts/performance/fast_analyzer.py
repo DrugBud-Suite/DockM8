@@ -764,7 +764,9 @@ class ConsensusAnalyzer:
         # Combine results efficiently
         print("\nAssembling final results...")
         final_df = pd.DataFrame(results) if results else pd.DataFrame()
-        
+        if "consensus_method" in final_df.columns:
+            final_df["consensus_method"] = final_df["consensus_method"].replace({"soft_rbv": "softrbv"})
+
         if failed_tasks:
             print("\nFailed tasks:")
             for task, error in failed_tasks[:10]:  # Show only first 10 failures to avoid overwhelming output

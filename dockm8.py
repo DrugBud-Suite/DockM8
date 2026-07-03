@@ -18,7 +18,7 @@ from scripts.consensus.consensus import (
 )
 from scripts.docking.docking import DOCKING_PROGRAMS
 from scripts.library_preparation.library_preparation import prepare_library
-from scripts.performance.analyzer import run_consensus_analysis
+from scripts.performance.fast_analyzer import run_consensus_analysis
 from scripts.pocket_finding.pocket_finder import (
     VALID_METHODS as POCKET_METHODS,
     find_pocket,

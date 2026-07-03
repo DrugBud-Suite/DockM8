@@ -43,6 +43,7 @@ dependencies:
   - tensorflow=2.18
   - oddt=0.7
   - polars
+  - numba>=0.65
   - pip:
     - stqdm
     - posebusters==0.3.1
