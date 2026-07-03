@@ -31,11 +31,11 @@ class RTMScore(ScoringFunction):
             protein_file = Path(protein_file)
             pocket_file = protein_file.parent / f"{protein_file.stem}_pocket.pdb"
             if not pocket_file.is_file():
-                pocket_definition = kwargs.get("pocket_definition")
-                if not pocket_definition:
-                    raise FileNotFoundError(f"Pocket file not found at {pocket_file}")
-                from scripts.pocket_finding.utils import extract_pocket
-                pocket_file = extract_pocket(pocket_definition, protein_file)
+                raise FileNotFoundError(
+                    f"Pocket file not found at {pocket_file}. RTMScore requires the corrected "
+                    f"whole-residue pocket produced at the pocket-finding stage (find_pocket); "
+                    f"the rescoring wrapper cannot rebuild it without the reference ligand."
+                )
 
             rtmscore_cmd = (
                 f"cd {self.software_path}/RTMScore-main/example/ &&"

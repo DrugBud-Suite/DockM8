@@ -530,8 +530,17 @@ def determine_binding_pocket(prepared_receptor, args, paths, ref_ligand=None):
         printlog(f"Using existing pocket definition: {pocket_file}")
         with open(pocket_file) as f:
             import json
-            return json.load(f)
-    
+            pocket_definition = json.load(f)
+        # Regenerate the <protein>_pocket.pdb from the cached definition so a stale
+        # pocket from an earlier (e.g. pre-correction box-cut) run cannot be silently
+        # reused by RTMScore/GenScore. extract_pocket always overwrites; use the
+        # reference ligand for Reference/RoG (as find_pocket does), else the box centre.
+        from scripts.pocket_finding.utils import extract_pocket
+        ligand_for_pocket = ref_ligand if args.pocket_method in ("Reference", "RoG") else None
+        if extract_pocket(pocket_definition, prepared_receptor, ligand=ligand_for_pocket) is None:
+            raise RuntimeError("Failed to regenerate binding pocket from cached definition; the pocket may be empty.")
+        return pocket_definition
+
     printlog("Determining docking pocket")
     try:
         if args.pocket_method == "Manual":

@@ -215,7 +215,9 @@ def find_pocket(
                 raise ValueError(f"{mode} mode requires a ligand file")
             pocket_definition = pocket_finder(ligand, receptor, radius)
 
-        pocket_path = extract_pocket(pocket_definition, receptor)
+        # Reference/RoG pass the reference ligand so the pocket is whole residues near
+        # the ligand; Manual/Dogsitescorer have no ligand and fall back to the box centre.
+        pocket_path = extract_pocket(pocket_definition, receptor, ligand=ligand)
         if pocket_path is None:
             raise RuntimeError("Failed to extract pocket. The pocket might be empty.")
         return pocket_definition

@@ -1,12 +1,10 @@
 import sys
+import warnings
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 from biopandas.pdb import PandasPdb
-
-pd.options.mode.chained_assignment = None
-import warnings
+from scipy.spatial.distance import cdist
 
 # Search for 'DockM8' in parent directories
 scripts_path = next((p / "scripts" for p in Path(__file__).resolve().parents if (p / "scripts").is_dir()), None)
@@ -14,114 +12,68 @@ dockm8_path = scripts_path.parent
 sys.path.append(str(dockm8_path))
 
 from scripts.utilities.logging import printlog
+from scripts.utilities.utilities import load_molecule
 
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-from pathlib import Path
 
+def extract_pocket(pocket_definition, protein_file: Path, ligand: Path | None = None, cutoff: float = 10.0):
+    """Extract the binding pocket as WHOLE residues.
 
-def extract_pocket(pocket_definition, protein_file: Path):
-    """
-    Extracts a pocket from a protein file using the provided pocket definition.
+    A residue is kept in full if ANY of its atoms lies within ``cutoff`` Å of the
+    reference: the reference ligand's atoms when a ``ligand`` is given (Reference/RoG
+    modes), otherwise the docking-box centre (Manual/Dogsitescorer modes).
+
+    This replaces the previous per-atom box slicing, which kept only the near atoms of
+    each residue and produced *truncated* residues. RTMScore and GenScore build a graph
+    from the pocket residues, so truncated residues corrupted their scores; classical
+    scoring functions use the full receptor and were unaffected. The docking box
+    (``pocket_definition`` center/size) is not used for docking here and is left
+    untouched.
+
+    The pocket PDB is always (re)generated, so a stale box pocket from a prior run can
+    never be reused and mask the correction.
 
     Args:
-            pocket_definition (dict): A dictionary containing the pocket definition, including the center and size.
-            protein_file (Path): The path to the protein file.
+        pocket_definition (dict): docking-box ``center``/``size`` (only ``center``
+            (and ``size`` for the box radius) is used, and only when ``ligand`` is None).
+        protein_file (Path): receptor PDB.
+        ligand (Path | None): reference ligand file (Reference/RoG). When None, residues
+            are taken around the box centre instead.
+        cutoff (float): distance in Å around the reference ligand atoms. Ignored for the
+            ligand-less case, which uses the box half-size.
 
     Returns:
-            Path: The path to the output file containing the extracted pocket in PDB format.
-                      Returns None if the extraction fails or the pocket is empty.
+        Path | None: the ``<protein>_pocket.pdb`` path, or None if the pocket is empty.
     """
-    center_x, center_y, center_z = pocket_definition["center"]
-    size_x, size_y, size_z = pocket_definition["size"]
-    radius = size_x // 2
-
-    printlog(f"Extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}")
-
+    protein_file = Path(protein_file)
     output_file = protein_file.with_name(protein_file.stem + "_pocket.pdb")
 
-    if not output_file.exists():
-        success = process_protein(protein_file, pocket_definition["center"], radius, output_file)
-        if not success:
-            printlog(f"Failed to extract pocket from {protein_file.stem}. The pocket might be empty.")
-            return None
-        printlog(
-            f"Finished extracting pocket from {protein_file.stem} using provided pocket definition: {pocket_definition}"
-        )
+    ppdb = PandasPdb().read_pdb(str(protein_file))
+    atoms = ppdb.df["ATOM"]
+    protein_xyz = atoms[["x_coord", "y_coord", "z_coord"]].to_numpy()
+
+    if ligand is not None:
+        printlog(f"Extracting whole-residue pocket from {protein_file.stem} within {cutoff} Å of {Path(ligand).stem}")
+        reference_xyz = load_molecule(str(ligand)).GetConformer().GetPositions()
+        radius = cutoff
     else:
-        printlog(
-            f"Pocket already extracted from {protein_file.stem} using provided pocket definition: {pocket_definition}"
-        )
+        radius = float(pocket_definition["size"][0]) / 2.0
+        printlog(f"Extracting whole-residue pocket from {protein_file.stem} within {radius} Å of the box centre")
+        reference_xyz = np.asarray([pocket_definition["center"]], dtype=float)
 
+    min_distance = cdist(protein_xyz, reference_xyz).min(axis=1)
+    residue_key = ["chain_id", "residue_number", "insertion"]
+    near_residues = atoms.loc[min_distance < radius, residue_key].drop_duplicates()
+
+    if near_residues.empty:
+        printlog(f"Warning: no residues within {radius} Å for {protein_file.stem}. The pocket might be empty.")
+        return None
+
+    pocket_atoms = atoms.merge(near_residues, on=residue_key)
+    ppdb.df["ATOM"] = pocket_atoms
+    ppdb.to_pdb(path=str(output_file), records=["ATOM"])
+    printlog(f"Finished extracting pocket from {protein_file.stem} ({len(near_residues)} residues)")
     return output_file
-
-
-def process_protein(protein_file, center_coordinates, cutoff, output_file):
-    """
-    Process the protein file to extract a pocket based on the specified center coordinates and cutoff distance.
-
-    Args:
-            protein_file (str): The path to the protein file.
-            center_coordinates (tuple): The coordinates of the center of the pocket.
-            cutoff (float): The cutoff distance for selecting residues within the pocket.
-            output_file (str): The path to save the extracted pocket.
-
-    Returns:
-            bool: True if the pocket extraction is successful, False otherwise.
-    """
-    ppdb = PandasPdb()
-    ppdb.read_pdb(str(protein_file))
-    protein_dataframe = ppdb.df["ATOM"]
-    protein_cut = select_cutoff_residues(protein_dataframe, center_coordinates, cutoff)
-
-    if protein_cut.empty:
-        printlog(f"Warning: No residues found within {cutoff} Å of the specified center. The pocket might be empty.")
-        return False
-
-    ppdb.df["ATOM"] = protein_cut
-    ppdb.to_pdb(path=output_file, records=["ATOM"])
-    return True
-
-
-def select_cutoff_residues(protein_dataframe, center_coordinates, cutoff):
-    """
-    Selects residues within a specified cutoff distance from given coordinates in a protein dataframe.
-
-    Args:
-        protein_dataframe (pandas.DataFrame): The protein dataframe containing information about the protein residues.
-        center_coordinates (tuple): The x, y, z coordinates of the pocket center.
-        cutoff (float): The cutoff distance for selecting residues.
-
-    Returns:
-        pandas.DataFrame: The updated protein dataframe with selected residues.
-    """
-    center_x, center_y, center_z = center_coordinates
-    # Calculate the distance from each residue to the center coordinates
-    protein_dataframe["distance"] = protein_dataframe.apply(
-        lambda row: calculate_distance(
-            [row["x_coord"], row["y_coord"], row["z_coord"]], [center_x, center_y, center_z]
-        ),
-        axis=1,
-    )
-
-    # Select residues within the cutoff distance
-    residues_within_cutoff = protein_dataframe[protein_dataframe["distance"] < cutoff]
-    return residues_within_cutoff
-
-
-def calculate_distance(point1, point2):
-    """
-    Calculate the Euclidean distance between two points.
-
-    Parameters:
-    point1 (list or tuple): The coordinates of the first point.
-    point2 (list or tuple): The coordinates of the second point.
-
-    Returns:
-    float: The distance between the two points, rounded to 2 decimal places.
-    """
-    point1 = np.array(point1)
-    point2 = np.array(point2)
-    return round(np.linalg.norm(point1 - point2), 2)

@@ -5,7 +5,6 @@ from scripts.rescoring.scoring_function import ScoringFunction
 from scripts.utilities.file_splitting import split_sdf
 from scripts.utilities.logging import printlog
 from scripts.utilities.parallel_executor import parallel_executor
-from scripts.pocket_finding.utils import extract_pocket
 from scripts.utilities.subprocess_handler import run_subprocess_command
 
 class GenScore(ScoringFunction):
@@ -51,10 +50,11 @@ class GenScore(ScoringFunction):
         try:
             pocket_file = protein_file.parent / f"{protein_file.stem}_pocket.pdb"
             if not pocket_file.is_file():
-                pocket_definition = kwargs.get("pocket_definition")
-                if not pocket_definition:
-                    raise ValueError("Pocket definition is required when pocket file is not available")
-                pocket_file = extract_pocket(pocket_definition, protein_file)
+                raise FileNotFoundError(
+                    f"Pocket file not found at {pocket_file}. GenScore requires the corrected "
+                    f"whole-residue pocket produced at the pocket-finding stage (find_pocket); "
+                    f"the rescoring wrapper cannot rebuild it without the reference ligand."
+                )
 
             split_files_folder = split_sdf(sdf_file, self._temp_dir, mode="count", splits=1)
             split_files_sdfs = list(split_files_folder.glob("*.sdf"))
