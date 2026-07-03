@@ -87,13 +87,29 @@ def select_poses(
                     n_cpus=n_cpus,
                     output_file=None
                 )
+            grouped = poses_with_scores.groupby("ID")[score_column]
             if best_value == "min":
-                best_pose_indices = poses_with_scores.groupby("ID")[score_column].idxmin()
+                best_pose_indices = grouped.idxmin()
             elif best_value == "max":
-                best_pose_indices = poses_with_scores.groupby("ID")[score_column].idxmax()
+                best_pose_indices = grouped.idxmax()
             else:
                 raise ValueError(f"Invalid best_value '{best_value}' for scoring function {selection_method}")
             print("selecting")
+            # idxmin/idxmax return NaN for any compound whose poses are all-NaN for
+            # the selection score; `.loc` would then silently drop those compounds,
+            # shrinking the scored pool and inflating enrichment. Surface the drop
+            # explicitly instead of losing them silently. With complete scores this
+            # is a no-op (no NaN indices), so selected poses are unchanged.
+            missing = best_pose_indices[best_pose_indices.isna()]
+            if len(missing):
+                print(
+                    f"WARNING: {len(missing)} compound(s) had no valid "
+                    f"'{selection_method}' score across their docked poses and are "
+                    f"excluded from pose selection: "
+                    f"{', '.join(map(str, list(missing.index)[:10]))}"
+                    f"{' ...' if len(missing) > 10 else ''}"
+                )
+            best_pose_indices = best_pose_indices.dropna()
             selected_poses = poses_with_scores.loc[best_pose_indices]
         else:
             valid_methods = ["bestpose"] + list(RESCORING_FUNCTIONS.keys())
