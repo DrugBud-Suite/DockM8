@@ -59,6 +59,11 @@ LITPCBA_XLIM = {
 }
 
 DOCKM8_HIGHLIGHT_COLOR = '#ff7700'
+# Distinct colour for the DockM8 consensus recomputed WITHOUT RFScoreVS, so the
+# with/without-RFScoreVS DockM8 bars are visually separable in the same plot.
+DOCKM8_NORF_HIGHLIGHT_COLOR = '#9467bd'
+# Single flat colour shared by all literature (non-DockM8) methods.
+LITERATURE_HIGHLIGHT_COLOR = '#4C72B0'
 
 
 def create_literature_boxplot(
@@ -289,18 +294,13 @@ def create_literature_boxplot(
                     boxes_by_model[model] = ax.patches[start_idx:end_idx]
 
             if use_thresholds_local and num_thresholds == 1:
-                try:
-                    model_colors = sns.color_palette(model_palette, n_colors=len(sorted_models))
-                    model_colors = list(reversed(model_colors))
-                except Exception:
-                    model_colors = sns.color_palette("Blues", n_colors=len(sorted_models))
-                    model_colors = list(reversed(model_colors))
-
-                model_color_dict = {model: model_colors[i] for i, model in enumerate(sorted_models)}
-
                 for model, boxes in boxes_by_model.items():
                     for box in boxes:
-                        if '@DockM8' in model:
+                        if 'no RFScoreVS' in model:
+                            box.set_facecolor(DOCKM8_NORF_HIGHLIGHT_COLOR)
+                            box.set_alpha(0.7)
+                            box.set_edgecolor('black')
+                        elif '@DockM8' in model:
                             box.set_facecolor("gray")
                             box.set_alpha(0.7)
                             box.set_edgecolor('black')
@@ -309,12 +309,16 @@ def create_literature_boxplot(
                             box.set_alpha(0.7)
                             box.set_edgecolor('black')
                         else:
-                            box.set_facecolor(model_color_dict[model])
+                            box.set_facecolor(LITERATURE_HIGHLIGHT_COLOR)
                             box.set_alpha(0.7)
                             box.set_edgecolor('black')
             else:
                 for model, boxes in boxes_by_model.items():
-                    if '@DockM8' in model:
+                    if 'no RFScoreVS' in model:
+                        for box in boxes:
+                            box.set_facecolor(DOCKM8_NORF_HIGHLIGHT_COLOR)
+                            box.set_alpha(0.7)
+                    elif '@DockM8' in model:
                         for box in boxes:
                             box.set_facecolor("gray")
                             box.set_alpha(0.7)
@@ -323,7 +327,7 @@ def create_literature_boxplot(
                             box.set_facecolor(dockm8_highlight_color)
                             box.set_alpha(0.7)
 
-        style_boxplot_labels(ax, 'DockM8', axis='y' if vertical_layout else 'x')
+        style_boxplot_labels(ax, ['DockM8'], axis='y' if vertical_layout else 'x')
 
     except Exception as e:
         print(f"Error during seaborn plotting for {dataset_name}: {e}")

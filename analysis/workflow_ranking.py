@@ -133,6 +133,37 @@ def identify_top_workflows(
     return result
 
 
+def identify_top_workflows_per_target(
+    df: pd.DataFrame,
+    metric: str,
+    threshold: Optional[float] = None,
+    percentiles: Tuple[float, ...] = (10.0, 1.0, 0.1),
+    set_type: str = 'training'
+) -> Dict[str, Dict[str, Set[str]]]:
+    """Identify each target's OWN top workflows (ranked within that target).
+
+    Unlike ``identify_top_workflows`` (which ranks by the median across all targets and
+    yields one global set), this ranks each target's workflows independently on ``set_type``
+    and returns, per percentile, a mapping ``{target: set(workflow_id)}``. This is the
+    correct notion for the AVE train-vs-validation figure: highlight each target's own
+    top-N% workflows on its own subplot.
+
+    Returns:
+        {f'top_{pct}': {target: set(workflow_id)}} for each percentile.
+    """
+    out: Dict[str, Dict[str, Set[str]]] = {
+        f'top_{pct}'.replace('.', '_'): {} for pct in percentiles
+    }
+    if 'target' not in df.columns:
+        return out
+    for target, group in df.groupby('target'):
+        scores = rank_workflows(group, metric, threshold, set_type)
+        for pct in percentiles:
+            key = f'top_{pct}'.replace('.', '_')
+            out[key][str(target)] = get_top_percentile_workflows(scores, pct)
+    return out
+
+
 def create_workflow_ranking_df(
     scores: pd.Series,
     metric: str,

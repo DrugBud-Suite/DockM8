@@ -45,7 +45,7 @@ from .data_loader import (
     load_all_data,
     validate_metrics,
 )
-from .workflow_ranking import identify_top_workflows
+from .workflow_ranking import identify_top_workflows_per_target
 from .plotting import generate_all_plots
 from .utils import parse_ranking_metrics, is_threshold_metric
 from .plot_helpers import setup_plot_style
@@ -221,26 +221,27 @@ def run_ave_analysis(
         print(f"Ranking by: {rank_metric}" + (f" @ {rank_threshold}%" if is_thresh and rank_threshold else ""))
         print("=" * 60)
 
-        top_result = identify_top_workflows(
+        # Per-target selection: each target highlights ITS OWN top-N% workflows
+        # (ranked within that target on the training set), not a global cross-target set.
+        top_per_target = identify_top_workflows_per_target(
             df, rank_metric, rank_threshold,
             percentiles=(10.0, 1.0, 0.1)
         )
 
-        scores = top_result['scores']
-        if scores.empty:
-            print(f"No scores calculated for {rank_metric}. Skipping.")
-            continue
-
-        print(f"Ranked {len(scores)} workflows")
-
         top_workflows = {
-            'top_10pct': top_result.get('top_10_0', set()),
-            'top_1pct': top_result.get('top_1_0', set()),
-            'top_0_1pct': top_result.get('top_0_1', set()),
+            'top_10pct': top_per_target['top_10_0'],
+            'top_1pct': top_per_target['top_1_0'],
+            'top_0_1pct': top_per_target['top_0_1'],
         }
 
-        for name, wf_set in top_workflows.items():
-            print(f"  {name}: {len(wf_set)} workflows")
+        if not any(any(s for s in tmap.values()) for tmap in top_workflows.values()):
+            print(f"No top workflows calculated for {rank_metric}. Skipping.")
+            continue
+
+        for name, tmap in top_workflows.items():
+            sizes = [len(s) for s in tmap.values()]
+            avg = sum(sizes) / len(sizes) if sizes else 0
+            print(f"  {name}: {len(tmap)} targets, ~{avg:.0f} workflows/target")
 
         print("\n--- Generating Plots ---")
         collected = generate_all_plots(

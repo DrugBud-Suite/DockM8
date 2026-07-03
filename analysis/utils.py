@@ -92,7 +92,14 @@ def create_workflow_id(row: pd.Series) -> str:
     if pd.notna(row.get('scoring_function')):
         return f"{docking_method}_{selection_method}_{row['scoring_function']}"
     elif pd.notna(row.get('combination')) and pd.notna(row.get('consensus_method')):
-        return f"{docking_method}_{selection_method}_{row['combination']}_({row['consensus_method']})"
+        # Canonicalize the consensus combination: it is a SET of scoring functions, but
+        # the analyzer emits the '+'-joined string in a target-dependent order (it follows
+        # each target's per-pose SF column order). Sorting makes the workflow_id identical
+        # for the same SF-subset across all targets, so cross-target ranking aligns
+        # (otherwise the same workflow gets a different id per target and the top-percentile
+        # set collapses onto a single target).
+        combo = "+".join(sorted(str(row['combination']).split("+")))
+        return f"{docking_method}_{selection_method}_{combo}_({row['consensus_method']})"
     else:
         return f"{docking_method}_{selection_method}_UnknownScoringType"
 

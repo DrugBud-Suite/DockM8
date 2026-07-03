@@ -226,7 +226,7 @@ def load_metric_data(
 
     try:
         df_pl = pl.read_parquet(parquet_file_path)
-        df = pd.DataFrame(df_pl.to_dict())
+        df = df_pl.to_pandas()
         return df
     except FileNotFoundError:
         return None
@@ -295,7 +295,16 @@ def calculate_overall_performance(
         return df
 
     if use_median:
-        df['overall_performance'] = df[target_cols].apply(np.nanmedian, axis=1)
+        # Vectorized equivalent of df[target_cols].apply(np.nanmedian, axis=1): one C
+        # call over the whole (n_rows x n_targets) float block instead of a per-row
+        # Python loop. The aggregation 0-fills target cells, so there are normally no
+        # NaNs -- np.median is ~3x faster than np.nanmedian and identical when no NaN
+        # is present; fall back to np.nanmedian only if a NaN actually appears, so the
+        # result stays bit-identical to the original in every case.
+        arr = df[target_cols].to_numpy()
+        df['overall_performance'] = (
+            np.nanmedian(arr, axis=1) if np.isnan(arr).any() else np.median(arr, axis=1)
+        )
     else:
         df['overall_performance'] = df[target_cols].mean(axis=1)
 

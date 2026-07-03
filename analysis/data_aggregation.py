@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Data Aggregation Script for DockM8 Performance Results
+Data Aggregation Script for DockM8 Performance Results.
 
 This script aggregates performance data from individual target folders into
 pivot tables with methods as rows and targets as columns.
@@ -16,18 +16,18 @@ Usage:
 """
 
 import argparse
-import glob
 import os
+import shutil
+import tempfile
 import time
 import traceback
 import warnings
 from pathlib import Path
-from typing import List, Optional, Tuple
 
 import polars as pl
 from tqdm import tqdm
 
-from .config import get_base_path, get_output_dir, get_aggregated_dir, DATASETS
+from .config import get_base_path, get_aggregated_dir, DATASETS
 
 warnings.filterwarnings('ignore')
 
@@ -53,7 +53,7 @@ DATASET_OUTPUT_SUBDIRS = {
 }
 
 
-def get_dataset_dirs(dataset: str, base_path: Optional[Path] = None) -> Tuple[Path, Path]:
+def get_dataset_dirs(dataset: str, base_path: Path | None = None) -> tuple[Path, Path]:
     """
     Get input and output directories for a dataset.
 
@@ -77,7 +77,7 @@ def get_dataset_dirs(dataset: str, base_path: Optional[Path] = None) -> Tuple[Pa
 # HELPER FUNCTIONS
 # =============================================================================
 
-def extract_metadata_from_filename(filename: str) -> Tuple[str, str, str]:
+def extract_metadata_from_filename(filename: str) -> tuple[str, str, str]:
     """
     Extract target, docking and selection method from filename.
 
@@ -99,7 +99,7 @@ def extract_metadata_from_filename(filename: str) -> Tuple[str, str, str]:
     return target, docking, selection
 
 
-def find_all_performance_files(base_dir: str, targets: Optional[List[str]] = None) -> List[str]:
+def find_all_performance_files(base_dir: str, targets: list[str] | None = None) -> list[str]:
     """
     Find all performance files across all targets.
 
@@ -110,238 +110,123 @@ def find_all_performance_files(base_dir: str, targets: Optional[List[str]] = Non
     Returns:
         List of file paths to performance CSV files
     """
-    if targets is None:
-        targets = [d for d in os.listdir(base_dir)
-                   if os.path.isdir(os.path.join(base_dir, d))]
-
-    all_files = []
-    for target in tqdm(targets, desc="Finding files"):
-        target_dir = os.path.join(base_dir, target)
-        performance_dir = os.path.join(target_dir, "results", "performance")
-
-        if not os.path.exists(performance_dir):
+    # Find every results/performance dir at ANY depth, so this works for both the
+    # flat dataset/<target>/ layout and the nested dataset/PART_N/<target>/ layout
+    # (Lit-PCBA on the SSD mirror). An immediate-listdir would silently skip PART_N.
+    target_filter = set(targets) if targets else None
+    all_files: list[str] = []
+    for perf_dir in tqdm(sorted(Path(base_dir).rglob("performance")), desc="Finding files"):
+        if perf_dir.parent.name != "results":
             continue
-
-        pattern = f"{target}_*_*_performance.csv"
-        files = glob.glob(os.path.join(performance_dir, pattern))
-        all_files.extend(files)
+        for path in perf_dir.glob("*_performance.csv"):
+            if target_filter is None or path.name.split("_")[0] in target_filter:
+                all_files.append(str(path))
 
     return all_files
 
 
-def process_file(file_path: str, metric_name: str, threshold: float) -> Optional[pl.DataFrame]:
+# Pivot index: methods are rows, targets become columns.
+PIVOT_KEYS = ["docking", "scoring", "consensus_method", "selection_method"]
+
+
+def normalize_performance_file(file_path: str, metrics: list[str]) -> pl.DataFrame | None:
     """
-    Process a single performance file.
+    Read one performance CSV ONCE into long format.
 
-    Args:
-        file_path: Path to the performance CSV file
-        metric_name: Name of the metric column to extract
-        threshold: Threshold value to filter by
+    Retains every requested metric and all thresholds.
+    Canonicalizes the consensus ``combination`` (order-insensitive), derives the
+    ``scoring`` column, and tags target/docking/selection from the filename --
+    the same transforms the old per-(metric, threshold) path applied on every
+    pass, now done a single time per file so the source CSV is read only once.
 
-    Returns:
-        Polars DataFrame with processed data, or None if processing failed
+    Returns None if the file is missing/empty or has none of the requested metrics.
     """
-    try:
-        if not os.path.exists(file_path):
-            print(f"Warning: File does not exist: {file_path}")
-            return None
-
-        if os.path.getsize(file_path) == 0:
-            print(f"Warning: Empty file: {file_path}")
-            return None
-
-        target_name, docking_method, selection_method = extract_metadata_from_filename(file_path)
-
-        columns = ['scoring_function', 'threshold', 'combination',
-                   'consensus_method', metric_name]
-
-        try:
-            df = pl.read_csv(
-                file_path,
-                ignore_errors=True
-            ).filter(pl.col('threshold') == threshold)
-
-            available_columns = set(df.columns)
-            for col in columns:
-                if col not in available_columns and col != metric_name:
-                    df = df.with_columns(pl.lit(None).alias(col))
-
-            if metric_name not in available_columns:
-                print(f"Warning: Metric {metric_name} not found in {file_path}")
-                return None
-
-            df = df.select(columns)
-
-        except Exception as e:
-            print(f"Error reading {file_path}: {e}")
-            return None
-
-        if df.height == 0:
-            return None
-
-        try:
-            df = df.with_columns([
-                pl.when(pl.col('combination').is_null())
-                .then(pl.col('combination'))
-                .otherwise(
-                    pl.col('combination')
-                    .str.split('+')
-                    .list.eval(pl.element().sort())
-                    .list.join('+')
-                )
-                .alias('combination')
-            ])
-        except Exception:
-            pass
-
-        try:
-            df = df.with_columns([
-                pl.when(pl.col('scoring_function').is_null() | (pl.col('scoring_function') == ""))
-                .then(pl.col('combination'))
-                .otherwise(pl.col('scoring_function'))
-                .alias('scoring')
-            ])
-        except Exception:
-            df = df.with_columns([
-                pl.lit("unknown").alias('scoring')
-            ])
-
-        df = df.with_columns([
-            pl.lit(target_name).alias('target'),
-            pl.lit(docking_method).alias('docking_method'),
-            pl.lit(selection_method).alias('selection_method')
-        ])
-
-        needed_columns = [
-            'scoring', 'consensus_method',
-            metric_name, 'target', 'docking_method', 'selection_method'
-        ]
-
-        for col in needed_columns:
-            if col not in df.columns and col != metric_name:
-                df = df.with_columns(pl.lit(None).alias(col))
-
-        df = df.select(needed_columns)
-
-        return df
-
-    except Exception as e:
-        print(f"Error processing {file_path}: {e}")
-        print(traceback.format_exc())
+    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
         return None
 
-
-def load_performance_data(
-    base_dir: str,
-    metric_name: str,
-    threshold: float,
-    targets: Optional[List[str]] = None
-) -> pl.DataFrame:
-    """
-    Load performance data sequentially from all files.
-
-    Args:
-        base_dir: Base directory containing target folders
-        metric_name: Name of the metric to load
-        threshold: Threshold value to filter by
-        targets: Optional list of specific targets to process
-
-    Returns:
-        Combined Polars DataFrame with all performance data
-    """
-    all_files = find_all_performance_files(base_dir, targets)
-
-    if not all_files:
-        raise ValueError("No performance files found.")
-
-    print(f"Found {len(all_files)} performance files.")
-    print(f"Processing files sequentially...")
-
-    all_data = []
-
-    for file_path in tqdm(all_files, desc="Processing files"):
-        result = process_file(file_path, metric_name, threshold)
-        if result is not None:
-            all_data.append(result)
-
-    if not all_data:
-        raise ValueError("No data was loaded. Check file paths and formats.")
+    target_name, docking_method, selection_method = extract_metadata_from_filename(file_path)
 
     try:
-        combined_df = pl.concat(all_data)
+        df = pl.read_csv(file_path, ignore_errors=True)
     except Exception as e:
-        print(f"Error during concatenation: {e}")
-        print("Attempting schema-consistent concatenation...")
+        print(f"Error reading {file_path}: {e}")
+        return None
 
-        all_columns = set()
-        for df in all_data:
-            all_columns.update(df.columns)
+    available = set(df.columns)
+    if "threshold" not in available or not any(m in available for m in metrics):
+        return None
 
-        normalized_dfs = []
-        for df in all_data:
-            missing_cols = all_columns - set(df.columns)
-            if missing_cols:
-                for col in missing_cols:
-                    df = df.with_columns(pl.lit(None).alias(col))
-            normalized_dfs.append(df)
+    for col in ("scoring_function", "combination", "consensus_method"):
+        if col not in available:
+            df = df.with_columns(pl.lit(None).alias(col))
+    for metric in metrics:
+        if metric not in available:
+            df = df.with_columns(pl.lit(None, dtype=pl.Float64).alias(metric))
 
-        combined_df = pl.concat(normalized_dfs)
-
-    print(f"Loaded {combined_df.height} rows with {metric_name} at threshold {threshold}.")
-
-    return combined_df
-
-
-def create_final_table_streaming(df: pl.DataFrame, metric_name: str) -> pl.DataFrame:
-    """
-    Create the final pivot table using a streaming approach.
-
-    Args:
-        df: Combined DataFrame with all performance data
-        metric_name: Name of the metric column
-
-    Returns:
-        Pivot table with methods as rows and targets as columns
-    """
-    print("Creating final table...")
-
-    df = df.with_columns([
-        pl.col('consensus_method').fill_null(""),
-    ])
-
-    unique_rows = df.select([
-        'docking_method', 'scoring', 'consensus_method', 'selection_method'
-    ]).unique()
-
-    print(f"Found {unique_rows.height} unique combinations of methods")
-
-    unique_rows = unique_rows.rename({
-        'docking_method': 'docking'
-    })
-
-    targets = list(set(df['target']))
-
-    for target in tqdm(targets, desc="Processing targets"):
-        target_df = df.filter(pl.col('target') == target)
-
-        temp_df = target_df.select([
-            'docking_method', 'scoring', 'consensus_method', 'selection_method',
-            (pl.col(metric_name)).alias(target)
-        ])
-
-        temp_df = temp_df.rename({
-            'docking_method': 'docking'
-        })
-
-        unique_rows = unique_rows.join(
-            temp_df,
-            on=['docking', 'scoring', 'consensus_method', 'selection_method'],
-            how='left'
+    df = df.with_columns(
+        pl.when(pl.col("combination").is_null())
+        .then(pl.col("combination"))
+        .otherwise(
+            pl.col("combination").str.split("+").list.eval(pl.element().sort()).list.join("+")
         )
+        .alias("combination")
+    )
+    df = df.with_columns(
+        pl.when(pl.col("scoring_function").is_null() | (pl.col("scoring_function") == ""))
+        .then(pl.col("combination"))
+        .otherwise(pl.col("scoring_function"))
+        .alias("scoring"),
+        pl.col("consensus_method").fill_null(""),
+    )
 
-    unique_rows = unique_rows.fill_null(0)
+    return df.select(
+        pl.col("threshold").cast(pl.Float64),
+        pl.lit(docking_method).alias("docking"),
+        pl.col("scoring"),
+        pl.col("consensus_method"),
+        pl.lit(selection_method).alias("selection_method"),
+        pl.lit(target_name).alias("target"),
+        *[pl.col(m).cast(pl.Float64) for m in metrics],
+    )
 
-    return unique_rows
+
+def consolidate_to_parquet(files: list[str], scratch_dir: str, metrics: list[str]) -> int:
+    """
+    Read every performance CSV once and write a compact long-format parquet per file.
+
+    Writes into ``scratch_dir`` and returns the number of files that yielded data.
+    Bounded memory: only one CSV is held at a time, so this scales to the
+    billions of rows in the largest datasets (DEKOIS) without an in-RAM concat.
+    """
+    written = 0
+    for i, file_path in enumerate(tqdm(files, desc="Consolidating files")):
+        df = normalize_performance_file(file_path, metrics)
+        if df is None:
+            continue
+        df.write_parquet(os.path.join(scratch_dir, f"part_{i:06d}.parquet"))
+        written += 1
+    return written
+
+
+def pivot_metric_from_parquet(scratch_glob: str, metric_name: str, threshold: float) -> pl.DataFrame:
+    """
+    Build one pivot table (methods x targets) for a metric/threshold.
+
+    Scans the consolidated parquet with predicate + projection pushdown, then does
+    a single native ``pivot``.
+    ``aggregate_function=None`` is intentional: each (method, target) cell must
+    hold exactly one value. A duplicate raises loudly rather than silently
+    picking one -- consistent with the recompute pipeline's fail-loud policy.
+    """
+    long = (
+        pl.scan_parquet(scratch_glob)
+        .filter(pl.col("threshold") == float(threshold))
+        .select([*PIVOT_KEYS, "target", metric_name])
+        .collect()
+    )
+    pivot = long.pivot(values=metric_name, index=PIVOT_KEYS, on="target", aggregate_function=None)
+    target_cols = sorted(c for c in pivot.columns if c not in PIVOT_KEYS)
+    return pivot.select([*PIVOT_KEYS, *target_cols]).fill_null(0).sort(PIVOT_KEYS)
 
 
 def save_pivot_table(
@@ -350,7 +235,7 @@ def save_pivot_table(
     file_prefix: str,
     metric_name: str,
     threshold: float
-) -> Tuple[str, str]:
+) -> tuple[str, str]:
     """
     Save the pivot table to both CSV and Parquet formats.
 
@@ -368,14 +253,18 @@ def save_pivot_table(
 
     threshold_str = str(threshold).replace('.', 'p')
 
+    # Write to a temp file then atomically rename, so an interrupted/failed write
+    # never leaves a half-written pivot in place of a good one.
     csv_filename = f"{file_prefix}_{metric_name}_pivot_thresh{threshold_str}.csv"
     csv_filepath = os.path.join(output_dir, csv_filename)
-    df.write_csv(csv_filepath)
+    df.write_csv(csv_filepath + ".tmp")
+    os.replace(csv_filepath + ".tmp", csv_filepath)
     print(f"CSV saved to: {csv_filepath}")
 
     parquet_filename = f"{file_prefix}_{metric_name}_pivot_thresh{threshold_str}.parquet"
     parquet_filepath = os.path.join(output_dir, parquet_filename)
-    df.write_parquet(parquet_filepath)
+    df.write_parquet(parquet_filepath + ".tmp")
+    os.replace(parquet_filepath + ".tmp", parquet_filepath)
     print(f"Parquet saved to: {parquet_filepath}")
 
     return csv_filepath, parquet_filepath
@@ -409,12 +298,90 @@ def check_output_exists(
     return os.path.exists(csv_path) and os.path.exists(parquet_path)
 
 
+def _stream_csv_from_parquet(parquet_path: str, csv_path: str) -> None:
+    """Stream a wide-pivot parquet to CSV without loading it fully into RAM."""
+    tmp = csv_path + ".tmp"
+    pl.scan_parquet(parquet_path).sink_csv(tmp)
+    os.replace(tmp, csv_path)
+
+
+def _run_streaming_pivots(
+    scratch_dir: str,
+    output_dir: str,
+    file_prefix: str,
+    pending: list[tuple[str, float]],
+    metrics: list[str],
+    verbose: bool = True,
+) -> list[tuple[str, float, str]]:
+    """Build each pending (metric, threshold) pivot with bounded memory.
+
+    Replaces the in-RAM ``pivot_metric_from_parquet`` (which collects ~970M long rows
+    for one DEKOIS threshold and OOMs). For each threshold, builds one aligned shard
+    per target carrying all metrics (:func:`analysis.streaming_pivot.build_target_shard`),
+    then streams the wide pivot per metric straight to an atomic parquet
+    (:func:`analysis.streaming_pivot.stream_wide_parquet`) and a streamed CSV -- the full
+    12.2M x 83 frame is never materialized. Output is frame-identical to
+    ``pivot_metric_from_parquet`` on the real grid (targets share a workflow-key set);
+    a differing key set fails loudly rather than silently 0-filling.
+
+    Returns a list of (metric, threshold, error) for any failures.
+    """
+    from collections import defaultdict
+
+    from .streaming_pivot import build_target_shard, group_parts_by_target, stream_wide_parquet
+
+    parts = sorted(str(p) for p in Path(scratch_dir).glob("*.parquet"))
+    by_target = group_parts_by_target(parts)
+    targets = sorted(by_target)
+    shard_dir = Path(scratch_dir) / "shards"
+    shard_dir.mkdir(exist_ok=True)
+
+    by_threshold: dict[float, list[str]] = defaultdict(list)
+    for metric, threshold in pending:
+        by_threshold[threshold].append(metric)
+
+    failures: list[tuple[str, float, str]] = []
+    for threshold, metrics_at_threshold in by_threshold.items():
+        threshold_str = str(threshold).replace(".", "p")
+        try:
+            shard_paths: list[str] = []
+            for target in targets:
+                shard = shard_dir / f"shard_thresh{threshold_str}_{target}.parquet"
+                build_target_shard(by_target[target], threshold, metrics, shard)
+                shard_paths.append(str(shard))
+        except Exception as e:  # a bad shard set invalidates every metric at this threshold
+            print(f"Error building shards at threshold {threshold}: {e}")
+            print(traceback.format_exc())
+            failures.extend((metric, threshold, str(e)) for metric in metrics_at_threshold)
+            continue
+
+        for metric in metrics_at_threshold:
+            start_time = time.time()
+            base = f"{file_prefix}_{metric}_pivot_thresh{threshold_str}"
+            out_parquet = os.path.join(output_dir, base + ".parquet")
+            try:
+                rows = stream_wide_parquet(shard_paths, targets, metric, out_parquet)
+                _stream_csv_from_parquet(out_parquet, os.path.join(output_dir, base + ".csv"))
+                if verbose:
+                    print(f"  {metric} @ {threshold}: {rows} rows x {len(targets)} targets "
+                          f"-> {base}.{{parquet,csv}} ({time.time() - start_time:.2f}s)")
+            except Exception as e:
+                print(f"Error processing metric {metric} at threshold {threshold}: {e}")
+                print(traceback.format_exc())
+                failures.append((metric, threshold, str(e)))
+
+        for shard_path in shard_paths:  # free this threshold's shards before the next
+            Path(shard_path).unlink(missing_ok=True)
+
+    return failures
+
+
 def run_aggregation_pipeline(
     base_dir: str,
     output_dir: str,
     file_prefix: str = FILE_PREFIX,
-    metrics: Optional[List[str]] = None,
-    thresholds: Optional[List[float]] = None,
+    metrics: list[str] | None = None,
+    thresholds: list[float] | None = None,
     skip_existing: bool = True,
     verbose: bool = True
 ) -> None:
@@ -439,62 +406,60 @@ def run_aggregation_pipeline(
 
     os.makedirs(output_dir, exist_ok=True)
 
+    # Build the (metric, threshold) worklist; auc_roc/bedroc are threshold-invariant.
+    # Keep each threshold's original value (int vs float) so output filenames match
+    # the canonical naming (e.g. thresh1, not thresh1p0).
+    worklist: list[tuple[str, float]] = []
     for metric in metrics:
-        if metric in ["auc_roc", "bedroc"]:
-            thresholds_to_use = [thresholds[0]]
-        else:
-            thresholds_to_use = thresholds
+        ths = [thresholds[0]] if metric in ("auc_roc", "bedroc") else thresholds
+        for threshold in ths:
+            worklist.append((metric, threshold))
 
-        for threshold in thresholds_to_use:
-            if skip_existing and check_output_exists(output_dir, file_prefix, metric, threshold):
-                print(f"\nSkipping metric={metric}, threshold={threshold} - output files already exist")
-                continue
+    pending = [
+        (metric, threshold)
+        for metric, threshold in worklist
+        if not (skip_existing and check_output_exists(output_dir, file_prefix, metric, threshold))
+    ]
+    for metric, threshold in worklist:
+        if (metric, threshold) not in pending:
+            print(f"Skipping metric={metric}, threshold={threshold} - output files already exist")
+    if not pending:
+        print("All aggregated outputs already exist; nothing to do.")
+        return
 
-            print(f"\n{'='*80}")
-            print(f"Starting analysis with metric={metric}, threshold={threshold}")
-            print(f"{'='*80}")
+    all_files = find_all_performance_files(base_dir)
+    if not all_files:
+        raise ValueError("No performance files found.")
+    print(f"Found {len(all_files)} performance files.")
 
-            start_time = time.time()
+    # READ ONCE: consolidate every CSV into a compact parquet scratch set (all
+    # requested metrics + all thresholds retained), then derive each pivot from
+    # it -- instead of re-reading every file once per (metric, threshold).
+    scratch_dir = tempfile.mkdtemp(prefix="dockm8_agg_")
+    failures: list[tuple[str, float, str]] = []
+    try:
+        consolidate_start = time.time()
+        n_loaded = consolidate_to_parquet(all_files, scratch_dir, list(metrics))
+        if n_loaded == 0:
+            raise ValueError("No data was loaded. Check file paths and formats.")
+        print(f"Consolidated {n_loaded}/{len(all_files)} files in "
+              f"{time.time() - consolidate_start:.2f} seconds")
 
-            try:
-                combined_df = load_performance_data(
-                    base_dir,
-                    metric,
-                    threshold
-                )
-                data_load_time = time.time()
-                print(f"Data loading time: {data_load_time - start_time:.2f} seconds")
-
-                if verbose:
-                    print("\nSample of combined data:")
-                    print(combined_df.head(5))
-
-                pivot_start_time = time.time()
-                pivot_df = create_final_table_streaming(combined_df, metric)
-                pivot_time = time.time()
-                print(f"Pivot table creation time: {pivot_time - pivot_start_time:.2f} seconds")
-
-                if verbose:
-                    print("\nSample of pivot table:")
-                    print(pivot_df.head(5))
-
-                save_pivot_table(
-                    pivot_df,
-                    output_dir,
-                    file_prefix,
-                    metric,
-                    threshold
-                )
-                save_time = time.time()
-                print(f"Save time: {save_time - pivot_time:.2f} seconds")
-                print(f"Total execution time for {metric} at threshold {threshold}: {save_time - start_time:.2f} seconds")
-
-            except Exception as e:
-                print(f"Error processing metric {metric} at threshold {threshold}: {e}")
-                print(traceback.format_exc())
+        # Bounded-memory streaming pivot: never materialize the full 12.2M x 83 wide
+        # frame in RAM (the in-RAM pivot_metric_from_parquet OOMs on full DEKOIS).
+        failures = _run_streaming_pivots(
+            scratch_dir, output_dir, file_prefix, pending, list(metrics), verbose=verbose
+        )
+    finally:
+        shutil.rmtree(scratch_dir, ignore_errors=True)
 
     total_end_time = time.time()
     print(f"\nTotal pipeline execution time: {total_end_time - total_start_time:.2f} seconds")
+    # Do not report success if any (metric, threshold) failed -- raise so the caller
+    # (and any resume/manifest logic) sees the failure instead of a silent partial run.
+    if failures:
+        summary = ", ".join(f"{m}@{t}" for m, t, _ in failures)
+        raise RuntimeError(f"aggregation failed for {len(failures)} metric/threshold combos: {summary}")
     print(f"Results saved to: {output_dir}")
 
 
@@ -511,14 +476,14 @@ def aggregate_dataset_results(base_path: Path, dataset: str) -> None:
     run_aggregation_pipeline(str(base_dir), str(output_dir))
 
 
-def parse_list_arg(arg_value: Optional[str], default: List) -> List:
+def parse_list_arg(arg_value: str | None, default: list) -> list:
     """Parse comma-separated argument into list."""
     if arg_value is None:
         return default
     return [x.strip() for x in arg_value.split(',')]
 
 
-def parse_threshold_arg(arg_value: Optional[str]) -> Optional[List[float]]:
+def parse_threshold_arg(arg_value: str | None) -> list[float] | None:
     """Parse comma-separated threshold argument into list of floats."""
     if arg_value is None:
         return None
@@ -526,6 +491,7 @@ def parse_threshold_arg(arg_value: Optional[str]) -> Optional[List[float]]:
 
 
 def main():
+    """CLI entry point for standalone dataset aggregation."""
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter

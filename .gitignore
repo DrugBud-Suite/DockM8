@@ -197,3 +197,6 @@ dockm8py_testing.py
 test_data/DeepCoy/
 test_data/dockm8_library/
 test_data/rescoring/rescoring_output_large_new.*
+
+# Archived one-time v1.1.1 recompute bridge (moved out of analysis/; delete once confirmed)
+_bridge_archive_20260703/

@@ -245,7 +245,7 @@ def generate_all_plots(
     df: pd.DataFrame,
     metrics: List[str],
     thresholds: List[float],
-    top_workflows: Dict[str, Set[str]],
+    top_workflows: Dict[str, Dict[str, Set[str]]],
     ranking_label: str,
     output_dir: Path,
     skip_existing: bool = True
@@ -313,8 +313,8 @@ def generate_all_plots(
             metric_display = format_metric_name(current_metric, threshold if is_thresh else None)
             threshold_val = threshold if is_thresh else None
 
-            for pct_name, wf_ids in top_workflows.items():
-                if not wf_ids:
+            for pct_name, top_map in top_workflows.items():
+                if not top_map or not any(top_map.values()):
                     continue
 
                 try:
@@ -322,7 +322,12 @@ def generate_all_plots(
                 except ValueError:
                     pct_value = 10.0
 
-                df_top = df_pivot[df_pivot['workflow_id'].isin(wf_ids)]
+                # Per-target highlighting: each target's own top-N% workflow_ids only.
+                top_parts = [
+                    df_pivot[(df_pivot['target'] == t) & (df_pivot['workflow_id'].isin(s))]
+                    for t, s in top_map.items() if s
+                ]
+                df_top = pd.concat(top_parts) if top_parts else df_pivot.iloc[0:0]
 
                 result = generate_overlay_plot(
                     df_all=df_pivot,

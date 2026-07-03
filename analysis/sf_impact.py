@@ -186,17 +186,22 @@ def generate_sf_impact_plots(
                     continue
 
                 performance_diffs = {}
-                for sf in sorted(list(subset_sfs)):
-                    mask_with_sf = df_subset['scoring'].astype(str).str.contains(sf, regex=False)
-                    df_with_sf_subset = df_subset[mask_with_sf]
-                    df_without_sf_subset = df_subset[~mask_with_sf]
+                # Cast scoring once and split only the 1-D ranking-value Series per SF
+                # (avoids copying the full 83-col frame twice per SF). The medians and
+                # the present-minus-absent diff are identical to the prior frame-copy form.
+                subset_scoring_str = df_subset['scoring'].astype(str)
+                subset_ranking = df_subset[ranking_col]
+                for sf in sorted(subset_sfs):
+                    mask_with_sf = subset_scoring_str.str.contains(sf, regex=False)
+                    ranking_with_sf = subset_ranking[mask_with_sf]
+                    ranking_without_sf = subset_ranking[~mask_with_sf]
 
-                    median_perf_with = df_with_sf_subset[ranking_col].median()
-                    median_perf_without = df_without_sf_subset[ranking_col].median()
+                    median_perf_with = ranking_with_sf.median()
+                    median_perf_without = ranking_without_sf.median()
 
-                    if df_with_sf_subset.empty or pd.isna(median_perf_with):
+                    if ranking_with_sf.empty or pd.isna(median_perf_with):
                         diff = 0
-                    elif df_without_sf_subset.empty or pd.isna(median_perf_without):
+                    elif ranking_without_sf.empty or pd.isna(median_perf_without):
                         diff = 0
                     else:
                         diff = median_perf_with - median_perf_without

@@ -62,7 +62,11 @@ def cmd_aggregate(args):
 
 def cmd_extract(args):
     """Extract consolidated multi-metric CSVs from aggregated pivot tables."""
-    from .data_extraction import run_extraction
+    # Memory-lean, vectorized extractor (~13x faster than the original per-row loops,
+    # peak RSS ~25 GB vs ~100 GB+swap). Output is parity-identical to data_extraction's
+    # run_extraction and surfaces the correct GenScore variants (balanced = GT_ft_0.5)
+    # + RTMScore for all datasets, from the shared CUSTOM_WORKFLOWS_RESULTS map.
+    from .fast_dockm8_extract import run_extraction_fast
 
     output_dir = get_output_dir(args.output_dir)
     datasets = parse_list_arg(args.datasets, DATASETS)
@@ -74,7 +78,7 @@ def cmd_extract(args):
     print(f"DockM8 data:  {get_dockm8_results_dir(output_dir)}")
     print(f"Datasets:     {datasets}")
 
-    run_extraction(
+    run_extraction_fast(
         aggregated_dir=get_aggregated_dir(output_dir),
         dockm8_results_dir=get_dockm8_results_dir(output_dir),
         datasets=datasets,
@@ -293,6 +297,11 @@ def cmd_all(args):
         ("Interaction Heatmaps", cmd_heatmaps_interaction),
     ]
 
+    # Aggregation and extraction produce the inputs every plot step reads; if either
+    # fails, the plots would run on missing/stale data and emit silently-wrong figures.
+    # Abort on those; a failed individual plot step is non-fatal (others still run).
+    prerequisite_steps = {"Data Aggregation", "Data Extraction"}
+
     for step_name, step_func in steps:
         print(f"\n{'#'*60}")
         print(f"# {step_name}")
@@ -300,6 +309,9 @@ def cmd_all(args):
         try:
             step_func(mock_args)
         except Exception as e:
+            if step_name in prerequisite_steps:
+                print(f"ERROR: {step_name} failed — aborting pipeline (plots depend on its output): {e}")
+                raise
             print(f"Warning: {step_name} failed: {e}")
             if args.verbose:
                 import traceback

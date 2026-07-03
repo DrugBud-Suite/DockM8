@@ -96,9 +96,13 @@ def generate_interaction_plots(
                 if 'scoring' not in df_median.columns:
                     raise ValueError("'scoring' column not found in DataFrame.")
 
-                df_median['num_sfs'] = df_median['scoring'].astype(str).apply(
-                    lambda x: len(x.split('+')) if pd.notna(x) and x else 0
-                ).astype(np.int16)
+                # Vectorized equivalent of the per-row split/len apply over 12.28M rows:
+                # SFs in a '+'-joined scoring string = count('+') + 1, with the empty
+                # string mapped to 0 (matching `len(x.split('+')) if x else 0`; after
+                # .astype(str), pd.notna is always True so only '' maps to 0).
+                scoring_str = df_median['scoring'].astype(str)
+                num_sfs = (scoring_str.str.count(r'\+') + 1).where(scoring_str != '', 0)
+                df_median['num_sfs'] = num_sfs.astype(np.int16)
 
                 if 'consensus_method' not in df_median.columns:
                     raise ValueError("'consensus_method' column not found in DataFrame.")

@@ -4,6 +4,8 @@ This directory contains everything needed to reproduce the plots and analyses fr
 
 All commands are run from the **project root** (`DockM8/`, not `analysis/`).
 
+**One workflow.** Everything runs through `python -m analysis.run_all` (aggregate → extract → plots). The aggregation is bounded-memory (streaming pivot — it will not OOM on full DEKOIS), and the extraction is the fast, memory-lean variant that surfaces the correct scoring-function variants (e.g. `GenScore-balanced` = `GT_ft_0.5`, and `RTMScore` for all three datasets). The corrected v1.1.1 results are produced by the fixed DockM8 source (whole-residue RTMScore/GenScore pocket, complete decoy pool in pose selection, `fast_analyzer` consensus); this pipeline aggregates and plots those results.
+
 ## Prerequisites
 
 - DockM8 conda environment activated (`conda activate dockm8`)
@@ -143,11 +145,13 @@ Use `--output-dir` to override the default output location (`results/output/`).
 
 ```text
 analysis/                         # This directory
-├── run_all.py                    # Master CLI orchestrator
+├── run_all.py                    # Master CLI orchestrator (the single workflow entry point)
 ├── extract_zenodo.py             # Zenodo archive extraction utility
 ├── config.py                     # Path management and constants
-├── data_aggregation.py           # Raw CSVs → parquet pivot tables
-├── data_extraction.py            # Parquets → consolidated comparison CSVs
+├── data_aggregation.py           # Raw CSVs → parquet pivot tables (bounded-memory streaming)
+├── streaming_pivot.py            #   └ bounded-memory pivot engine used by data_aggregation
+├── data_extraction.py            # Parquets → consolidated comparison CSVs (variant maps)
+├── fast_dockm8_extract.py        #   └ vectorized, memory-lean DockM8-best/median extractor
 ├── docking_selection.py          # Fig 1A, 1B
 ├── internal_boxplots.py          # Fig 2
 ├── literature_boxplots.py        # Fig 3
@@ -155,6 +159,9 @@ analysis/                         # This directory
 ├── sf_impact.py                  # Fig 4B
 ├── interaction_plots.py          # Fig 4C
 ├── ave_analysis.py + plotting.py # Fig 5
+├── casf_redocking_benchmark.py   # CASF-2016 re-docking benchmark (Appendix G)
+├── plot_casf_redocking.py        #   └ CASF figure
+├── redocking_benchmark.py        #   └ symmetric-RMSD helper used by the CASF benchmark
 ├── lit_metrics.py                # Literature metric calculation
 ├── data_loader.py                # Data loading utilities
 ├── workflow_ranking.py           # Workflow ranking utilities

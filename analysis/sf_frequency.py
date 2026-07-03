@@ -142,14 +142,15 @@ def generate_sf_frequency_plots(
 
             full_sf_counts = {}
             existing_sfs = set()
+            # Cast the scoring column once, and scan each SF once: full_sf_counts[sf]
+            # is the substring-match count (0 when absent), and a SF "exists" iff that
+            # count > 0 -- identical to the prior .any()-then-.sum() double scan.
+            full_scoring_str = df_full['scoring'].astype(str)
             for sf in all_scoring_functions:
-                exists = df_full['scoring'].astype(str).str.contains(sf, regex=False).any()
-                if exists:
+                count = int(full_scoring_str.str.contains(sf, regex=False).sum())
+                full_sf_counts[sf] = count
+                if count > 0:
                     existing_sfs.add(sf)
-                    mask = df_full['scoring'].astype(str).str.contains(sf, regex=False)
-                    full_sf_counts[sf] = mask.sum()
-                else:
-                    full_sf_counts[sf] = 0
 
             for i, percentile in enumerate(PERCENTILES):
                 ax = axes[i, j]
@@ -162,9 +163,9 @@ def generate_sf_frequency_plots(
                     continue
 
                 subset_sf_counts = {}
+                subset_scoring_str = df_subset['scoring'].astype(str)
                 for sf in existing_sfs:
-                    mask = df_subset['scoring'].astype(str).str.contains(sf, regex=False)
-                    subset_sf_counts[sf] = mask.sum()
+                    subset_sf_counts[sf] = int(subset_scoring_str.str.contains(sf, regex=False).sum())
 
                 sf_frequency = {}
                 baseline_frequency = percentile

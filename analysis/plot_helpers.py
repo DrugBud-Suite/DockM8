@@ -27,13 +27,13 @@ DOCKM8_HIGHLIGHT_COLOR = '#ff7700'
 # PLOT STYLE SETUP
 # =============================================================================
 
-def setup_plot_style():
+def setup_plot_style(font_scale: float = 1.0):
     """
     Configure matplotlib and seaborn plot style for publication-quality figures.
 
     Sets consistent DPI, font sizes, and whitegrid theme across all plots.
     """
-    sns.set_theme(style="whitegrid", context="paper")
+    sns.set_theme(style="whitegrid", context="paper", font_scale=font_scale)
     plt.rcParams['figure.dpi'] = 300
     plt.rcParams['font.family'] = 'sans-serif'
     plt.rcParams['font.size'] = 10
@@ -70,6 +70,7 @@ def save_figure(
         True if save succeeded, False otherwise
     """
     try:
+        output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(output_path, dpi=dpi, bbox_inches=bbox_inches)
         if close_after:

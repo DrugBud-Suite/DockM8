@@ -77,6 +77,9 @@ CUSTOM_WORKFLOWS_RESULTS = {
         {'name': 'ConvexPLR@DockM8','docking': 'gnina',  'selection_method': 'ConvexPLR',        'scoring': 'ConvexPLR'},
         {'name': 'RFScoreVS@DockM8','docking': 'gnina',  'selection_method': 'RFScoreVS',        'scoring': 'RFScoreVS'},
         {'name': 'KORP-PL@DockM8',  'docking': 'gnina',  'selection_method': 'KORP-PL',          'scoring': 'KORP-PL'},
+        {'name': 'RTMScore@DockM8',          'docking': 'gnina', 'selection_method': 'RTMScore',          'scoring': 'RTMScore'},
+        {'name': 'GenScore-docking@DockM8',  'docking': 'gnina', 'selection_method': 'GenScore-docking',  'scoring': 'GenScore-docking'},
+        {'name': 'GenScore-balanced@DockM8', 'docking': 'gnina', 'selection_method': 'GenScore-balanced', 'scoring': 'GenScore-balanced'},
     ],
     "DUD-E": [
         {'name': 'GNINA@DockM8',    'docking': 'gnina',  'selection_method': 'CNN-Score',       'scoring': 'CNN-Score'},
@@ -85,7 +88,9 @@ CUSTOM_WORKFLOWS_RESULTS = {
         {'name': 'ConvexPLR@DockM8','docking': 'gnina',  'selection_method': 'ConvexPLR',        'scoring': 'ConvexPLR'},
         {'name': 'RFScoreVS@DockM8','docking': 'gnina',  'selection_method': 'RFScoreVS',        'scoring': 'RFScoreVS'},
         {'name': 'KORP-PL@DockM8',  'docking': 'gnina',  'selection_method': 'KORP-PL',          'scoring': 'KORP-PL'},
-        {'name': 'RTMScore@DockM8', 'docking': 'gnina',  'selection_method': 'RTMScore',         'scoring': 'RTMScore'},
+        {'name': 'RTMScore@DockM8',          'docking': 'gnina', 'selection_method': 'RTMScore',          'scoring': 'RTMScore'},
+        {'name': 'GenScore-docking@DockM8',  'docking': 'gnina', 'selection_method': 'GenScore-docking',  'scoring': 'GenScore-docking'},
+        {'name': 'GenScore-balanced@DockM8', 'docking': 'gnina', 'selection_method': 'GenScore-balanced', 'scoring': 'GenScore-balanced'},
     ],
     "DEKOIS": [
         {'name': 'GNINA@DockM8',    'docking': 'gnina',  'selection_method': 'CNN-Score',       'scoring': 'CNN-Score'},
@@ -94,6 +99,9 @@ CUSTOM_WORKFLOWS_RESULTS = {
         {'name': 'ConvexPLR@DockM8','docking': 'gnina',  'selection_method': 'ConvexPLR',        'scoring': 'ConvexPLR'},
         {'name': 'RFScoreVS@DockM8','docking': 'gnina',  'selection_method': 'RFScoreVS',        'scoring': 'RFScoreVS'},
         {'name': 'KORP-PL@DockM8',  'docking': 'gnina',  'selection_method': 'KORP-PL',          'scoring': 'KORP-PL'},
+        {'name': 'RTMScore@DockM8',          'docking': 'gnina', 'selection_method': 'RTMScore',          'scoring': 'RTMScore'},
+        {'name': 'GenScore-docking@DockM8',  'docking': 'gnina', 'selection_method': 'GenScore-docking',  'scoring': 'GenScore-docking'},
+        {'name': 'GenScore-balanced@DockM8', 'docking': 'gnina', 'selection_method': 'GenScore-balanced', 'scoring': 'GenScore-balanced'},
     ],
 }
 
@@ -113,7 +121,7 @@ INTERNAL_SCORING_FUNCTIONS = {
         'CNN-Score', 'CNN-Affinity', 'GNINA-Affinity', 'KORP-PL',
         'ConvexPLR', 'RFScoreVS', 'AD4', 'GenScore-scoring',
         'GenScore-balanced', 'Vinardo', 'CHEMPLP', 'LinF9',
-        'NNScore', 'GenScore-docking',
+        'NNScore', 'GenScore-docking', 'RTMScore',
     ],
 }
 
@@ -132,8 +140,22 @@ PERFORMANCE_METRICS_BW = [
 # CORE EXTRACTION FUNCTIONS (from #ARCHIVE/dockm8_data_extraction.ipynb)
 # =============================================================================
 
+def _read_pivot(csv_path: str):
+    """Load an aggregated pivot, preferring the parquet sibling (CSV is optional now).
+
+    The aggregation step writes parquet by default and only writes the large CSVs
+    on demand, so prefer ``<name>.parquet`` and fall back to ``<name>.csv``.
+    """
+    pq_path = csv_path[:-4] + ".parquet" if csv_path.endswith(".csv") else csv_path + ".parquet"
+    if os.path.exists(pq_path):
+        return pl.read_parquet(pq_path), pq_path
+    if os.path.exists(csv_path):
+        return pl.read_csv(csv_path), csv_path
+    return None, pq_path
+
+
 def load_dockm8_data(data_dir: str) -> Dict:
-    """Load aggregated CSV pivot tables for all metrics and thresholds."""
+    """Load aggregated pivot tables (parquet preferred, CSV fallback) for all metrics."""
     logger.info(f"Loading data from {data_dir}")
     result_data: Dict = {}
 
@@ -141,27 +163,29 @@ def load_dockm8_data(data_dir: str) -> Dict:
         result_data[metric] = {}
         for threshold in thresholds:
             thresh_str = str(threshold).replace('.', 'p') if isinstance(threshold, float) else str(threshold)
-            file_path = os.path.join(data_dir, METRIC_FILE_MAP[metric].format(thresh=thresh_str))
+            csv_path = os.path.join(data_dir, METRIC_FILE_MAP[metric].format(thresh=thresh_str))
             try:
-                if os.path.exists(file_path):
-                    result_data[metric][threshold] = pl.read_csv(file_path)
-                    logger.info(f"  Loaded {metric}@{threshold}: {result_data[metric][threshold].height} rows")
+                df, used = _read_pivot(csv_path)
+                if df is not None:
+                    result_data[metric][threshold] = df
+                    logger.info(f"  Loaded {metric}@{threshold}: {df.height} rows from {os.path.basename(used)}")
                 else:
-                    logger.warning(f"  Not found: {file_path}")
+                    logger.warning(f"  Not found: {used} (or .csv)")
             except Exception as e:
-                logger.error(f"  Error loading {file_path}: {e}")
+                logger.error(f"  Error loading {csv_path}: {e}")
 
     for metric in NON_THRESHOLD_METRICS:
         result_data[metric] = {}
-        file_path = os.path.join(data_dir, METRIC_FILE_MAP[metric])
+        csv_path = os.path.join(data_dir, METRIC_FILE_MAP[metric])
         try:
-            if os.path.exists(file_path):
-                result_data[metric][None] = pl.read_csv(file_path)
-                logger.info(f"  Loaded {metric}: {result_data[metric][None].height} rows")
+            df, used = _read_pivot(csv_path)
+            if df is not None:
+                result_data[metric][None] = df
+                logger.info(f"  Loaded {metric}: {df.height} rows from {os.path.basename(used)}")
             else:
-                logger.warning(f"  Not found: {file_path}")
+                logger.warning(f"  Not found: {used} (or .csv)")
         except Exception as e:
-            logger.error(f"  Error loading {file_path}: {e}")
+            logger.error(f"  Error loading {csv_path}: {e}")
 
     return result_data
 
@@ -216,7 +240,7 @@ def analyze_dockm8_best(dockm8_data: Dict, criteria: Optional[List] = None) -> D
 
     best_workflows_by_target: Dict = {}
     for target in all_targets:
-        criteria_scores = []
+        criteria_scores = None
         for criterion in criteria:
             metric, threshold, crit_name = criterion['metric'], criterion['threshold'], criterion['name']
             if metric not in dockm8_data or threshold not in dockm8_data[metric]:
@@ -225,12 +249,12 @@ def analyze_dockm8_best(dockm8_data: Dict, criteria: Optional[List] = None) -> D
             if df is None or df.height == 0 or target not in df.columns:
                 continue
             wt = df.select(component_cols + [target]).rename({target: crit_name})
-            if not criteria_scores:
+            if criteria_scores is None:
                 criteria_scores = wt
             else:
                 criteria_scores = criteria_scores.join(wt.select(component_cols + [crit_name]), on=component_cols, how='left')
 
-        if not criteria_scores:
+        if criteria_scores is None:
             continue
 
         sort_exprs = []

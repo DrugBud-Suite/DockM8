@@ -4,6 +4,10 @@ Extract DockM8 benchmark data downloaded from Zenodo.
 The Zenodo archives use a nested compression scheme:
   outer .tar.bz2 → phase2/ → per-target .tar.bz2 → target dirs with .sdf.gz files
 
+The outer tar may be either bzip2-compressed (older archives) or store-only
+(newer archives from compress_for_zenodo.py, which skips the pointless outer
+recompression); the auto-detecting "r:*" mode below handles both.
+
 This script reverses all three phases to produce the directory layout expected
 by the analysis pipeline.
 
@@ -65,7 +69,7 @@ def extract_archive(archive_path: Path, dest_dir: Path) -> None:
         tmp_path = Path(tmp)
 
         print(f"  Phase 1/3: Extracting outer archive...")
-        with tarfile.open(archive_path, "r:bz2") as outer:
+        with tarfile.open(archive_path, "r:*") as outer:
             outer.extractall(tmp_path)
 
         phase2_dir = tmp_path / "phase2"
