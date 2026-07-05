@@ -55,6 +55,7 @@ class PlantsDocking(DockingFunction):
             "# search algorithm\n",
             "search_speed speed1\n",
             "aco_ants 20\n",
+            "random_seed 1\n",
             "flip_amide_bonds 0\n",
             "flip_planar_n 1\n",
             "force_flipped_bonds_planarity 0\n",
@@ -102,6 +103,18 @@ class PlantsDocking(DockingFunction):
         exhaustiveness: int,
         n_poses: int,
     ) -> Path | None:
+        """Docks a batch of ligands against the protein using PLANTS.
+
+        Args:
+            batch_file (Path): Path to the SDF file of ligands to dock.
+            protein_file (Path): Path to the prepared protein PDB file.
+            pocket_definition (dict[str, list]): Dictionary defining the docking pocket.
+            exhaustiveness (int): Search exhaustiveness setting.
+            n_poses (int): Number of poses to generate per ligand.
+
+        Returns:
+            Path | None: Path to the processed results SDF, or None on failure.
+        """
         RDLogger.DisableLog("rdApp.*")
 
         # Create only the essential directories
