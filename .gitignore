@@ -200,3 +200,8 @@ test_data/rescoring/rescoring_output_large_new.*
 
 # Archived one-time v1.1.1 recompute bridge (moved out of analysis/; delete once confirmed)
 _bridge_archive_20260703/
+
+# One-off, environment-specific Zenodo data-assembly scripts (already-run data prep;
+# regenerate_corrected_poses depends on the archived recompute bridge)
+analysis/assemble_new_version.py
+analysis/regenerate_corrected_poses.py

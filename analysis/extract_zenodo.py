@@ -6,13 +6,26 @@ The Zenodo archives use a nested compression scheme:
 
 The outer tar may be either bzip2-compressed (older archives) or store-only
 (newer archives from compress_for_zenodo.py, which skips the pointless outer
-recompression); the auto-detecting "r:*" mode below handles both.
+recompression); the auto-detecting "r:*" mode below handles both. The inner
+per-target archives and the .sdf.gz members are standard bzip2/gzip regardless
+of which encoder produced them (compress_for_zenodo.py uses pbzip2/pigz when
+available, which emit standard streams), so no special handling is needed here.
+
+The per-target archives (Phase 2) and .sdf.gz members (Phase 3) are decompressed
+in parallel to match the parallel compressor. This stays pure-Python -- no pigz
+or pbzip2 required on the extracting machine -- because CPython releases the GIL
+during zlib/bz2 decompression, so a thread pool genuinely uses multiple cores.
+
+Which target lands in which lit-pcba part is not fixed (parts are just <50 GB
+upload shards; e.g. a target may be packed into a different part than its raw
+data suggests). The analysis pipeline finds targets by scanning, not by part,
+so this does not matter for extraction.
 
 This script reverses all three phases to produce the directory layout expected
 by the analysis pipeline.
 
 Usage:
-    python scripts/extract_zenodo.py /path/to/downloads /path/to/output
+    python scripts/extract_zenodo.py /path/to/downloads /path/to/output [-j N]
 
     The downloads directory should contain:
         DEKOIS.tar.bz2, DUD-E.tar.bz2,
@@ -24,10 +37,12 @@ Usage:
 
 import argparse
 import gzip
+import os
 import shutil
 import sys
 import tarfile
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 
@@ -40,18 +55,25 @@ ARCHIVE_MAP = {
 }
 
 
-def decompress_sdf_gz(directory: Path) -> int:
-    count = 0
-    for gz_path in directory.rglob("*.sdf.gz"):
+def decompress_sdf_gz(directory: Path, jobs: int = 1) -> int:
+    """Decompress every .sdf.gz under directory (in parallel); return the count."""
+    gz_paths = list(directory.rglob("*.sdf.gz"))
+
+    def _one(gz_path: Path) -> None:
         sdf_path = gz_path.with_suffix("")
         with gzip.open(gz_path, "rb") as f_in, open(sdf_path, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
+            shutil.copyfileobj(f_in, f_out, length=1024 * 1024)
         gz_path.unlink()
-        count += 1
-    return count
+
+    if gz_paths:
+        with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
+            for _ in pool.map(_one, gz_paths):
+                pass
+    return len(gz_paths)
 
 
-def extract_archive(archive_path: Path, dest_dir: Path) -> None:
+def extract_archive(archive_path: Path, dest_dir: Path, jobs: int = 1) -> None:
+    """Reverse the three-phase archive for one dataset into dest_dir."""
     archive_name = archive_path.name
     dataset_subdir = ARCHIVE_MAP.get(archive_name)
     if dataset_subdir is None:
@@ -68,7 +90,7 @@ def extract_archive(archive_path: Path, dest_dir: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path = Path(tmp)
 
-        print(f"  Phase 1/3: Extracting outer archive...")
+        print("  Phase 1/3: Extracting outer archive...")
         with tarfile.open(archive_path, "r:*") as outer:
             outer.extractall(tmp_path)
 
@@ -82,26 +104,30 @@ def extract_archive(archive_path: Path, dest_dir: Path) -> None:
                 return
 
         inner_tarballs = sorted(phase2_dir.glob("*.tar.bz2"))
-        print(f"  Phase 2/3: Extracting {len(inner_tarballs)} target archives...")
+        print(f"  Phase 2/3: Extracting {len(inner_tarballs)} target archives "
+              f"({jobs} workers)...")
 
-        for i, inner_tar in enumerate(inner_tarballs, 1):
-            target_name = inner_tar.stem.replace(".tar", "")
-            sys.stdout.write(f"\r    [{i}/{len(inner_tarballs)}] {target_name}...")
-            sys.stdout.flush()
-
+        # Each inner tarball unpacks a distinct <target>/ subtree, so extracting
+        # them concurrently into final_dir never collides.
+        def _extract_inner(inner_tar: Path) -> None:
             with tarfile.open(inner_tar, "r:bz2") as tf:
                 tf.extractall(final_dir)
 
-        print(f"\r    Extracted {len(inner_tarballs)} targets.{' '*20}")
+        if inner_tarballs:
+            with ThreadPoolExecutor(max_workers=max(1, jobs)) as pool:
+                for _ in pool.map(_extract_inner, inner_tarballs):
+                    pass
+        print(f"    Extracted {len(inner_tarballs)} targets.")
 
-        print(f"  Phase 3/3: Decompressing .sdf.gz files...")
-        count = decompress_sdf_gz(final_dir)
+        print(f"  Phase 3/3: Decompressing .sdf.gz files ({jobs} workers)...")
+        count = decompress_sdf_gz(final_dir, jobs)
         print(f"    Decompressed {count} SDF files.")
 
     print(f"  Done: {final_dir}")
 
 
 def main():
+    """Parse CLI arguments and extract the requested Zenodo archives."""
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -121,6 +147,12 @@ def main():
         type=str,
         default=None,
         help="Comma-separated list of specific archives to extract (default: all)",
+    )
+    parser.add_argument(
+        "-j", "--jobs",
+        type=int,
+        default=os.cpu_count() or 4,
+        help="Parallel workers for decompression (default: CPU count)",
     )
     args = parser.parse_args()
 
@@ -152,13 +184,14 @@ def main():
 
     print(f"Archives to extract: {len(found)}")
     print(f"Output directory: {args.output_dir}")
+    print(f"Parallel workers: {args.jobs}")
 
     for archive_path in found:
-        extract_archive(archive_path, args.output_dir)
+        extract_archive(archive_path, args.output_dir, args.jobs)
 
     print(f"\n{'='*60}")
     print("Extraction complete!")
-    print(f"Run the analysis pipeline with:")
+    print("Run the analysis pipeline with:")
     print(f"  python -m analysis.run_all all --base-path {args.output_dir.resolve()}")
     print(f"{'='*60}")
 
