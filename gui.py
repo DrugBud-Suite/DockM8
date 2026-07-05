@@ -64,11 +64,11 @@ st.sidebar.link_button("Publication", url="https://doi.org/TODO-REPLACE-WITH-DOI
 
 with st.sidebar.expander("Benchmark datasets (Zenodo)"):
     st.markdown(
-        "- **DEKOIS 2.0** — [10.5281/zenodo.15430058](https://doi.org/10.5281/zenodo.15430058)\n"
-        "- **DUD-E** — [10.5281/zenodo.15430186](https://doi.org/10.5281/zenodo.15430186)\n"
-        "- **Lit-PCBA (Part 1/3)** — [10.5281/zenodo.16436211](https://doi.org/10.5281/zenodo.16436211)\n"
-        "- **Lit-PCBA (Part 2/3)** — [10.5281/zenodo.16436304](https://doi.org/10.5281/zenodo.16436304)\n"
-        "- **Lit-PCBA (Part 3/3)** — [10.5281/zenodo.16436306](https://doi.org/10.5281/zenodo.16436306)"
+        "- **DEKOIS 2.0** — [10.5281/zenodo.15430057](https://doi.org/10.5281/zenodo.15430057)\n"
+        "- **DUD-E** — [10.5281/zenodo.15430185](https://doi.org/10.5281/zenodo.15430185)\n"
+        "- **Lit-PCBA (Part 1/3)** — [10.5281/zenodo.16436210](https://doi.org/10.5281/zenodo.16436210)\n"
+        "- **Lit-PCBA (Part 2/3)** — [10.5281/zenodo.16436303](https://doi.org/10.5281/zenodo.16436303)\n"
+        "- **Lit-PCBA (Part 3/3)** — [10.5281/zenodo.16436305](https://doi.org/10.5281/zenodo.16436305)"
     )
 
 # Logo
